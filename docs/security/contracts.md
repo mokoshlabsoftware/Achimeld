@@ -26,6 +26,18 @@ Local icon style nodes (`styleAchievement`) and art images (`artImage`) remain h
 
 The desktop host persists bounded application diagnostic lines immediately under `%LOCALAPPDATA%\Achimeld\RustDiagnostics\log.txt`; startup rotates the previous session to `log_bak.txt`. A Windows exclusive lock prevents concurrent sessions from rotating an active log. Each session file is capped at 8 MiB (older current-session records are discarded at the cap). The application library only supplies a host-installed line callback and gains no filesystem authority. Panic records retain source locations, never arbitrary panic payloads. Reparse checks cover the storage directory and fixed filenames; hostile same-user filesystem races and power-loss durability remain unqualified. Abrupt native termination cannot produce a Rust panic record, but already written lines remain available. Clearing the UI output does not delete persisted diagnostics.
 
+Concurrent desktop instances that encounter a sharing violation on the main log
+use four fixed fallback slots in the same diagnostic directory:
+`log-instance-1.txt` through `log-instance-4.txt`, each with its own lock and
+`_bak.txt` previous-session file. This supports five concurrent persisted sessions
+with at most 80 MiB of session text. Exhausted slots or other initialization errors
+produce a static error in application output. No arbitrary paths or worker file
+authority are introduced. Request rejection diagnostics distinguish unowned pages,
+ping/beacon, media, manifest, event stream and unavailable-frame cases through
+declared codes and owned-process exit statuses (201 and 212–216); older codes and
+wire envelopes remain accepted. These diagnostics do not authorize any new traffic
+and contain no request URLs or payloads.
+
 ## Process recipes and ownership
 
 Persistent-browser startup snapshots the restored page list, installs the request

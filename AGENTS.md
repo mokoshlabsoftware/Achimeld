@@ -14,6 +14,66 @@ Keep changes to policy, protocol shapes, process recipes, and ownership explicit
 
 The original improvement plan is `docs/security-auditability.md`; current contracts and results live under `docs/security`.
 
+# Installed application logs
+
+The canonical installed-app diagnostic directory is `%LOCALAPPDATA%\Achimeld\RustDiagnostics`
+(on this workstation: `C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics`).
+Inspect it directly when investigating a reported bug; do not ask the user to paste
+logs that are accessible locally. Sandboxed tools may redirect `LOCALAPPDATA` to
+their own sandbox: use the explicit workstation path above for the installed app.
+
+`log.txt` is the live application log, flushed after each record and readable while
+the app runs. `log_bak.txt` retains the previous session; `failure-*.json` contains
+startup failure reports. Concurrent instances use `log-instance-1.txt` through
+`log-instance-4.txt` (with matching `_bak.txt` files) in this same directory when
+the main log is locked; inspect these too and follow the file whose timestamp is
+advancing. Up to five simultaneous instances can persist logs. Read session logs before launching or restarting the
+app because startup rotates them. Follow the current session with
+`Get-Content -LiteralPath 'C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics\log.txt' -Tail 100 -Wait`;
+reopen the reader after an application restart. Timestamps ending in `Z` are UTC.
+
+Route new application and safe worker failure diagnostics through the existing
+host diagnostic sink so they reach this directory automatically. Keep bounded
+storage and host ownership; never persist cookies, credentials, tokens, raw browser
+requests/responses, portal contents or arbitrary worker exception messages. This
+directory contains emitted diagnostics, not a guarantee that every bug is already
+instrumented. Record missing evidence explicitly. Build/test audit evidence remains
+under `C:\Projects\AchimeldBuild`, separately from installed runtime diagnostics.
+
+# GitLab development, public GitHub checkout, and publishing
+
+The private development checkout is `C:\Projects\Achimeld\achimeld` (GitLab).
+The permanent public GitHub checkout is **`C:\Projects\AchimeldPublish\Achimeld`**,
+linked to `https://github.com/mokoshlabsoftware/Achimeld`. Keep its files and public
+release history synchronized after publishing; do not substitute a temporary
+checkout for this permanent location. Temporary validation/export checkouts may
+live under `C:\Projects\AchimeldBuild\current`.
+
+Track publishing scripts and internal release configuration in GitLab's `private/`
+directory. Export only explicitly approved public files and stable snapshots to
+GitHub; never mirror GitLab history or copy `private/`, credentials, or signing
+secrets there. Preserve uncommitted changes in either checkout.
+
+Generated installers, packages, build outputs and audit evidence belong under
+`C:\Projects\AchimeldBuild`, outside both repositories. Build from a clean selected
+GitLab commit and record that exact source commit in the installer/package and
+GitHub release, together with the installer SHA-256. The public snapshot commit
+has its own identity because GitLab development history is not published.
+
+The authoritative latest published installer is
+**`C:\Projects\AchimeldBuild\install\Achimeld-Setup.exe`**. Other agents
+must retrieve the installer from this fixed location. Read the adjacent
+`RELEASE-SOURCE.json` for its working version, exact GitLab source commit and
+installer SHA-256, and verify against `SHA256SUMS.txt`. `build/BuildPaths.ps1`
+owns this location through `(Get-AchimeldBuildPaths).Installer`. Promote the
+complete installer/metadata directory only after successful publication; keep
+previous copies in the dated build archive. Do not use unfinished setup files in
+random staging folders or place installer binaries in either source checkout.
+
+The dedicated operating guide is `private/PUBLISHING.md`. Keep it current when
+changing publishing, authentication, source export policy, repository locations,
+installer promotion, or failure recovery. It stays in the private GitLab folder.
+
 # Working versions and change history
 
 Use four-part application working versions: `major.minor.commit.change` (for example `0.1.0.1`). The newest entry in root `CHANGELOG.md` is the single source of truth; Help > About and Help > Change log embed it at compile time. Rebuild to show a changed version. Cargo/package versions and authenticated installer identities are separate contracts; do not change them merely to advance the working version.

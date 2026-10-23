@@ -3,6 +3,7 @@ param(
     [switch]$Fixtures,
     [switch]$Offline,
     [switch]$DependencyAudit,
+    [switch]$FailFast,
     [string]$OutputDirectory
 )
 $ErrorActionPreference = 'Stop'
@@ -53,6 +54,26 @@ function Run-Check([string]$Id, [string]$Scope, [string[]]$Arguments, [scriptblo
         startedUtc = $checkStarted; completedUtc = [DateTimeOffset]::UtcNow.ToString('O'); exitCode = $exitCode;
         artifact = [IO.Path]::GetFileName($log); artifactSha256 = (Get-FileHash -LiteralPath $log -Algorithm SHA256).Hash.ToLowerInvariant() })
     Write-Output "$Id : $state"
+    if ($FailFast -and $state -eq 'test-failed') {
+        $planned = @('format','lint','rust-tests','read-policy','browser-policy','audit-contracts','build-storage','working-version','desktop-boundaries','installer-contracts','dependency-inventory','bridge-fixtures','read-worker-build','playwright-runtime','migration-contracts','browser-request-fixtures','dependency-advisories','installed-enforcement','live-steam')
+        foreach ($pending in $planned) {
+            if ($pending -notin $checks.id) {
+                $pendingScope = switch ($pending) {
+                    { $_ -in @('bridge-fixtures','browser-request-fixtures') } { 'fixture' }
+                    'dependency-advisories' { 'dependency' }
+                    'installed-enforcement' { 'installed' }
+                    'live-steam' { 'live' }
+                    default { 'source' }
+                }
+                $checks.Add([ordered]@{id=$pending;scope=$pendingScope;status='not-run';reason="Stopped after failed check: $Id";exitCode=$null})
+            }
+        }
+        $report = [ordered]@{schemaVersion=1;startedUtc=$started;completedUtc=[DateTimeOffset]::UtcNow.ToString('O');source=$source;selectedChecksPassed=$false;checks=$checks.ToArray();limitations='Stopped at the first failure; remaining checks were not run. Tool versions are recorded in executed check logs when available.'}
+        [IO.File]::WriteAllText((Join-Path $output 'evidence.json'), ($report | ConvertTo-Json -Depth 12) + "`n", [Text.UTF8Encoding]::new($false))
+        Write-Output "Failure details: $log"
+        Get-Content -LiteralPath $log -Tail 25 | Write-Output
+        throw "Check '$Id' failed. See $log and $(Join-Path $output 'evidence.json'). Remaining checks were not run."
+    }
 }
 function Skip-Check([string]$Id, [string]$Scope, [string]$Reason) {
     $checks.Add([ordered]@{ id = $Id; scope = $Scope; status = 'not-run'; reason = $Reason; exitCode = $null })
@@ -63,6 +84,11 @@ try {
     $source = Source-Identity
     $locked = @('--locked'); if ($Offline) { $locked += '--offline' }
     Run-Check 'format' 'source' @('fmt','--all','--check') { & $rust -CargoArguments @('fmt','--all','--check') }
+    # Reject invalid source/build layouts before compiling the workspace.
+    Run-Check 'audit-contracts' 'source' @('Test-AuditContracts.ps1') { & (Join-Path $PSScriptRoot 'Test-AuditContracts.ps1') }
+    Run-Check 'build-storage' 'source' @('Test-BuildStorage.ps1') { & (Join-Path $PSScriptRoot 'Test-BuildStorage.ps1') }
+    Run-Check 'working-version' 'source' @('Test-Versioning.ps1') { & (Join-Path $PSScriptRoot 'Test-Versioning.ps1') }
+    Run-Check 'installer-contracts' 'source' @('Test-InstallerContracts.ps1') { & (Join-Path $PSScriptRoot 'Test-InstallerContracts.ps1') }
     $lint = @('clippy','--workspace','--all-targets') + $locked + @('--','-D','warnings')
     Run-Check 'lint' 'source' $lint { & $rust -CargoArguments $lint }
     $tests = @('test','--workspace') + $locked
@@ -75,11 +101,7 @@ try {
         & dotnet run --project tools/browser-policy-tests/BrowserPolicyTests.csproj -c Release
         if ($LASTEXITCODE -ne 0) { throw 'Migrated browser/security policy checks failed.' }
     }
-    Run-Check 'audit-contracts' 'source' @('Test-AuditContracts.ps1') { & (Join-Path $PSScriptRoot 'Test-AuditContracts.ps1') }
-    Run-Check 'build-storage' 'source' @('Test-BuildStorage.ps1') { & (Join-Path $PSScriptRoot 'Test-BuildStorage.ps1') }
-    Run-Check 'working-version' 'source' @('Test-Versioning.ps1') { & (Join-Path $PSScriptRoot 'Test-Versioning.ps1') }
     Run-Check 'desktop-boundaries' 'source' @('Test-DesktopBoundaries.ps1') { & (Join-Path $PSScriptRoot 'Test-DesktopBoundaries.ps1') -Offline:$Offline }
-    Run-Check 'installer-contracts' 'source' @('Test-InstallerContracts.ps1') { & (Join-Path $PSScriptRoot 'Test-InstallerContracts.ps1') }
     Run-Check 'dependency-inventory' 'source' @('metadata','--format-version','1') {
         & $rust -CargoArguments (@('metadata','--format-version','1') + $locked)
     }
@@ -105,7 +127,13 @@ try {
     Skip-Check 'live-steam' 'live' 'Separate explicitly scoped authorized Steam workflow; no live actions in this command.'
     $after = Source-Identity
     if ($after.filesDigestSha256 -ne $source.filesDigestSha256 -or $after.commit -ne $source.commit) {
-        $checks.Add([ordered]@{ id='source-stability'; scope='source'; status='test-failed'; reason='Source changed during checks.'; exitCode=1 })
+        $beforeFiles = @{}; $afterFiles = @{}
+        foreach ($file in $source.files) { $beforeFiles[$file.path] = $file.sha256 }
+        foreach ($file in $after.files) { $afterFiles[$file.path] = $file.sha256 }
+        $changed = @(@($beforeFiles.Keys) + @($afterFiles.Keys) | Sort-Object -Unique | Where-Object { !$beforeFiles.ContainsKey($_) -or !$afterFiles.ContainsKey($_) -or $beforeFiles[$_] -cne $afterFiles[$_] })
+        Write-Output 'Source files changed during the audit. This run cannot be packaged. Use an isolated installer build or stop editing the source during a standalone audit.'
+        foreach ($path in $changed) { Write-Output "Changed source: $path" }
+        $checks.Add([ordered]@{ id='source-stability'; scope='source'; status='test-failed'; reason='Source changed during checks.'; changedFiles=$changed; beforeCommit=$source.commit; afterCommit=$after.commit; exitCode=1 })
     }
     $compiler = Join-Path $env:ACHIMELD_CACHE_ROOT 'rustup/toolchains/1.99.0-x86_64-pc-windows-msvc/bin/rustc.exe'
     $rustVersion = if (Test-Path -LiteralPath $compiler) { & $compiler --version } else { 'See rust-toolchain.toml and check logs.' }
@@ -116,5 +144,8 @@ try {
         selectedChecksPassed=$passed; checks=$checks.ToArray(); limitations='Local evidence is not independently attested; not-run scopes are not passing qualification.' }
     [IO.File]::WriteAllText((Join-Path $output 'evidence.json'), ($report | ConvertTo-Json -Depth 12) + "`n", [Text.UTF8Encoding]::new($false))
     Write-Output "Audit evidence: $output"
-    if (!$passed) { throw 'One or more selected audit gates failed; inspect evidence.json and its check logs.' }
+    if (!$passed) {
+        foreach ($failure in @($checks | Where-Object status -eq 'test-failed')) { Write-Output "Failed check: $($failure.id)" }
+        throw "Audit failed. See $(Join-Path $output 'evidence.json') for the named failures and their check logs."
+    }
 } finally { Pop-Location }

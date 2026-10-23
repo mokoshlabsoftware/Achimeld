@@ -40,9 +40,21 @@ internal static class WorkerDiagnosticFixtures
             if (rejection != BrowserRequestRejection.None && !WorkerFailure.Code("authenticate", new Exception(secret), rejection).StartsWith("steam.request.", StringComparison.Ordinal))
                 throw new Exception("Request rejection did not map to declared static diagnostics.");
             int exitCode = WorkerFailure.ExitCode(rejection);
-            if (rejection == BrowserRequestRejection.None ? exitCode != 125 : exitCode is < 201 or > 211)
+            if (rejection == BrowserRequestRejection.None ? exitCode != 125 : exitCode is < 201 or > 216)
                 throw new Exception("Monitor exit code escaped the declared diagnostic vocabulary.");
         }
+        (BrowserRequestRejection Reason, string Code, int Exit)[] requestCases = [
+            (BrowserRequestRejection.OtherPage, "steam.request.other-page", 201),
+            (BrowserRequestRejection.Ping, "steam.request.ping", 212),
+            (BrowserRequestRejection.Media, "steam.request.media", 213),
+            (BrowserRequestRejection.Manifest, "steam.request.manifest", 214),
+            (BrowserRequestRejection.EventSource, "steam.request.eventsource", 215),
+            (BrowserRequestRejection.UnavailableFrame, "steam.request.frame-unavailable", 216),
+        ];
+        foreach (var test in requestCases)
+            if (WorkerFailure.Code("navigate", new Exception(secret), test.Reason) != test.Code ||
+                WorkerFailure.ExitCode(test.Reason) != test.Exit)
+                throw new Exception("Request rejection lost its specific safe diagnostic.");
         if (WorkerFailure.Code("start", new Exception(secret)) != "steam.browser.start.failed" ||
             WorkerFailure.Code("prepareSync", new Exception(secret)) != "steam.sync.failed" ||
             WorkerFailure.Code("authenticate", new Exception(secret)) != "steam.navigation.failed" ||

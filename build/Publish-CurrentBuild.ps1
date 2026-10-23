@@ -28,9 +28,9 @@ if (Test-Path -LiteralPath $previous) {
 }
 $repository = Split-Path -Parent $PSScriptRoot
 $runner = Join-Path $PSScriptRoot 'Build-And-Run.ps1'
-$launcher = "[CmdletBinding()]`nparam([switch]`$Protected)`n`$ErrorActionPreference = 'Stop'`n`$env:ACHIMELD_BUILD_ROOT = '" + $env:ACHIMELD_BUILD_ROOT.Replace("'", "''") + "'`n& '" + $runner.Replace("'", "''") + "' -RunCurrent -Protected:`$Protected`n"
+$launcher = "[CmdletBinding()]`nparam()`n`$ErrorActionPreference = 'Stop'`n`$env:ACHIMELD_BUILD_ROOT = '" + $env:ACHIMELD_BUILD_ROOT.Replace("'", "''") + "'`n& '" + $runner.Replace("'", "''") + "' -RunCurrent`n"
 [IO.File]::WriteAllText((Join-Path $current 'Run-Achimeld.ps1'), $launcher, [Text.UTF8Encoding]::new($false))
-$buildLauncher = "[CmdletBinding()]`nparam([switch]`$Offline, [switch]`$BuildOnly, [switch]`$Protected)`n`$ErrorActionPreference = 'Stop'`n`$env:ACHIMELD_BUILD_ROOT = '" + $env:ACHIMELD_BUILD_ROOT.Replace("'", "''") + "'`n& '" + $runner.Replace("'", "''") + "' -Offline:`$Offline -BuildOnly:`$BuildOnly -Protected:`$Protected`n"
+$buildLauncher = "[CmdletBinding()]`nparam([switch]`$Offline, [switch]`$BuildOnly)`n`$ErrorActionPreference = 'Stop'`n`$env:ACHIMELD_BUILD_ROOT = '" + $env:ACHIMELD_BUILD_ROOT.Replace("'", "''") + "'`n& '" + $runner.Replace("'", "''") + "' -Offline:`$Offline -BuildOnly:`$BuildOnly`n"
 [IO.File]::WriteAllText((Join-Path $current 'Build-And-Run.ps1'), $buildLauncher, [Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllText((Join-Path $current 'last-bridge-package.txt'), $destination, [Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllText((Join-Path $current 'last-archive.txt'), $archive, [Text.UTF8Encoding]::new($false))

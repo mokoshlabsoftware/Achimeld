@@ -34,10 +34,19 @@ struct PersistentLog {
 
 impl PersistentLog {
     fn open(directory: &std::path::Path) -> std::io::Result<Self> {
+        Self::open_slot(directory, 0)
+    }
+
+    fn open_slot(directory: &std::path::Path, slot: u8) -> std::io::Result<Self> {
         use std::os::windows::fs::OpenOptionsExt;
-        let current = directory.join("log.txt");
-        let backup = directory.join("log_bak.txt");
-        let lock = directory.join("log.lock");
+        let stem = if slot == 0 {
+            "log".to_owned()
+        } else {
+            format!("log-instance-{slot}")
+        };
+        let current = directory.join(format!("{stem}.txt"));
+        let backup = directory.join(format!("{stem}_bak.txt"));
+        let lock = directory.join(format!("{stem}.lock"));
         for path in [&current, &backup, &lock] {
             if path.exists() {
                 achimeld_security::windows::reject_reparse(path).map_err(std::io::Error::other)?;
@@ -104,7 +113,22 @@ fn persist(line: &str) {
 fn initialize_persistence() {
     let result = crate::storage_directory("RustDiagnostics")
         .map_err(|error| std::io::Error::other(error.to_string()))
-        .and_then(|directory| PersistentLog::open(&directory));
+        .and_then(|directory| {
+            let mut result = PersistentLog::open(&directory);
+            // Keep concurrent launches observable without rotating an active log.
+            // Fixed slots retain the same bounded storage budget per session.
+            for slot in 1..=4 {
+                if result
+                    .as_ref()
+                    .is_err_and(|error| error.raw_os_error() == Some(32))
+                {
+                    result = PersistentLog::open_slot(&directory, slot);
+                } else {
+                    break;
+                }
+            }
+            result
+        });
     match result {
         Ok(log) => {
             *persistent()
@@ -112,7 +136,14 @@ fn initialize_persistence() {
                 .unwrap_or_else(|error| error.into_inner()) = Some(log);
             achimeld_application::diagnostics::install_sink(persist);
         }
-        Err(_) => eprintln!("Achimeld could not initialize its diagnostic log"),
+        Err(_) => {
+            eprintln!("Achimeld could not initialize its diagnostic log");
+            achimeld_application::diagnostics::record(
+                "ERROR",
+                "diagnostics",
+                "Persistent log unavailable; this session's diagnostics are only available in the application output",
+            );
+        }
     }
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -150,6 +181,17 @@ mod tests {
             "first session\n"
         );
         assert!(PersistentLog::open(&directory).is_err());
+        let mut concurrent = PersistentLog::open_slot(&directory, 1).unwrap();
+        concurrent.write("concurrent session\n").unwrap();
+        assert_eq!(
+            std::fs::read_to_string(directory.join("log-instance-1.txt")).unwrap(),
+            "concurrent session\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(directory.join("log.txt")).unwrap(),
+            "first session\n"
+        );
+        drop(concurrent);
         drop(first);
         let mut second = PersistentLog::open(&directory).unwrap();
         second.write("second session\n").unwrap();

@@ -24,6 +24,24 @@ pub(crate) fn steamworks_destination(app_id: u32) -> String {
 }
 
 impl Desktop {
+    pub(crate) fn sync_destination_validated(&self, port: &dyn EditorPort) -> bool {
+        let project = port.editor().document().project();
+        let snapshot = &project["lastRemoteSnapshot"];
+        let snapshot_id = snapshot["steamAppId"]
+            .as_u64()
+            .or_else(|| {
+                snapshot
+                    .pointer("/appId/value")
+                    .and_then(serde_json::Value::as_u64)
+            })
+            .or_else(|| snapshot["appId"].as_u64());
+        SteamAppId::new(port.editor().document().app_id()).is_ok()
+            && snapshot_id == Some(u64::from(port.editor().document().app_id()))
+            && project["lastVerifiedAtUtc"]
+                .as_str()
+                .is_some_and(|stamp| !stamp.is_empty())
+    }
+
     pub(crate) fn sync_review_identity(&self, port: &dyn EditorPort) -> Option<(String, u32, u64)> {
         let app_id = SteamAppId::new(port.editor().document().app_id())
             .ok()?
@@ -55,7 +73,10 @@ impl Desktop {
     pub(crate) fn sync_action_label(&self, port: &dyn EditorPort) -> &'static str {
         if SteamAppId::new(port.editor().document().app_id()).is_err() {
             "App ID…"
-        } else if port.synchronization_review().is_some() || port.synchronization_verified() {
+        } else if port.synchronization_review().is_some()
+            || port.synchronization_verified()
+            || self.sync_destination_validated(port)
+        {
             "Synchronize"
         } else {
             "Validate"
@@ -78,6 +99,7 @@ impl Desktop {
 
     pub(crate) fn sync_wants_click(&self, port: &dyn EditorPort) -> bool {
         self.sync_review_identity(port).is_none()
+            && !self.sync_destination_validated(port)
             && !port.synchronization_verified()
             && !port.synchronizing()
             && !port.reading()

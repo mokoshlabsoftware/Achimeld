@@ -3,7 +3,7 @@ using Achimeld.Security;
 
 namespace Achimeld.Browser;
 
-public enum BrowserRequestRejection { None, OtherPage, Navigation, PartnerHome, PartnerDashboard, Script, Stylesheet, Image, Font, Dynamic, WebSocket, Other }
+public enum BrowserRequestRejection { None, OtherPage, Navigation, PartnerHome, PartnerDashboard, Script, Stylesheet, Image, Font, Dynamic, WebSocket, Other, Ping, Media, Manifest, EventSource, UnavailableFrame }
 
 // SEC-READ-002: This guards trusted application/browser requests, not compromised
 // worker code. CONNECT/WFP still cannot inspect HTTPS methods or paths.

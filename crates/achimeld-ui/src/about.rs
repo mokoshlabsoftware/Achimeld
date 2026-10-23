@@ -6,6 +6,7 @@ use achimeld_application::UiRequest;
 pub(crate) enum HelpPage {
     About,
     Changes,
+    ConnectMcp,
 }
 
 impl Desktop {
@@ -17,6 +18,11 @@ impl Desktop {
     pub fn open_change_log(&mut self) {
         self.about = true;
         self.help_page = HelpPage::Changes;
+    }
+
+    pub fn open_connect_mcp(&mut self) {
+        self.about = true;
+        self.help_page = HelpPage::ConnectMcp;
     }
 
     pub(crate) fn about_window(&mut self, ctx: &egui::Context) {
@@ -34,7 +40,7 @@ impl Desktop {
                 let width = 468.0_f32.min((ctx.content_rect().width() - 32.0).max(0.0));
                 ui.set_width(width);
                 ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                let title = text(ctx, if self.help_page == HelpPage::About { "About" } else { "Change log" });
+                let title = text(ctx, match self.help_page { HelpPage::About => "About", HelpPage::Changes => "Change log", HelpPage::ConnectMcp => "Connect MCP" });
                 let title = ui.painter().layout_no_wrap(
                     title,
                     egui::TextStyle::Heading.resolve(ui.style()),
@@ -58,13 +64,18 @@ impl Desktop {
                 egui::Frame::new().inner_margin(egui::Margin::symmetric(24, 20)).show(ui, |ui| {
                     ui.set_width((width - 48.0).max(0.0));
                     ui.spacing_mut().item_spacing.y = 8.0;
-                    egui::ScrollArea::vertical().id_salt(("help-body", self.help_page == HelpPage::Changes)).max_height(body_height).show(ui, |ui| {
+                    egui::ScrollArea::vertical().id_salt(("help-body", self.help_page as u8)).max_height(body_height).show(ui, |ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                             ui.heading("Achimeld");
                             centered(ui, format!("{} {}", text(ctx, "Version"), crate::change_log::current_version()));
                             ui.add_space(4.0);
                             if self.help_page == HelpPage::About {
                                 centered(ui, text(ctx, "Abt000"));
+                                centered(ui, "Licensed under the Apache License, Version 2.0.");
+                                ui.collapsing("Apache License 2.0 (full text)", |ui| {
+                                    ui.label(include_str!("../../../LICENSE"));
+                                });
+                                centered(ui, "Third-party components retain their own licenses.");
                                 for paragraph in [
                                     "Create and edit achievement and stat definitions, design icons, and review imports or draft uploads for your own Steamworks Partner account. Publish manually in Steamworks.",
                                     "Abt002",
@@ -74,6 +85,8 @@ impl Desktop {
                                     ui.add_space(8.0);
                                     centered(ui, text(ctx, paragraph));
                                 }
+                            } else if self.help_page == HelpPage::ConnectMcp {
+                                connect_mcp_body(ui);
                             } else {
                                 centered(ui, text(ctx, "Newest changes first. History starts with version tracking."));
                                 for entry in crate::change_log::ENTRIES.iter() {
@@ -89,6 +102,9 @@ impl Desktop {
                     });
                 });
                 divider(ui);
+                if self.help_page == HelpPage::ConnectMcp {
+                    return ui.add_sized([width, action_height], Button::new(text(ctx, "Close")).bar()).clicked();
+                }
                 let labels = [
                     text(ctx, if self.help_page == HelpPage::About { "Change log" } else { "About" }),
                     text(ctx, "Close"),
@@ -127,4 +143,56 @@ fn divider(ui: &mut egui::Ui) {
     );
     ui.painter()
         .rect_filled(rect, 0, ui.visuals().widgets.noninteractive.bg_stroke.color);
+}
+
+fn connect_mcp_body(ui: &mut egui::Ui) {
+    for message in [
+        "Connect an MCP client to this open Achimeld editor.",
+        "1. Keep Achimeld open. Run your MCP client under the same Windows account.",
+        "2. Add a local stdio MCP server named achimeld with this executable and the argument --mcp:",
+    ] {
+        centered(ui, text(ui.ctx(), message));
+    }
+    let executable = std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(|parent| parent.join("Achimeld.exe")));
+    if let Some(executable) = executable {
+        let command = executable.to_string_lossy();
+        ui.add(
+            egui::Label::new(egui::RichText::new(command.as_ref()).monospace())
+                .wrap()
+                .selectable(true),
+        );
+        let configuration = serde_json::json!({"mcpServers": {"achimeld": {"command": command, "args": ["--mcp"]}}});
+        let configuration = serde_json::to_string_pretty(&configuration).unwrap_or_default();
+        ui.collapsing(text(ui.ctx(), "JSON configuration"), |ui| {
+            ui.add(
+                egui::Label::new(egui::RichText::new(&configuration).monospace())
+                    .wrap()
+                    .selectable(true),
+            );
+        });
+        if ui
+            .add(Button::new(text(ui.ctx(), "Copy configuration")))
+            .clicked()
+        {
+            ui.ctx().copy_text(configuration);
+        }
+    } else {
+        centered(
+            ui,
+            text(
+                ui.ctx(),
+                "Use the full path to Achimeld.exe in your installation folder, with --mcp as its argument.",
+            ),
+        );
+    }
+    for message in [
+        "3. Enable or reconnect the server in your MCP client. Ask it to call list_instances, then get_scene for the chosen editor.",
+        "The MCP command connects to the running editor; it does not start the desktop. Use Achimeld.exe, the verified launcher.",
+        "MCP edits share the editor's Undo history. Save your project in Achimeld to keep changes.",
+        "If no editor appears, check that Achimeld is open and both processes use the same Windows account. Reconnect after changing the configuration.",
+    ] {
+        centered(ui, text(ui.ctx(), message));
+    }
 }

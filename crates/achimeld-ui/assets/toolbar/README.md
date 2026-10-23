@@ -166,3 +166,12 @@ The trailing text unlock-value toggle uses the generated chain links in
 `text-unlock-link-source.png`. Its exact built-in imagegen prompt and preparation
 are retained in `text-unlock-link.json`; the centered 64 x 64 white tintable
 glyph preserves the generated alpha and follows the shared button ink.
+
+Toolbar PNGs are limited to 128 x 128 by `build/Resize-ToolbarIcons.ps1`,
+invoked by `build/Rust.ps1` before build/run/check/test/clippy. It preserves
+aspect ratio and transparency using high-quality bicubic interpolation and
+leaves smaller images untouched. Run it directly after adding artwork.
+Original artwork retained before introducing this limit lives in
+`../toolbar-originals`; historical preparation notes above describe those originals.
+Raw .rgba embedding assets retain their existing 64 x 64 contract.
+Direct Cargo invocations bypass this PowerShell preflight.

@@ -33,9 +33,9 @@ pub(crate) fn show(ui: &mut egui::Ui, layer: &str, text: &mut Value) {
     let icon_size = 20.0;
     let height = crate::buttons::bar_height(ui, icon_size);
     let field_height = ui.spacing().interact_size.y;
-    crate::fields::row_with_min_control(ui, "Text", height + 24.0, |ui| {
+    crate::fields::row_with_min_control(ui, "Text", 2.0 * height + 24.0, |ui| {
         crate::buttons::bar_with_height(ui, height, |ui| {
-            let field_width = (ui.available_width() - height).max(1.0);
+            let field_width = (ui.available_width() - 2.0 * height).max(1.0);
             let response = ui
                 .scope(|ui| {
                     ui.spacing_mut().interact_size.y = field_height;
@@ -51,41 +51,52 @@ pub(crate) fn show(ui: &mut egui::Ui, layer: &str, text: &mut Value) {
             if response.changed() {
                 text["content"] = json!(content);
             }
-            let label = crate::localization::text(ui.ctx(), LABEL);
-            let icon = texture(ui.ctx());
-            let mut response = ui
-                .scope(|ui| {
-                    ui.spacing_mut().button_padding = Vec2::ZERO;
-                    ui.add_sized(
-                        Vec2::splat(height),
-                        Button::selectable(
-                            linked,
-                            egui::Image::new((icon, Vec2::splat(icon_size))),
+            for (target, control, caption) in [
+                (false, "source", "Use entered text as the text source"),
+                (true, "link", LABEL),
+            ] {
+                let label = crate::localization::text(ui.ctx(), caption);
+                let icon = if target {
+                    texture(ui.ctx())
+                } else {
+                    crate::layer_icons::texture(ui.ctx(), "Text").unwrap()
+                };
+                let mut response = ui
+                    .scope(|ui| {
+                        ui.spacing_mut().button_padding = Vec2::ZERO;
+                        ui.add_sized(
+                            Vec2::splat(height),
+                            Button::selectable(
+                                linked == target,
+                                egui::Image::new((icon, Vec2::splat(icon_size))),
+                            )
+                            .id(control_id(layer, control))
+                            .bar()
+                            .image_tint_follows_text_color(true),
                         )
-                        .id(control_id(layer, "link"))
-                        .bar()
-                        .image_tint_follows_text_color(true),
+                    })
+                    .inner;
+                response.widget_info(|| {
+                    egui::WidgetInfo::selected(
+                        egui::WidgetType::Button,
+                        response.enabled(),
+                        linked == target,
+                        &label,
                     )
-                })
-                .inner;
-            response.widget_info(|| {
-                egui::WidgetInfo::selected(
-                    egui::WidgetType::Button,
-                    response.enabled(),
-                    linked,
-                    &label,
-                )
-            });
-            let frame = ui.ctx().cumulative_frame_nr();
-            let activation = response.id.with("last-activation-frame");
-            // egui may repeat a layout pass after the first pass has committed.
-            if response.clicked() && ui.data(|data| data.get_temp::<u64>(activation)) != Some(frame)
-            {
-                ui.data_mut(|data| data.insert_temp(activation, frame));
-                text["linkToAchievementValue"] = json!(!linked);
-                response.mark_changed();
+                });
+                let frame = ui.ctx().cumulative_frame_nr();
+                let activation = response.id.with("last-activation-frame");
+                // egui may repeat a layout pass after the first pass has committed.
+                if response.clicked()
+                    && linked != target
+                    && ui.data(|data| data.get_temp::<u64>(activation)) != Some(frame)
+                {
+                    ui.data_mut(|data| data.insert_temp(activation, frame));
+                    text["linkToAchievementValue"] = json!(target);
+                    response.mark_changed();
+                }
+                response.on_hover_text(&label).on_disabled_hover_text(label);
             }
-            response.on_hover_text(&label).on_disabled_hover_text(label);
         });
     });
 }

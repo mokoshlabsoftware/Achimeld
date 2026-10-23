@@ -20,9 +20,9 @@ if /i "%~1"=="--build-only" (
     goto arguments
 )
 if /i "%~1"=="--protected" (
-    set "build_options=%build_options% -Protected"
-    shift
-    goto arguments
+    echo Build and Run uses current build output. Use the separate installer for ready builds.
+    set "run_exit=1"
+    goto finish
 )
 echo Unsupported option. Use --help for usage.
 set "run_exit=1"
@@ -57,11 +57,11 @@ if "%pause_at_end%"=="1" pause
 exit /b %run_exit%
 
 :usage
-echo Usage: build-and-run.bat [--offline] [--build-only] [--protected]
+echo Usage: build-and-run.bat [--offline] [--build-only]
 echo.
 echo Builds and launches Achimeld as the current user, without administrator approval.
 echo Cleans temporary artifacts only after a successful build; keeps reusable outputs.
 echo --offline uses cached dependencies and the verified browser archive.
 echo --build-only builds and verifies the package without launching.
-echo --protected optionally installs Windows network isolation with administrator approval.
+echo Runs directly from current build output; installation is a separate action.
 exit /b 0

@@ -1146,6 +1146,28 @@ mod tests {
     }
 
     #[test]
+    fn saved_steam_snapshot_and_check_time_survive_reload_and_save_as() {
+        let directory = Directory::new();
+        let original = Document::default();
+        let mut project = original.project().clone();
+        project["steamAppId"] = serde_json::json!(480);
+        project["lastVerifiedAtUtc"] = serde_json::json!("2026-10-23T11:45:00Z");
+        project["lastRemoteSnapshot"] = serde_json::json!({"steamAppId":480,"readAtUtc":"2026-10-23T11:44:00Z","stats":[],"achievements":[]});
+        let document = Document::from_parts(project, original.catalog().clone()).unwrap();
+        let mut store = ProjectStore::new();
+        let path = directory.0.join("snapshot.achv");
+        store.save(&document, &path).unwrap();
+        let loaded = ProjectStore::new().load(&path).unwrap();
+        let copy = directory.0.join("copy.achv");
+        store.save(&loaded, &copy).unwrap();
+        let copied = ProjectStore::new().load(&copy).unwrap();
+        for key in ["lastVerifiedAtUtc", "lastRemoteSnapshot"] {
+            assert_eq!(loaded.project()[key], document.project()[key]);
+            assert_eq!(copied.project()[key], document.project()[key]);
+        }
+    }
+
+    #[test]
     #[ignore = "Requires ACHIMELD_LEGACY_PROJECT pointing to a local copy with its authentic catalog"]
     fn legacy_project_preserves_every_entity_recipe_translation_and_camera_on_save_as() {
         let path = PathBuf::from(

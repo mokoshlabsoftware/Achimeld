@@ -77,6 +77,7 @@ internal static class SynchronizationFixtures
         JsonElement result = JsonSerializer.SerializeToElement(await session.FinishAsync(new(review.Token)), SecurityWire.Json);
         Check(result.GetProperty("project").GetProperty("syncBaselines").GetArrayLength() == 1);
         Check(result.GetProperty("project").GetProperty("lastRemoteSnapshot").GetProperty("isComplete").GetBoolean());
+        Check(result.GetProperty("project").GetProperty("lastVerifiedAtUtc").GetDateTimeOffset().Offset == TimeSpan.Zero);
         await Reject(() => session.StepAsync(new(review.Token, steps[0].Key)));
         await Reject(() => session.FinishAsync(new(review.Token)));
 

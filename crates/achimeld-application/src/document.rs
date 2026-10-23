@@ -405,9 +405,9 @@ impl Document {
         for (id, row) in &self.catalog.rows {
             LocalizationId::new(id).map_err(|e| e.to_string())?;
             if row.get("Context").is_none_or(|s| s.trim().is_empty())
-                || row.get("English").is_none_or(|s| s.trim().is_empty())
+                || !row.contains_key("English")
             {
-                return Err("Localization requires Context and English".into());
+                return Err("Localization requires Context and an English field".into());
             }
         }
         crate::validation::project(&self.project)?;
@@ -946,6 +946,31 @@ fn decimal(value: &Value) -> Result<Option<Decimal>> {
 mod achievement_text_tests {
     use super::*;
     use crate::Editor;
+
+    #[test]
+    fn english_fields_allow_clearing_and_retyping() {
+        let mut editor = Editor::default();
+        editor
+            .execute("Add", Command::Add(EntityKind::Achievement), None)
+            .unwrap();
+        let entity = editor.document().entities(EntityKind::Achievement)[0].clone();
+        for key in ["displayNameLocalizationId", "descriptionLocalizationId"] {
+            for text in ["", "a", "Replacement"] {
+                editor
+                    .execute(
+                        "Text",
+                        Command::SetLocalization {
+                            id: entity[key].as_str().unwrap().into(),
+                            language: "English".into(),
+                            text: text.into(),
+                        },
+                        None,
+                    )
+                    .unwrap();
+                editor.document().validate().unwrap();
+            }
+        }
+    }
 
     #[test]
     fn unlock_templates_follow_values_languages_and_history_without_rewriting_the_catalog() {

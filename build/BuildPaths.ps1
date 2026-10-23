@@ -10,7 +10,7 @@ function Get-AchimeldBuildPaths {
     }
     $day = Join-Path $root $Date.ToString('dd_MM_yyyy', [Globalization.CultureInfo]::InvariantCulture)
     $current = Join-Path $root 'current'
-    [pscustomobject]@{ Root = $root; Archive = $day; Artifacts = $current; Cache = (Join-Path $root 'cache'); Target = (Join-Path $current 'target') }
+    [pscustomobject]@{ Root = $root; Archive = $day; Artifacts = $current; Cache = (Join-Path $root 'cache'); Target = (Join-Path $current 'target'); Installer = (Join-Path $root 'install') }
 }
 
 function Initialize-AchimeldBuildPaths {

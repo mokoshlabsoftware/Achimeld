@@ -2,6 +2,206 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.3.0 (2026-10-23)
+
+- Update text-source layout regression for two buttons
+
+## 0.2.2.2 (2026-10-23)
+
+- Validate both text-source buttons across narrow layouts and display scales
+
+## 0.2.2.0 (2026-10-23)
+
+- Fix installer recipe compilation
+
+## 0.2.1.1 (2026-10-23)
+
+- Fix installer compilation of installation-folder text
+
+## 0.2.1.0 (2026-10-23)
+
+- Fix publication authentication and complete approved source exports
+
+## 0.2.0.30 (2026-10-23)
+
+- Include required build helpers and original toolbar artwork in public releases
+
+## 0.2.0.29 (2026-10-23)
+
+- Keep dragged canvas nodes attached to the pointer while zooming
+
+## 0.2.0.28 (2026-10-23)
+
+- Add mutually exclusive entered-text and achievement-link source buttons for 2D and 3D text.
+
+## 0.2.0.27 (2026-10-23)
+
+- Allow empty English names and descriptions while editing and saving projects; bound inline validation text.
+
+## 0.2.0.26 (2026-10-23)
+
+- Recover missing publishing sign-in through browser login
+
+## 0.2.0.25 (2026-10-23)
+
+- Document GitHub sign-in troubleshooting for publishing
+
+## 0.2.0.24 (2026-10-23)
+
+- Check GitHub sign-in before starting publication
+
+## 0.2.0.23 (2026-10-23)
+
+- Point the desktop shortcut directly to the current local test build and remove installation options from generated launchers.
+
+## 0.2.0.22 (2026-10-23)
+
+- Fix installer source authentication and release formatting checks
+
+## 0.2.0.21 (2026-10-23)
+
+- Use one fixed Achimeld installation and remove previous protected builds during installer upgrades.
+
+## 0.2.0.20 (2026-10-23)
+
+- Keep Build and Run in current build output and require separate installation for ready builds.
+
+## 0.2.0.19 (2026-10-23)
+
+- Register installed packages in Windows with a policy-aware uninstaller
+
+## 0.2.0.18 (2026-10-23)
+
+- Show existing protected installations before setup and detect duplicate packages before extraction.
+
+## 0.2.0.17 (2026-10-23)
+
+- Show a separate animated loading bar during final package verification and protected installation.
+
+## 0.2.0.16 (2026-10-23)
+
+- Give the installation folder a dedicated review page and always show the installation summary before installing.
+
+## 0.2.0.15 (2026-10-23)
+
+- Preserve installer header artwork proportions instead of squeezing the wordmark into a square.
+
+## 0.2.0.14 (2026-10-23)
+
+- Show cumulative installer build time in minutes and seconds throughout the build
+
+## 0.2.0.13 (2026-10-23)
+
+- Remember validated Steam App IDs after reopening projects and stop repeated validation cues
+
+## 0.2.0.12 (2026-10-23)
+
+- Prevent overlapping development builds from locking the package signing tool
+
+## 0.2.0.11 (2026-10-23)
+
+- Show detailed source capture and verification progress during installer creation
+
+## 0.2.0.10 (2026-10-23)
+
+- Build installers from isolated source snapshots so ongoing edits cannot invalidate the build
+
+## 0.2.0.9 (2026-10-23)
+
+- Add a quick local installer build that skips test suites and allows uncommitted source
+
+## 0.2.0.8 (2026-10-23)
+
+- Stop installer builds on early validation errors and remove an unnecessary storage-check tool dependency
+
+## 0.2.0.7 (2026-10-23)
+
+- Show installer build stages, file progress, live output and elapsed time
+
+## 0.2.0.6 (2026-10-23)
+
+- Reuse verified current installers when building or publishing
+
+## 0.2.0.5 (2026-10-23)
+
+- Add a local installer build shortcut without GitHub publication
+
+## 0.2.0.4 (2026-10-23)
+
+- Make version improvement notes available as structured data for update explanations
+
+## 0.2.0.3 (2026-10-23)
+
+- Document the GitHub PuTTY key location and SSH publishing option.
+
+## 0.2.0.2 (2026-10-23)
+
+- Keep the current published installer in the build root install folder.
+
+## 0.2.0.1 (2026-10-23)
+
+- Add Help > Connect MCP with installation-specific setup instructions and copyable client configuration
+
+## 0.2.0.0 (2026-10-23)
+
+- Start the 0.2 release series.
+
+## 0.1.4.14 (2026-10-23)
+
+- Distinguish saved Steam snapshots from failed validation attempts and show their saved check time
+
+## 0.1.4.13 (2026-10-23)
+
+- Use the supplied achievement artwork in the installer welcome and completion panels.
+
+## 0.1.4.12 (2026-10-23)
+
+- Keep concurrent application diagnostics in the shared log folder and distinguish blocked browser request types
+
+## 0.1.4.11 (2026-10-23)
+
+- Document the shared installed-app log location and live bug investigation workflow
+
+## 0.1.4.10 (2026-10-23)
+
+- Offer an optional desktop shortcut and explain how to pin Achimeld to the Windows taskbar
+
+## 0.1.4.9 (2026-10-23)
+
+- Offer an optional normal-user Achimeld launch when closing the completed installer
+
+## 0.1.4.8 (2026-10-23)
+
+- Present the installer as Achimeld and explain background installation and bootstrapper safeguards
+
+## 0.1.4.7 (2026-10-23)
+
+- Explain the Steam Partner browser connection and distinguish local login sessions from project data in installer notes
+
+## 0.1.4.6 (2026-10-23)
+
+- Use a dark installer with a product introduction, Apache license acceptance, and Mokosh Labs installation folders
+
+## 0.1.4.5 (2026-10-23)
+
+- License Achimeld under Apache 2.0 and include the license in Help, setup and public source.
+
+## 0.1.4.4 (2026-10-23)
+
+- Document the complete private publishing setup and recovery workflow in a dedicated guide
+
+## 0.1.4.3 (2026-10-23)
+
+- Provide one fixed location for the latest published installer with verified checksums and source identity
+
+## 0.1.4.2 (2026-10-23)
+
+- Record the permanent public GitHub checkout and synchronize it after publishing
+
+## 0.1.4.1 (2026-10-23)
+
+- Automatically resize oversized toolbar PNG icons to 128 pixels before builds with smooth antialiased filtering; retain original artwork.
+
 ## 0.1.4.0 (2026-10-23)
 
 - Publish through the authenticated GitHub CLI connection

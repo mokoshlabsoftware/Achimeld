@@ -2,6 +2,18 @@ use crate::Desktop;
 use crate::buttons::UiButtonExt as _;
 use achimeld_application::{EditorPort, EntityKind, UiRequest};
 
+fn snapshot_time(stamp: &str) -> String {
+    if let Some(utc) = stamp
+        .strip_suffix('Z')
+        .or_else(|| stamp.strip_suffix("+00:00"))
+    {
+        let seconds = utc.split_once('.').map_or(utc, |(seconds, _)| seconds);
+        format!("{} UTC", seconds.replace('T', " "))
+    } else {
+        stamp.replace('T', " ")
+    }
+}
+
 impl Desktop {
     pub(crate) fn synchronization_view(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
         egui::Frame::new().inner_margin(16).show(ui, |ui| {
@@ -131,6 +143,7 @@ impl Desktop {
                     let valid_id = achimeld_core::SteamAppId::new(port.editor().document().app_id()).is_ok();
                     if !valid_id { ui.weak("Set a valid Steam App ID before validating or synchronizing."); }
                     else if port.synchronization_verified() { ui.strong("Validated and synchronized · no pending changes."); }
+                    else if self.sync_destination_validated(port) { ui.strong("Steam App ID validated"); ui.weak("Synchronize to read the latest Steamworks configuration and review changes."); }
                     else { ui.weak("Validate to read the Steamworks destination and review its configuration before any changes are applied."); }
                     crate::buttons::bar(ui, 24.0, |ui| {
                         let action = if valid_id {
@@ -145,14 +158,30 @@ impl Desktop {
                     let snapshot_id = snapshot["steamAppId"].as_u64().or_else(|| snapshot.pointer("/appId/value").and_then(serde_json::Value::as_u64)).or_else(|| snapshot["appId"].as_u64());
                     let current_snapshot = valid_id && snapshot_id == Some(u64::from(port.editor().document().app_id()));
                     egui::Grid::new("synchronization-counts").show(ui, |ui| {
-                        ui.label(""); ui.strong("Project"); ui.strong("Steam"); ui.end_row();
+                        ui.label(""); ui.strong("Project"); ui.strong("Saved Steam"); ui.end_row();
                         for (kind, name) in [(EntityKind::Achievement, "Achievements"), (EntityKind::Stat, "Stats")] {
                             ui.label(name); ui.label(port.editor().document().steam_entities(kind).count().to_string());
                             ui.label(if current_snapshot { snapshot[kind.key()].as_array().map_or_else(|| "Not loaded".into(), |rows| rows.len().to_string()) } else { "Not loaded".into() }); ui.end_row();
                         }
                     });
                     if current_snapshot {
-                        ui.strong("Steam configuration loaded into this project.");
+                        ui.strong("Saved Steam snapshot");
+                        if let Some(stamp) = project["lastVerifiedAtUtc"].as_str()
+                            .filter(|stamp| !stamp.is_empty()) {
+                            ui.label(format!("Last successful check: {}", snapshot_time(stamp)));
+                        } else if let Some(stamp) = snapshot["readAtUtc"].as_str()
+                            .filter(|stamp| !stamp.is_empty()) {
+                            ui.label(format!("Snapshot read at: {}", snapshot_time(stamp)));
+                        } else {
+                            ui.weak("The check time was not recorded in this project.");
+                        }
+                        if port.synchronization_error().is_some() {
+                            ui.weak("Latest validation or synchronization failed; showing previously saved Steam data.");
+                        } else if port.synchronizing() || port.reading() {
+                            ui.weak("Checking Steam; showing previously saved Steam data until the check completes.");
+                        } else if !port.synchronization_verified() {
+                            ui.weak("Showing saved Steam data. Synchronize to refresh the comparison before uploading.");
+                        }
                     }
                 }
             });

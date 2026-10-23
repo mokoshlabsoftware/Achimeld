@@ -6,7 +6,7 @@ if($AppId -notmatch '^[1-9][0-9]*$' -or ![uint32]::TryParse($AppId,[ref]$parsed)
 $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
 if(([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'Run Steam reading as a normal user.'}
 $root=(Resolve-Path -LiteralPath $PackagePath).Path
-$boundary=[IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'Achimeld-Development'))+'\'
+$boundary=[IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'Mokosh Labs\Achimeld'))+'\'
 if($Protected -and !$root.StartsWith($boundary,[StringComparison]::OrdinalIgnoreCase)){throw 'Protected reading requires an installed protected development package.'}
 $started=[DateTime]::UtcNow
 Write-Output ('Reading Steam app '+$AppId+'. Sign in manually in the dedicated browser if requested.')

@@ -121,6 +121,33 @@ impl EditorPort for ReviewPort {
 }
 
 #[test]
+fn saved_destination_validation_survives_reopen_but_is_bound_to_app_id() {
+    for (app_id, validated) in [(480, true), (481, false)] {
+        let mut port = ReviewPort::new();
+        port.show_review = false;
+        let mut project = port.base.editor.document().project().clone();
+        project["lastRemoteSnapshot"] = json!({"steamAppId":app_id});
+        project["lastVerifiedAtUtc"] = json!("2026-10-20T15:37:29Z");
+        port.base.editor = Editor::new(
+            achimeld_application::Document::from_parts(
+                project,
+                port.base.editor.document().catalog().clone(),
+            )
+            .unwrap(),
+        );
+        let desktop = Desktop::default();
+        assert_eq!(desktop.sync_destination_validated(&port), validated);
+        assert_eq!(desktop.sync_wants_click(&port), !validated);
+        assert_eq!(desktop.sync_validate_wants_click(&port), !validated);
+        assert_eq!(
+            desktop.sync_action_label(&port),
+            if validated { "Synchronize" } else { "Validate" }
+        );
+        assert!(desktop.sync_action_enabled(&port));
+    }
+}
+
+#[test]
 fn completed_validation_keeps_synchronize_label_without_attention_animation() {
     let mut port = ReviewPort::new();
     port.show_review = false;
@@ -285,9 +312,70 @@ fn saved_snapshot_counts_use_the_project_steam_app_id_and_reject_another_destina
         assert_eq!(
             labels
                 .iter()
-                .any(|(label, _)| label == "Steam configuration loaded into this project."),
+                .any(|(label, _)| label == "Saved Steam snapshot"),
             current
         );
+    }
+}
+
+#[test]
+fn failed_retry_keeps_saved_snapshot_time_and_distinguishes_it_from_live_validation() {
+    for (verified_at, read_at, expected) in [
+        (
+            Some("2026-10-23T11:45:00.1234567+00:00"),
+            Some("2026-10-22T10:00:00Z"),
+            "Last successful check: 2026-10-23 11:45:00 UTC",
+        ),
+        (
+            None,
+            Some("2026-10-22T10:00:00Z"),
+            "Snapshot read at: 2026-10-22 10:00:00 UTC",
+        ),
+        (
+            None,
+            None,
+            "The check time was not recorded in this project.",
+        ),
+    ] {
+        let mut port = ReviewPort::new();
+        port.show_review = false;
+        let mut project = port.base.editor.document().project().clone();
+        project["lastRemoteSnapshot"] =
+            json!({"steamAppId":480,"stats":[null],"achievements":[null],"readAtUtc":read_at});
+        project["lastVerifiedAtUtc"] = json!(verified_at);
+        port.base.editor = Editor::new(
+            achimeld_application::Document::from_parts(
+                project,
+                port.base.editor.document().catalog().clone(),
+            )
+            .unwrap(),
+        );
+        let original = port.base.editor.document().clone();
+        let ctx = egui::Context::default();
+        configure_test_fonts(&ctx);
+        let mut desktop = Desktop::default();
+        for failed in [false, true] {
+            port.error = failed
+                .then(|| "Steam operation stopped while opening the Steamworks destination".into());
+            frame(&ctx, &mut desktop, &mut port, 480.0, vec![]);
+            let labels = frame(&ctx, &mut desktop, &mut port, 480.0, vec![]);
+            assert!(labels.iter().any(|(text, _)| text == expected));
+            assert!(
+                labels
+                    .iter()
+                    .any(|(text, _)| text == "Saved Steam snapshot")
+            );
+            assert_eq!(labels.iter().any(|(text, _)| text == "Latest validation or synchronization failed; showing previously saved Steam data."), failed);
+            assert!(
+                !labels
+                    .iter()
+                    .any(|(text, _)| text == "Validated and synchronized · no pending changes.")
+            );
+            assert_eq!(port.base.editor.document(), &original);
+            for (text, rect) in labels {
+                assert!(rect.right() <= 480.0, "Snapshot status clipped: {text}");
+            }
+        }
     }
 }
 
@@ -775,28 +863,34 @@ fn app_id_editor_validates_cancels_saves_and_rejects_stale_edits() {
 #[test]
 #[ignore = "Native synchronization preview; writes a screenshot under the external fixture directory"]
 fn native_synchronization_review_preview() {
-    native_preview(false, false, false);
+    native_preview(false, false, false, false);
 }
 
 #[test]
 #[ignore = "Native Steam App ID editor preview; writes a screenshot under the external fixture directory"]
 fn native_synchronization_app_id_preview() {
-    native_preview(true, false, false);
+    native_preview(true, false, false, false);
 }
 
 #[test]
 #[ignore = "Native synchronization guidance preview; writes a screenshot under the external fixture directory"]
 fn native_synchronization_guidance_preview() {
-    native_preview(false, true, false);
+    native_preview(false, true, false, false);
 }
 
 #[test]
 #[ignore = "Native validation guidance preview; writes a screenshot under the external fixture directory"]
 fn native_synchronization_validate_preview() {
-    native_preview(false, true, true);
+    native_preview(false, true, true, false);
 }
 
-fn native_preview(edit_app_id: bool, guidance: bool, has_app_id: bool) {
+#[test]
+#[ignore = "Native saved snapshot preview; writes a screenshot under the external fixture directory"]
+fn native_saved_snapshot_failure_preview() {
+    native_preview(false, false, false, true);
+}
+
+fn native_preview(edit_app_id: bool, guidance: bool, has_app_id: bool, saved_failure: bool) {
     use winit::platform::windows::EventLoopBuilderExtWindows as _;
     struct Window {
         port: ReviewPort,
@@ -835,7 +929,9 @@ fn native_preview(edit_app_id: bool, guidance: bool, has_app_id: bool) {
             ui.ctx().request_repaint();
         }
     }
-    let output = crate::test_output::root().join(if has_app_id {
+    let output = crate::test_output::root().join(if saved_failure {
+        "synchronization-saved-snapshot-failure.png"
+    } else if has_app_id {
         "synchronization-validate.png"
     } else if guidance {
         "synchronization-guidance.png"
@@ -858,6 +954,14 @@ fn native_preview(edit_app_id: bool, guidance: bool, has_app_id: bool) {
             let mut desktop = Desktop::default();
             desktop.view = desktop::View::Sync;
             let mut port = ReviewPort::new();
+            if saved_failure {
+                port.show_review = false;
+                port.error = Some("Steam operation stopped while opening the Steamworks destination: Browser request policy blocked an unsupported request".into());
+                let mut project = port.base.editor.document().project().clone();
+                project["lastRemoteSnapshot"] = json!({"steamAppId":480,"stats":[null,null,null,null,null,null,null,null],"achievements":[null]});
+                project["lastVerifiedAtUtc"] = json!("2026-10-23T11:45:00Z");
+                port.base.editor = Editor::new(achimeld_application::Document::from_parts(project, port.base.editor.document().catalog().clone()).unwrap());
+            }
             if edit_app_id || guidance {
                 port.show_review = false;
                 set_app_id(&mut port.base, if has_app_id { 4_670_140 } else { 0 });

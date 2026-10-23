@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$CurrentBuildPath)
 $ErrorActionPreference = 'Stop'
-$launcher = (Resolve-Path -LiteralPath (Join-Path $CurrentBuildPath 'Run-Achimeld.ps1')).Path
 $bootstrapper = (Resolve-Path -LiteralPath (Join-Path $CurrentBuildPath 'package/Achimeld.exe')).Path
 $desktop = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
 if (!$desktop -or !(Test-Path -LiteralPath $desktop -PathType Container)) {
@@ -11,9 +10,9 @@ $shortcutPath = Join-Path $desktop 'achimeld.lnk'
 $workingDirectory = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = Join-Path $PSHOME 'pwsh.exe'
-$shortcut.Arguments = '-NoLogo -NoProfile -WindowStyle Hidden -File "' + $launcher + '"'
-$shortcut.WorkingDirectory = $workingDirectory
+$shortcut.TargetPath = $bootstrapper
+$shortcut.Arguments = ''
+$shortcut.WorkingDirectory = Split-Path -Parent $bootstrapper
 $shortcut.IconLocation = $bootstrapper + ',0'
 $shortcut.Description = 'Run the current verified Achimeld build without administrator approval.'
 $shortcut.WindowStyle = 1

@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
+& (Join-Path $PSScriptRoot 'Test-BuildAndRun.ps1')
 . (Join-Path $PSScriptRoot 'BuildPaths.ps1')
 $repository = Split-Path -Parent $PSScriptRoot
 $first = Get-AchimeldBuildPaths -Date ([datetime]::new(2026,12,31))
@@ -25,8 +26,18 @@ foreach ($project in Get-ChildItem -LiteralPath @((Join-Path $repository 'bridge
     }
 }
 # Scan ignored files too: ignoring binaries does not prevent local build leakage.
-$files = & rg --files --hidden --no-ignore -g '!.git/**' $repository
-if ($LASTEXITCODE -ne 0) { throw 'Cannot scan source tree.' }
+$files = [Collections.Generic.List[string]]::new()
+$directories = [Collections.Generic.Stack[string]]::new()
+$directories.Push($repository)
+while ($directories.Count) {
+    $directory = $directories.Pop()
+    foreach ($item in Get-ChildItem -LiteralPath $directory -Force) {
+        if ($directory -eq $repository -and $item.Name -eq '.git') { continue }
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Cannot scan reparse source entry: $($item.FullName)" }
+        if ($item.PSIsContainer) { $directories.Push($item.FullName) }
+        else { $files.Add($item.FullName) }
+    }
+}
 $binaries = @($files | Where-Object { [IO.Path]::GetExtension($_) -in @('.exe','.dll','.pdb','.lib','.obj','.rlib','.rmeta','.nupkg','.so','.dylib','.a','.o','.wasm') })
 if ($binaries.Count) { throw ('Compiled binaries remain in source: ' + ($binaries -join ', ')) }
 Write-Output 'External Rust/.NET storage, stable current paths, date rollover and source binary scan passed.'

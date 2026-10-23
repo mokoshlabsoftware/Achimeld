@@ -23,10 +23,16 @@ internal static class WorkerFailure
         BrowserRequestRejection.Script => 205, BrowserRequestRejection.Stylesheet => 206,
         BrowserRequestRejection.Image => 207, BrowserRequestRejection.Font => 208,
         BrowserRequestRejection.Dynamic => 209, BrowserRequestRejection.WebSocket => 210,
-        BrowserRequestRejection.Other => 211, _ => 125,
+        BrowserRequestRejection.Other => 211, BrowserRequestRejection.Ping => 212,
+        BrowserRequestRejection.Media => 213, BrowserRequestRejection.Manifest => 214,
+        BrowserRequestRejection.EventSource => 215, BrowserRequestRejection.UnavailableFrame => 216, _ => 125,
     };
     internal static string Code(string operation, Exception exception, BrowserRequestRejection rejection = BrowserRequestRejection.None) => rejection != BrowserRequestRejection.None
         ? rejection switch {
+            BrowserRequestRejection.OtherPage => "steam.request.other-page",
+            BrowserRequestRejection.Ping => "steam.request.ping", BrowserRequestRejection.Media => "steam.request.media",
+            BrowserRequestRejection.Manifest => "steam.request.manifest", BrowserRequestRejection.EventSource => "steam.request.eventsource",
+            BrowserRequestRejection.UnavailableFrame => "steam.request.frame-unavailable",
             BrowserRequestRejection.PartnerHome => "steam.request.home", BrowserRequestRejection.PartnerDashboard => "steam.request.dashboard",
             BrowserRequestRejection.Navigation => "steam.request.navigation", BrowserRequestRejection.Script => "steam.request.script",
             BrowserRequestRejection.Stylesheet => "steam.request.stylesheet", BrowserRequestRejection.Image => "steam.request.image",

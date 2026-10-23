@@ -649,6 +649,13 @@ impl Desktop {
                                     self.open_change_log();
                                     ui.close();
                                 }
+                                if ui
+                                    .app_button(crate::localization::text(ui.ctx(), "Connect MCP"))
+                                    .clicked()
+                                {
+                                    self.open_connect_mcp();
+                                    ui.close();
+                                }
                             }
                         },
                     );

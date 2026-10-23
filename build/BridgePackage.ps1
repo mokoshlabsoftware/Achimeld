@@ -22,7 +22,12 @@ $env:DOTNET_CLI_HOME=Join-Path $env:ACHIMELD_CACHE_ROOT 'dotnet-home'
 $env:NUGET_PACKAGES=Join-Path $env:ACHIMELD_CACHE_ROOT 'nuget'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
 $env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
-& dotnet run --project (Join-Path $repositoryRoot 'tools/bridge-package/BridgePackage.csproj') -- --development $repositoryRoot $package
+# Each invocation owns its signer binaries: another build may still be running
+# its signer while waiting for Rust. Never overwrite that process's executable.
+$signerArtifacts = Join-Path $env:ACHIMELD_ARTIFACT_ROOT ('bridge-signer-' + [Guid]::NewGuid().ToString('N'))
+& dotnet build (Join-Path $repositoryRoot 'tools/bridge-package/BridgePackage.csproj') "-p:ArtifactsPath=$signerArtifacts"
+if ($LASTEXITCODE -ne 0) { throw 'Development signing tool build failed.' }
+& dotnet (Join-Path $signerArtifacts 'bin/BridgePackage/debug/BridgePackage.dll') --development $repositoryRoot $package
 if ($LASTEXITCODE -ne 0) { throw 'Development signing/build failed.' }
 $package = & (Join-Path $PSScriptRoot 'Publish-CurrentBuild.ps1') -PackagePath $package
 Write-Output ('Verified development package: '+$package)

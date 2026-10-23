@@ -159,6 +159,24 @@ impl WorkerResponse {
             // Map only declared codes to static text. Never echo an unknown code
             // or serialize worker exceptions/response payloads into diagnostics.
             if let Some(message) = match self.error_code.as_deref() {
+                Some("steam.request.other-page") => {
+                    Some("Browser request policy blocked a request from an unowned page")
+                }
+                Some("steam.request.ping") => {
+                    Some("Browser request policy blocked a ping or beacon request")
+                }
+                Some("steam.request.media") => {
+                    Some("Browser request policy blocked a media request")
+                }
+                Some("steam.request.manifest") => {
+                    Some("Browser request policy blocked a web manifest request")
+                }
+                Some("steam.request.eventsource") => {
+                    Some("Browser request policy blocked an event stream request")
+                }
+                Some("steam.request.frame-unavailable") => {
+                    Some("Browser request policy could not verify the requesting frame")
+                }
                 Some("steam.request.home") => {
                     Some("Browser request policy blocked the Steamworks home redirect")
                 }
@@ -272,7 +290,13 @@ impl WorkerResponse {
 
 pub(crate) fn exit_diagnostic(code: u32) -> Option<&'static str> {
     let code = match code {
-        201 | 211 => "steam.request.rejected",
+        201 => "steam.request.other-page",
+        211 => "steam.request.rejected",
+        212 => "steam.request.ping",
+        213 => "steam.request.media",
+        214 => "steam.request.manifest",
+        215 => "steam.request.eventsource",
+        216 => "steam.request.frame-unavailable",
         202 => "steam.request.navigation",
         203 => "steam.request.home",
         204 => "steam.request.dashboard",
@@ -298,14 +322,14 @@ mod tests {
     use super::*;
     #[test]
     fn monitor_exit_diagnostics_accept_only_the_declared_codes() {
-        for code in 201..=211 {
+        for code in 201..=216 {
             assert!(
                 exit_diagnostic(code)
                     .unwrap()
-                    .starts_with("Browser request policy blocked")
+                    .starts_with("Browser request policy")
             );
         }
-        for code in [0, 1, 125, 200, 212, u32::MAX] {
+        for code in [0, 1, 125, 200, 217, u32::MAX] {
             assert!(exit_diagnostic(code).is_none());
         }
     }

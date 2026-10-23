@@ -254,7 +254,10 @@ impl Desktop {
             }
         }
         if let Some((_, error)) = self.localization_drafts.get(&draft_key) {
-            ui.colored_label(ui.visuals().error_fg_color, error);
+            ui.add(
+                egui::Label::new(egui::RichText::new(error).color(ui.visuals().error_fg_color))
+                    .wrap(),
+            );
         }
         if response.lost_focus() {
             port.finish_group();

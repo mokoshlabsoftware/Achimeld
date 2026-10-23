@@ -19,9 +19,10 @@ public static class BrowserRequestGuard
                 allowed = ReferenceEquals(request.Frame.Page, ownedPage()) &&
                     Uri.TryCreate(request.Url, UriKind.Absolute, out Uri? uri) &&
                     policy.Allows(request.Method, uri, request.ResourceType, request.IsNavigationRequest);
-                if (!allowed) rejection = DescribeRejection(request);
+                if (!allowed) rejection = ReferenceEquals(request.Frame.Page, ownedPage())
+                    ? DescribeRejection(request) : BrowserRequestRejection.OtherPage;
             }
-            catch (PlaywrightException) { }
+            catch (PlaywrightException) { rejection = BrowserRequestRejection.UnavailableFrame; }
             catch (UriFormatException) { }
             if (!allowed)
             {
@@ -56,7 +57,10 @@ public static class BrowserRequestGuard
         return request.ResourceType switch {
             "script" => BrowserRequestRejection.Script, "stylesheet" => BrowserRequestRejection.Stylesheet,
             "image" => BrowserRequestRejection.Image, "font" => BrowserRequestRejection.Font,
-            "xhr" or "fetch" => BrowserRequestRejection.Dynamic, _ => BrowserRequestRejection.Other,
+            "xhr" or "fetch" => BrowserRequestRejection.Dynamic,
+            "ping" => BrowserRequestRejection.Ping, "media" => BrowserRequestRejection.Media,
+            "manifest" => BrowserRequestRejection.Manifest, "eventsource" => BrowserRequestRejection.EventSource,
+            _ => BrowserRequestRejection.Other,
         };
     }
 }

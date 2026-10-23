@@ -68,6 +68,9 @@ try {
         $env:PATH = $auxiliaryPath + ';' + $env:PATH
     }
     if ($CargoArguments.Count -lt 1) { throw 'Supply a Cargo command.' }
+    if ($CargoArguments[0] -in @('build', 'run', 'check', 'test', 'clippy')) {
+        & (Join-Path $PSScriptRoot 'Resize-ToolbarIcons.ps1')
+    }
     $cargoCommandName = $CargoArguments[0]
     $cargoRemainingArguments = @($CargoArguments | Select-Object -Skip 1)
     & $cargoPath $cargoCommandName --manifest-path (Join-Path $repositoryRoot 'Cargo.toml') @cargoRemainingArguments
@@ -83,3 +86,4 @@ try {
         [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], 'Process')
     }
 }
+

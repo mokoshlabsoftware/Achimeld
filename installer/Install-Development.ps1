@@ -11,7 +11,7 @@ if (!$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 $source = (Resolve-Path -LiteralPath $PackagePath).Path
 $manifest = Get-Content -LiteralPath (Join-Path $source 'manifest.json') -Raw | ConvertFrom-Json
 if ($manifest.mode -ne 'development' -or $manifest.product -ne 'Achimeld' -or $manifest.version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$' -or $manifest.keyId -notmatch '^[a-f0-9]{64}$') { throw 'This script accepts locally built development packages only.' }
-$installationRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'Achimeld-Development'
+$installationRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'Mokosh Labs\Achimeld'
 function Assert-NoReparse([string]$Path) {
     $candidate = [IO.Path]::GetFullPath($Path)
     while ($candidate) {
@@ -37,7 +37,7 @@ function Assert-Verifier([IO.Stream]$Stream) {
     if ($actual -ne $ExpectedVerifierSha256.ToLowerInvariant()) { throw 'Verifier differs from the independently selected build digest; no executable was run.' }
 }
 Assert-NoReparse $installationRoot
-$target = [IO.Path]::GetFullPath((Join-Path $installationRoot ($manifest.version + '-' + $manifest.keyId.Substring(0,16))))
+$target = [IO.Path]::GetFullPath((Join-Path $installationRoot 'Application'))
 $boundary = [IO.Path]::GetFullPath($installationRoot) + [IO.Path]::DirectorySeparatorChar
 if (!$target.StartsWith($boundary, [StringComparison]::OrdinalIgnoreCase)) { throw 'Installation boundary rejected.' }
 if ($Uninstall) {
@@ -52,7 +52,7 @@ if ($Uninstall) {
     Remove-Item -LiteralPath $target -Recurse -Force
     return
 }
-if (Test-Path -LiteralPath $target) { throw 'This development version is already installed. Uninstall it explicitly before replacing it.' }
+
 New-Item -ItemType Directory -Force -Path $installationRoot | Out-Null
 $readableAcl = New-PackageAcl $true
 Set-Acl -LiteralPath $installationRoot -AclObject $readableAcl
@@ -101,6 +101,45 @@ try {
         $itemAcl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))
         $itemAcl.SetAccessRuleProtection($false, $false)
         Set-Acl -LiteralPath $item.FullName -AclObject $itemAcl
+    }
+    # Authenticate the replacement before removing any installed package.
+    # Only fixed administrator-owned installation roots are migration inputs.
+    $legacyRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'Achimeld-Development'
+    foreach ($oldRoot in @($installationRoot, $legacyRoot)) {
+        Assert-NoReparse $oldRoot
+        if (!(Test-Path -LiteralPath $oldRoot)) { continue }
+        foreach ($old in Get-ChildItem -LiteralPath $oldRoot -Directory -Force) {
+            if ($old.Name -ne 'Application' -and $old.Name -notmatch '^\d+\.\d+\.\d+-[a-f0-9]{16}$') { continue }
+            $oldPath = [IO.Path]::GetFullPath($old.FullName)
+            if (!( $oldPath.StartsWith([IO.Path]::GetFullPath($oldRoot) + '\', [StringComparison]::OrdinalIgnoreCase))) { throw 'Upgrade cleanup boundary rejected.' }
+            Assert-NoReparse $oldPath
+            $oldExe = Join-Path $oldPath 'Achimeld.exe'
+            if (!(Test-Path -LiteralPath $oldExe -PathType Leaf)) { throw 'Previous installation is incomplete; repair it before upgrading.' }
+            # Refuse elevation through a writable or redirected legacy payload.
+            foreach ($entry in @((Get-Item -LiteralPath $oldPath)) + @(Get-ChildItem -LiteralPath $oldPath -Recurse -Force)) {
+                if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Redirected previous installation rejected.' }
+                $acl = Get-Acl -LiteralPath $entry.FullName
+                $owner = $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value
+                if ($owner -notin @('S-1-5-18','S-1-5-32-544')) { throw 'Previous installation is not administrator owned.' }
+                foreach ($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+                    if ($rule.AccessControlType -eq 'Allow' -and $rule.IdentityReference.Value -notin @('S-1-5-18','S-1-5-32-544') -and
+                        ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Write)) { throw 'Previous installation has unsafe write permissions.' }
+                }
+            }
+            & $oldExe --remove-policy
+            if ($LASTEXITCODE -ne 0) { throw 'Previous network policy removal failed; upgrade stopped.' }
+            Remove-Item -LiteralPath $oldPath -Recurse -Force
+            if ($old.Name -ne 'Application') {
+                $registration = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Achimeld-Development-' + $old.Name + '_is1'
+                if (Test-Path -LiteralPath $registration) { Remove-Item -LiteralPath $registration -Recurse -Force }
+                $oldUninstaller = Join-Path $oldRoot ('uninstall-' + $old.Name)
+                Assert-NoReparse $oldUninstaller
+                if (Test-Path -LiteralPath $oldUninstaller) {
+                    foreach ($entry in Get-ChildItem -LiteralPath $oldUninstaller -Recurse -Force) { Assert-NoReparse $entry.FullName }
+                    Remove-Item -LiteralPath $oldUninstaller -Recurse -Force
+                }
+            }
+        }
     }
     Move-Item -LiteralPath $stage -Destination $target
     & (Join-Path $target 'Achimeld.exe') --install-policy

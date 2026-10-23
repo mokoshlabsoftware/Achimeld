@@ -60,8 +60,9 @@ fn text_content_link_toggles_both_layer_types_with_undo_and_keyboard() {
                 assert_eq!(rows.fixture.editor.document(), &before);
                 rows.fixture.redo();
                 assert_eq!(rows.fixture.editor.document(), &linked);
-                rows.ctx
-                    .memory_mut(|memory| memory.request_focus(toggle_id));
+                rows.ctx.memory_mut(|memory| {
+                    memory.request_focus(crate::text_content::control_id(&id, "source"))
+                });
                 rows.repeat_layout = true;
                 rows.frame(vec![egui::Event::Key {
                     key: egui::Key::Space,
@@ -106,7 +107,7 @@ fn text_content_link_toggles_both_layer_types_with_undo_and_keyboard() {
 }
 
 #[test]
-fn text_content_trailing_toggle_fits_narrow_rows_at_larger_fonts_and_scales() {
+fn text_content_source_buttons_fit_narrow_rows_at_larger_fonts_and_scales() {
     for width in [150.0, 220.0, 420.0] {
         for font in [13.0, 24.0] {
             for scale in [1.0, 1.5, 2.0] {
@@ -138,6 +139,10 @@ fn text_content_trailing_toggle_fits_narrow_rows_at_larger_fonts_and_scales() {
                     output.textures_delta.clear();
                 }
                 assert_eq!(text, original, "Viewing old recipes must not add a flag");
+                let source = ctx
+                    .read_response(crate::text_content::control_id("sample", "source"))
+                    .unwrap()
+                    .rect;
                 let toggle = ctx
                     .read_response(crate::text_content::control_id("sample", "link"))
                     .unwrap()
@@ -151,8 +156,11 @@ fn text_content_trailing_toggle_fits_narrow_rows_at_larger_fonts_and_scales() {
                     toggle.right() <= width + 0.5,
                     "{width}/{font}/{scale}: {field:?} {toggle:?}"
                 );
-                assert!((field.right() - toggle.left()).abs() <= 0.5);
+                assert!((field.right() - source.left()).abs() <= 0.5);
+                assert!((source.right() - toggle.left()).abs() <= 0.5);
+                assert!((field.center().y - source.center().y).abs() <= 0.5);
                 assert!((field.center().y - toggle.center().y).abs() <= 0.5);
+                assert_eq!(source.width(), source.height());
                 assert_eq!(toggle.width(), toggle.height());
             }
         }

@@ -63,7 +63,7 @@ Double-click `build-and-run.bat` to build a fresh signed development package and
 
 Every build-and-run invocation (including `--build-only` and the desktop build shortcut) deletes obsolete worker fixtures, temporary package folders and signing inputs only after the new package passes verification. Rust/.NET outputs are retained for incremental builds, along with the current runnable package, dated archives, dependency/toolchain cache and audit evidence. Failed builds retain their temporary outputs for diagnosis until a later successful build. Running the current package without rebuilding does not clean artifacts. Cleanup stops on locked files or directory links. Compiler output and elapsed-time updates remain visible during packaging.
 
-After a successful build and archive verification, `achimeld.lnk` on your desktop points to `C:\Projects\AchimeldBuild\current\Run-Achimeld.ps1`. It follows the current verified package without rebuilding or installing. The desktop build-and-run shortcut points directly to the authoritative `C:\Projects\Achimeld\achimeld\build-and-run.bat` in this source repository. This builds into `C:\Projects\AchimeldBuild\current` by default. It survives deletion of the entire `current` directory and rebuilds it before archiving and launching. The permanent `build-and-run.bat` is in the repository root. Build-only runs refresh both shortcuts.
+After a successful build and archive verification, `achimeld.lnk` on your desktop points directly to `C:\Projects\AchimeldBuild\current\package\Achimeld.exe`. It follows the current verified package without rebuilding or installing. The desktop build-and-run shortcut points directly to the authoritative `C:\Projects\Achimeld\achimeld\build-and-run.bat` in this source repository. This builds into `C:\Projects\AchimeldBuild\current` by default. It survives deletion of the entire `current` directory and rebuilds it before archiving and launching. The permanent `build-and-run.bat` is in the repository root. Build-only runs refresh both shortcuts.
 
 ### What can I delete?
 
@@ -80,14 +80,13 @@ To recover after deleting `current`, use the desktop **achimeld build and run** 
 
 Successful builds refresh three desktop shortcuts: **achimeld build and run** builds and launches, **achimeld** runs the current verified app without rebuilding, and **achimeld build guide** opens this repository README.
 
-`--protected` explicitly selects administrator-installed package ACLs and Windows network isolation. It installs each signed development build into its own version/key folder under `C:\Program Files\Achimeld-Development`, then launches with `Achimeld.exe --protected`. A missing/changed policy fails the protected session without falling back to a user session. Canceling approval keeps the build and archive. Old protected installations and their policies are retained until explicitly uninstalled.
+Build and Run is only for local testing. It launches `C:\Projects\AchimeldBuild\current\package\Achimeld.exe`, prints that path before launch, and never installs, uninstalls or writes application files in Program Files. The batch file and generated launchers reject the former protected-install option. Ready builds use the separate installer; see the private publishing guide. Existing installed copies remain independent of local test builds.
 
-Build storage is normal-user data: deleting outputs, caches or dated archives does not require administrator approval. Launchers use working directories outside build storage, and installer logs are created by the normal-user launcher. Close older app/launcher windows before deleting a directory they still have open; elevation does not resolve an in-use directory. Administrator approval is reserved for the protected installed package and its machine-wide network policy.
+Build storage is normal-user data: deleting outputs, caches or dated archives does not require administrator approval. Launchers use working directories outside build storage. Close older app/launcher windows before deleting a directory they still have open; elevation does not resolve an in-use directory. Administrator approval is reserved for the separate installer and its machine-wide network policy.
 
 ```bat
 build-and-run.bat --offline
 build-and-run.bat --offline --build-only
-build-and-run.bat --offline --protected
 ```
 
 `--offline` requires cached dependencies and the verified browser archive. `--build-only` builds, verifies, archives and updates the current-build shortcut without installing or launching. The batch file requires the development tools listed above. A double-click run keeps the console open after exit to show diagnostics. Use `--help` for usage. Direct launch of `achimeld-app.exe` is rejected because mandatory supervision is part of the application contract.
@@ -102,3 +101,7 @@ C:/Projects/AchimeldBuild/current/target/debug/achimeld-inspect.exe project C:/p
 ```
 
 The inspector does not launch a browser. The compatibility oracle uses local domain, parser and wire source. `build/RecordBaseline.ps1` records their current source hashes; changed vectors require deliberate review. Ordinary Rust tests consume committed vectors.
+
+## License
+
+Achimeld is licensed under the [Apache License, Version 2.0](LICENSE). Third-party components retain their own licenses and notices. The license does not grant permission to use trademarks.

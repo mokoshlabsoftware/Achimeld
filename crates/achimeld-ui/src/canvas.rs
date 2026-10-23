@@ -749,6 +749,16 @@ impl Desktop {
         self.animate_icon_pan(ui, port, rect, labels);
         let cell = Vec2::splat(GRID_SIZE * self.zoom);
         let origin = rect.min + self.pan;
+        // The press position belongs to the canvas world. Keep it in the same
+        // coordinate system as the cards when the camera changes mid-drag.
+        if let Some(drag) = &mut self.node_drag {
+            drag.pointer_start = origin
+                + (drag.pointer_start - (rect.min + before_camera.1))
+                    * (self.zoom / before_camera.0);
+            if let Some(pointer) = ui.input(|input| input.pointer.interact_pos()) {
+                drag.delta = pointer - drag.pointer_start;
+            }
+        }
         let grid = theme::color(p, "Grid");
         let step = GRID_SIZE * self.zoom;
         let mut x = rect.left() + (self.pan.x % step + step) % step;
