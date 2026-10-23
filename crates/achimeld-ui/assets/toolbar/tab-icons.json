@@ -1,0 +1,25 @@
+{
+  "generator": "Built-in image_gen tool",
+  "icons": [
+    {
+      "name": "achievements",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster icon asset, not a screenshot. Subject: an achievement trophy cup, two handles and a short sturdy pedestal."
+    },
+    {
+      "name": "stats",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster icon asset, not a screenshot. Subject: a statistical chart of three ascending vertical columns with a short baseline."
+    },
+    {
+      "name": "sync",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster icon asset, not a screenshot. Subject: synchronize, two broad curved arrows chasing each other in opposite directions, recognizable refresh silhouette."
+    },
+    {
+      "name": "steam",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster icon asset, not a screenshot. Subject: the recognizable Steam connecting rod and wheel emblem, a small lower left hub connected diagonally to a larger upper right ring. White silhouette and transparent negative space."
+    },
+    {
+      "name": "art-bank",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster icon asset, not a screenshot. Subject: an art library, two overlapping landscape picture frames, front image with a mountain silhouette and small sun cutout."
+    }
+  ]
+}

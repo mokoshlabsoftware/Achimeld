@@ -1,0 +1,6 @@
+{
+  "provider": "built-in image_gen through imagegen skill",
+  "generatedSource": "layer-particle-source.png",
+  "prompt": "Use case: logo-brand. Asset type: production particle-layer raster icon for Achimeld desktop image editor. Primary request: one monochrome pure-white particle burst glyph on a genuinely transparent background: a loose cluster of seven bold particles, mixing three circles, two four-point sparkles and two small hexagons, with varied sizes and clear gaps. Style: crisp flat white silhouette, smooth antialiased edges, consistent substantial visual weight, readable at 20 pixels alongside the reference Shape layer icon. Composition: centered square canvas, balanced padding, glyph occupies about 78 percent. No background, no button tile, no canvas border, no shadow, no glow, no texture, no label, no text, no watermark. Preserve genuinely transparent empty space. Save a single icon.",
+  "embedding": "64 x 64 white RGBA8 pixels with generated alpha preserved and centered; linear mipmaps"
+}

@@ -1,0 +1,48 @@
+{
+  "generator": "Built-in image_gen tool",
+  "icons": [
+    {
+      "name": "layer-action-create",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: A simple PLUS sign only: two equal straight perpendicular bars, centered, perfectly balanced.",
+      "source": "layer-action-create-source.png",
+      "embedded": "layer-action-create.rgba"
+    },
+    {
+      "name": "layer-action-folder",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: An empty folder outline with one small upper-left folder tab and a flat bottom, simple front-facing outline.",
+      "source": "layer-action-folder-source.png",
+      "embedded": "layer-action-folder.rgba"
+    },
+    {
+      "name": "layer-action-up",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: One upward arrow: a straight vertical shaft and two diagonal strokes forming a wide arrowhead at the top.",
+      "source": "layer-action-up-source.png",
+      "embedded": "layer-action-up.rgba"
+    },
+    {
+      "name": "layer-action-down",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: One downward arrow: a straight vertical shaft and two diagonal strokes forming a wide arrowhead at the bottom.",
+      "source": "layer-action-down-source.png",
+      "embedded": "layer-action-down.rgba"
+    },
+    {
+      "name": "layer-action-delete",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: A simple wastebasket: a squared bin outline, a separate horizontal lid with small handle, and two short vertical slots.",
+      "source": "layer-action-delete-source.png",
+      "embedded": "layer-action-delete.rgba"
+    },
+    {
+      "name": "layer-action-import",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: Import an image: a simple landscape picture frame with one small mountain silhouette and a clear downward arrow entering the top edge. Compact, very simple, bold.",
+      "source": "layer-action-import-source.png",
+      "embedded": "layer-action-import.rgba"
+    },
+    {
+      "name": "layer-action-background",
+      "prompt": "Use case: logo-brand. Asset type: production toolbar glyph for Achimeld desktop image editor. Generate ONE flat monochrome pure-white UI icon on a genuinely transparent background, a square canvas, crisp bold strokes with smooth antialiased edges, consistent stroke weight about 8 percent of glyph width. Center the symbol both horizontally and vertically, symbol occupies about 72 percent of canvas with equal transparent margins. Readable at 18 pixels. No tile, no button body, no background rectangle, no colored background, no shadow, no glow, no texture, no grunge, no labels, no watermark. Subject: Icon background color: a tilted paint bucket outline with one small solid paint droplet. Simple bold shape, representing the base color behind image layers.",
+      "source": "layer-action-background-source.png",
+      "embedded": "layer-action-background.rgba"
+    }
+  ],
+  "embedding": "64 x 64 RGBA8, resized from the original transparent generated artwork with alpha preserved and RGB normalized to white for palette tinting."
+}

@@ -1,0 +1,644 @@
+ID,Context,English,Polish,ChineseSimplified,ChineseTraditional,Japanese,Korean,French
+MenuWindows,Menu,Windows,Okna,窗口,視窗,ウィンドウ,창,Fenêtres
+MenuResetLayout,Menu,Reset layout,Resetuj układ,重置布局,重設版面配置,レイアウトをリセット,레이아웃 초기화,Réinitialiser la disposition
+LyReferenceMask,Layers,Reference mask,Maska referencyjna,,,,,
+LyMaskSourceLayer,Layers,Source layer,Warstwa źródłowa,,,,,
+LyMaskReferenceHint,Layers,Copies the source layer’s mask and inversion. Updates with the source.,Kopiuje maskę i odwrócenie warstwy źródłowej. Aktualizuje się razem ze źródłem.,,,,,
+LyMaskNoSource,Layers,No source mask: fully reveals.,Brak maski źródłowej: pełna widoczność.,,,,,
+LyMaskGrayHint,Layers,White reveals. Black hides.,Biel odsłania. Czerń ukrywa.,,,,,
+LyMaskLegacyAlpha,Layers,Legacy transparency mask,Starsza maska przezroczystości,,,,,
+LyMaskToGray,Layers,Use grayscale mask,Użyj maski w skali szarości,,,,,
+LyMaskGrayValue,Color,Gray,Szarość,,,,,
+LyReroll,Layers,Re-roll all random layers,Wylosuj ponownie wszystkie warstwy losowe,,,,,
+LyUseMask,Layers,Use mask,Użyj maski,,,,,
+LyMaskSource,Layers,Mask source,Źródło maski,,,,,
+LyRmMask,Layers,Remove mask,Odłącz maskę,,,,,
+LyDelMask,Layers,Delete mask,Usuń maskę,,,,,
+LyAddMask,Layers,Add mask,Dodaj maskę,,,,,
+LyReplaceMask,Layers,Replace mask,Zastąp maskę,,,,,
+LyUseMaskFrom,Layers,Use mask from,Użyj maski z,,,,,
+LyReferenceMaskTo,Layers,Reference mask to,Udostępnij maskę warstwie,,,,,
+LyInvertMask,Layers,Invert mask,Odwróć maskę,,,,,
+LyOutFolder,Layers,Remove from folder,Wyjmij z folderu,,,,,
+SvInv,Layers,Invert vignette,Odwróć winietę,,,,,
+SvInHt,Layers,Fill the center instead of the edges.,Wypełnij środek zamiast krawędzi.,,,,,
+SvFill,Layers,Fill,Wypełnienie,,,,,
+SvGrad,Layers,Gradient map,Mapa gradientu,,,,,
+SvHint,Layers,Stops follow the fade from transparent to full strength.,Punkty gradientu odpowiadają przejściu od przezroczystości do pełnego krycia.,,,,,
+UnTxHt,Localization,Use {0} in names or descriptions to insert the unlock value.,Użyj {0} w nazwach lub opisach aby wstawić wartość odblokowania.,在名称或描述中使用 {0} 插入解锁值。,在名稱或描述中使用 {0} 插入解鎖值。,名前や説明に {0} を使うと解除値が入ります。,이름이나 설명에 {0}을 사용하면 잠금 해제 값이 삽입됩니다.,Utilisez {0} dans les noms ou descriptions pour insérer la valeur de déblocage.
+UnTxPr,Localization,Preview,Podgląd,预览,預覽,プレビュー,미리 보기,Aperçu
+PRLYPV,Preferences,Show finished icon preview in Layers,Pokaż podgląd gotowej ikony w Warstwach,显示图层中的成品图标预览,顯示圖層中的成品圖示預覽,レイヤーに完成アイコンを表示,레이어에 완성 아이콘 미리보기 표시,Afficher l’aperçu de l’icône dans Calques
+PRLYCN,Preferences,Show connections to affected icons,Pokaż połączenia z edytowanymi ikonami,显示受影响图标的连接,顯示受影響圖示的連線,変更対象アイコンへの接続を表示,영향받는 아이콘 연결 표시,Afficher les connexions aux icônes concernées
+PRLYCL,Palette,Layer connection lines,Linie połączeń warstw,图层连接线,圖層連線,レイヤー接続線,레이어 연결선,Lignes de connexion des calques
+PRNOUT,Palette,Selected icon outline,Obramowanie wybranej ikony,选中图标边框,選取圖示框線,選択アイコンの枠線,선택 아이콘 테두리,Contour de l’icône sélectionnée
+PRNSHD,Palette,Node focus overlay,Przyciemnienie węzłów,节点聚焦遮罩,節點聚焦遮罩,ノードのフォーカスオーバーレイ,노드 강조 오버레이,Voile de focus des nœuds
+LyAfSt,Layers,AFFECT STYLE enabled,ZMIANA STYLU włączona,样式编辑已启用,樣式編輯已啟用,スタイル編集有効,스타일 편집 활성화,MODIFIER LE STYLE activé
+LyAfIc,Layers,AFFECT ICON enabled,ZMIANA IKONY włączona,图标编辑已启用,圖示編輯已啟用,アイコン編集有効,아이콘 편집 활성화,MODIFIER L’ICÔNE activé
+PRCANA,Preferences,Canvas colors,Kolory obszaru roboczego,画布颜色,畫布色彩,キャンバスの色,캔버스 색상,Couleurs du canevas
+PRBGTP,Preferences,Background top,Tło u góry,背景顶部,背景頂部,背景の上部,배경 위쪽,Fond en haut
+PRBGBT,Preferences,Background bottom,Tło u dołu,背景底部,背景底部,背景の下部,배경 아래쪽,Fond en bas
+PRGRID,Preferences,Grid,Siatka,网格,網格,グリッド,격자,Grille
+PRBGMP,Preferences,Gradient midpoint,Środek gradientu,渐变中点,漸層中點,グラデーションの中間点,그라데이션 중간점,Point médian du dégradé
+HPMENU,Menu,Help,Pomoc,帮助,說明,ヘルプ,도움말,Aide
+HPABOU,Menu,About,O aplikacji,关于,關於,このアプリについて,정보,À propos
+HPCHLG,Menu,Change log,Historia zmian,更改日志,變更記錄,変更履歴,변경 기록,Historique des modifications
+HPVERS,About,Version,Wersja,版本,版本,バージョン,버전,Version
+HPHIST,About,Newest changes first. History starts with version tracking.,Najnowsze zmiany na górze. Historia zaczyna się od wprowadzenia wersjonowania.,,,,,
+GrInCh,Gradient,Input channel,Kanał wejściowy,输入通道,輸入通道,入力チャンネル,입력 채널,Canal d’entrée
+WkGrid,Working area,Node grid settings,Ustawienia siatki węzłów,,,,,
+WkSort,Working area,Sort,Sortuj,,,,,
+WkAcRw,Working area,Achievements per row,Osiągnięcia w wierszu,,,,,
+WkStRw,Working area,Stats per row,Statystyki w wierszu,,,,,
+WkAlgn,Working area,Align,Wyrównaj,对齐,對齊,整列,정렬,Aligner
+TfCopy,Transform,Copy transform,Kopiuj transformację,复制变换,複製變換,変形をコピー,변환 복사,Copier la transformation
+TfPast,Transform,Paste transform,Wklej transformację,粘贴变换,貼上變換,変形を貼り付け,변환 붙여넣기,Coller la transformation
+SyChAc,Synchronization,Open achievements in Chrome,Otwórz osiągnięcia w Chrome,在 Chrome 中打开成就,在 Chrome 中開啟成就,Chrome で実績を開く,Chrome에서 업적 열기,Ouvrir les succès dans Chrome
+SyChSt,Synchronization,Open stats in Chrome,Otwórz statystyki w Chrome,在 Chrome 中打开统计数据,在 Chrome 中開啟統計資料,Chrome で統計を開く,Chrome에서 통계 열기,Ouvrir les statistiques dans Chrome
+FIMENU,Menu,File,Plik,文件,檔案,ファイル,파일,Fichier
+FINEWW,Menu,New,Nowy,新建,新增,新規,새로 만들기,Nouveau
+FIOPEN,Menu,Open,Otwórz,打开,開啟,開く,열기,Ouvrir
+FIRECE,Menu,Open Recent,Otwórz ostatnie,打开最近使用的文件,開啟最近使用的檔案,最近使ったファイルを開く,최근 파일 열기,Ouvrir les fichiers récents
+FINONE,Menu,No recent files,Brak ostatnich plików,没有最近使用的文件,沒有最近使用的檔案,最近使ったファイルはありません,최근 파일 없음,Aucun fichier récent
+FISAVE,Menu,Save,Zapisz,保存,儲存,保存,저장,Enregistrer
+FISVAS,Menu,Save As,Zapisz jako,另存为,另存新檔,名前を付けて保存,다른 이름으로 저장,Enregistrer sous
+FIPSET,Menu,Project Settings,Ustawienia projektu,项目设置,專案設定,プロジェクト設定,프로젝트 설정,Paramètres du projet
+FIATLS,Menu,Import Atlases,Importuj atlasy,导入图集,匯入圖集,アトラスをインポート,아틀라스 가져오기,Importer des atlas
+TLExpo,Menu,Export Achievement Icons,Eksportuj ikony osiągnięć,,,,,
+TLMENU,Menu,Tools,Narzędzia,工具,工具,ツール,도구,Outils
+FIPREF,Menu,Preferences,Preferencje,首选项,偏好設定,環境設定,환경 설정,Préférences
+FIEXIT,Menu,Exit,Zakończ,退出,結束,終了,끝내기,Quitter
+TBWORK,Shell,Working,Praca,工作,工作,作業,작업,Travail
+TBSTEA,Shell,Steam,Steam,Steam,Steam,Steam,Steam,Steam
+SYNCHR,Shell,Synchronize,Synchronizuj,同步,同步,同期,동기화,Synchroniser
+INDETA,Inspector,Details,Szczegóły,详细信息,詳細資料,詳細,세부 정보,Détails
+INACTI,Inspector,Activity,Aktywność,活动,活動,アクティビティ,활동,Activité
+STREAD,Status,Ready,Gotowe,就绪,就緒,準備完了,준비됨,Prêt
+STACNT,Status,Achievements:,Osiągnięcia:,成就：,成就：,実績：,업적:,Succès :
+STELAP,Status,Elapsed,Upłynęło,已用时间,經過時間,経過時間,경과,Écoulé
+PLWORK,Placeholder,Working view will appear here,Tutaj pojawi się widok pracy,工作视图将显示在此处,工作檢視將顯示於此,作業ビューがここに表示されます,작업 보기가 여기에 표시됩니다,La vue de travail apparaîtra ici
+PLSTEA,Placeholder,Steam view will appear here,Tutaj pojawi się widok Steam,Steam 视图将显示在此处,Steam 檢視將顯示於此,Steam ビューがここに表示されます,Steam 보기가 여기에 표시됩니다,La vue Steam apparaîtra ici
+PLDETA,Placeholder,Select an item to inspect,Wybierz element do sprawdzenia,选择要检查的项目,選取要檢查的項目,調べる項目を選択してください,검사할 항목을 선택하세요,Sélectionnez un élément à examiner
+PLACTI,Placeholder,No recent activity,Brak ostatniej aktywności,无最近活动,沒有最近活動,最近のアクティビティはありません,최근 활동 없음,Aucune activité récente
+WNPREF,Preferences,Preferences,Preferencje,首选项,偏好設定,環境設定,환경 설정,Préférences
+PRAPPE,Preferences,Appearance,Wygląd,外观,外觀,外観,모양,Apparence
+PRCOLO,Preferences,Palette,Paleta,调色板,調色盤,パレット,팔레트,Palette
+PRWIND,Palette,Window,Okno,窗口,視窗,ウィンドウ,창,Fenêtre
+PRPANE,Palette,Panel,Panel,面板,面板,パネル,패널,Panneau
+PRCONT,Palette,Control,Kontrolka,控件,控制項,コントロール,컨트롤,Contrôle
+PRBORD,Palette,Border,Obramowanie,边框,框線,境界線,테두리,Bordure
+PRPTXT,Palette,Primary text,Tekst główny,主要文本,主要文字,主テキスト,기본 텍스트,Texte principal
+PRMTXT,Palette,Muted text,Tekst wyciszony,次要文本,柔和文字,控えめなテキスト,보조 텍스트,Texte atténué
+PRACCE,Palette,Accent,Akcent,强调色,強調色,アクセント,강조,Accent
+PRSUCC,Palette,Success,Sukces,成功,成功,成功,성공,Succès
+PRWARN,Palette,Warning,Ostrzeżenie,警告,警告,警告,경고,Avertissement
+PRERRO,Palette,Error,Błąd,错误,錯誤,エラー,오류,Erreur
+PRRADI,Preferences,Control corner radius,Promień kontrolek,控件圆角,控制項圓角,コントロールの角丸,컨트롤 모서리 반경,Rayon des contrôles
+PRHEAD,Preferences,Header font size,Rozmiar nagłówka,标题字号,標題字型大小,見出しフォントサイズ,헤더 글꼴 크기,Taille des titres
+PRNORM,Preferences,Normal font size,Normalny rozmiar,常规字号,一般字型大小,標準フォントサイズ,일반 글꼴 크기,Taille normale
+PRSMAL,Preferences,Small font size,Mały rozmiar,小字号,小字型大小,小フォントサイズ,작은 글꼴 크기,Petite taille
+PRLANG,Preferences,Language,Język,语言,語言,言語,언어,Langue
+PRNAMI,Preferences,Naming,Nazewnictwo,Nombres,Nombres,命名,이름 지정,Nommage
+PRACHN,Preferences,Achievement naming convention,Konwencja nazw osiągnięć,成就命名规则,成就命名規則,実績の命名規則,업적 이름 규칙,Convention de nommage des succès
+PRACHH,Preferences,"Use {0} for the number, for example ACHIEVEMENT_{0:000}.","Użyj {0} jako numeru, na przykład ACHIEVEMENT_{0:000}.","数字使用 {0}，例如 ACHIEVEMENT_{0:000}。","數字使用 {0}，例如 ACHIEVEMENT_{0:000}。","数字には {0} を使います。例: ACHIEVEMENT_{0:000}。","숫자에는 {0}을 사용합니다. 예: ACHIEVEMENT_{0:000}.","Utilisez {0} pour le numéro, par exemple ACHIEVEMENT_{0:000}."
+PRDARK,Preferences,Dark defaults,Ciemne domyślne,深色默认值,深色預設值,ダーク既定値,어두운 기본값,Valeurs sombres
+PRLIGH,Preferences,Light defaults,Jasne domyślne,浅色默认值,淺色預設值,ライト既定値,밝은 기본값,Valeurs claires
+PRSAVB,Preferences,Save,Zapisz,保存,儲存,保存,저장,Enregistrer
+PRCANC,Preferences,Cancel,Anuluj,取消,取消,キャンセル,취소,Annuler
+PRBROW,Preferences,Browser,Przeglądarka,,,,,
+PRBREX,Preferences,Chrome executable,Plik wykonywalny Chrome,,,,,
+PRBRDT,Preferences,Detect,Wykryj,,,,,
+PRBRBS,Preferences,Browse...,Przeglądaj...,,,,,
+PRBRHI,Preferences,Path to chrome.exe. Leave blank to detect Google Chrome automatically.,Ścieżka do chrome.exe. Pozostaw puste aby wykryć Google Chrome automatycznie.,,,,,
+PRBRIN,Validation,Enter a valid path to chrome.exe.,Podaj prawidłową ścieżkę do chrome.exe.,,,,,
+PRBRND,Validation,Google Chrome was not detected. Browse for chrome.exe.,Nie wykryto Google Chrome. Wskaż plik chrome.exe.,,,,,
+PRBROF,Preferences,Browser profile folder,Folder profilu przeglądarki,,,,,
+PRBRDF,Preferences,Use default,Użyj domyślnego,,,,,
+PRBRPH,Preferences,Leave blank to use Achimeld's private profile at %LOCALAPPDATA%\Achimeld\Browser\ChromeProfile. Choose an existing Chrome profile folder to reuse a signed-in session. Chrome ignores remote debugging on its default profile folder.,Pozostaw puste aby użyć prywatnego profilu Achimeld w %LOCALAPPDATA%\Achimeld\Browser\ChromeProfile. Wybierz istniejący folder profilu Chrome aby ponownie użyć zalogowanej sesji. Chrome ignoruje zdalne debugowanie w domyślnym folderze profilu.,,,,,
+PRBPIN,Validation,Enter a valid profile folder path.,Podaj prawidłową ścieżkę folderu profilu.,,,,,
+PRBRPT,Preferences,Remote debugging port,Zdalny port debugowania,,,,,
+PRBRDH,Preferences,Used when Achimeld starts Chrome to attach to. Chrome requires a non-default profile folder for this port to stay open.,Używany gdy Achimeld uruchamia Chrome w celu dołączenia. Chrome wymaga niedomyślnego folderu profilu aby ten port pozostał otwarty.,,,,,
+PRBFLT,Preferences,Chrome executable|chrome.exe|Executables (*.exe)|*.exe,Plik wykonywalny Chrome|chrome.exe|Pliki wykonywalne (*.exe)|*.exe,,,,,
+PRINVC,Validation,Enter a hexadecimal color,Wprowadź kolor szesnastkowy,请输入十六进制颜色,請輸入十六進位色彩,16進数の色を入力してください,16진수 색상을 입력하세요,Saisissez une couleur hexadécimale
+WNMINI,Window,Minimize,Minimalizuj,最小化,最小化,最小化,최소화,Réduire
+WNMAXI,Window,Maximize or restore,Maksymalizuj lub przywróć,最大化或还原,最大化或還原,最大化または元に戻す,최대화 또는 복원,Agrandir ou restaurer
+WNCLOS,Window,Close,Zamknij,关闭,關閉,閉じる,닫기,Fermer
+LNENGL,Language,English,English,English,English,English,English,English
+LNPOLI,Language,Polski,Polski,Polski,Polski,Polski,Polski,Polski
+LNZHSP,Language,简体中文,简体中文,简体中文,简体中文,简体中文,简体中文,简体中文
+LNZHTR,Language,繁體中文,繁體中文,繁體中文,繁體中文,繁體中文,繁體中文,繁體中文
+LNJAPA,Language,日本語,日本語,日本語,日本語,日本語,日本語,日本語
+LNKORE,Language,한국어,한국어,한국어,한국어,한국어,한국어,한국어
+LNFREN,Language,Français,Français,Français,Français,Français,Français,Français
+CdAchv,Card,Achievement,,,,,,
+CdStat,Card,Stat,,,,,,
+AtMiss,Atlas,Atlas unavailable,,,,,,
+StaleT,Steam,Snapshot read {0:g},,,,,,
+NoSnap,Steam,No complete Steam snapshot is available,,,,,,
+DfNone,Steam,No differences,,,,,,
+DfRemo,Steam,Remote only,,,,,,
+DfChan,Steam,Values differ,,,,,,
+SySafe,Sync,Execution is disabled because the coordinator cannot bind execution to this reviewed plan. Refresh support and an approval token are required.,,,,,,
+WkArea,Accessibility,Working editor,,,,,,
+WkAddA,Working,Add Achievement,,,,,,
+WkAddS,Working,Add Stat,,,,,,
+WkFull,Working,Open Full Size Icon,,,,,,
+WkDele,Working,Delete,,,,,,
+WkDupl,Working,Duplicate,,,,,,
+WkCopy,Working,Copy,,,,,,
+WkPste,Working,Paste,,,,,,
+WkUndo,Working,Undo,,,,,,
+WkRedo,Working,Redo,,,,,,
+WkFilt,Working,Filter achievements and stats,,,,,,
+WkNode,Working,Achievements,,,,,,
+WkClsT,Working,Close tab,,,,,,
+WkZmOt,Working,Zoom out,,,,,,
+WkZmRs,Working,Reset zoom and pan,,,,,,
+WkZmIn,Working,Zoom in,,,,,,
+WkZmMn,Working,−,,,,,,
+WkZmPc,Working,100%,,,,,,
+WkZmPl,Working,+,,,,,,
+IcPrev,Accessibility,Achievement icon preview,,,,,,
+StArea,Accessibility,Steam snapshot view,,,,,,
+StSnap,Steam,Last remote snapshot,,,,,,
+StList,Accessibility,Remote achievements and stats,,,,,,
+StName,Steam,Internal name,,,,,,
+StApiN,Steam,Steam API name,,,,,,
+StType,Steam,Type,,,,,,
+StStat,Steam,Status,,,,,,
+StDiff,Steam,Differences,,,,,,
+InGene,Inspector,General,,,,,,
+InName,Inspector,Internal name,,,,,,
+InApiN,Inspector,Steam API name,,,,,,
+InSetB,Inspector,Set by,,,,,,
+InHidd,Inspector,Hidden until unlocked,Ukryte do odblokowania,解锁前隐藏,解鎖前隱藏,解除するまで非表示,잠금 해제 전 숨김,Masqué jusqu’au déverrouillage
+HdAlow,Preferences,Allow hidden achievements,Zezwalaj na ukryte osiągnięcia,允许隐藏成就,允許隱藏成就,非表示の実績を許可,숨겨진 업적 허용,Autoriser les succès masqués
+HdHelp,Preferences,Steam-hidden achievements are disabled by default. Enable them in Preferences to hide achievements from players until unlocked.,Ukryte osiągnięcia Steam są domyślnie wyłączone. Włącz je w Preferencjach aby ukrywać osiągnięcia przed graczami do odblokowania.,Steam 隐藏成就默认禁用。可在偏好设置中启用以在解锁前对玩家隐藏成就。,Steam 隱藏成就預設停用。可在偏好設定中啟用以在解鎖前對玩家隱藏成就。,Steam の非表示実績は既定で無効です。設定で有効にすると解除するまでプレイヤーに表示されません。,Steam 숨겨진 업적은 기본적으로 비활성화됩니다. 환경설정에서 활성화하면 잠금 해제 전까지 플레이어에게 숨겨집니다。,Les succès Steam masqués sont désactivés par défaut. Activez-les dans les préférences pour les masquer aux joueurs jusqu’au déverrouillage.
+HdTitl,Achievements,Hidden Steam achievements,Ukryte osiągnięcia Steam,Steam 隐藏成就,Steam 隱藏成就,Steam の非表示実績,Steam 숨겨진 업적,Succès Steam masqués
+HdConf,Achievements,Are you sure? Hidden achievements will be hidden from players until unlocked.,Czy na pewno? Ukryte osiągnięcia będą niewidoczne dla graczy do odblokowania.,确定吗？隐藏成就将在解锁前对玩家隐藏。,確定嗎？隱藏成就將在解鎖前對玩家隱藏。,よろしいですか？非表示の実績は解除するまでプレイヤーに表示されません。,계속하시겠습니까? 숨겨진 업적은 잠금 해제 전까지 플레이어에게 숨겨집니다。,Voulez-vous continuer ? Les succès masqués seront cachés aux joueurs jusqu’au déverrouillage.
+HdWarn,Achievements,Project saved. At least one achievement is hidden on Steam until unlocked.,Projekt zapisany. Co najmniej jedno osiągnięcie jest ukryte na Steam do odblokowania.,项目已保存。至少有一个成就在 Steam 上解锁前隐藏。,專案已儲存。至少有一個成就在 Steam 上解鎖前隱藏。,プロジェクトを保存しました。少なくとも1つの実績が Steam で解除するまで非表示です。,프로젝트가 저장되었습니다. 하나 이상의 업적이 Steam에서 잠금 해제 전까지 숨겨집니다。,Projet enregistré. Au moins un succès est masqué sur Steam jusqu’au déverrouillage.
+HdYess,Achievements,Yes—allow it,Tak — zezwól,是—允许,是—允許,はい（許可）,예—허용,Oui — autoriser
+HdNope,Achievements,Cancel,Anuluj,取消,取消,キャンセル,취소,Annuler
+HdOkay,Achievements,OK,OK,确定,確定,OK,확인,OK
+InOrdr,Inspector,Display order,,,,,,
+InLoca,Inspector,Localization,,,,,,
+InDisp,Inspector,English display name,,,,,,
+InExpN,Inspector,Name exported to Steam,,,,,,
+InDesc,Inspector,English description,,,,,,
+InIcon,Inspector,Icon,,,,,,
+InTile,Inspector,Atlas art value,,,,,,
+InScal,Inspector,Scale (centered),,,,,,
+InStab,Inspector,Tile assignment remains stable when display order changes.,,,,,,
+InSync,Inspector,Sync,,,,,,
+InStat,Inspector,Current state,,,,,,
+InAppl,Inspector,Apply,,,,,,
+InCons,Inspector,Constraints,,,,,,
+InMini,Inspector,Minimum,,,,,,
+InMaxi,Inspector,Maximum,,,,,,
+InNoLm,Inspector,Leave minimum and maximum empty for no limits. Zero is an explicit limit.,Pozostaw minimum i maksimum puste aby nie ustawiać limitów. Zero jest konkretnym limitem.,,,,,
+InDefa,Inspector,Default value,,,,,,
+InIncr,Inspector,Increment only,,,,,,
+InMxCh,Inspector,Maximum change,,,,,,
+InAggr,Inspector,Aggregated,,,,,,
+InAvRw,Inspector,Average-rate window (seconds),,,,,,
+VlReqd,Validation,A value is required.,,,,,,
+VlAppI,Validation,Enter a nonzero Steam App ID.,,,,,,
+VlPosi,Validation,Enter a positive whole number.,,,,,,
+VlUnit,Validation,Enter a value from zero through one.,,,,,,
+VlHexx,Validation,Enter a hexadecimal color.,,,,,,
+VlNneg,Validation,Enter a nonnegative whole number.,,,,,,
+VlApiN,Validation,Enter a valid Steam API name.,,,,,,
+VlInte,Validation,Enter a whole number.,,,,,,
+VlRang,Validation,Minimum cannot exceed maximum.,,,,,,
+VlNumb,Validation,Enter a number or leave the field empty.,,,,,,
+VlPosN,Validation,Enter a positive number.,,,,,,
+VlScal,Validation,Enter a scale from 0.1 through 4.,,,,,,
+PsTitl,Project settings,Project Settings,,,,,,
+PsName,Project settings,Display name,,,,,,
+PsAppI,Project settings,Steam App ID,,,,,,
+PsAtla,Project settings,Atlas path,,,,,,
+PsCsvP,Project settings,Localization CSV path,,,,,,
+PsTile,Project settings,Tile width and height,,,,,,
+PsOffs,Project settings,Left and top offset,,,,,,
+PsSpac,Project settings,Horizontal and vertical spacing,,,,,,
+PsTrav,Project settings,Atlas traversal,,,,,,
+PsOutp,Project settings,Icon size,,,,,,
+PsUnac,Project settings,Unachieved icon mode,,,,,,
+PsOpac,Project settings,Unachieved opacity,,,,,,
+PsTint,Project settings,Unachieved tint,,,,,,
+PsLoca,Project settings,Edit project localization,,,,,,
+LcTitl,Localization,Project Localization,,,,,,
+LcIddd,Localization,ID,,,,,,
+LcCont,Localization,Context,,,,,,
+SyTitl,Sync,Synchronization,Synchronizacja,,,,,
+SyOper,Sync,Planned operations and exclusions,,,,,,
+SyIncl,Sync,Included,,,,,,
+SyKind,Sync,Operation,,,,,,
+SyTarg,Sync,Target,,,,,,
+SyDiff,Sync,Differences,,,,,,
+SyClos,Sync,Close,,,,,,
+SyExec,Sync,Execute reviewed plan,,,,,,
+OpFail,Operation,The operation could not be completed.,,,,,,
+OpTitl,Operation,Achimeld operation,,,,,,
+NewPro,Project,Untitled Project,,,,,,
+FiFilt,File,Achimeld projects|*.achv,,,,,,
+DiProm,File,Discard unsaved changes?,,,,,,
+DiTitl,File,Unsaved changes,,,,,,
+SvProm,File,Do you want to save your changes before exiting?,Czy chcesz zapisać zmiany przed zakończeniem?,是否要在退出前保存更改？,是否要在結束前儲存變更？,終了する前に変更を保存しますか？,종료하기 전에 변경 내용을 저장하시겠습니까?,Voulez-vous enregistrer vos modifications avant de quitter ?
+SvDisc,File,Don't Save,Nie zapisuj,不保存,不儲存,保存しない,저장 안 함,Ne pas enregistrer
+AtTitl,Atlas explorer,Import Atlases,Importuj atlasy,导入图集,匯入圖集,アトラスをインポート,아틀라스 가져오기,Importer des atlas
+AtNeed,Atlas explorer,Create or open a project first.,Najpierw utwórz lub otwórz projekt.,请先创建或打开项目。,請先建立或開啟專案。,先にプロジェクトを作成または開いてください。,먼저 프로젝트를 만들거나 여세요.,Créez ou ouvrez d’abord un projet.
+AtAddA,Atlas explorer,Add atlas,,,,,,
+ExTitl,Export,Export Achievement Icons,Eksport ikon osiągnięć,,,,,
+ExPath,Export,Destination folder,Folder docelowy,,,,,
+ExForm,Export,Image format,Format obrazu,,,,,
+ExWidt,Export,Width (pixels),Szerokość (piksele),,,,,
+ExHeig,Export,Height (pixels),Wysokość (piksele),,,,,
+ExHint,Export,Exports color and grayscale icons for every renderable achievement. Matching filenames are overwritten. JPEG uses a black background for transparency.,Eksportuje kolorowe i szare ikony każdego możliwego do wyrenderowania osiągnięcia. Pliki o tych samych nazwach są nadpisywane. JPEG zastępuje przezroczystość czarnym tłem.,,,,,
+ExVali,Export,Choose an absolute destination folder and whole dimensions from 1 to 4096 pixels.,Wybierz bezwzględną ścieżkę folderu i całkowite wymiary od 1 do 4096 pikseli.,,,,,
+ExCanc,Export,Cancel,Anuluj,,,,,
+ExGoDo,Export,Export,Eksportuj,,,,,
+ExNeed,Export,Create or open a project first.,Najpierw utwórz lub otwórz projekt.,,,,,
+ExNone,Export,The project has no achievements to export.,Projekt nie ma osiągnięć do wyeksportowania.,,,,,
+ExDone,Export,Exported {0} achievements ({1} images).,Wyeksportowano {0} osiągnięć ({1} obrazów).,,,,,
+ExSome,Export,Exported {0} achievements. {1} failed.,Wyeksportowano {0} osiągnięć. Niepowodzenie: {1}.,,,,,
+AtAddI,Atlas explorer,Add image,,,,,,
+AtBrow,Atlas explorer,Browse,,,,,,
+AtRemo,Atlas explorer,Remove,,,,,,
+AtName,Atlas explorer,Display name,,,,,,
+AtPath,Atlas explorer,Image path,,,,,,
+AtGrid,Atlas explorer,Grid generator,,,,,,
+AtCols,Atlas explorer,Columns,,,,,,
+AtRows,Atlas explorer,Rows,,,,,,
+AtSqWr,Atlas explorer,The current grid does not produce square tiles.,,,,,,
+AtAtla,Atlas explorer,Atlas,,,,,,
+AtImag,Atlas explorer,Standalone image,,,,,,
+AtNoIm,Atlas explorer,No standalone images are referenced. Add one in Import Atlases.,,,,,,
+InISrc,Inspector,Icon source,,,,,,
+LyType,Layers,Layer type,Typ warstwy,图层类型,圖層類型,レイヤーの種類,레이어 유형,Type de calque
+InAtls,Inspector,Atlas,,,,,,
+InStIm,Inspector,Standalone image,,,,,,
+InStAr,Inspector,Imported Steam artwork,,,,,,
+InText,Inspector,Text,,,,,,
+InSoli,Inspector,Solid,,,,,,
+InGrad,Inspector,Gradient,,,,,,
+InBgCl,Inspector,Background color,,,,,,
+InLays,Inspector,Layers and folders,Warstwy i foldery,图层和文件夹,圖層與資料夾,レイヤーとフォルダー,레이어와 폴더,Calques et dossiers
+InLyHt,Inspector,Layers are drawn from bottom to top. Drag to reorder. Atlas tiles keep their transparency.,,,,,,
+InAdAt,Inspector,Add atlas layer,,,,,,
+InAdIm,Inspector,Add image layer,,,,,,
+InAdTx,Inspector,Add text layer,,,,,,
+InAdSo,Inspector,Add solid layer,,,,,,
+InAdGr,Inspector,Add gradient layer,,,,,,
+InLyBk,Inspector,Send backward,,,,,,
+InLyFw,Inspector,Bring forward,,,,,,
+InLyRm,Inspector,Remove layer,,,,,,
+InLyVs,Inspector,Visible,,,,,,
+InTxct,Inspector,Text,,,,,,
+InFont,Inspector,Font,,,,,,
+InFSiz,Inspector,Font size,,,,,,
+InColr,Inspector,Color,,,,,,
+InOutl,Inspector,Outline,,,,,,
+InOuCl,Inspector,Outline color,,,,,,
+InOuWd,Inspector,Outline width,,,,,,
+InAlgn,Inspector,Alignment,,,,,,
+InAlCn,Inspector,Center,,,,,,
+InAlTL,Inspector,Top left,,,,,,
+InAlTR,Inspector,Top right,,,,,,
+InAlBL,Inspector,Bottom left,,,,,,
+InAlBR,Inspector,Bottom right,,,,,,
+InBlnd,Inspector,Blend mode,,,,,,
+InBlNo,Inspector,Normal,,,,,,
+InBlMu,Inspector,Multiply,,,,,,
+InBlSc,Inspector,Screen,,,,,,
+InBlOv,Inspector,Overlay,,,,,,
+InBlDk,Inspector,Darken,,,,,,
+InBlLt,Inspector,Lighten,,,,,,
+InBlAd,Inspector,Add,,,,,,
+InBlDf,Inspector,Difference,,,,,,
+InGrKd,Inspector,Gradient type,,,,,,
+InGrAn,Inspector,Angle,,,,,,
+InGrSt,Inspector,Gradient stops,,,,,,
+InAdSt,Inspector,Add stop,,,,,,
+InRmSt,Inspector,Remove stop,,,,,,
+InOffs,Inspector,Offset,,,,,,
+InLinr,Inspector,Linear,,,,,,
+InRadi,Inspector,Radial,,,,,,
+CpSvSq,Color picker,Saturation and brightness,,,,,,
+CpHuee,Color picker,Hue,,,,,,
+CpRedd,Color picker,Red,,,,,,
+CpGren,Color picker,Green,,,,,,
+CpBlue,Color picker,Blue,,,,,,
+CpAlph,Color picker,Alpha,,,,,,
+CpOpen,Color picker,Open color picker,,,,,,
+CpHexx,Color picker,Hex color,,,,,,
+ImFilt,File,PNG JPEG and Photoshop images|*.png;*.jpg;*.jpeg;*.psd;*.psb,,,,,,
+InStId,Inspector,Steam achievement ID,,,,,,
+InNoId,Inspector,Assigned by Steam after synchronization,,,,,,
+InNone,Inspector,None,,,,,,
+InProg,Inspector,Progress stat,,,,,,
+InUnlk,Inspector,Unlock value,,,,,,
+InUTyp,Inspector,Unlock value type,Typ wartości odblokowania,,,,,
+InInte,Inspector,Integer,Całkowita,,,,,
+InFloa,Inspector,Float,Zmiennoprzecinkowa,,,,,
+InUFol,Inspector,Follows the progress stat type.,Zgodny z typem statystyki postępu.,,,,,
+InLock,Inspector,Unachieved icon (image library),,,,,,
+InAuto,Inspector,Generate from achieved icon,,,,,,
+InAchI,Inspector,Achieved icon,,,,,,
+SyStrt,Sync,Sign in to Steamworks then read the current configuration to review your changes.,,,,,,
+SyLogn,Sync,Sign in to Steamworks in the Achimeld Chrome window. Synchronization will continue automatically.,Zaloguj się do Steamworks w oknie Chrome Achimeld. Synchronizacja będzie kontynuowana automatycznie.,请在 Achimeld 的 Chrome 窗口中登录 Steamworks。同步将自动继续。,請在 Achimeld 的 Chrome 視窗中登入 Steamworks。同步將自動繼續。,Achimeld の Chrome ウィンドウで Steamworks にサインインしてください。同期は自動的に続行されます。,Achimeld Chrome 창에서 Steamworks에 로그인하세요. 동기화가 자동으로 계속됩니다.,Connectez-vous à Steamworks dans la fenêtre Chrome Achimeld. La synchronisation reprendra automatiquement.
+SyRedy,Sync,Select changes to import or export. Import updates this project. Export saves and verifies the Steamworks draft. Publication is a separate step in Steamworks.,,,,,,
+SyPhLo,Sync,1. Sign in to Steamworks,1. Zaloguj się do Steamworks,,,,,
+SyPhIm,Sync,2. Import achievements and stats,2. Importuj osiągnięcia i statystyki,,,,,
+SyPhRv,Sync,Review imports and exports,Przejrzyj import i eksport,,,,,
+SyPhEx,Sync,3. Export Achimeld contents,3. Eksportuj zawartość Achimeld,,,,,
+SyPhDn,Sync,Export completed,Eksport zakończony,,,,,
+SyPhHt,Sync,Synchronize reads Steam and exports your project automatically. Sign in only when prompted. Imports are available separately.,Synchronizacja automatycznie odczytuje Steam i eksportuje projekt. Zaloguj się tylko na żądanie. Import jest dostępny osobno.,同步会自动读取 Steam 并导出项目。仅在提示时登录。导入可单独执行。,同步會自動讀取 Steam 並匯出專案。僅在提示時登入。匯入可單獨執行。,同期は Steam を読み取りプロジェクトを自動的にエクスポートします。求められた場合のみサインインしてください。インポートは別途行えます。,동기화는 Steam을 읽고 프로젝트를 자동으로 내보냅니다. 요청할 때만 로그인하세요. 가져오기는 별도로 사용할 수 있습니다.,La synchronisation lit Steam et exporte automatiquement votre projet. Connectez-vous uniquement lorsque demandé. Les imports sont disponibles séparément.
+SyImpt,Sync,Import selected,Importuj wybrane,,,,,
+SyExpt,Sync,Export selected,Eksportuj wybrane,,,,,
+SyImDn,Sync,Selected achievements and stats were imported. Read Steam again to review exports or stop here.,Wybrane osiągnięcia i statystyki zostały zaimportowane. Odczytaj Steam ponownie aby przejrzeć eksport lub zakończ tutaj.,,,,,
+SyDone,Sync,The selected changes were saved and verified. Publish the draft in Steamworks to make it live.,,,,,,
+SySign,Sync,Sign in to Steamworks,,,,,,
+SyConn,Sync,Opening Steamworks in Chrome. Please wait…,Otwieranie Steamworks w Chrome. Proszę czekać…,,,,,
+SyDeny,Sync,Steamworks denied access. Check your account permissions in Chrome then try signing in again.,Steamworks odmówił dostępu. Sprawdź uprawnienia konta w Chrome i spróbuj zalogować się ponownie.,,,,,
+SyUnkn,Sync,Could not confirm the Steamworks sign-in page. Check the page in Chrome then try signing in again.,Nie udało się rozpoznać strony logowania Steamworks. Sprawdź stronę w Chrome i spróbuj zalogować się ponownie.,,,,,
+SyRead,Sync,Read Steam,,,,,,
+SyBrTg,Sync,Browser,Przeglądarka,,,,,
+SyBrMg,Sync,Managed Chrome (launch),Zarządzana przeglądarka Chrome (uruchom),,,,,
+SyBrLb,Sync,Chrome on port {0} ({1}),Chrome na porcie {0} ({1}),,,,,
+SyBrSc,Sync,Scan,Skanuj,,,,,
+SyBrSt,Sync,Start Chrome with debugging,Uruchom Chrome z debugowaniem,,,,,
+SyBrNn,Sync,No running Chrome with remote debugging was found.,Nie znaleziono uruchomionej przeglądarki Chrome ze zdalnym debugowaniem.,,,,,
+LyHint,Layers,Drag to reorder · Drop artwork or PSD layers · Ctrl+C / Ctrl+V / Ctrl+D · Frontmost layer at the top,Przeciągnij aby zmienić kolejność · Upuść obraz lub warstwy PSD · Ctrl+C / Ctrl+V / Ctrl+D · Najwyższa warstwa na górze,,,,,
+IcDrop,Layers,Drop artwork here to import general images or icon layers,Upuść tutaj obraz aby zaimportować obraz ogólny lub warstwy ikony,,,,,
+LyProp,Layers,Layer properties,Właściwości warstwy,,,,,
+LyDrag,Layers,Drag this tab to detach the Layers window,Przeciągnij kartę aby odłączyć okno warstw,,,,,
+LyFlot,Layers,Detach,Odłącz,,,,,
+LyDock,Layers,Dock,Zadokuj,,,,,
+LyAddd,Layers,Create layer,Utwórz warstwę,,,,,
+LySize,Layers,Resize Layers window,Zmień rozmiar okna warstw,,,,,
+InAcAt,Inspector,Achievement atlas,Atlas osiągnięcia,,,,,
+InGnIm,Inspector,General image,Obraz ogólny,,,,,
+InGnHt,Inspector,Layers can use this image instead of an atlas tile.,Warstwy mogą użyć tego obrazu zamiast kafelka atlasu.,,,,,
+InGnMs,Validation,The referenced general image ID does not exist.,Obraz ogólny o wskazanym ID nie istnieje.,,,,,
+InGnAt,Inspector,General atlas,Atlas ogólny,,,,,
+InGnAH,Inspector,Layers linked to the general atlas follow its atlas and tile index.,Warstwy połączone z atlasem ogólnym używają wskazanego atlasu i indeksu kafelka.,,,,,
+InLkGn,Layers,Link to general atlas,Połącz z atlasem ogólnym,,,,,
+InGnAM,Validation,Choose a general atlas on the achievement.,Wybierz atlas ogólny przy osiągnięciu.,,,,,
+InAdGn,Inspector,Add general image layer,Dodaj warstwę obrazu ogólnego,,,,,
+InLkVl,Layers,Link tile to unlock value,Połącz kafelek z wartością odblokowania,,,,,
+InLkNu,Layers,Link to unlock value,Połącz z wartością odblokowania,,,,,
+InOuPl,Layers,Outline placement,Położenie obrysu,,,,,
+InOuIn,Layers,Inward,Do wewnątrz,,,,,
+InOuCn,Layers,Centered,Wyśrodkowany,,,,,
+InOuOt,Layers,Outward,Na zewnątrz,,,,,
+LyCopy,Layers,Copy style,Kopiuj styl,,,,,
+LyPast,Layers,Paste style,Wklej styl,,,,,
+InTran,Layers,Transform,Przekształcenie,,,,,
+InOpac,Layers,Opacity,Przezroczystość,,,,,
+LyPerc,Layers,%,%,,,,,
+InOffX,Layers,Horizontal offset (px),Przesunięcie poziome (px),,,,,
+InOffY,Layers,Vertical offset (px),Przesunięcie pionowe (px),,,,,
+LyPick,Layers,Choose a tile from the atlas,Wybierz kafelek z atlasu,,,,,
+LyDelL,Layers,Delete layer,Usuń warstwę,,,,,
+LyClon,Layers,Clone layer,Klonuj warstwę,,,,,
+FxList,Layers,Effects,Efekty,,,,,
+FxFold,Layers,Expand or collapse effects,Rozwiń lub zwiń efekty,,,,,
+FxAddd,Layers,Add effect,Dodaj efekt,,,,,
+FxDele,Layers,Delete effect,Usuń efekt,,,,,
+FxPlus,Layers,fx+,fx+,,,,,
+FxVisi,Layers,Effect visible,Efekt widoczny,,,,,
+FxColO,Layers,Color overlay,Nakładka koloru,,,,,
+FxOutl,Layers,Outline,Obrys,,,,,
+FxShad,Layers,Shadow,Cień,,,,,
+FxColr,Layers,Effect color,Kolor efektu,,,,,
+FxOffX,Layers,Horizontal offset,Przesunięcie poziome,,,,,
+FxOffY,Layers,Vertical offset,Przesunięcie pionowe,,,,,
+FxBlur,Layers,Blur,Rozmycie,,,,,
+FxAfOt,Layers,Affect outline,Wpływ na obrys,,,,,
+FxCutO,Layers,Cutout (px),Wycięcie (px),,,,,
+FxCutH,Layers,Expand the original alpha by this width before inversion to leave a gap before the inner light.,Rozszerz oryginalny kanał alfa o tę szerokość przed odwróceniem aby zostawić odstęp przed światłem wewnętrznym.,,,,,
+TpTitl,Atlas tile picker,Choose atlas tile,Wybierz kafelek atlasu,,,,,
+TpHint,Atlas tile picker,"Click a tile to select it. Double-click to accept.","Kliknij kafelek i wybierz go. Kliknij dwukrotnie i zatwierdź.",,,,,
+TpSele,Atlas tile picker,Selected tile: {0},Wybrany kafelek: {0},,,,,
+TpLoad,Atlas tile picker,Loading atlas…,Wczytywanie atlasu…,,,,,
+TpFail,Atlas tile picker,The atlas could not be loaded.,Nie udało się wczytać atlasu.,,,,,
+TpUseT,Atlas tile picker,Use tile,Użyj kafelka,,,,,
+WkStat,Working,Stats,Statystyki,,,,,
+InATyp,Inspector,Achievement type,Typ osiągnięcia,,,,,
+InManu,Inspector,Manual,Ręczne,,,,,
+InTied,Inspector,Tied to stat,Powiązane ze statystyką,,,,,
+CdTied,Card,Tied to {0},Powiązane z {0},,,,,
+
+TLTerm,Menu,Terminal,Terminal,终端,終端,ターミナル,터미널,Terminal
+TrCopy,Terminal,Copy all,Kopiuj wszystko,全部复制,全部複製,すべてコピー,모두 복사,Tout copier
+TrCler,Terminal,Clear,Wyczyść,,,,,
+AcBlck,Actions,This action is unavailable. Finish the current operation or select an item first.,Ta czynność jest niedostępna. Zakończ bieżącą operację lub wybierz element.,,,,,
+AcProj,Actions,Create or open a project before using this action.,Utwórz lub otwórz projekt przed użyciem tej czynności.,,,,,
+AcCapt,Actions,Could not capture the mouse for dragging. Release the mouse buttons and try again.,Nie udało się przechwycić myszy. Zwolnij przyciski i spróbuj ponownie.,,,,,
+
+FxInLt,Layers,Inner light,Światło wewnętrzne,,,,,
+FxUseB,Layers,Enable box blur,Włącz rozmycie pudełkowe,,,,,
+FxBCol,Layers,Box blur color,Kolor rozmycia,,,,,
+FxBBln,Layers,Box blur blending,Mieszanie rozmycia,,,,,
+FxBOpa,Layers,Box blur opacity (%),Krycie rozmycia (%),,,,,
+
+InSdfV,Layers,SDF vignette,Winieta SDF,,,,,
+InAdSv,Layers,Add SDF vignette,Dodaj winietę SDF,,,,,
+InSvRo,Layers,Roundness (0–1),Zaokrąglenie (0–1),,,,,
+InSvIn,Layers,Inset (0–0.95),Wcięcie (0–0.95),,,,,
+InSvSo,Layers,Softness (0–1),Miękkość (0–1),,,,,
+
+FxBoxB,Layers,Box blur,Rozmycie pudełkowe,,,,,
+InShap,Layers,Shape,Kształt,,,,,
+InAdSh,Layers,Add shape,Dodaj kształt,,,,,
+ShRect,Layers,Rectangle,Prostokąt,,,,,
+ShSphr,Layers,Sphere,Sfera,,,,,
+ShNgon,Layers,N-gon (regular polygon),N-kąt (wielokąt foremny),,,,,
+ShStar,Layers,Star,Gwiazda,,,,,
+ShVcnt,Layers,Sides / star points (3–64),Boki / ramiona gwiazdy (3–64),,,,,
+ShORnd,Layers,Outer corner rounding (0–1),Zaokrąglenie zewnętrznych wierzchołków (0–1),,,,,
+ShIRad,Layers,Inner radius (0.01–1),Promień wewnętrzny (0.01–1),,,,,
+ShIRnd,Layers,Inner corner rounding (0–1),Zaokrąglenie wewnętrznych wierzchołków (0–1),,,,,
+ShHint,Layers,Lower inner radius makes deep concave valleys; raise it toward 1 for a convex outline. Rounding 0 keeps sharp corners; 1 makes them fully rounded.,Mniejszy promień wewnętrzny tworzy głębokie wklęsłe wierzchołki; zbliż go do 1 aby uzyskać wypukły obrys. Zaokrąglenie 0 zachowuje ostre wierzchołki; 1 w pełni je zaokrągla.,,,,,
+ShSclX,Layers,X scale,Skala X,,,,,
+ShSclY,Layers,Y scale,Skala Y,,,,,
+ShRotn,Layers,Rotation (degrees),Obrót (stopnie),,,,,
+
+SyAuth,Sync,Signed in to Steamworks.,Zalogowano do Steamworks.,已登录 Steamworks。,已登入 Steamworks。,Steamworks にサインインしました。,Steamworks에 로그인했습니다.,Connecté à Steamworks.
+SyCncl,Sync,Synchronization cancelled.,Synchronizacja anulowana.,同步已取消。,同步已取消。,同期をキャンセルしました。,동기화가 취소되었습니다.,Synchronisation annulée.
+SyFail,Sync,Synchronization stopped because of an error,Synchronizacja zatrzymana z powodu błędu,,,,,
+SyStBt,Sync,Stop synchronization,Zatrzymaj synchronizację,,,,,
+SyStop,Sync,Stopping synchronization. Any Steam save already in progress will finish verification first.,Zatrzymywanie synchronizacji. Trwający zapis Steam najpierw zakończy weryfikację.,,,,,
+GnImgs,Image editor,General images,Obrazy ogólne,通用图像,通用影像,共通画像,공용 이미지,Images générales
+GnImpt,Image editor,Import,Importuj,导入,匯入,インポート,가져오기,Importer
+GnHint,Image editor,"Copy an image or atlas tile from icon layers, then paste it here. IDs stay fixed when images are removed.",Skopiuj obraz lub kafelek atlasu z warstw ikony i wklej go tutaj. Usunięcie obrazów nie zmienia ich identyfikatorów.,从图标图层复制图像或图集单元，然后粘贴到此处。移除图像时，编号保持不变。,從圖示圖層複製影像或圖集區塊，再貼到此處。移除影像時，編號保持不變。,アイコンのレイヤーから画像やアトラスタイルをコピーし、ここに貼り付けます。画像を削除しても ID は変わりません。,아이콘 레이어의 이미지나 아틀라스 타일을 복사해 여기에 붙여넣으세요. 이미지를 제거해도 ID는 바뀌지 않습니다.,"Copiez une image ou une tuile d’atlas depuis les calques de l’icône, puis collez-la ici. Les identifiants restent fixes après la suppression d’images."
+GnTile,Image editor,Add atlas tile,Dodaj kafelek atlasu,添加图集单元,新增圖集區塊,アトラスタイルを追加,아틀라스 타일 추가,Ajouter une tuile d’atlas
+GnUseI,Image editor,Use selected image in icon,Użyj wybranego obrazu w ikonie,在图标中使用所选图像,在圖示中使用所選影像,選択した画像をアイコンに使用,선택한 이미지를 아이콘에 사용,Utiliser l’image sélectionnée dans l’icône
+GnName,Image editor,General image {0},Obraz ogólny {0},通用图像 {0},通用影像 {0},共通画像 {0},공용 이미지 {0},Image générale {0}
+GnIdTx,Image editor,ID {0},ID {0},编号 {0},編號 {0},ID {0},ID {0},ID {0}
+GnAtTl,Image editor,Atlas tile #{0},Kafelek atlasu #{0},图集单元 #{0},圖集區塊 #{0},アトラスタイル #{0},아틀라스 타일 #{0},Tuile d’atlas n° {0}
+LyCpLy,Image editor,Copy layer,Kopiuj warstwę,复制图层,複製圖層,レイヤーをコピー,레이어 복사,Copier le calque
+LyPsLy,Image editor,Paste layer or folder,Wklej warstwę lub folder,粘贴图层或文件夹,貼上圖層或資料夾,レイヤーまたはフォルダーを貼り付け,레이어 또는 폴더 붙여넣기,Coller un calque ou un dossier
+LyRepD,Image editor,Replace from disk...,Zastąp plikiem z dysku...,从磁盘替换...,從磁碟替換...,ディスクから置換...,디스크에서 교체...,Remplacer depuis le disque...
+LyRepA,Image editor,Replace from atlas...,Zastąp kafelkiem atlasu...,从图集替换...,從圖集替換...,アトラスから置換...,아틀라스에서 교체...,Remplacer depuis un atlas...
+LyCrFd,Image editor,Create folder,Utwórz folder,创建文件夹,建立資料夾,フォルダーを作成,폴더 만들기,Créer un dossier
+LyFdCf,Image editor,Folder contents and mask...,Zawartość i maska folderu...,文件夹内容和蒙版...,資料夾內容與遮色片...,フォルダーの内容とマスク...,폴더 내용과 마스크...,Contenu et masque du dossier...
+LyPsMk,Image editor,Paste image as folder mask,Wklej obraz jako maskę folderu,将图像粘贴为文件夹蒙版,將影像貼為資料夾遮色片,画像をフォルダーのマスクとして貼り付け,이미지를 폴더 마스크로 붙여넣기,Coller l’image comme masque du dossier
+LyMkHt,Image editor,Masks use image transparency. Add a General image layer to use it as a mask.,"Maski korzystają z przezroczystości obrazu. Dodaj warstwę obrazu ogólnego, aby użyć jej jako maski.",蒙版使用图像透明度。添加通用图像图层以将其用作蒙版。,遮色片使用影像透明度。新增通用影像圖層以將其作為遮色片。,マスクには画像の透明度を使用します。共通画像レイヤーを追加すると、マスクとして使用できます。,마스크는 이미지의 투명도를 사용합니다. 공용 이미지 레이어를 추가해 마스크로 사용하세요.,Les masques utilisent la transparence des images. Ajoutez un calque d’image générale pour l’utiliser comme masque.
+FxBlHt,Image editor,Normal applies the chosen color. Multiply darkens; Screen lightens. Opacity controls the strength.,"Tryb normalny stosuje wybrany kolor. Mnożenie przyciemnia, a ekran rozjaśnia. Krycie określa siłę efektu.",正常模式应用所选颜色。正片叠底使图像变暗，滤色使图像变亮。不透明度控制效果强度。,一般模式套用所選顏色。色彩增值使影像變暗，濾色使影像變亮。不透明度控制效果強度。,通常は選択した色を適用します。乗算は暗く、スクリーンは明るくします。不透明度で効果の強さを調整します。,"일반은 선택한 색상을 적용합니다. 곱하기는 어둡게, 스크린은 밝게 만듭니다. 불투명도로 강도를 조절합니다.",Normal applique la couleur choisie. Produit assombrit et Écran éclaircit. L’opacité règle l’intensité.
+ShShap,Image editor,Shape,Kształt,形状,形狀,形状,도형,Forme
+FdName,Folders,Folder,Folder,文件夹,資料夾,フォルダー,폴더,Dossier
+FdProp,Folders,Folder properties,Właściwości folderu,文件夹属性,資料夾屬性,フォルダーのプロパティ,폴더 속성,Propriétés du dossier
+FdCopy,Folders,Copy folder,Kopiuj folder,复制文件夹,複製資料夾,フォルダーをコピー,폴더 복사,Copier le dossier
+FdClon,Folders,Clone folder,Klonuj folder,克隆文件夹,複製資料夾,フォルダーを複製,폴더 복제,Dupliquer le dossier
+FdDele,Folders,Delete folder,Usuń folder,删除文件夹,刪除資料夾,フォルダーを削除,폴더 삭제,Supprimer le dossier
+FdMask,Folders,Folder mask,Maska folderu,,,,,
+FdEdit,Folders,Edit mask,Edytuj maskę,,,,,
+FdOpen,Folders,Expand folder,Rozwiń folder,展开文件夹,展開資料夾,フォルダーを展開,폴더 펼치기,Développer le dossier
+FdClos,Folders,Collapse folder,Zwiń folder,折叠文件夹,收合資料夾,フォルダーを折りたたむ,폴더 접기,Réduire le dossier
+LyMask,Layers,Mask,Maska,,,,,
+LyScal,Layers,Scale,Skala,,,,,
+LyOffX,Layers,X (px),X (px),,,,,
+LyOffY,Layers,Y (px),Y (px),,,,,
+AdEdit,Adjustments,Edit adjustment,Edytuj dopasowanie,,,,,
+AdList,Adjustments,Adjustment layers,Warstwy dopasowania,,,,,
+AdCrvs,Adjustments,Curves,Krzywe,,,,,
+AdCont,Adjustments,Brightness / contrast,Jasność / kontrast,,,,,
+AdHueS,Adjustments,Hue / saturation,Barwa / nasycenie,,,,,
+AdSlct,Adjustments,Selective color,Kolor selektywny,,,,,
+AdGrad,Adjustments,Gradient overlay,Nakładka gradientu,,,,,
+FxGrad,Layer effects,Gradient overlay,Nakładka gradientowa,,,,,
+WkSoId,Canvas,Sort by ID,Sortuj według ID,,,,,
+WkSoSt,Canvas,Sort by icon style,Sortuj według stylu ikony,,,,,
+WkSoAc,Canvas,Sort by stat activation,Sortuj według aktywacji statystyki,,,,,
+PRGENE,Preferences,General,Ogólne,常规,一般,一般,일반,Général
+PRTYPO,Preferences,Typography and controls,Typografia i kontrolki,字体与控件,字型與控制項,文字とコントロール,글꼴 및 컨트롤,Typographie et contrôles
+PRSAMP,Preferences,Sample,Przykład,示例,範例,サンプル,예시,Exemple
+PRADVA,Preferences,Advanced settings,Ustawienia zaawansowane,高级设置,進階設定,詳細設定,고급 설정,Paramètres avancés
+PRERRS,Validation,Needs attention,Wymaga uwagi,需要处理,需要處理,要確認,확인 필요,À vérifier
+PRPROH,Preferences,Leave blank to use Achimeld’s private profile. A custom folder can reuse a signed-in session.,Pozostaw puste aby użyć prywatnego profilu Achimeld. Własny folder pozwala użyć zalogowanej sesji.,,,,,
+PRVPAL,Validation,Check the colors in Appearance before saving.,Sprawdź kolory w sekcji Wygląd przed zapisaniem.,,,,,
+PRVBRO,Validation,Check the paths in Browser before saving.,Sprawdź ścieżki w sekcji Przeglądarka przed zapisaniem.,,,,,
+PRVBTH,Validation,Check Appearance colors and Browser paths before saving.,Sprawdź kolory w sekcji Wygląd i ścieżki w sekcji Przeglądarka przed zapisaniem.,,,,,
+WkNeLn,Canvas,Start each icon style on a new line,Każdy styl ikony w nowym wierszu,,,,,
+WkRows,Canvas,Order by rows (X first),Układaj wierszami (najpierw X),,,,,
+WkCols,Canvas,Order by columns (Y first),Układaj kolumnami (najpierw Y),,,,,
+WkAllI,Canvas,Order all icons,Układaj wszystkie ikony,,,,,
+WkSelI,Canvas,Order selected icons only,Układaj tylko wybrane ikony,,,,,
+WkAcCl,Canvas,Achievements per column,Osiągnięcia w kolumnie,,,,,
+WkStCl,Canvas,Stats per column,Statystyki w kolumnie,,,,,
+InStyl,Inspector,Select icon style,Wybierz styl ikony,,,,,
+GnStyl,Inspector,Style,Styl,,,,,
+InStHt,Inspector,Choose an existing icon style,Wybierz istniejący styl ikony,,,,,
+GnNoSt,Image editor,No style,Brak stylu,无样式,無樣式,スタイルなし,스타일 없음,Aucun style
+GnBnLb,Image editor,Icon Banner :,Baner ikony :,,,,,
+GnAtIm,Image editor,Import from atlas,Importuj z atlasu,,,,,
+PRSPAC,Preferences,Inspector spacing (px),Odstępy inspektora (px),,,,,
+
+AdUsmk,Layers,Unsharp Mask,Maska wyostrzająca,反锐化蒙版,不銳利遮罩,アンシャープマスク,언샵 마스크,Masque flou
+UsAmnt,Layers,Amount (%),Siła (%),数量 (%),總量 (%),適用量 (%),양 (%),Gain (%)
+UsRads,Layers,Radius (pixels),Promień (piksele),半径 (像素),半徑 (像素),半径 (ピクセル),반경 (픽셀),Rayon (pixels)
+UsThrs,Layers,Threshold (levels),Próg (poziomy),阈值 (色阶),臨界值 (色階),しきい値 (レベル),한계값 (레벨),Seuil (niveaux)
+
+LyArts,Layers,Art layers,Warstwy graficzne,美术图层,美術圖層,アートレイヤー,아트 레이어,Calques artistiques
+
+LyLink,Layers,Link to,Połącz z,,,,,
+LyUnHt,Layers,Open General settings and edit the unlock value,Otwórz ustawienia ogólne i edytuj wartość odblokowania,,,,,
+LyAnVl,Validation,Angle must be from -360 through 360.,Kąt musi być od -360 do 360.,,,,,
+GrNgon,Layers,N-gon,Wielokąt,多边形,多邊形,多角形,다각형,Polygone
+GrStar,Layers,Star,Gwiazda,星形,星形,星形,별,Étoile
+
+"SecLim","Security","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts."
+"SecDev","Security","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active."
+"SecClr","Security","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile"
+"SecOff","Security","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced."
+"SecRun","Security","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first."
+"SecBrw","Security","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled."
+"SecTit","Security","Security","Security","Security","Security","Security","Security","Security"
+"SecExp","Security","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report"
+"SecErr","Security","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed."
+
+"Abt000","About","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool"
+"Abt001","About","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation."
+"Abt002","About","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation."
+"Abt003","About","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations."
+"Abt004","About","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality."
+
+"Aa0001","Interface","fx","fx","fx","fx","fx","fx","fx"
+"Aa0002","Interface","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color"
+"Aa0003","Interface","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop"
+"Aa0004","Interface","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop"
+"Aa0005","Interface","ID","ID","ID","ID","ID","ID","ID"
+"Aa0006","Interface","Close","Close","Close","Close","Close","Close","Close"
+
+GnBank,Image editor,Choose from Art Data Bank,,,,,,
+GnImportImages,Image editor,Import images,,,,,,
+GnProjectStyles,Image editor,Project styles,,,,,,
+GnDeleteStyle,Image editor,Delete project style,,,,,,
+GnGlobalStyle,Image editor,Import global style into project,,,,,,
+GnNoGlobal,Image editor,No global styles available,,,,,,
+GnSaveStyle,Image editor,Save current icon as a project style,,,,,,
+GnSaveProjectStyle,Image editor,Save project style,,,,,,
+GnClient,Image editor,Game client,,,,,,
+GnServer,Image editor,Game server,,,,,,
+GnOfficial,Image editor,Official game server,,,,,,
+GnSelectSource,Image editor,Choose general image,,,,,,
+GnImportLayer,Image editor,Layer source / folder mask,,,,,,
+LpTitle,Layer properties,Layer properties,,,,,,
+LpType,Layer properties,Layer type,,,,,,
+LpName,Layer properties,Name,Nazwa,名称,名稱,名前,이름,Nom
+TxExport,Achievement localization,Export achievement translations…,,,,,,
+TxImport,Achievement localization,Import achievement translations…,,,,,,
+TxCsvE,Achievement localization,Export CSV…,,,,,,
+TxCsvI,Achievement localization,Import CSV…,,,,,,
+JS1qNb,Art Data Bank usage and deletion,Duplicate artwork,,,,,,
+0idYO1,Art Data Bank usage and deletion,Delete artwork,,,,,,
+e8ET3G,Art Data Bank usage and deletion,{0} copy,,,,,,
+0ycnqg,Art Data Bank usage and deletion,Used by {0} achievements,,,,,,
+ikzj4G,Art Data Bank usage and deletion,No achievements use this artwork.,,,,,,
+AC5AMg,Art Data Bank usage and deletion,"Delete ""{0}""?",,,,,,
+e0O8Lo,Art Data Bank usage and deletion,Image layers using this artwork will become empty. Other layers will be preserved. You can undo this deletion.,,,,,,
+TP9wLV,Art Data Bank usage and deletion,This artwork no longer exists.,,,,,,
+11FgnF,Art Data Bank usage and deletion,Empty image,,,,,,
+4DY4YZ,Art Data Bank usage and deletion,Used by 1 achievement,,,,,,
+SaMake,Icon style nodes,Create icon style node,Utwórz węzeł stylu ikony,,,,,
+SaLocal,Icon style nodes,Icon style node,Węzeł stylu ikony,,,,,
+SaEdit,Icon style nodes,Edit own style…,Edytuj własny styl…,,,,,
+SaScope,Icon style nodes,Icon style node · excluded from Steam,Węzeł stylu ikony · wyłączony ze Steam,,,,,
+SaLink,Icon style nodes,Linked style,Powiązany styl,关联样式,關聯樣式,リンクされたスタイル,연결된 스타일,Style lié
+SaOpen,Icon style nodes,Edit style…,Edytuj styl…,编辑样式…,編輯樣式…,スタイルを編集…,스타일 편집…,Modifier le style…
+AiCreate,Reusable art images,Create art image,Utwórz obraz artystyczny,,,,,
+AiType,Reusable art images,Art image,Obraz artystyczny,,,,,
+AiScope,Reusable art images,Art image · reusable composition,Obraz artystyczny · kompozycja wielokrotnego użytku,,,,,
+AiEdit,Reusable art images,Edit image layers…,Edytuj warstwy obrazu…,,,,,
+AiImage,Reusable art images,Image,Obraz,,,,,
+SoHelpers,Node grid sorting,Include helpers at the end,Uwzględnij elementy pomocnicze na końcu,,,,,
+T3Push,3D text,Push,Rozsunięcie,,,,,
+T3Emboss,3D text,Emboss,Fazowanie,,,,,
+T3FullColor,3D text,Full color,Pełny kolor,,,,,
+T3FullMask,3D text,Full mask,Pełna maska,,,,,
+T3FaceMask,3D text,Face mask,Maska lica,,,,,
+T3EmbossMask,3D text,Emboss mask,Maska fazowania,,,,,
+T3Smooth,3D text,Smooth normals,Wygładzone normalne,,,,,
+T3Shadows,3D text,Letter shadows,Cienie liter,,,,,
+T3PushHint,3D text,Negative values thin the letters; positive values make them bolder.,Wartości ujemne zwężają litery; dodatnie je pogrubiają.,,,,,
+T3EmbossHint,3D text,Adds a raised beveled rim around the letter faces.,Dodaje wypukłą fazowaną krawędź wokół lica liter.,,,,,
+T3ShadowHint,3D text,Strength of shadows cast by the text onto other letter surfaces.,Siła cieni rzucanych przez tekst na pozostałe powierzchnie liter.,,,,,
+T3MinusFace,3D text,Emboss mask − face,Maska fazowania − lico,,,,,
+T3Reflect,3D text,Reflectivity,Refleksyjność,,,,,
+T3ReflectHint,3D text,Strength of the glossy reflection highlight.,Siła refleksu połysku.,,,,,
+T3MinusHint,3D text,Embossed text with flat faces removed; keeps bevels and 3D sides.,Wytłoczony tekst bez płaskich lic; zachowuje fazowania i boki 3D.,,,,,
+
+PrefLayerSidebar,Preferences,Layer properties in right sidebar,Właściwości warstwy na prawym pasku bocznym,,,,,
+PrefLayerSidebarHint,Preferences,Use a compact Layers window and edit the selected layer or effect in the right sidebar.,Kompaktowe okno warstw i edycja wybranej warstwy lub efektu na prawym pasku bocznym.,,,,,
+PrefFxMini,Preferences,Display mini values in FX rows,Wyświetlaj miniwartości w wierszach efektów,,,,,
+FxOutLt,Layers,Outer light,Światło zewnętrzne,,,,,
+FxCutout,Layers,Cutout,Wycięcie,,,,,
+FxSoftLight,Layers,Soft light,Miękkie światło,,,,,
+FxLightColor,Layers,Light color,Kolor światła,,,,,
+FxLightOpacity,Layers,Light opacity,Krycie światła,,,,,
+FxLightBlend,Layers,Light blend,Mieszanie światła,,,,,
+Steam sync,Achievement general,Steam sync,Synchronizacja Steam,,,,,
+Active,Achievement sync status,Active,Aktywne,,,,,
+Unsynced,Achievement sync status,Unsynced,Niezsynchronizowane,,,,,
+Retired,Achievement sync status,Retired,Wycofane,,,,,

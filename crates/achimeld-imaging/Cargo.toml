@@ -1,0 +1,19 @@
+[package]
+name = "achimeld-imaging"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+achimeld-application = { path = "../achimeld-application" }
+image.workspace = true
+serde_json.workspace = true
+skrifa.workspace = true
+vello_cpu.workspace = true
+flate2.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+epaint_default_fonts = "=0.36.2"

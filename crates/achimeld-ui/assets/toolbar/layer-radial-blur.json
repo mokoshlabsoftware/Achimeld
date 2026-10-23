@@ -1,0 +1,12 @@
+{
+  "provider": "Built-in image_gen through imagegen skill",
+  "mode": "generate",
+  "transparent_background": true,
+  "source": "layer-radial-blur-source.png",
+  "final": [
+    "layer-radial-blur.png",
+    "layer-radial-blur.rgba"
+  ],
+  "prompt": "Use case: logo-brand\nAsset type: production desktop toolbar icon for a Radial blur adjustment layer.\nCreate ONE crisp flat monochrome symbol for radial motion blur: a small solid central circle surrounded by eight separated straight radial streaks, each streak formed by two short thick rounded dashes continuing outward along the same direction. Balanced circular arrangement, subtle differences in dash lengths, clean and readable at 20 pixels. This should read as motion radiating from a center, not a sun with triangular points. White ink silhouette only on genuinely transparent square canvas. Centered, glyph occupies about 75 percent of canvas with generous clear padding. Match bold white desktop toolbar icons. No color, glow, actual fuzzy blur, text, arrowheads, surrounding border, button background, shadows, 3D, grunge, texture, speckles or watermark.",
+  "embedding": "Source PNG retained unchanged. Generated alpha bounds cropped and resized with Lanczos to 54 x 54 within a centered 64 x 64 white tintable RGBA8 glyph. Generated alpha preserved."
+}

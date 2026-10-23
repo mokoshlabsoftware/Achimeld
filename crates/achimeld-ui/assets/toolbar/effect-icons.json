@@ -1,0 +1,84 @@
+{
+  "provider": "built-in image_gen through imagegen skill",
+  "preparation": "Original transparent PNG retained unchanged. Visible alpha bounds fitted into 52 x 52 pixels and centered in a 64 x 64 white tintable RGBA8 glyph. Linear mipmap filtering.",
+  "icons": [
+    {
+      "name": "effect-outline",
+      "source": "effect-outline-source.png",
+      "originalFile": "exec-b63d3363-ba71-4684-88b3-3233303f34e9.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a rounded hollow square with a clearly doubled outer contour, representing an outline stroke. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-inner-light",
+      "source": "effect-inner-light-source.png",
+      "originalFile": "exec-cbe194c9-582c-4e30-ae68-bc58fc1ac861.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a hollow square with four short inward-pointing light rays just inside its edges, representing inner light. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-outer-light",
+      "source": "effect-outer-light-source.png",
+      "originalFile": "exec-ea21e413-1945-4fc9-9f1e-6ed108787659.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a small hollow square with eight short outward light rays surrounding it, representing outer light. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-shadow",
+      "source": "effect-shadow-source.png",
+      "originalFile": "exec-96093c1a-5e5d-49b9-853e-193f1b30bc82.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a solid square in front of a second offset lower-right square silhouette, representing drop shadow. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-color-overlay",
+      "source": "effect-color-overlay-source.png",
+      "originalFile": "exec-e5eccc06-0b1c-4c46-becd-d187a630b602.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a tilted paint bucket pouring one solid droplet into a square, representing color overlay. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-gradient-overlay",
+      "source": "effect-gradient-overlay-source.png",
+      "originalFile": "exec-9c9871bb-afd1-45b5-be22-5a379f47a691.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a square with three vertical bars of decreasing heights inside, representing gradient mapping. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-box-blur",
+      "source": "effect-box-blur-source.png",
+      "originalFile": "exec-912db57b-ac4f-42fa-aebd-efd3c0f90220.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a sharp small central square surrounded by two broken square contours, representing box blur. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-skew",
+      "source": "effect-skew-source.png",
+      "originalFile": "exec-d67c1fed-37b9-4e0b-94fd-d7f5c53a69f4.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: one slanted parallelogram with two tiny horizontal opposing arrows, representing skew. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-perspective",
+      "source": "effect-perspective-source.png",
+      "originalFile": "exec-dffac9a4-a874-44e9-807b-751fe757ef0a.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: one trapezoid with two small corner anchors, representing perspective. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-pinch",
+      "source": "effect-pinch-source.png",
+      "originalFile": "exec-8efdec91-8d0a-4ca4-811d-226252fd40c6.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: four curved arrows bending inward toward a central dot, representing pinch distortion. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-lens-blur",
+      "source": "effect-lens-blur-source.png",
+      "originalFile": "exec-36090e52-04ff-4ae4-835f-fb587a12ac4c.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a simple camera aperture formed by six thick open segments, representing lens blur. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-width",
+      "source": "effect-width-source.png",
+      "originalFile": "exec-12879027-f7a8-4019-a466-fef77534e128.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a vertical thick stroke between two outward horizontal arrowheads, representing stroke width. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    },
+    {
+      "name": "effect-color",
+      "source": "effect-color-source.png",
+      "originalFile": "exec-326a95d5-3cad-4e38-8332-18b25be1b091.png",
+      "prompt": "Use case: logo-brand. Asset type: one compact monochrome toolbar icon for the dark Achimeld desktop editor. Primary request: a simple painter palette silhouette with three transparent round holes and a thumb notch, representing a color parameter. Style: clean off-white flat stencil, consistent medium-bold visual weight, smooth crisp edges, minimal detail legible at 16 UI pixels. Composition: a single centered isolated symbol with generous even transparent margins, square canvas, symbol occupies 72% of the canvas. Color palette: pure white only; tint supplied by the application. Background: genuinely transparent alpha. No text, letters, numbers, frame, tile background, glow, gradients, drop shadow, decoration, or watermark."
+    }
+  ]
+}

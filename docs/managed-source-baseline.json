@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "scope": "Local managed source and locked dependencies; regenerate after deliberate compatibility changes.",
+  "files": [
+    {
+      "path": "bridge/Achimeld.Browser/Achimeld.Browser.csproj",
+      "sha256": "5ee9182cbdd2457465212cb0d00edcbb8a29d37326aa9141916fdbebdf3b07bb"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/BrowserReadPolicy.cs",
+      "sha256": "a652a35eba4b9844701ec8d1579da44c4e220a82f14d3c9dabef5b5ebf1bdc30"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/BrowserRequestGuard.cs",
+      "sha256": "fb524fd78444f966b5cdefd73d84c23452be14b5d40543f70a0f602dfd3ccc26"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/LiveSteamworksConfiguration.cs",
+      "sha256": "35ca09ecb80177d259d688fead23e392032d4c05e15ce79826bf2cfb6165cb21"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/packages.lock.json",
+      "sha256": "ba8336419f0cfc368e8b756aea43b9c35b2a23ea80e27027cdccd8db5f1f759a"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/PlaywrightChromeDriver.cs",
+      "sha256": "fca0a1287351ed456619d3ebf61d5dcd805783dbaea562aa265e98051bc3bd5c"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/PlaywrightRuntimePolicy.cs",
+      "sha256": "292cdb1ed94c9996978bfcc50f40f645b95903fa439d5c7c9bc787d9bfd7b88f"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/PortalDocumentSanitizer.cs",
+      "sha256": "47c911fc628ed7031d389b58557b8a2143a2ab00cee3dfa41a3d7fe9d43fd5c0"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/ReadModels.cs",
+      "sha256": "72094e37225cd8a7387eab783d184518779c4c53181a2b5b79225752b15f9fdb"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/RedactionService.cs",
+      "sha256": "f7284afef0bc55825c06d09b7b5a60ee79718dfdea438ce934b25f9866b12165"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs",
+      "sha256": "c3600e1c4aad2058466d549a68f99a24628f69be289a23e0fd2e4d64b2347aa0"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamIconHashReader.cs",
+      "sha256": "60ea86db4d07f088f82b4ccf75efe87d184e05a1135557c552ddd7a14d350604"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamworksPortalSafety.cs",
+      "sha256": "719c3af96f606a47b73fabf94e04aec9e59b1fa7dda74b8a4d0f011f0fb0c273"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamworksSnapshotReader.cs",
+      "sha256": "5188fa585d4558db306c8b7ca84f1f7dba806e11d32258753f51ddb8896128a7"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/WorkerMessages.cs",
+      "sha256": "0bffbfbfdb547bfa5db0b4a1f3295045bf374dbe8b54ba273e8663d4da135c4f"
+    },
+    {
+      "path": "bridge/Achimeld.Core/Achimeld.Core.csproj",
+      "sha256": "8d654c44b7bebb6b31a9f2f606927f45b5072193adc4eef8cce3f3cf3b278df3"
+    },
+    {
+      "path": "bridge/Achimeld.Core/AtlasGridGeometry.cs",
+      "sha256": "6d58b208f2c72e287b7a38933cedbc41cf3888dede6221e38833230e0ba8cc00"
+    },
+    {
+      "path": "bridge/Achimeld.Core/CanonicalFingerprint.cs",
+      "sha256": "8dc47c3def7448fa8e18b7f4b0fe9fb9aedc122a5d0a4b82f8667e009d7ca3de"
+    },
+    {
+      "path": "bridge/Achimeld.Core/DomainModels.cs",
+      "sha256": "d897e4a5bad62382e095f6658f3469ca8657c7b91b4f849dc3d54e815bdc98bb"
+    },
+    {
+      "path": "bridge/Achimeld.Core/IconRecipe.cs",
+      "sha256": "50a527aeb2895f9a792ce90b40d028e40a036439b76ca5a9ba146dca1a73559d"
+    },
+    {
+      "path": "bridge/Achimeld.Core/IconStyleCloner.cs",
+      "sha256": "8a2c9f12da4aa58e52f7bb2779859ea97fd002c1d2ac9fbac87e0456bd144742"
+    },
+    {
+      "path": "bridge/Achimeld.Core/IconStyleSignature.cs",
+      "sha256": "2dbf3e2b96067bb767ece2302aa36939648000e4e5e02b256ee57daadb9315cf"
+    },
+    {
+      "path": "bridge/Achimeld.Core/packages.lock.json",
+      "sha256": "a4364d81a6de2707d66fbced18fbbc926c882ab96e1d1aebbb17e871285b9d75"
+    },
+    {
+      "path": "bridge/Achimeld.Core/StableTileAssignment.cs",
+      "sha256": "4bb3812c8104a9f6c7ad6f874e391a399ec84ae4d23d0ac314689860f43489b6"
+    },
+    {
+      "path": "bridge/Achimeld.Core/Synchronization.cs",
+      "sha256": "039f0a9f58272f25a53115a358b8a6400ab71a717871e7fdd0dc516ac994737f"
+    },
+    {
+      "path": "bridge/Achimeld.Core/Validation.cs",
+      "sha256": "def4a3556ba6a54613177f6dae9b7c83d91066f43a1e99b3b1b6788c86a36929"
+    },
+    {
+      "path": "bridge/Achimeld.Security/Achimeld.Security.csproj",
+      "sha256": "8d654c44b7bebb6b31a9f2f606927f45b5072193adc4eef8cce3f3cf3b278df3"
+    },
+    {
+      "path": "bridge/Achimeld.Security/DedicatedProfilePolicy.cs",
+      "sha256": "67048abf05a9f5a6091e4d21c4a8ca40330cde86482a5fbd99773ba87788957d"
+    },
+    {
+      "path": "bridge/Achimeld.Security/NetworkSelfTest.cs",
+      "sha256": "24a2814c2a41f699f8c3764b5f66686572af1d35b3e15fa7461b214c401c1be7"
+    },
+    {
+      "path": "bridge/Achimeld.Security/packages.lock.json",
+      "sha256": "a4364d81a6de2707d66fbced18fbbc926c882ab96e1d1aebbb17e871285b9d75"
+    },
+    {
+      "path": "bridge/Achimeld.Security/SecurityWire.cs",
+      "sha256": "6d7266bd81db3d2aea347b468b55db07414d2ec896cc9eedfe0078502609ca97"
+    },
+    {
+      "path": "bridge/Achimeld.Security/SteamNetworkPolicy.cs",
+      "sha256": "caf1849ecf1d0250542073ae44e7e1bbc98ad84fe3e3dc1ff01082b72168793c"
+    },
+    {
+      "path": "bridge/Achimeld.Security/SupervisionSession.cs",
+      "sha256": "c6662cd2f2d8149937f9193bc7db0807fbdabd46b3527be70880c07cc9d18be3"
+    },
+    {
+      "path": "bridge/Achimeld.Security/WorkerLifetime.cs",
+      "sha256": "a27e9680a5daf53678ef35c0fb346502dcf8ddb5421c03b9b17c51fbf944940b"
+    },
+    {
+      "path": "bridge/Directory.Build.props",
+      "sha256": "359660fa108bd370800bbd013f44096787eab3e5ef45a996c2bb36baa8691e71"
+    },
+    {
+      "path": "bridge/NuGet.Config",
+      "sha256": "dc8a30e09763f797a770b68361b6ea6de76c90fcd565631e3dd83b68ee55b0e3"
+    },
+    {
+      "path": "bridge/read-worker/packages.lock.json",
+      "sha256": "dac19918b3523c8d287345bdac60ffb81f94f039fb85bad0e79b6e549d6db6f8"
+    },
+    {
+      "path": "bridge/read-worker/Program.cs",
+      "sha256": "239d1ac3cd6c7c5f7c6ca1dfc6374b7bcccc87fdcbf67c3514fa517ee6b5a2f0"
+    },
+    {
+      "path": "bridge/read-worker/ReadOnlyPolicy.cs",
+      "sha256": "f6ce5a9fa035f6deec090ad6d542d114389b3a985f3d0de6b2ab42490d3f685f"
+    },
+    {
+      "path": "bridge/read-worker/ReadWorker.csproj",
+      "sha256": "1fae716c852d8beaded11b59284e8621870c200186c1d504722f217fe151b5a0"
+    }
+  ]
+}

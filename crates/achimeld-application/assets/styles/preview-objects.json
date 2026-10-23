@@ -1,0 +1,207 @@
+[
+  {
+    "id": "c13dc47a-5afd-4bf3-a2bb-e5456020a004",
+    "name": "Preview objects",
+    "styles": [
+      {
+        "id": "7639cc82-0bac-4aa1-bc78-62106f7796ca",
+        "name": "Achievement cup · 3D object",
+        "recipe": {
+          "layers": [
+            {
+              "artifact3d": {
+                "ambient": 0.36,
+                "cameraDistance": 800.0,
+                "focalLength": 50.0,
+                "lightAzimuth": -35.0,
+                "lightElevation": 45.0,
+                "lightIntensity": 0.9,
+                "orthographicSize": 512.0,
+                "output": "FullColor",
+                "parts": [
+                  {
+                    "colorHex": "#FFE5AF42",
+                    "cutBottom": -1.0,
+                    "cutTop": 0.0,
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "name": "Bowl",
+                    "position": [
+                      0.0,
+                      124.0,
+                      0.0
+                    ],
+                    "primitive": "Sphere",
+                    "reflectivity": 0.55,
+                    "rotation": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "roughness": 0.3,
+                    "rounding": 0.0,
+                    "shading": "Glossy",
+                    "size": [
+                      220.0,
+                      210.0,
+                      180.0
+                    ],
+                    "startAngle": 0.0,
+                    "sweepAngle": 360.0,
+                    "tubeRadius": 0.22,
+                    "visible": true,
+                    "wallThickness": 0.12
+                  },
+                  {
+                    "colorHex": "#FFE5AF42",
+                    "cutBottom": 0.0,
+                    "cutTop": 1.0,
+                    "id": "00000000-0000-4000-8000-000000000002",
+                    "name": "Base",
+                    "position": [
+                      0.0,
+                      -146.0,
+                      0.0
+                    ],
+                    "primitive": "Sphere",
+                    "reflectivity": 0.55,
+                    "rotation": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "roughness": 0.3,
+                    "rounding": 0.0,
+                    "shading": "Glossy",
+                    "size": [
+                      160.0,
+                      50.0,
+                      130.0
+                    ],
+                    "startAngle": 0.0,
+                    "sweepAngle": 360.0,
+                    "tubeRadius": 0.22,
+                    "visible": true,
+                    "wallThickness": 0.0
+                  },
+                  {
+                    "colorHex": "#FFE5AF42",
+                    "cutBottom": -1.0,
+                    "cutTop": 1.0,
+                    "id": "00000000-0000-4000-8000-000000000003",
+                    "name": "Stem",
+                    "position": [
+                      0.0,
+                      -61.5,
+                      0.0
+                    ],
+                    "primitive": "Cylinder",
+                    "reflectivity": 0.55,
+                    "rotation": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "roughness": 0.3,
+                    "rounding": 0.12,
+                    "shading": "Glossy",
+                    "size": [
+                      36.0,
+                      165.0,
+                      36.0
+                    ],
+                    "startAngle": 0.0,
+                    "sweepAngle": 360.0,
+                    "tubeRadius": 0.22,
+                    "visible": true,
+                    "wallThickness": 0.0
+                  },
+                  {
+                    "colorHex": "#FFE5AF42",
+                    "cutBottom": -1.0,
+                    "cutTop": 1.0,
+                    "id": "00000000-0000-4000-8000-000000000004",
+                    "name": "Left handle",
+                    "position": [
+                      -85.0,
+                      84.0,
+                      0.0
+                    ],
+                    "primitive": "Torus",
+                    "reflectivity": 0.55,
+                    "rotation": [
+                      90.0,
+                      0.0,
+                      0.0
+                    ],
+                    "roughness": 0.3,
+                    "rounding": 0.0,
+                    "shading": "Glossy",
+                    "size": [
+                      108.0,
+                      22.0,
+                      64.0
+                    ],
+                    "startAngle": 90.0,
+                    "sweepAngle": 180.0,
+                    "tubeRadius": 0.22,
+                    "visible": true,
+                    "wallThickness": 0.0
+                  },
+                  {
+                    "colorHex": "#FFE5AF42",
+                    "cutBottom": -1.0,
+                    "cutTop": 1.0,
+                    "id": "00000000-0000-4000-8000-000000000005",
+                    "name": "Right handle",
+                    "position": [
+                      85.0,
+                      84.0,
+                      0.0
+                    ],
+                    "primitive": "Torus",
+                    "reflectivity": 0.55,
+                    "rotation": [
+                      90.0,
+                      0.0,
+                      0.0
+                    ],
+                    "roughness": 0.3,
+                    "rounding": 0.0,
+                    "shading": "Glossy",
+                    "size": [
+                      108.0,
+                      22.0,
+                      64.0
+                    ],
+                    "startAngle": -90.0,
+                    "sweepAngle": 180.0,
+                    "tubeRadius": 0.22,
+                    "visible": true,
+                    "wallThickness": 0.0
+                  }
+                ],
+                "position": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "projection": "Perspective",
+                "rotation": [
+                  12.0,
+                  -18.0,
+                  0.0
+                ]
+              },
+              "displayName": "Achievement cup",
+              "effects": null,
+              "id": "4dffcaa2-0c44-4b40-b34a-2bb377d0c5c0",
+              "kind": "Artifact3d",
+              "opacity": 1.0,
+              "visible": true
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

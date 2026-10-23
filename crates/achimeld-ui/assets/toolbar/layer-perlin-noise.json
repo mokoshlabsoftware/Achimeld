@@ -1,0 +1,8 @@
+{
+  "provider": "built-in image_gen through imagegen skill",
+  "generatedSource": "layer-perlin-noise-generated.png",
+  "embeddedAsset": "layer-perlin-noise.rgba",
+  "preview": "layer-perlin-noise.png",
+  "prompt": "Use case: logo-brand. Asset type: embedded desktop image-editor layer icon. Generate ONE crisp flat monochrome pure-white Perlin noise UI glyph with real transparent background. Subject: a compact square patch of flowing organic contour bands, three broad undulating white regions separated by clear transparent channels, suggesting smooth procedural clouds and noise. Bold simple silhouette, balanced consistent stroke weight, readable at 20 pixels. Centered square canvas with even padding, symbol occupies 78 percent. No color except white and transparent; no text, labels, shadow, glow, border, button tile, checkerboard or background. Keep all details broad and sparse. Production tintable toolbar glyph matching plain white image, gradient and shape layer symbols.",
+  "embedding": "64 x 64 white RGBA8 pixels with generated alpha preserved, linear mipmaps"
+}

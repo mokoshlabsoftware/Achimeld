@@ -1,0 +1,46 @@
+[
+  {
+    "sourceFile": "mosaica2.achv",
+    "sha256": "c2747d94c7007cbc28169a8e5aed3f652e5c4a9b5520e155d4f27a4ae577cabd",
+    "styles": [
+      {
+        "id": "e01638cc-06e8-4242-b8e2-fdaf13945b6e",
+        "name": "Shiny Icon"
+      }
+    ]
+  },
+  {
+    "sourceFile": "waifus6.achv",
+    "sha256": "d81245fe279f718c3da9832bc2ff32c03725e92742ee1a9591e1775f278445bd",
+    "styles": [
+      {
+        "id": "01cef83b-3ce9-b5a3-bb72-e8073dae8dc1",
+        "name": "Project style 1"
+      },
+      {
+        "id": "18f52e1d-418f-c724-d41a-0508e5e69ad8",
+        "name": "Project style 2"
+      },
+      {
+        "id": "33734802-9e84-2fe9-edf5-a3125960c1aa",
+        "name": "Project style 3"
+      },
+      {
+        "id": "3657609f-b339-a38a-a66a-67ce87793859",
+        "name": "Project style 4"
+      },
+      {
+        "id": "6d1ece2d-6508-0487-15e9-6458beed152e",
+        "name": "Project style 5"
+      },
+      {
+        "id": "a49e9ed3-2fd6-39e7-ab73-ba13011c7230",
+        "name": "Project style 6"
+      },
+      {
+        "id": "c9b343d5-ca05-deb7-7cb5-570ed8f3e16e",
+        "name": "Project style 7"
+      }
+    ]
+  }
+]

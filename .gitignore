@@ -1,0 +1,16 @@
+/target/
+/.artifacts/
+/.ci-evidence/
+**/bin/
+**/obj/
+*.user
+*.pdb
+*.exe
+*.dll
+*.lib
+*.obj
+*.rlib
+*.rmeta
+*.nupkg
+*.achv.transaction*
+

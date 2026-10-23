@@ -1,0 +1,33 @@
+{
+  "provider": "Built-in image_gen through imagegen skill",
+  "embedding": "Generated PNG sources retained unchanged. Alpha bounds cropped, Lanczos resized to fit 54 x 54, centered in white tintable 64 x 64 RGBA8, preserving resized alpha.",
+  "assets": [
+    {
+      "curve": "linear",
+      "source": "explosion-curve-linear-source.png",
+      "final": [
+        "explosion-curve-linear.png",
+        "explosion-curve-linear.rgba"
+      ],
+      "prompt": "Use case: logo-brand\nAsset type: compact production desktop toolbar glyph for Explosion bottom scaling, linear curve.\nCreate ONE pure white flat monochrome UI icon: a small L shaped pair of coordinate axes and a straight diagonal line from lower left to upper right. Curve separated clearly from axes except its origin. Bold even strokes, clean smooth geometric edges, readable at 20 pixels, centered on a genuinely transparent square canvas, glyph occupies about 75 percent of canvas with clear padding. Consistent visual weight with bold white desktop toolbar icons. White ink only. No arrowheads, grid, ticks, letters, labels, numbers, colors, texture, shadows, button background or watermark."
+    },
+    {
+      "curve": "quadratic",
+      "source": "explosion-curve-quadratic-source.png",
+      "final": [
+        "explosion-curve-quadratic.png",
+        "explosion-curve-quadratic.rgba"
+      ],
+      "prompt": "Use case: logo-brand\nAsset type: compact production desktop toolbar glyph for Explosion bottom scaling, quadratic curve.\nCreate ONE pure white flat monochrome UI icon: a small L shaped pair of coordinate axes and an accelerating concave-up quadratic curve from lower left to upper right, starting shallow and ending steep. Curve separated clearly from axes except its origin. Bold even strokes, clean smooth geometric edges, readable at 20 pixels, centered on a genuinely transparent square canvas, glyph occupies about 75 percent of canvas with clear padding. Consistent visual weight with bold white desktop toolbar icons. White ink only. No arrowheads, grid, ticks, letters, labels, numbers, colors, texture, shadows, button background or watermark."
+    },
+    {
+      "curve": "logarithmic",
+      "source": "explosion-curve-logarithmic-source.png",
+      "final": [
+        "explosion-curve-logarithmic.png",
+        "explosion-curve-logarithmic.rgba"
+      ],
+      "prompt": "Use case: logo-brand\nAsset type: compact production desktop toolbar glyph for Explosion bottom scaling, logarithmic curve.\nCreate ONE pure white flat monochrome UI icon: a small L shaped pair of coordinate axes and a decelerating concave-down logarithmic curve from lower left to upper right, starting steep and ending shallow. Curve separated clearly from axes except its origin. Bold even strokes, clean smooth geometric edges, readable at 20 pixels, centered on a genuinely transparent square canvas, glyph occupies about 75 percent of canvas with clear padding. Consistent visual weight with bold white desktop toolbar icons. White ink only. No arrowheads, grid, ticks, letters, labels, numbers, colors, texture, shadows, button background or watermark."
+    }
+  ]
+}

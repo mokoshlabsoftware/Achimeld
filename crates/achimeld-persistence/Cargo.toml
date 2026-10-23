@@ -1,0 +1,18 @@
+[package]
+name = "achimeld-persistence"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+achimeld-application = { path = "../achimeld-application" }
+sha2.workspace = true
+serde.workspace = true
+achimeld-core = { path = "../achimeld-core" }
+achimeld-security = { path = "../achimeld-security" }
+serde_json.workspace = true
+hex.workspace = true
+
+
+[lints]
+workspace = true

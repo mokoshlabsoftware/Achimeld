@@ -1,0 +1,20 @@
+{
+  "generator": "Built-in image_gen tool",
+  "icons": [
+    {
+      "name": "inspector-general",
+      "prompt": "Use case: logo-brand. Asset type: production inspector tab icon for Achimeld, matching monochrome desktop toolbar glyphs. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, consistent medium-heavy weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, letters, badge, rounded square, button background, shadows, gradients, or decoration. This is a raster icon asset, not a screenshot. Subject: General properties: three short horizontal adjustment sliders, with a distinct solid knob on each track at different positions. Simple balanced silhouette.",
+      "cleanup_prompt": "Use case: precise-object-edit. Clean this generated toolbar glyph for production use at 20 pixels. Preserve the symbol, its solid white silhouette, proportions, and composition exactly. Remove all grain, cloudy patches, texture, speckles and halos in the transparent areas and cutouts. Empty space must be perfectly transparent. The glyph must be perfectly flat pure white, with smooth antialiased edges only. No lighting, shading, shadows, texture, background, or decoration."
+    },
+    {
+      "name": "inspector-localization",
+      "prompt": "Use case: logo-brand. Asset type: production inspector tab icon for Achimeld, matching monochrome desktop toolbar glyphs. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, consistent medium-heavy weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, letters, badge, rounded square, button background, shadows, gradients, or decoration. This is a raster icon asset, not a screenshot. Subject: Localization and languages: a simple globe with a bold circular outline, one central vertical meridian and one horizontal equator, clean transparent cutouts. Use only a few bold shapes for clarity at small sizes.",
+      "cleanup_prompt": "Use case: precise-object-edit. Clean this generated toolbar glyph for production use at 20 pixels. Preserve the symbol, its solid white silhouette, proportions, and composition exactly. Remove all grain, cloudy patches, texture, speckles and halos in the transparent areas and cutouts. Empty space must be perfectly transparent. The glyph must be perfectly flat pure white, with smooth antialiased edges only. No lighting, shading, shadows, texture, background, or decoration."
+    },
+    {
+      "name": "inspector-icon",
+      "prompt": "Use case: logo-brand. Asset type: production inspector tab icon for Achimeld, matching monochrome desktop toolbar glyphs. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, consistent medium-heavy weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, letters, badge, rounded square, button background, shadows, gradients, or decoration. This is a raster icon asset, not a screenshot. Subject: Icon artwork: a single square landscape picture frame, with two simple mountain peaks and a small circular sun in its upper corner. White frame and mountain silhouette with transparent negative space.",
+      "cleanup_prompt": "Use case: precise-object-edit. Clean this generated toolbar glyph for production use at 20 pixels. Preserve the symbol, its solid white silhouette, proportions, and composition exactly. Remove all grain, cloudy patches, texture, speckles and halos in the transparent areas and cutouts. Empty space must be perfectly transparent. The glyph must be perfectly flat pure white, with smooth antialiased edges only. No lighting, shading, shadows, texture, background, or decoration."
+    }
+  ]
+}

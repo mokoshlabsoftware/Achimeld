@@ -1,0 +1,14 @@
+{
+  "generator": "Built-in image_gen tool via imagegen skill",
+  "preparation": "Original generated PNGs retained unchanged. Center alpha bounds with coverage >=32 in a 64 x 64 canvas with a maximum 56-pixel visible dimension. Resize with Lanczos filtering, preserve generated alpha as white tintable RGBA8. Embedded icons use linear mipmap filtering and follow shared button ink.",
+  "icons": [
+    {
+      "name": "style-import",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, readable at 20 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. Subject: a simple open folder with a bold downward arrow entering the folder from above, representing import a global icon style into this project."
+    },
+    {
+      "name": "style-save",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, readable at 20 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. Subject: a single classic floppy disk save glyph, with a clearly cut-out small top slot and a large simple lower label cutout, representing save the current icon as a project style."
+    }
+  ]
+}

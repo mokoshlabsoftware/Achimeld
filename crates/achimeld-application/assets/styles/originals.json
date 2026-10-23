@@ -1,0 +1,2492 @@
+[
+  {
+    "id": "c13dc47a-5afd-4bf3-a2bb-e5456020a001",
+    "name": "Mosaica · Original",
+    "styles": [
+      {
+        "id": "e01638cc-06e8-4242-b8e2-fdaf13945b6e",
+        "name": "Shiny Icon",
+        "recipe": {
+          "backgroundColorHex": null,
+          "layers": [
+            {
+              "adjustment": null,
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF300243",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF8D0B8C",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a11a69-9bc7-7ed5-8206-9816e88ecc0c",
+              "imageId": null,
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": null,
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 1,
+              "parentFolderId": null,
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": null,
+              "solidColorHex": null,
+              "text": null,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": null,
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "PeekIco-Composite-0",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blendMode": "Normal",
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF9F0CB1",
+                  "cutout": 0,
+                  "gradient": null,
+                  "id": "01a11a69-9bc7-7a3a-8f8a-60787cabf25e",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "outlineShape": "Square",
+                  "placement": "Center",
+                  "visible": true,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blendMode": "Normal",
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF400653",
+                  "cutout": 0,
+                  "gradient": null,
+                  "id": "01a11a69-9bc7-7f1d-b18e-22b727114d85",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 1,
+                  "outlineShape": "Square",
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 10.9
+                },
+                {
+                  "affectOutline": false,
+                  "blendMode": "Overlay",
+                  "blur": 23.6,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": false,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFFFFFFF",
+                  "cutout": 0,
+                  "gradient": null,
+                  "id": "01a11a69-9bc7-7ae2-a361-b3cbcfab2dd9",
+                  "kind": "InnerLight",
+                  "offsetX": 0,
+                  "offsetY": 29,
+                  "opacity": 0.4367088607594859,
+                  "outlineShape": "Square",
+                  "placement": "Center",
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "gradient": null,
+              "id": "01a11a69-9bc7-748f-9538-d465793ea96f",
+              "imageId": null,
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": null,
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 1,
+              "parentFolderId": null,
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": null,
+              "solidColorHex": null,
+              "text": null,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": null,
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "Folder",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": null,
+              "id": "01a11a69-9bc7-7b47-aaec-5fe74063d658",
+              "imageId": null,
+              "kind": "Folder",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": "01a11a69-9bc7-70b6-8767-b48aa0954601",
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 1,
+              "parentFolderId": null,
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": null,
+              "solidColorHex": null,
+              "text": null,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": null,
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "Mask: ID 0",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": null,
+              "id": "01a11a69-9bc7-70b6-8767-b48aa0954601",
+              "imageId": null,
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": null,
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 1,
+              "parentFolderId": null,
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": null,
+              "solidColorHex": null,
+              "text": null,
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "adjustment": null,
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "Solid",
+              "effects": [
+                {
+                  "affectOutline": true,
+                  "blendMode": "Normal",
+                  "blur": 12.7,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "gradient": null,
+                  "id": "01a11a69-9bc7-7d5f-a585-cc22950ca1a0",
+                  "kind": "BoxBlur",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 1,
+                  "outlineShape": "Square",
+                  "placement": "Center",
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "gradient": null,
+              "id": "01a11a69-9bc7-7ff3-a6b3-ac517be073fd",
+              "imageId": null,
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": null,
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 0.65,
+              "parentFolderId": "01a11a69-9bc7-7b47-aaec-5fe74063d658",
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": {
+                "colorHex": "#FFFFFFFF",
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "kind": "Rectangle",
+                "outerRounding": 0,
+                "rotation": 45,
+                "scaleX": 1.37,
+                "scaleY": 0.21,
+                "vertexCount": 5
+              },
+              "solidColorHex": null,
+              "text": null,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": "Reds",
+                "contrast": 34.846461949265674,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "selectiveColors": null,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "Contrast",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": null,
+              "id": "01a11a69-9bc7-7204-aab8-fea079409b32",
+              "imageId": null,
+              "kind": "Contrast",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": null,
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 1,
+              "parentFolderId": null,
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": null,
+              "solidColorHex": null,
+              "text": null,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": null,
+              "atlasId": null,
+              "blendMode": "Normal",
+              "curves": null,
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blendMode": "Normal",
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF43054D",
+                  "cutout": 0,
+                  "gradient": null,
+                  "id": "01a11a69-9bc7-7396-b0e3-6e3613b3eb69",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 1,
+                  "outlineShape": "Square",
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 19
+                },
+                {
+                  "affectOutline": false,
+                  "blendMode": "Screen",
+                  "blur": 12.2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 0.45,
+                  "colorHex": "#FFFFFFFF",
+                  "cutout": 0,
+                  "gradient": null,
+                  "id": "01a11a69-9bc7-7ca7-9235-21956c57ab66",
+                  "kind": "InnerLight",
+                  "offsetX": 0,
+                  "offsetY": 50,
+                  "opacity": 0,
+                  "outlineShape": "Square",
+                  "placement": "Center",
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "gradient": null,
+              "id": "01a11a69-9bc7-7661-a3ab-031a675927d6",
+              "imageId": null,
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": null,
+              "offsetX": 0,
+              "offsetY": 0,
+              "opacity": 1,
+              "parentFolderId": null,
+              "rotation": 0,
+              "scale": 1,
+              "sdfVignette": null,
+              "shape": null,
+              "solidColorHex": null,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFFCCBF8",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF43054D",
+                "outlineEnabled": false,
+                "outlinePlacement": 2,
+                "outlineWidth": 19
+              },
+              "tileIndex": 0,
+              "visible": true
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "c13dc47a-5afd-4bf3-a2bb-e5456020a002",
+    "name": "Waifus · Originals",
+    "styles": [
+      {
+        "id": "01cef83b-3ce9-b5a3-bb72-e8073dae8dc1",
+        "name": "Project style 1",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Linear",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FFA61AA3",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF510459",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a11a95-91db-78a4-b19f-abc79328b942",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Screen",
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF31043D",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF440F30",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a11a95-91db-7704-ac24-04122e58eb02",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "scale": 2.6,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Shape",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11a95-91db-7aca-8025-124be23b504c",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.3393987341772153,
+              "scale": 2.2,
+              "shape": {
+                "colorHex": "#FFFD84EF",
+                "innerRadius": 0.5,
+                "innerRounding": 1,
+                "kind": 3,
+                "outerRounding": 0,
+                "rotation": 0,
+                "scaleX": 0.5,
+                "scaleY": 0.5,
+                "vertexCount": 13
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF6D228B",
+                  "cutout": 0,
+                  "id": "01a11a95-91db-7f6f-be19-4f781567221f",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11a95-91db-762f-9eff-32d26b525b27",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF5EBF9",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF6D228B",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Test artwork placeholder",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFF57AFD",
+                  "cutout": 0,
+                  "id": "01a11a95-91db-7849-ba96-cfa870f359df",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "visible": false,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF5B227C",
+                  "cutout": 0,
+                  "id": "01a11a95-91db-79e2-a8ae-bbb692328a00",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": false,
+                  "width": 10.8
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 6.3,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#80000000",
+                  "cutout": 0,
+                  "id": "01a11a95-91db-72d9-896f-5e844c1dea5e",
+                  "kind": "Shadow",
+                  "offsetX": 2,
+                  "offsetY": 7,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11a95-91db-7d79-a31e-215abd7497db",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "scale": 0.7,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 0,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "curves": {
+                "points": [
+                  {
+                    "input": 0,
+                    "output": 0
+                  },
+                  {
+                    "input": 0.36500000000000005,
+                    "output": 0.14903124999999995
+                  },
+                  {
+                    "input": 0.6599999999999999,
+                    "output": 0.79403125
+                  },
+                  {
+                    "input": 1,
+                    "output": 1
+                  }
+                ]
+              },
+              "displayName": "Curves",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11a95-91db-7883-af27-b9fafc8a388d",
+              "kind": "Curves",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Multiply",
+              "displayName": "SDF vignette",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11a95-91db-731d-ba9b-27f4195e8fc2",
+              "kind": "SdfVignette",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.547583081570997,
+              "scale": 2.3,
+              "sdfVignette": {
+                "colorHex": "#FF951A1A",
+                "inset": 0,
+                "roundness": 1,
+                "softness": 0.44
+              },
+              "tileIndex": 0,
+              "visible": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "18f52e1d-418f-c724-d41a-0508e5e69ad8",
+        "name": "Project style 2",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Linear",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FFC75B36",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF352C68",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a125c6-7e77-7f09-85e9-82a88d799101",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Screen",
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF857016",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF810752",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a125c6-7e77-7e04-8f71-ea4c7576c4b2",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "scale": 2.6,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "blur",
+              "effects": [
+                {
+                  "affectOutline": true,
+                  "blur": 21.3,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "id": "01a125c6-7e77-7d10-aece-025677fbbe9b",
+                  "kind": "BoxBlur",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "visible": true,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blendMode": "Screen",
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "gradient": {
+                    "angle": 90,
+                    "innerRadius": 0.5,
+                    "innerRounding": 0,
+                    "inputChannel": "RGB",
+                    "kind": "Linear",
+                    "outerRounding": 0,
+                    "stops": [
+                      {
+                        "colorHex": "#FF000000",
+                        "offset": 0
+                      },
+                      {
+                        "colorHex": "#FFFFFFFF",
+                        "offset": 1
+                      }
+                    ],
+                    "vertexCount": 5
+                  },
+                  "id": "01a125c6-7e77-7756-9f02-4033e84b3ac9",
+                  "kind": "GradientOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a125c6-7e77-79bc-af65-ff40ef317f07",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "offsetX": -200,
+              "offsetY": 200,
+              "opacity": 0.21607142857142825,
+              "scale": 2,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "main",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFF57AFD",
+                  "cutout": 0,
+                  "id": "01a125c6-7e77-725e-9549-952b93c4cf5e",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "visible": false,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF5B227C",
+                  "cutout": 0,
+                  "id": "01a125c6-7e77-7c63-9ac7-22867c4da4c5",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": false,
+                  "width": 10.8
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 6.3,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#80000000",
+                  "cutout": 0,
+                  "id": "01a125c6-7e77-71e4-b760-8c98efc0f80f",
+                  "kind": "Shadow",
+                  "offsetX": 2,
+                  "offsetY": 7,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a125c6-7e77-73af-841a-120646307715",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "scale": 0.7,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF6D228B",
+                  "cutout": 0,
+                  "id": "01a125c6-7e77-75a6-8245-ef7a20a5004d",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a125c6-7e77-7021-9632-bd7b89e8c9c4",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF5EBF9",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF6D228B",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 0,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "curves": {
+                "points": [
+                  {
+                    "input": 0,
+                    "output": 0
+                  },
+                  {
+                    "input": 0.36500000000000005,
+                    "output": 0.14903124999999995
+                  },
+                  {
+                    "input": 0.6599999999999999,
+                    "output": 0.79403125
+                  },
+                  {
+                    "input": 1,
+                    "output": 1
+                  }
+                ]
+              },
+              "displayName": "Curves",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a125c6-7e77-73bf-baab-7eac554b2668",
+              "kind": "Curves",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Multiply",
+              "displayName": "SDF vignette",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a125c6-7e77-7f18-b584-6cc83d178360",
+              "kind": "SdfVignette",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.547583081570997,
+              "scale": 2.3,
+              "sdfVignette": {
+                "colorHex": "#FF951A1A",
+                "inset": 0,
+                "roundness": 1,
+                "softness": 0.44
+              },
+              "tileIndex": 0,
+              "visible": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "33734802-9e84-2fe9-edf5-a3125960c1aa",
+        "name": "Project style 3",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Linear",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF7D4063",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF352C68",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a110db-7e4e-7137-a736-92a6e0d6e09d",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Screen",
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF857016",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF810752",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a110dc-8bff-7cad-b1af-28d50f8b2bad",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "scale": 2.6,
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Test artwork placeholder",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a115c0-4a87-7e8a-8fb5-c4bdc723a688",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "offsetX": 7,
+              "offsetY": 279,
+              "scale": 2.2,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF32072F",
+                  "cutout": 0,
+                  "id": "01a115d4-9a4a-7e40-a364-715c433c1b4d",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a115d4-9a4a-7b6a-ad02-19aec6491711",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF40CF3",
+                "content": "1",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF32072F",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Shape",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#000000",
+                  "cutout": 0,
+                  "id": "01a115c2-6585-76e7-a4f5-68b0f71c9ed9",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": false,
+                  "width": 5
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a115b8-f909-7519-a80c-ce8ab9b318a6",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "offsetX": 136,
+              "offsetY": 66,
+              "scale": 1.8,
+              "shape": {
+                "colorHex": "#FFE814B0",
+                "innerRadius": 0.5,
+                "innerRounding": 1,
+                "kind": 3,
+                "outerRounding": 0,
+                "rotation": 0,
+                "scaleX": 0.5,
+                "scaleY": 0.5,
+                "vertexCount": 12
+              },
+              "tileIndex": 0,
+              "visible": false
+            }
+          ]
+        }
+      },
+      {
+        "id": "3657609f-b339-a38a-a66a-67ce87793859",
+        "name": "Project style 4",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Shape",
+              "effects": [
+                {
+                  "affectOutline": true,
+                  "blur": 22.6,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "id": "01a11569-5116-735b-9833-23bd8a4ed92b",
+                  "kind": "BoxBlur",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11560-b436-7352-ac54-fa98dcb306cc",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "offsetX": 103,
+              "opacity": 0.5444444444444446,
+              "shape": {
+                "colorHex": "#FFFFFFFF",
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "kind": 0,
+                "outerRounding": 0,
+                "rotation": 46,
+                "scaleX": 0.17,
+                "scaleY": 1.19,
+                "vertexCount": 5
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 0,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "curves": {
+                "points": [
+                  {
+                    "input": 0,
+                    "output": 0
+                  },
+                  {
+                    "input": 0.36500000000000005,
+                    "output": 0.14903124999999995
+                  },
+                  {
+                    "input": 0.6599999999999999,
+                    "output": 0.79403125
+                  },
+                  {
+                    "input": 1,
+                    "output": 1
+                  }
+                ]
+              },
+              "displayName": "Curves",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a1154e-04fd-7431-a754-679310de86b9",
+              "kind": "Curves",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.537037037037037,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Linear",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FFC75B36",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF6045EB",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a1154e-04fd-7922-a660-a47c651114c8",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Screen",
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FFC75B36",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF6045EB",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a1154e-04fd-726a-bf4f-2419d613d065",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Test artwork placeholder",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFF57AFD",
+                  "cutout": 0,
+                  "id": "01a1154e-04fe-7751-a3ae-4aede6008661",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "visible": true,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF5B227C",
+                  "cutout": 0,
+                  "id": "01a1154e-04ff-716d-98af-a1e12527ba2b",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 10.8
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a1154e-04fd-744b-b6ac-d44572d1a1c4",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "offsetX": -29,
+              "offsetY": -30,
+              "scale": 0.7,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF6D228B",
+                  "cutout": 0,
+                  "id": "01a1154e-04ff-7b7e-8e7b-c2718711712c",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a1154e-04fd-7ab8-bbab-d830d76553bd",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF5EBF9",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF6D228B",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Folder",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11560-4d19-729e-a014-be64ca545487",
+              "kind": "Folder",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": "01a11560-7a4b-75c4-9359-dd25f13c1b71",
+              "offsetX": -29,
+              "offsetY": -30,
+              "scale": 0.7,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": -53.271028037383175,
+                "colorRange": 0,
+                "contrast": 58.3444592790387,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "displayName": "Contrast",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a1154e-04fd-7d42-8a5c-cbd16a68d31c",
+              "kind": "Contrast",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.5740740740740745,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Mask: ID 0",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11560-7a4b-75c4-9359-dd25f13c1b71",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Shape",
+              "effects": [
+                {
+                  "affectOutline": true,
+                  "blur": 50.2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "id": "01a11569-db54-7a64-8281-00cfe9cc13eb",
+                  "kind": "BoxBlur",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11569-db54-77eb-adbf-0fa6b35220e1",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "offsetX": -163,
+              "opacity": 0.8870839193624052,
+              "parentFolderId": "01a11560-4d19-729e-a014-be64ca545487",
+              "shape": {
+                "colorHex": "#FFFFFFFF",
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "kind": 0,
+                "outerRounding": 0,
+                "rotation": 46,
+                "scaleX": 0.17,
+                "scaleY": 1.19,
+                "vertexCount": 5
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Shape",
+              "effects": [
+                {
+                  "affectOutline": true,
+                  "blur": 10.9,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "id": "01a1156e-11cf-7d9e-8dba-61f927459e58",
+                  "kind": "BoxBlur",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a1156e-11cf-74f7-b524-aa9aca7a630b",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "offsetX": -51,
+              "offsetY": 152,
+              "parentFolderId": "01a11560-4d19-729e-a014-be64ca545487",
+              "shape": {
+                "colorHex": "#FFFFFFFF",
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "kind": 0,
+                "outerRounding": 0,
+                "rotation": 46,
+                "scaleX": 0.03,
+                "scaleY": 1.77,
+                "vertexCount": 5
+              },
+              "tileIndex": 0,
+              "visible": false
+            }
+          ]
+        }
+      },
+      {
+        "id": "6d1ece2d-6508-0487-15e9-6458beed152e",
+        "name": "Project style 5",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Linear",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF7D4063",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF352C68",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a110db-7e4e-7137-a736-92a6e0d6e09d",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Screen",
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF857016",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF810752",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a110dc-8bff-7cad-b1af-28d50f8b2bad",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "scale": 2.6,
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Shape",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#000000",
+                  "cutout": 0,
+                  "id": "01a115c2-6585-76e7-a4f5-68b0f71c9ed9",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 5
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a115b8-f909-7519-a80c-ce8ab9b318a6",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "scale": 1.8,
+              "shape": {
+                "colorHex": "#FFE814B0",
+                "innerRadius": 0.5,
+                "innerRounding": 1,
+                "kind": 3,
+                "outerRounding": 0,
+                "rotation": 0,
+                "scaleX": 0.5,
+                "scaleY": 0.5,
+                "vertexCount": 12
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF6D228B",
+                  "cutout": 0,
+                  "id": "01a110de-38da-7f7e-a26c-4113762e706c",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a110de-38da-7fc5-9680-7c15b3ec4e60",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF5EBF9",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF6D228B",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Test artwork placeholder",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFF57AFD",
+                  "cutout": 0,
+                  "id": "01a110da-0487-75d4-9ba3-db6abe949ba6",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "visible": false,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF5B227C",
+                  "cutout": 0,
+                  "id": "01a110da-2578-7e8c-b942-e711311db442",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 5.2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 21.2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#80000000",
+                  "cutout": 0,
+                  "id": "01a11538-0be2-76c6-b61c-1ebae00fc9f8",
+                  "kind": "Shadow",
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a10d92-eea5-7dd9-beee-1aed548a3bc6",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "scale": 0.5,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 0,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "curves": {
+                "points": [
+                  {
+                    "input": 0,
+                    "output": 0
+                  },
+                  {
+                    "input": 0.36500000000000005,
+                    "output": 0.14903124999999995
+                  },
+                  {
+                    "input": 0.6599999999999999,
+                    "output": 0.79403125
+                  },
+                  {
+                    "input": 1,
+                    "output": 1
+                  }
+                ]
+              },
+              "displayName": "Curves",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11294-1b17-70ef-ae35-11935c3afd52",
+              "kind": "Curves",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF32072F",
+                  "cutout": 0,
+                  "id": "01a115bb-bcd5-7666-8286-201d69dbaa8a",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a115bb-bcd5-7dc0-b0cb-59535a620a86",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF40CF3",
+                "content": "100",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF32072F",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Multiply",
+              "displayName": "SDF vignette",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11535-a54e-718a-830b-5b3c176dce1d",
+              "kind": "SdfVignette",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.9148148148148146,
+              "scale": 2.3,
+              "sdfVignette": {
+                "colorHex": "#FF951A1A",
+                "inset": 0,
+                "roundness": 1,
+                "softness": 0.44
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Test artwork placeholder",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a115c0-4a87-7e8a-8fb5-c4bdc723a688",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "parentFolderId": "01a115c0-ee84-7217-8a5b-5d6c6fb2d73e",
+              "scale": 0.5,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Folder",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a115c0-ee84-7217-8a5b-5d6c6fb2d73e",
+              "kind": "Folder",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 0,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "blendMode": "Lighten",
+              "displayName": "Gradient overlay",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF000000",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FFFB24FF",
+                    "offset": 0.45286396181384253
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a115c3-8db0-778e-b85e-cd7a8790c712",
+              "kind": "GradientOverlay",
+              "linkAtlasToGeneral": false,
+              "parentFolderId": "01a115c0-ee84-7217-8a5b-5d6c6fb2d73e",
+              "tileIndex": 0,
+              "visible": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "a49e9ed3-2fd6-39e7-ab73-ba13011c7230",
+        "name": "Project style 6",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF300243",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF8D0B8C",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a11c96-dc99-7c19-b905-83e294c3e870",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "PeekIco-Composite-0",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF9F0CB1",
+                  "cutout": 0,
+                  "id": "01a11c96-dc99-7d1c-bbd1-a2be3d02ea5e",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "visible": true,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF400653",
+                  "cutout": 0,
+                  "id": "01a11c96-dc99-71cf-94ab-b1566bfd79f2",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 10.9
+                },
+                {
+                  "affectOutline": false,
+                  "blendMode": "Overlay",
+                  "blur": 23.6,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": false,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFFFFFFF",
+                  "cutout": 0,
+                  "id": "01a11c96-dc99-7f1c-827d-266c8a04d867",
+                  "kind": "InnerLight",
+                  "offsetX": 0,
+                  "offsetY": 29,
+                  "opacity": 0.4367088607594859,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11c96-dc99-7bb8-9672-13c599ad49dd",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Folder",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11c96-dc99-753e-9e5d-2ae7ad37dec0",
+              "kind": "Folder",
+              "linkAtlasToGeneral": false,
+              "maskLayerId": "01a11c96-dc99-74df-82d5-803e1cf74e34",
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Mask: ID 0",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11c96-dc99-74df-82d5-803e1cf74e34",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Solid",
+              "effects": [
+                {
+                  "affectOutline": true,
+                  "blur": 12.7,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF000000",
+                  "cutout": 0,
+                  "id": "01a11c96-dc9a-762b-8cff-76ac67181414",
+                  "kind": "BoxBlur",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11c96-dc99-7908-9536-411cf91ed7e3",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.65,
+              "parentFolderId": "01a11c96-dc99-753e-9e5d-2ae7ad37dec0",
+              "shape": {
+                "colorHex": "#FFFFFFFF",
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "kind": 0,
+                "outerRounding": 0,
+                "rotation": 45,
+                "scaleX": 1.37,
+                "scaleY": 0.21,
+                "vertexCount": 5
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 34.846461949265674,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "displayName": "Contrast",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11c96-dc99-7e55-b5fa-ed96fc1304bc",
+              "kind": "Contrast",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF43054D",
+                  "cutout": 0,
+                  "id": "01a11c96-dc9a-7835-b331-27bf10ba98e0",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 19
+                },
+                {
+                  "affectOutline": false,
+                  "blendMode": "Screen",
+                  "blur": 12.2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 0.45,
+                  "colorHex": "#FFFFFFFF",
+                  "cutout": 0,
+                  "id": "01a11c96-dc9a-7485-91ec-7f5082db7276",
+                  "kind": "InnerLight",
+                  "offsetX": 0,
+                  "offsetY": 50,
+                  "opacity": 0,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a11c96-dc99-77c4-b5e4-b706abd66f4a",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFFCCBF8",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF43054D",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 19
+              },
+              "tileIndex": 0,
+              "visible": true
+            }
+          ]
+        }
+      },
+      {
+        "id": "c9b343d5-ca05-deb7-7cb5-570ed8f3e16e",
+        "name": "Project style 7",
+        "recipe": {
+          "layers": [
+            {
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Linear",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FFD52088",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF352C68",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a110db-7e4e-7137-a736-92a6e0d6e09d",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Screen",
+              "displayName": "Gradient",
+              "effects": [],
+              "generalImageIndex": 0,
+              "gradient": {
+                "angle": 90,
+                "innerRadius": 0.5,
+                "innerRounding": 0,
+                "inputChannel": "RGB",
+                "kind": "Radial",
+                "outerRounding": 0,
+                "stops": [
+                  {
+                    "colorHex": "#FF857016",
+                    "offset": 0
+                  },
+                  {
+                    "colorHex": "#FF810752",
+                    "offset": 1
+                  }
+                ],
+                "vertexCount": 5
+              },
+              "id": "01a110dc-8bff-7cad-b1af-28d50f8b2bad",
+              "kind": "Gradient",
+              "linkAtlasToGeneral": false,
+              "scale": 2.6,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Shape",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a115b8-f909-7519-a80c-ce8ab9b318a6",
+              "kind": "Shape",
+              "linkAtlasToGeneral": false,
+              "scale": 1.8,
+              "shape": {
+                "colorHex": "#FFEFD390",
+                "innerRadius": 0.5,
+                "innerRounding": 1,
+                "kind": 3,
+                "outerRounding": 0,
+                "rotation": 0,
+                "scaleX": 0.5,
+                "scaleY": 0.5,
+                "vertexCount": 12
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF6D228B",
+                  "cutout": 0,
+                  "id": "01a110de-38da-7f7e-a26c-4113762e706c",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a110de-38da-7fc5-9680-7c15b3ec4e60",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFF5EBF9",
+                "content": "00",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF6D228B",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": false
+            },
+            {
+              "displayName": "Test artwork placeholder",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FFF57AFD",
+                  "cutout": 0,
+                  "id": "01a110da-0487-75d4-9ba3-db6abe949ba6",
+                  "kind": "ColorOverlay",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "opacity": 0.5019607843137255,
+                  "visible": false,
+                  "width": 2
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF5B227C",
+                  "cutout": 0,
+                  "id": "01a110da-2578-7e8c-b942-e711311db442",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": false,
+                  "width": 10.8
+                },
+                {
+                  "affectOutline": false,
+                  "blur": 6.3,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#80000000",
+                  "cutout": 0,
+                  "id": "01a11538-0be2-76c6-b61c-1ebae00fc9f8",
+                  "kind": "Shadow",
+                  "offsetX": 2,
+                  "offsetY": 7,
+                  "visible": true,
+                  "width": 2
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a10d92-eea5-7dd9-beee-1aed548a3bc6",
+              "kind": "AchievementImage",
+              "linkAtlasToGeneral": false,
+              "scale": 0.5,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "adjustment": {
+                "black": 0,
+                "brightness": 0,
+                "colorRange": 0,
+                "contrast": 0,
+                "cyan": 0,
+                "effectiveSelectiveColors": [
+                  {
+                    "black": 0,
+                    "cyan": 0,
+                    "magenta": 0,
+                    "range": 0,
+                    "yellow": 0
+                  }
+                ],
+                "hue": 0,
+                "lightness": 0,
+                "magenta": 0,
+                "saturation": 0,
+                "unsharpAmount": 100,
+                "unsharpRadius": 1,
+                "unsharpThreshold": 0,
+                "yellow": 0
+              },
+              "curves": {
+                "points": [
+                  {
+                    "input": 0,
+                    "output": 0
+                  },
+                  {
+                    "input": 0.36500000000000005,
+                    "output": 0.14903124999999995
+                  },
+                  {
+                    "input": 0.6599999999999999,
+                    "output": 0.79403125
+                  },
+                  {
+                    "input": 1,
+                    "output": 1
+                  }
+                ]
+              },
+              "displayName": "Curves",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11294-1b17-70ef-ae35-11935c3afd52",
+              "kind": "Curves",
+              "linkAtlasToGeneral": false,
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "displayName": "Text",
+              "effects": [
+                {
+                  "affectOutline": false,
+                  "blur": 2,
+                  "blurBlendMode": "Screen",
+                  "blurColorHex": "#FFFFFFFF",
+                  "blurEnabled": true,
+                  "blurOpacity": 1,
+                  "colorHex": "#FF4A160E",
+                  "cutout": 0,
+                  "id": "01a115bb-bcd5-7666-8286-201d69dbaa8a",
+                  "kind": "Outline",
+                  "offsetX": 2,
+                  "offsetY": 2,
+                  "placement": "Outward",
+                  "visible": true,
+                  "width": 14
+                }
+              ],
+              "generalImageIndex": 0,
+              "id": "01a115bb-bcd5-7dc0-b0cb-59535a620a86",
+              "kind": "Text",
+              "linkAtlasToGeneral": false,
+              "text": {
+                "alignment": "BottomRight",
+                "colorHex": "#FFFDBB1F",
+                "content": "100",
+                "fontFamily": "Segoe UI",
+                "fontSize": 128,
+                "linkToAchievementValue": true,
+                "outlineColorHex": "#FF4A160E",
+                "outlineEnabled": false,
+                "outlinePlacement": "Outward",
+                "outlineWidth": 14
+              },
+              "tileIndex": 0,
+              "visible": true
+            },
+            {
+              "blendMode": "Multiply",
+              "displayName": "SDF vignette",
+              "effects": [],
+              "generalImageIndex": 0,
+              "id": "01a11535-a54e-718a-830b-5b3c176dce1d",
+              "kind": "SdfVignette",
+              "linkAtlasToGeneral": false,
+              "opacity": 0.547583081570997,
+              "scale": 2.3,
+              "sdfVignette": {
+                "colorHex": "#FF951A1A",
+                "inset": 0,
+                "roundness": 1,
+                "softness": 0.44
+              },
+              "tileIndex": 0,
+              "visible": true
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

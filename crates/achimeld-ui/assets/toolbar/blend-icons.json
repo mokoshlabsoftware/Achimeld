@@ -1,0 +1,60 @@
+{
+  "tool": "Built-in image_gen via imagegen skill",
+  "preparation": "Retain original generated transparent PNGs; crop alpha bounds (>=128 for bounds only), fit proportionally inside 56 x 56 on 64 x 64 canvas; white tintable RGBA preserves resized source alpha; linear mipmaps.",
+  "icons": [
+    {
+      "name": "control",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, control blend icon. Primary request: two overlapping diamond-shaped layers with a clearly visible shared center, indicating layer blending. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-control-source.png",
+      "embedded": "blend-control.rgba"
+    },
+    {
+      "name": "normal",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, normal blend icon. Primary request: two stacked small squares, one upper square solid and the lower square outlined, indicating an unchanged top layer. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-normal-source.png",
+      "embedded": "blend-normal.rgba"
+    },
+    {
+      "name": "multiply",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, multiply blend icon. Primary request: a bold multiplication X centered between two small overlapping circles, indicating Multiply. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-multiply-source.png",
+      "embedded": "blend-multiply.rgba"
+    },
+    {
+      "name": "screen",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, screen blend icon. Primary request: an overlapping pair of circles with a small four-point light sparkle in the shared center, indicating Screen. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-screen-source.png",
+      "embedded": "blend-screen.rgba"
+    },
+    {
+      "name": "overlay",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, overlay blend icon. Primary request: two overlapping diamond outlines with one half of their shared center solid, indicating Overlay. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-overlay-source.png",
+      "embedded": "blend-overlay.rgba"
+    },
+    {
+      "name": "darken",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, darken blend icon. Primary request: a half-filled circle with a short downward arrow beside it, indicating Darken. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-darken-source.png",
+      "embedded": "blend-darken.rgba"
+    },
+    {
+      "name": "lighten",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, lighten blend icon. Primary request: a half-filled circle with a short upward arrow beside it, indicating Lighten. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-lighten-source.png",
+      "embedded": "blend-lighten.rgba"
+    },
+    {
+      "name": "add",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, add blend icon. Primary request: a bold plus sign with two small offset layer corner marks, indicating Add. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-add-source.png",
+      "embedded": "blend-add.rgba"
+    },
+    {
+      "name": "difference",
+      "prompt": "Use case: logo-brand. Asset type: one desktop toolbar/menu glyph for Achimeld, difference blend icon. Primary request: two overlapping circles with a clearly hollow lens-shaped shared center, indicating Difference. Style: minimal monochrome white flat toolbar symbol, consistent medium bold visual weight, crisp simple shapes readable at 18 px, centered with ample transparent margin, square canvas. White glyph only, genuine transparent background. No text, no letters, no labels, no gradients, no shadow, no border, no frame, no background.",
+      "source": "blend-difference-source.png",
+      "embedded": "blend-difference.rgba"
+    }
+  ]
+}

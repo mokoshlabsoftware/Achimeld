@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "playwrightVersion": "1.62.0",
+  "chromiumRevision": "1234",
+  "chromiumVersion": "151.0.7922.34",
+  "archiveUrl": "https://cdn.playwright.dev/builds/cft/151.0.7922.34/win64/chrome-win64.zip",
+  "archiveSha256": "045621e45a9dd27002c7fc1d8e10fe9f5f71f4cadbf44ec6f397f56f0179725c",
+  "executable": "browser/chromium-1234/chrome-win64/chrome.exe"
+}

@@ -1,0 +1,8 @@
+{
+  "generator": "Built-in image_gen tool",
+  "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Subject: 3D text layer, one bold extruded capital T viewed slightly from above and right, with two thin transparent seams separating the white front face from white solid extrusion side faces so depth is legible. Strong wide top bar and central stem, compact simple readable typography. Crisp flat pure-white solid silhouettes with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot.",
+  "source": "layer-text3d-source.png",
+  "embedded": "layer-text3d.rgba",
+  "preview": "layer-text3d.png",
+  "embedding": "64 by 64 white RGBA8 glyph, generated transparency preserved with Lanczos resizing"
+}

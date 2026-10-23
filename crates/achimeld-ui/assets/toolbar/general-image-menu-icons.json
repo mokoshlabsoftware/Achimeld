@@ -1,0 +1,30 @@
+{
+  "generator": "Built-in image_gen tool via imagegen skill",
+  "preparation": "Retain generated source PNGs unchanged. Center the generated alpha bounds (coverage >= 32) within a 64 x 64 canvas with a maximum 56-pixel visible dimension. Resize with high-quality bicubic filtering and retain the resized alpha as white tintable RGBA8 pixels. Menu glyphs render at 20 logical pixels with linear mipmap filtering and follow the shared button's animated text color.",
+  "icons": [
+    {
+      "name": "menu-import-images",
+      "prompt": "Use case: logo-brand. Asset type: production desktop context-menu icon for Achimeld, matching its monochrome toolbar glyphs. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, clearly readable at 18 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. All strokes and filled shapes must be pure white with transparent cutouts. Subject: a landscape picture frame with a simple mountain and sun, with a bold downward import arrow at its lower right. One clear compact import-image symbol."
+    },
+    {
+      "name": "menu-import-atlas",
+      "prompt": "Use case: logo-brand. Asset type: production desktop context-menu icon for Achimeld, matching its monochrome toolbar glyphs. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, clearly readable at 18 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. All strokes and filled shapes must be pure white with transparent cutouts. Subject: a square sprite-sheet grid of two by two tiles with transparent gutters, with a bold downward import arrow at its lower right. One clear compact import-from-atlas symbol."
+    },
+    {
+      "name": "menu-choose-art",
+      "prompt": "Use case: logo-brand. Asset type: production desktop context-menu icon for Achimeld, matching its monochrome toolbar glyphs. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, clearly readable at 18 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. All strokes and filled shapes must be pure white with transparent cutouts. Subject: a small open archive drawer holding two landscape picture cards, the front card containing one simple mountain cutout. One clear compact art-library symbol."
+    },
+    {
+      "name": "menu-copy",
+      "prompt": "Use case: logo-brand. Asset type: production desktop context-menu icon for Achimeld, matching its monochrome toolbar glyphs. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, clearly readable at 18 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. All strokes and filled shapes must be pure white with transparent cutouts. Subject: two overlapping upright rectangular paper sheets with a clear transparent separation between their edges. Familiar compact copy symbol, no writing on sheets."
+    },
+    {
+      "name": "menu-paste",
+      "prompt": "Use case: logo-brand. Asset type: production desktop context-menu icon for Achimeld, matching its monochrome toolbar glyphs. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, clearly readable at 18 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. All strokes and filled shapes must be pure white with transparent cutouts. Subject: a simple upright clipboard with a broad clip centered at its top and one blank rectangular sheet inset. Familiar compact paste symbol, no writing."
+    },
+    {
+      "name": "menu-use-in-icon",
+      "prompt": "Use case: logo-brand. Asset type: production desktop context-menu icon for Achimeld, matching its monochrome toolbar glyphs. Generate ONE flat monochrome WHITE UI glyph on a genuinely transparent background. Simple solid vector-icon appearance, balanced medium-bold visual weight, clean geometric edges and restrained large cutouts, clearly readable at 18 pixels. Center the complete symbol in a square canvas with roughly 12 percent empty margin on every side. No text, letters, labels, badge, button body, enclosing circle, shadows, gradients, textures or decoration. All strokes and filled shapes must be pure white with transparent cutouts. Subject: three stacked diamond-shaped image layers, with a bold small plus sign at the lower right separated by transparent space. One clear compact add-image-layer symbol."
+    }
+  ]
+}

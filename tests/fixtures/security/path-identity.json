@@ -1,0 +1,10 @@
+[
+  {"a":"C:/Program Files/Achimeld/version/.playwright/node/win32_x64/node.exe","b":"c:\\program files\\achimeld\\version\\.playwright\\node\\win32_x64\\NODE.EXE","equal":true},
+  {"a":"C:/Program Files/Achimeld/version/Achimeld.App.exe","b":"C:/Program Files/Achimeld/other/Achimeld.App.exe","equal":false},
+  {"a":"C:/Program Files/Achimeld/version/Achimeld.App.exe","b":"C:/Users/test/Achimeld.App.exe","equal":false},
+  {"a":"C:/Program Files/Achimeld/version/Achimeld.App.exe","b":"C:/Program Files/Achimeld/version/Achimeld.App.exe.evil","equal":false},
+  {"a":"C:/Program Files/Achimeld/version/Achimeld.App.exe","b":"Achimeld.App.exe","equal":false},
+  {"a":"\\\\?\\C:\\Program Files\\Achimeld\\version\\Achimeld.App.exe","b":"\\\\?\\c:\\program files\\achimeld\\version\\ACHIMELD.APP.EXE","equal":true},
+  {"a":"C:/Users/żółw/Achimeld.exe","b":"C:/Users/żółw/Achimeld.exe","equal":true},
+  {"a":"C:/Users/test/Achimeld/Browser/ChromeProfile","b":"C:/Users/test/Achimeld/Browser/ChromeProfile/Default","equal":false}
+]

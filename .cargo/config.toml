@@ -1,0 +1,3 @@
+# Direct Cargo invocations also keep binaries outside source.
+[build]
+target-dir = "C:/Projects/AchimeldBuild/current/target"

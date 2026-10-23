@@ -1,0 +1,8 @@
+{
+  "generator": "Built-in image_gen tool through the imagegen skill",
+  "prompt": "Use case: logo-brand. Asset type: small desktop property action icon. Primary request: a single chain-link symbol for an on/off 'Link text to achievement unlock value' button. Draw two smoothly interlocking oval chain links on a diagonal from lower left to upper right, with a clear linked join and open inner holes. Style: perfectly clean flat solid BLACK silhouette/outline ink, simple even sturdy line weight matching desktop toolbar folder outlines and arrows, readable at 20 pixels. Center the symbol in a square composition with balanced margins. True transparent background and transparent negative space. No letters, numbers, text, badge, button body, outer frame, color, shadow, texture, glow, gradients, extra marks or watermark.",
+  "source": "text-unlock-link-source.png",
+  "embedded": "text-unlock-link.rgba",
+  "preview": "text-unlock-link.png",
+  "preparation": "Crop to generated alpha bounds above 32; resize to fit 48 x 48 with Lanczos; center on a transparent 64 x 64 canvas; preserve resized alpha and normalize RGB to white for palette tinting. Embed RGBA8 with linear mipmap filtering."
+}

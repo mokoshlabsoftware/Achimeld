@@ -1,0 +1,21 @@
+[package]
+name = "achimeld-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+achimeld-core = { path = "../achimeld-core" }
+achimeld-application = { path = "../achimeld-application" }
+egui.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+achimeld-persistence = { path = "../achimeld-persistence" }
+eframe.workspace = true
+winit = { version = "=0.30.13", default-features = false }
+achimeld-imaging = { path = "../achimeld-imaging" }
+image.workspace = true
+
+[lints]
+workspace = true

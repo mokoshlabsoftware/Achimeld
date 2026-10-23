@@ -1,0 +1,27 @@
+{
+  "generator": "Built-in image_gen tool through the imagegen skill",
+  "reference": "C:/Projects/Achiever/achiever/src/Achimeld.App/GridSettingsWindow.xaml",
+  "preparation": "Original PNGs retained unchanged. Embedded 64x64 RGBA8 copies use white tintable pixels and bicubic resized generated alpha. Transparent padding is trimmed using the nonzero-alpha bounds of the initial 64x64 reduction, then the visible bounds are centered at a maximum 54 pixels for consistent toolbar weight. The fill-by-columns state rotates the rows image 90 degrees.",
+  "icons": [
+    {
+      "name": "sort-style",
+      "prompt": "Use case: logo-brand. Asset type: small desktop Sort panel icon for Achimeld, matching its monochrome toolbar set. Generate ONE crisp solid white stacked-layers glyph on a genuinely transparent background. Subject: three stacked flat diamond-shaped tiles, the top tile is a filled diamond and the two lower tiles are substantial open downward chevrons, conveying icon styles. Centered square canvas, visible symbol occupies about 80 percent of canvas, equal margins. Geometric clean edges, balanced substantial visual weight, readable at 22 pixels. No text, letters, button background, border, shadows, gradients, decoration, texture, speckles or roughness."
+    },
+    {
+      "name": "sort",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp, simple, professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster icon asset, not a screenshot. Subject: sort and arrange items, three stacked horizontal bars decreasing in length from top to bottom on the left, with one sturdy downward arrow on the right. Match the visual weight of a simple solid desktop toolbar trophy or bar-chart glyph."
+    },
+    {
+      "name": "sort-new-line",
+      "prompt": "Use case: logo-brand. Asset type: small desktop Sort panel glyph for Achimeld. ONE crisp monochrome white UI icon on a genuinely transparent background. Flat clean geometric silhouette, sharp clean edges, consistent substantial stroke weight, readable at 22 pixels. Centered on square canvas with even margin. No words, letters, container, button background, texture, roughness, speckles, gradients, shadows, or decoration. Subject: a return-to-next-line arrow: horizontal line at top turns downward at the right, then left across the bottom, ending in a clear left-pointing arrowhead."
+    },
+    {
+      "name": "sort-rows",
+      "prompt": "Use case: logo-brand. Asset type: small desktop Sort panel glyph for Achimeld. ONE crisp monochrome white UI icon on a genuinely transparent background. Flat clean geometric silhouette, sharp clean edges, consistent substantial stroke weight, readable at 22 pixels. Centered on square canvas with even margin. No words, letters, container, button background, texture, roughness, speckles, gradients, shadows, or decoration. Subject: three parallel horizontal rows of equal length, top row ends with a right-pointing arrowhead. A clear fill-by-rows symbol."
+    },
+    {
+      "name": "sort-selection",
+      "prompt": "Use case: logo-brand. Asset type: small desktop Sort panel glyph for Achimeld. ONE crisp monochrome white UI icon on a genuinely transparent background. Flat clean geometric silhouette, sharp clean edges, consistent substantial stroke weight, readable at 22 pixels. Centered on square canvas with even margin. No words, letters, container, button background, texture, roughness, speckles, gradients, shadows, or decoration. Subject: four small filled squares arranged in an evenly spaced two by two grid. Clean simple select-all-items symbol."
+    }
+  ]
+}

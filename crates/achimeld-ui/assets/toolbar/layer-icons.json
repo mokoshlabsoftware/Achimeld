@@ -1,0 +1,55 @@
+{
+  "generator": "Built-in image_gen tool",
+  "icons": [
+    {
+      "name": "layer-curves",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Curves adjustment: a simple rising S-shaped tone curve inside L-shaped chart axes; one small solid control point in the middle."
+    },
+    {
+      "name": "layer-contrast",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Contrast adjustment: a bold circular disc split vertically, one half solid white and the other transparent with a strong white outer arc."
+    },
+    {
+      "name": "layer-hue-saturation",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Hue and saturation adjustment: three overlapping bold outlined circles arranged as a triangular color mixing symbol, only pure white strokes and transparent spaces."
+    },
+    {
+      "name": "layer-selective-color",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Selective color adjustment: a simple eyedropper diagonally above a small isolated circular color sample, with a clear compact silhouette."
+    },
+    {
+      "name": "layer-unsharp-mask",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Unsharp mask sharpening adjustment: a crisp four-point sparkle at the upper right of a simple triangular mountain edge, strong clear silhouette."
+    },
+    {
+      "name": "layer-gradient-overlay",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Gradient overlay adjustment: two slightly offset overlapping square tiles, the front tile filled with four clear vertical bands from opaque white to transparent."
+    },
+    {
+      "name": "layer-text",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Text layer: one bold capital T with a strong wide top bar and central stem; a typographic tool symbol."
+    },
+    {
+      "name": "layer-solid",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Solid fill layer: one simple tilted paint bucket pouring one thick stream into a small solid droplet, bold clear silhouette."
+    },
+    {
+      "name": "layer-shape",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Shape layer: a solid white circle at upper left and a solid white square at lower right, slightly overlapping, very simple geometry."
+    },
+    {
+      "name": "layer-vignette",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Vignette layer: a bold square frame with a large circular transparent opening at its center, representing darkened corners."
+    },
+    {
+      "name": "layer-gradient",
+      "prompt": "Use case: logo-brand. Asset type: production layer-type icon for Achimeld desktop image editor. Generate ONE monochrome white UI glyph on a genuinely transparent background. Crisp flat pure-white solid silhouette with restrained transparent cutouts, consistent bold weight, readable at 20 pixels. Centered square canvas, symbol occupies 78 percent of canvas. Smooth antialiased edges only. Empty space is perfectly transparent. No background, shadows, glow, grain, texture, badge, rounded button tile, decoration, labels, or watermark. This is a raster icon asset, not a screenshot. Subject: Gradient layer: one simple square containing four broad vertical stripes, progressing from opaque white at left to transparent at right."
+    }
+  ],
+  "reused": {
+    "AtlasTile": "art-atlases",
+    "AchievementImage": "art-general-images",
+    "StandaloneImage": "art-icon-images"
+  },
+  "embedding": "64 x 64 white RGBA8 glyphs, preserving generated transparency; PNG sources retained unchanged."
+}

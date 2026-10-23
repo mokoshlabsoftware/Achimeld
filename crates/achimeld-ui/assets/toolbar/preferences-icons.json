@@ -1,0 +1,36 @@
+{
+  "provider": "Built-in image_gen through imagegen skill",
+  "preparation": "Original transparent PNGs retained unchanged. Visible alpha bounds fitted to 52 x 52 pixels and centered in 64 x 64 white tintable RGBA8 images; generated alpha preserved. Embedded with linear mipmap filtering.",
+  "icons": [
+    {
+      "name": "general",
+      "prompt": "Use case: logo-brand. Asset type: Achimeld desktop Preferences navigation icon, general. Create ONE a single compact six-tooth settings gear with a clean circular center. Flat solid white monochrome toolbar silhouette with limited negative-space details, consistent medium-bold visual weight, readable at 20 by 20 pixels, clean antialiasing. Center in a square with balanced 12 percent padding. Genuinely transparent background. No button body, no border, no enclosing tile, no color, no gradients, no shadow, no glow, no labels or watermark. Match compact white Windows desktop toolbar artwork.",
+      "source": "preferences-general-source.png",
+      "embedded": "preferences-general.rgba"
+    },
+    {
+      "name": "colors",
+      "prompt": "Use case: logo-brand. Asset type: Achimeld desktop Preferences navigation icon, colors. Create ONE a painter palette with three small transparent holes and a short diagonal paint brush. Flat solid white monochrome toolbar silhouette with limited negative-space details, consistent medium-bold visual weight, readable at 20 by 20 pixels, clean antialiasing. Center in a square with balanced 12 percent padding. Genuinely transparent background. No button body, no border, no enclosing tile, no color, no gradients, no shadow, no glow, no labels or watermark. Match compact white Windows desktop toolbar artwork.",
+      "source": "preferences-colors-source.png",
+      "embedded": "preferences-colors.rgba"
+    },
+    {
+      "name": "app-style",
+      "prompt": "Use case: logo-brand. Asset type: Achimeld desktop Preferences navigation icon, app-style. Create ONE a compact desktop window with a small paint brush crossing its lower right corner. Flat solid white monochrome toolbar silhouette with limited negative-space details, consistent medium-bold visual weight, readable at 20 by 20 pixels, clean antialiasing. Center in a square with balanced 12 percent padding. Genuinely transparent background. No button body, no border, no enclosing tile, no color, no gradients, no shadow, no glow, no labels or watermark. Match compact white Windows desktop toolbar artwork.",
+      "source": "preferences-app-style-source.png",
+      "embedded": "preferences-app-style.rgba"
+    },
+    {
+      "name": "naming",
+      "prompt": "Use case: logo-brand. Asset type: Achimeld desktop Preferences navigation icon, naming. Create ONE two bold capital letterforms A and Z, balanced side by side with a small underline. Flat solid white monochrome toolbar silhouette with limited negative-space details, consistent medium-bold visual weight, readable at 20 by 20 pixels, clean antialiasing. Center in a square with balanced 12 percent padding. Genuinely transparent background. No button body, no border, no enclosing tile, no color, no gradients, no shadow, no glow, no labels or watermark. Match compact white Windows desktop toolbar artwork.",
+      "source": "preferences-naming-source.png",
+      "embedded": "preferences-naming.rgba"
+    },
+    {
+      "name": "browser",
+      "prompt": "Use case: logo-brand. Asset type: Achimeld desktop Preferences navigation icon, browser. Create ONE a globe showing simple latitude and longitude curves. Flat solid white monochrome toolbar silhouette with limited negative-space details, consistent medium-bold visual weight, readable at 20 by 20 pixels, clean antialiasing. Center in a square with balanced 12 percent padding. Genuinely transparent background. No button body, no border, no enclosing tile, no color, no gradients, no shadow, no glow, no labels or watermark. Match compact white Windows desktop toolbar artwork.",
+      "source": "preferences-browser-source.png",
+      "embedded": "preferences-browser.rgba"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "tool": "built-in imagegen",
+  "source": "layer-artifact3d-source.png",
+  "embedded": "layer-artifact3d.rgba",
+  "preview": "layer-artifact3d.png",
+  "preparation": "Resized to 64x64 with high-quality bicubic filtering; RGB set to white for application tinting, generated alpha preserved.",
+  "prompt": "Use case: logo-brand. Create a single toolbar icon for '3D artifact': a compact isometric cube with a small sphere and cone grouped beside it, visually legible as assembled 3D primitives. Solid white monochrome glyph artwork, bold simple clean silhouettes, subtle transparent cutout lines to separate the cube faces, consistent 64x64 toolbar visual weight, centered with 10% clear margin. Flat vector-like raster UI icon, no text, no gradient, no shadow, no colored accents. Genuinely transparent background. Project icon asset."
+}

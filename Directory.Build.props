@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <AchimeldBuildRoot Condition="'$(ACHIMELD_BUILD_ROOT)' == ''">C:\Projects\AchimeldBuild</AchimeldBuildRoot>
+    <AchimeldBuildRoot Condition="'$(ACHIMELD_BUILD_ROOT)' != ''">$(ACHIMELD_BUILD_ROOT)</AchimeldBuildRoot>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(AchimeldBuildRoot)\current\dotnet</ArtifactsPath>
+    <RestorePackagesPath>$(AchimeldBuildRoot)\cache\nuget</RestorePackagesPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin\**;obj\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

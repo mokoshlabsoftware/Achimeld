@@ -1,0 +1,18 @@
+{
+  "generator": "Built-in image_gen via imagegen skill",
+  "preparation": "Original PNGs retained unchanged. Generated alpha bounds (coverage >=32) centered in a 64x64 canvas, maximum visible dimension 56px. High quality bicubic downsampling; generated alpha preserved in white tintable RGBA8. Linear mipmap filtering at runtime.",
+  "icons": [
+    {
+      "name": "tab-style-viewer",
+      "prompt": "Use case: logo-brand. Asset type: a single desktop toolbar icon for Style Viewer. Primary request: a bold, clever prehistoric cave-painting handprint, an open palm with five splayed fingers and a short wrist, slightly organic like a caveman hand stencil, reduced to a clean readable solid off-white silhouette. Style: match a modern monochrome desktop toolbar with trophy, stacked images and circular arrow icons; consistent strong visual weight, not detailed illustration. Composition: one isolated centered symbol, square canvas, generous transparent padding, whole hand visible, recognisable at 20 pixels. Color: pure white foreground with genuine alpha transparency. No text, no cave wall, no background, no shadow, no border, no gradients, no splatter or fine lines."
+    },
+    {
+      "name": "style-set-load",
+      "prompt": "Use case: logo-brand. Asset type: a single desktop toolbar action icon for Load style set. Subject: a clean open folder with a bold downward arrow entering its opening, simple unified white silhouette, instantly readable at 20 pixels. Style: polished flat monochrome desktop toolbar glyph, strong weight matching trophy and stacked-image icons. Composition: isolated centered symbol, square canvas with transparent padding, no text. Pure white foreground, genuine transparent background, no shadows, no border, no gradients, no decorative details."
+    },
+    {
+      "name": "style-set-save",
+      "prompt": "Use case: logo-brand. Asset type: a single desktop toolbar action icon for Save style set and Save as. Subject: a simple bold floppy disk save symbol with a small prehistoric open-palm handprint cutout in its lower label area, keep it simple and readable at 20 pixels. Style: flat monochrome desktop toolbar glyph, strong weight matching trophy and stacked-image icons. Composition: isolated centered symbol, square canvas with transparent padding, no text. Pure white foreground with genuine alpha transparency, no shadows, no border, no gradients, no decorative details."
+    }
+  ]
+}

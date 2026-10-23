@@ -1,0 +1,80 @@
+{
+  "source": "Actual legacy C# snapshot reader, canonical fingerprint and SecurityWire implementations",
+  "snapshots": [
+    {
+      "revision": "2026-09-sanitized-fixture",
+      "fingerprint": "54e49cf1369a6912d1b9d43c3727793eca3763887d270c717777962d2776acdb",
+      "stats": [
+        "995b8ac8a795601fa532f0a710f539b451bea721045ed2376f3a68919c6a3b68"
+      ],
+      "achievements": [
+        "65160f201c973f3fc4d9e8b39e17f1904088616cb47faa4942b311f12df9248f"
+      ],
+      "localizations": [
+        "f69b9efb16c8afee783446cadb68224c192c6ed40c47cec9b0286ba22adf6b07",
+        "02ab49891bbdafa6638e8803cf8838a0974044ed60789720e46efaacf27c5886",
+        "42d45e9835812768019214643368ed490cd18a92ab7c81057799522a803724a5"
+      ],
+      "icons": [
+        "33adb3e5f6374fb35e3e8291edaf79024f112c83e95faa319535394cd76f4aab"
+      ]
+    },
+    {
+      "revision": "steamworks-configuration-json-v1",
+      "fingerprint": "b148f410a9509e6b11492ca356ecb28276cb31ca51515c456060fa1ba66597d6",
+      "stats": [
+        "101e35f980f7ef463d57848a22a793f2dfecd3807649643942033e8fb390db73"
+      ],
+      "achievements": [
+        "80ff4a4ac9095653ed9e29524f63e1624ef0bc61cc47264bef1849348a9e6adb"
+      ],
+      "localizations": [
+        "f69b9efb16c8afee783446cadb68224c192c6ed40c47cec9b0286ba22adf6b07",
+        "02ab49891bbdafa6638e8803cf8838a0974044ed60789720e46efaacf27c5886",
+        "42d45e9835812768019214643368ed490cd18a92ab7c81057799522a803724a5"
+      ],
+      "icons": [
+        "33adb3e5f6374fb35e3e8291edaf79024f112c83e95faa319535394cd76f4aab"
+      ]
+    }
+  ],
+  "decimals": [
+    {
+      "input": "1.2300",
+      "encoded": "1.23",
+      "fingerprint": "c70f3835a90fa11109ddc83a05cb452f0eb884238f94d777028b5eceb4b9b73b"
+    },
+    {
+      "input": "0.00001",
+      "encoded": "1E-05",
+      "fingerprint": "e73b13fb2cea5b4fc2c494d7eea6e51a284d61c2c90ef0f612cb84d425caa307"
+    },
+    {
+      "input": "-0.00000125",
+      "encoded": "-1.25E-06",
+      "fingerprint": "1f4077ba53ce77b732c6e3ceaa9b348dd9843e1b7504ed35e9b14c6326f8591c"
+    },
+    {
+      "input": "0.0001",
+      "encoded": "0.0001",
+      "fingerprint": "1fc7b6af470caae38ffa8189b6fee247a274b4b93f7c9fcbed2c706fc1b632b5"
+    },
+    {
+      "input": "79228162514264337593543950335",
+      "encoded": "79228162514264337593543950335",
+      "fingerprint": "16ea1acd6040d0160a8bf5ebb4575502e5ec64c90b97d47a9a4ce38e4eef5715"
+    },
+    {
+      "input": "0.0000000000000000000000000001",
+      "encoded": "1E-28",
+      "fingerprint": "146969720c6c9d4d13a81c18c3f7510fee6231a58604e4c05fda4c36fb1ea7bf"
+    },
+    {
+      "input": "-0.000",
+      "encoded": "0",
+      "fingerprint": "fbb0baa74849157055eec3a1abf1f58a8b3e2d9991db2c4e8e685dccd4ae8b5e"
+    }
+  ],
+  "unicodeFingerprint": "51312d37e2da411901636eb174e0c4092610b448393f1899bd2d2d87dc0fd917",
+  "workerReadRequestFrameHex": "6e0000007b22726571756573744964223a2231313131313131312d323232322d333333332d343434342d353535353535353535353535222c226f7065726174696f6e223a2272656164436f6e66696775726174696f6e222c22617267756d656e7473223a7b2276616c7565223a3438307d7d"
+}

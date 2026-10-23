@@ -1,0 +1,8 @@
+{
+  "generator": "Built-in image_gen tool through the imagegen skill",
+  "prompt": "Use case: logo-brand. Asset type: small desktop toolbar icon. Draw a perfectly clean flat BLACK five-pip die icon: one smooth square outline with gently rounded corners, five solid black circular dots in a quincunx arrangement (four corners and center), even consistent line weight. A single two-dimensional front-facing die, centered square composition with equal empty margins. Pure solid black ink with clean antialiased edges, transparent negative space, no gray ink, no white ink, no texture or distressing of any kind, no shading, no extra marks, no background, no text. This will be used at 20 pixels alongside a folder outline and plain arrows. True transparent background.",
+  "source": "layer-action-reroll-source.png",
+  "embedded": "layer-action-reroll.rgba",
+  "preview": "layer-action-reroll.png",
+  "preparation": "Crop to generated alpha bounds above 32; resize to fit 48 x 48 with Lanczos; center on a transparent 64 x 64 canvas; preserve resized alpha and normalize RGB to white for palette tinting. Embed RGBA8 with linear mipmap filtering."
+}

@@ -1,0 +1,20 @@
+# Requires Windows x64, Rust 1.99, Visual C++/Windows SDK, and .NET 10 for pipe fixtures.
+# These are developer builds. Signed packaging and installed WFP acceptance are separate gates.
+stages: [verify]
+rust-windows:
+  stage: verify
+  tags: [windows, x64]
+  variables:
+    CARGO_INCREMENTAL: "0"
+  script:
+    - ./build/Audit.ps1 -Fixtures
+    - ./build/Rust.ps1 -CargoArguments @('build','--workspace','--release','--locked')
+  after_script:
+    - . ./build/BuildPaths.ps1
+    - Initialize-AchimeldBuildPaths
+    - New-Item -ItemType Directory -Path .ci-evidence -Force | Out-Null
+    - Get-ChildItem -LiteralPath $env:ACHIMELD_ARTIFACT_ROOT -Filter 'audit-*' -Directory | ForEach-Object { $destination = Join-Path '.ci-evidence' $_.Name; New-Item -ItemType Directory -Path $destination -Force | Out-Null; Get-ChildItem -LiteralPath $_.FullName -File | Where-Object Extension -In '.json','.log' | Copy-Item -Destination $destination }
+  artifacts:
+    when: always
+    paths: ['.ci-evidence/']
+    expire_in: 30 days

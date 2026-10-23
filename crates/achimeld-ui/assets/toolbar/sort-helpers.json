@@ -1,0 +1,7 @@
+{
+  "tool": "built-in image_gen",
+  "source": "sort-helpers-source.png",
+  "embedded": "sort-helpers.rgba",
+  "prompt": "Use case: logo-brand. Asset type: single monochrome desktop toolbar icon for Achimeld's Sort panel, meaning Include helpers at the end of a sorted list. Subject: two small stacked diamond-shaped image layers beside a simple downward arrow ending at a short horizontal baseline. Style: bold clean flat white silhouette with crisp antialiased edges, matching a minimal white stacked-layer toolbar icon. Centered square composition, generous transparent outer padding, consistent thick visual weight, legible at 22 pixels. White foreground only, genuine transparent background. No text, letters, numbers, colored backing, border, shadow, glow, gradients, texture, or watermark.",
+  "preparation": "Original source retained unchanged. Visible alpha bounds normalized to 52 pixels, centered in 64x64, bicubic resampling. Embedded RGB is white for animated palette tint; generated alpha is preserved."
+}

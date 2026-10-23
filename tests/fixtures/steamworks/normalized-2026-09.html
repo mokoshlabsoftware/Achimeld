@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html data-steamworks-revision="2026-09-sanitized-fixture"
+      data-steamworks-page="stats-achievements"
+      data-appid="480">
+  <head>
+    <title>Sanitized Steamworks Stats and Achievements Fixture</title>
+  </head>
+  <body>
+    <h1>Stats and Achievements</h1>
+    <section id="stats">
+      <article data-steam-id="101"
+               data-api-name="STAT_SCORE"
+               data-internal-name="Score"
+               data-type="Int"
+               data-set-by="GameClient"
+               data-increment-only="false"
+               data-minimum="0"
+               data-maximum="100"
+               data-default="0"
+               data-maximum-change="10"
+               data-aggregated="false"
+               data-average-window=""
+               data-display-order="0" />
+    </section>
+    <section id="achievements">
+      <article data-steam-id="201"
+               data-api-name="ACH_FIRST"
+               data-internal-name="First achievement"
+               data-hidden="false"
+               data-set-by="GameClient"
+               data-progress-stat="STAT_SCORE"
+               data-unlock-value="10"
+               data-display-order="0" />
+    </section>
+    <section id="localizations">
+      <article data-entity-type="Achievement"
+               data-api-name="ACH_FIRST"
+               data-field="AchievementDisplayName">
+        <span data-language="English">First Steps</span>
+        <span data-language="Polish">Pierwsze kroki</span>
+      </article>
+      <article data-entity-type="Achievement"
+               data-api-name="ACH_FIRST"
+               data-field="AchievementDescription">
+        <span data-language="English">Reach ten points.</span>
+      </article>
+      <article data-entity-type="Stat"
+               data-api-name="STAT_SCORE"
+               data-field="StatDisplayName">
+        <span data-language="English">Score</span>
+      </article>
+    </section>
+    <section id="icons">
+      <article data-api-name="ACH_FIRST"
+               data-achieved-identity="fixture-achieved-sha256"
+               data-unachieved-identity="fixture-unachieved-sha256"
+               data-achieved-preview="https://partner.steamgames.com/public/images/fixture-achieved.png"
+               data-unachieved-preview="https://partner.steamgames.com/public/images/fixture-unachieved.png" />
+    </section>
+    <form>
+      <input name="display_name" value="" />
+      <button type="button" data-achimeld-action="save-draft">Save</button>
+    </form>
+  </body>
+</html>

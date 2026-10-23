@@ -1,0 +1,45 @@
+[package]
+name = "achimeld-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "achimeld-app"
+path = "src/main.rs"
+
+[[bin]]
+name = "achimeld-inspect"
+path = "src/inspect.rs"
+
+[[bin]]
+name = "achimeld-node-host"
+path = "src/node_host.rs"
+
+[dependencies]
+log.workspace = true
+achimeld-mcp = { path = "../achimeld-mcp" }
+arboard = "=3.6.1"
+rfd = { version = "=0.15.4", default-features = false }
+achimeld-imaging = { path = "../achimeld-imaging" }
+achimeld-application = { path = "../achimeld-application" }
+achimeld-ui = { path = "../achimeld-ui" }
+eframe.workspace = true
+image.workspace = true
+sha2.workspace = true
+achimeld-core = { path = "../achimeld-core" }
+achimeld-security = { path = "../achimeld-security" }
+achimeld-persistence = { path = "../achimeld-persistence" }
+achimeld-browser = { path = "../achimeld-browser" }
+serde_json.workspace = true
+base64.workspace = true
+serde.workspace = true
+windows-sys.workspace = true
+raw-window-handle = "0.6"
+
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+winit = { version = "=0.30.13", default-features = false }

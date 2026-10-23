@@ -1,0 +1,7 @@
+{
+  "generator": "Built-in image_gen tool via imagegen skill",
+  "source": "art-import.png",
+  "embedded": "art-import.rgba",
+  "preparation": "Resize the generated alpha to 64 x 64 with Lanczos filtering and use white RGB for palette tinting; retain the original PNG unchanged.",
+  "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Flat vector icon appearance, crisp simple professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster image asset of a vector-style icon, not a screenshot. Subject: an open file folder with a bold arrow pointing down into the folder, a simple familiar import action symbol for importing artwork or sprite atlases. The folder and arrow form one clean balanced glyph."
+}

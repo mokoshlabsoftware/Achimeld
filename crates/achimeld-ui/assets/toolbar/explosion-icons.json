@@ -1,0 +1,14 @@
+{
+  "provider": "built-in image_gen through imagegen skill",
+  "icons": [
+    {
+      "source": "layer-explosion-source.png",
+      "prompt": "A precise clean flat vector-style NONAGRAM toolbar icon, an ENNEAGRAM STAR. Exactly NINE points. Odd nine-fold rotational symmetry: one point at the top, two separate points below (at about 5:30 and 6:30), two upper diagonal points, two side points, two lower side points. Mathematically a regular nine-pointed starburst silhouette with alternating outer radius 1.0 and inner radius 0.42, 18 vertices total. White solid fill, transparent background, no distressed texture, no extra splatter, no holes, no stroke. Centered on square transparent canvas with 12% padding, crisp edges. This is a nine-pointed star, NOT an eight-pointed star. No bottom vertical point. No text or labels."
+    },
+    {
+      "source": "explosion-range-source.png",
+      "prompt": "Use case: logo-brand. Asset type: production raster Range mode toggle icon for Achimeld desktop image editor. Primary request: one simple bold pure-white horizontal range slider glyph, a thick horizontal line with two unmistakable square bracket handles [ and ] at either end. Clear gap inside the bracket handles. Exactly one glyph, no text. Genuine transparent background. Flat white silhouette, clean smooth antialiased edges, substantial consistent weight, readable at 20px. Centered square canvas with balanced padding, glyph about 78 percent wide. No border, button tile, shadow, glow, texture, watermark, numbers or letters."
+    }
+  ],
+  "embedding": "Source artwork retained unchanged. Generated alpha cropped to its visible bounds, resized with Lanczos into 54 x 54 inside centered 64 x 64 white tintable RGBA8; linear mipmap filtering."
+}

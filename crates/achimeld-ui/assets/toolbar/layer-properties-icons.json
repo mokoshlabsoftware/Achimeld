@@ -1,0 +1,7 @@
+{
+  "provider": "built-in image_gen through imagegen skill",
+  "generatedSource": "layer-folder-generated.png",
+  "prompt": "Use case: logo-brand. Asset type: production layer-type raster icon for Achimeld desktop image editor. Generate ONE monochrome pure-white folder UI glyph on a genuinely transparent background. Subject: one open file folder with a small tab at its upper left, bold clear silhouette with a restrained transparent cutout showing the front flap. Crisp flat white silhouette, smooth antialiased edges, consistent bold weight, readable at 20 pixels. Centered square canvas; glyph occupies 78 percent of the canvas, fully contained with balanced padding. No background, no button tile, no border around canvas, no shadow, no glow, no texture, no label, no text, no watermark. This must work as a tintable layer-type symbol alongside simple white icons for image, text, shapes and adjustments. Keep empty space truly transparent.",
+  "embedding": "64 x 64 white RGBA8 pixels with generated alpha preserved, linear mipmaps",
+  "existingGeneratedSymbols": "layer-icons.json and art-icons.json; reused unchanged in picker and right-hand layer properties"
+}

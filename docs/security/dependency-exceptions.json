@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "exceptions": [{
+    "advisory": "RUSTSEC-2023-0071",
+    "package": "rsa",
+    "version": "0.9.10",
+    "owner": "Achimeld security maintainers",
+    "reviewedUtc": "2026-10-11T00:00:00Z",
+    "expiresUtc": "2027-01-09T00:00:00Z",
+    "source": "https://rustsec.org/advisories/RUSTSEC-2023-0071.html",
+    "rationale": "The deployed Rust bootstrapper uses rsa only for RSA-PSS public-key signature verification. It receives no private key and performs no private-key operation. Local randomized signing keys exist only inside the cfg(test) manifest regression tests; development package signing uses .NET RSA in the local packaging process. The advisory concerns leakage of private-key material through private-key timing. This exception does not permit Rust signing/decryption or externally timed private-key services.",
+    "mitigation": "Preserve raw findings; fail on changed version, expiry or new unreviewed advisories. Review the production crypto call sites whenever this dependency or manifest authentication changes. Replace the implementation before introducing any deployed private-key operation. No patched stable version is available in the reviewed database."
+  }]
+}

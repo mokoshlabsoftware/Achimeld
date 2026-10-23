@@ -1,0 +1,21 @@
+{
+  "generator": "Built-in image_gen tool via imagegen skill",
+  "embedding": "Original generated PNGs retained unchanged. The 64 x 64 RGBA8 assets use white tintable pixels and the resized generated alpha. Shared buttons animate glyph tint with the label; the header and Save action share the floppy disk.",
+  "icons": [
+    {
+      "name": "save",
+      "source": "save.png",
+      "prompt": "Use case: logo-brand. Asset type: production prompt and action icon for Achimeld desktop UI, matching its existing monochrome toolbar glyphs. Generate ONE monochrome pure-white UI glyph on a genuinely transparent background. Crisp flat vector-like solid silhouette with restrained transparent cutouts, consistent medium-heavy visual weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, letters, badge, surrounding button tile, shadow, glow, gradients, texture, or decoration. Empty space is perfectly transparent. This is a raster icon asset, not a screenshot. Subject: one old-fashioned 3.5-inch floppy disk, viewed straight on, recognizable clipped upper-right corner, a wide upper metal shutter with a simple cutout, and a rectangular lower label cutout. Simple balanced compact silhouette. Used for Unsaved changes header and Save action."
+    },
+    {
+      "name": "discard",
+      "source": "discard.png",
+      "prompt": "Use case: logo-brand. Asset type: production prompt and action icon for Achimeld desktop UI, matching its existing monochrome toolbar glyphs. Generate ONE monochrome pure-white UI glyph on a genuinely transparent background. Crisp flat vector-like solid silhouette with restrained transparent cutouts, consistent medium-heavy visual weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, letters, badge, surrounding button tile, shadow, glow, gradients, texture, or decoration. Empty space is perfectly transparent. This is a raster icon asset, not a screenshot. Subject: a single familiar wastebasket/trash can with a separate horizontal lid, short handle on top, and two simple vertical transparent slots in the body. Simple balanced compact silhouette. Used for Discard changes action."
+    },
+    {
+      "name": "cancel",
+      "source": "cancel.png",
+      "prompt": "Use case: logo-brand. Asset type: production prompt and action icon for Achimeld desktop UI, matching its existing monochrome toolbar glyphs. Generate ONE monochrome pure-white UI glyph on a genuinely transparent background. Crisp flat vector-like solid silhouette with restrained transparent cutouts, consistent medium-heavy visual weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, letters, badge, surrounding button tile, shadow, glow, gradients, texture, or decoration. Empty space is perfectly transparent. This is a raster icon asset, not a screenshot. Subject: a single bold balanced diagonal X, two straight equal thick strokes with squared ends, an immediately recognizable Cancel action glyph. Simple compact silhouette with visual weight matching a floppy disk and trash can toolbar icon."
+    }
+  ]
+}

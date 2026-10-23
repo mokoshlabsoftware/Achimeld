@@ -1,0 +1,10 @@
+{
+  "provider": "built-in image_gen through imagegen skill",
+  "source": "gradient-flip-source.png",
+  "final": [
+    "gradient-flip.png",
+    "gradient-flip.rgba"
+  ],
+  "prompt": "Create ONE pristine flat desktop toolbar symbol: a single solid black horizontal double-headed arrow, pointing both LEFT and RIGHT, like ↔. Thick straight rectangular shaft, two clean triangular heads. Pure smooth solid silhouette, mathematically straight edges, no texture, no grunge, no speckles, no extra marks. Exactly one bidirectional arrow, centered on square genuinely transparent canvas with generous padding. This is a compact production UI glyph, no text or button body. Black ink only; we will tint it to match the app palette.",
+  "embedding": "Generated source retained unchanged. Alpha cropped and resized with Lanczos to fit centered 54 x 54 in 64 x 64, preserved in white tintable RGBA8 with linear mipmap filtering."
+}

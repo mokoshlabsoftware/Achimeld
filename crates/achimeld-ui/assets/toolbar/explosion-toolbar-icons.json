@@ -1,0 +1,38 @@
+{
+  "provider": "Built-in image_gen through imagegen skill",
+  "embedding": "Original generated PNGs retained unchanged. Generated alpha bounds cropped, resized with Lanczos to fit 54 x 54, centered in 64 x 64 white tintable RGBA8. Generated alpha preserved; no glyph redrawing.",
+  "reused": {
+    "presets": "layer-folder.rgba",
+    "countRange": "explosion-range.rgba",
+    "randomize": "art-refresh.rgba"
+  },
+  "assets": [
+    {
+      "action": "seedPerAchievement",
+      "source": "explosion-seed-per-achievement-source.png",
+      "final": [
+        "explosion-seed-per-achievement.png",
+        "explosion-seed-per-achievement.rgba"
+      ],
+      "prompt": "Use case: logo-brand\nAsset type: compact production desktop toolbar glyph for 'Different seed for each achievement'.\nPrimary request: ONE clean white monochrome symbol showing two slightly overlapping flat square dice faces, offset diagonally: the back upper-left die shows one circular pip; the front lower-right die shows three circular pips. Pips are transparent cutouts. This conveys different random variations for different items.\nStyle: solid simple flat silhouette, thick even edges, crisp geometric shapes, mild corner rounding. Match compact white desktop toolbar symbols; readable at 20px. No 3D perspective.\nComposition: centered in a square canvas, glyph occupies about 75 percent of width and height, generous clear padding, symmetrical visual weight.\nBackground: genuinely transparent alpha.\nConstraints: exactly two dice faces, white ink only, transparent pips, no letters, text, labels, shadow, frame, button background, color, texture, speckles, watermark or extra marks."
+    },
+    {
+      "action": "mask",
+      "source": "layer-mask-source.png",
+      "final": [
+        "layer-mask.png",
+        "layer-mask.rgba"
+      ],
+      "prompt": "Use case: logo-brand\nAsset type: compact production desktop toolbar glyph for Layer mask.\nCreate ONE pure white flat monochrome UI icon: a thick square frame with a centered circular transparent opening, the familiar layer-mask symbol. Square outer shape, generous white frame, circular cutout, clean geometric smooth edges. Centered on genuinely transparent square canvas, icon fills about 75 percent, generous clear padding. Readable at 20 pixels, consistent visual weight with bold white desktop toolbar icons. Exactly one mask symbol. White ink only, no texture, grunge, speckles, gradients, 3D, shadows, letters, labels, extra marks, button body or watermark."
+    },
+    {
+      "action": "coverCanvas",
+      "source": "explosion-cover-canvas-source.png",
+      "final": [
+        "explosion-cover-canvas.png",
+        "explosion-cover-canvas.rgba"
+      ],
+      "prompt": "Use case: logo-brand\nAsset type: compact production desktop toolbar glyph for Cover canvas.\nCreate ONE pure white flat monochrome UI icon: four bold diagonal arrows radiating from the center toward the four corners of an implied square. Each arrow has a short thick diagonal shaft and simple triangular head. Arrows do not touch one another. This means expand to fill the canvas. Clean geometric smooth edges, balanced symmetry, centered on genuinely transparent square canvas, glyph fills about 75 percent with generous padding. Readable at 20 pixels, consistent with bold white desktop toolbar icons. Exactly four arrows. White ink only, no surrounding frame, texture, grunge, speckles, gradients, shadows, 3D, text, labels, extra marks, button background or watermark."
+    }
+  ]
+}

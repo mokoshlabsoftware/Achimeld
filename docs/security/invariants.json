@@ -1,0 +1,532 @@
+{
+  "schemaVersion": 1,
+  "limitations": "Symbol/test links are navigation and drift checks; their existence does not prove a security claim. Installed and live scopes remain separately qualified.",
+  "invariants": [
+    {
+      "id": "SEC-PACKAGE-001",
+      "claim": "Authenticate the exact manifest bytes before using its inventory or network roles.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-bootstrapper/src/manifest/authenticate.rs",
+          "symbol": "parse_and_authenticate"
+        },
+        {
+          "file": "crates/achimeld-bootstrapper/src/manifest/filesystem.rs",
+          "symbol": "verify"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/manifest/mod.rs",
+          "symbol": "authenticated_manifest_rejects_tampering_revocation_and_rollback"
+        }
+      ],
+      "qualification": "source-tested; protected installation acceptance is separate"
+    },
+    {
+      "id": "SEC-PATH-001",
+      "claim": "Reject unsafe inventory paths and preserve complete Windows UTF-16 process path identity without lossy decoding.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-bootstrapper/src/manifest/policy.rs",
+          "symbol": "valid_path"
+        },
+        {
+          "file": "crates/achimeld-bootstrapper/src/platform/identity.rs",
+          "symbol": "same_image"
+        },
+        {
+          "file": "crates/achimeld-security/src/windows.rs",
+          "symbol": "same_path"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/manifest/mod.rs",
+          "symbol": "unsafe_paths_are_rejected"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-security/src/windows.rs",
+          "symbol": "path_identity_conforms_to_shared_vectors_and_preserves_invalid_utf16"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/platform/tests.rs",
+          "symbol": "bootstrapper_identity_preserves_shared_vectors_and_invalid_utf16"
+        }
+      ],
+      "qualification": "lexical identity; file locks/reparse/ACL checks are additional requirements"
+    },
+    {
+      "id": "SEC-SUPERVISION-001",
+      "claim": "Derive caller PID from the pipe, require Job membership and exact image role, then authorize the typed operation.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-bootstrapper/src/supervision.rs",
+          "symbol": "authenticate"
+        },
+        {
+          "file": "crates/achimeld-bootstrapper/src/supervision.rs",
+          "symbol": "permits"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/supervision.rs",
+          "symbol": "supervision_authorization_matrix_is_exhaustive"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/supervision.rs",
+          "symbol": "supervision_rejects_unknown_fields_operations_and_misplaced_arguments"
+        }
+      ],
+      "qualification": "policy tested; actual installed-role/OS enforcement is separate"
+    },
+    {
+      "id": "SEC-SESSION-001",
+      "claim": "Health replies cannot change the authenticated supervisor session, Windows network-enforcement level or pinned runtime configuration.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-security/src/supervision.rs",
+          "symbol": "validate_continuity"
+        },
+        {
+          "file": "bridge/Achimeld.Security/SupervisionSession.cs",
+          "symbol": "ValidateContinuity"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-security/src/supervision.rs",
+          "symbol": "health_response_cannot_change_session_or_configuration"
+        },
+        {
+          "scope": "source",
+          "file": "tools/browser-policy-tests/Program.cs",
+          "symbol": "ValidateContinuity"
+        }
+      ],
+      "qualification": "Rust and local C# configuration continuity tested; installed peer identity is separate"
+    },
+    {
+      "id": "SEC-READ-001",
+      "claim": "Legacy read/lifecycle commands pin one canonical nonzero Steam App ID and reject generic mutations; reviewed synchronization has the separate SEC-SYNC-001 receiving boundary.",
+      "enforcement": [
+        {
+          "file": "bridge/read-worker/ReadOnlyPolicy.cs",
+          "symbol": "Validate"
+        },
+        {
+          "file": "bridge/read-worker/Program.cs",
+          "symbol": "ExecuteAsync"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "tools/read-policy-tests/Program.cs",
+          "symbol": "applyOperation"
+        },
+        {
+          "scope": "fixture",
+          "file": "crates/achimeld-security/src/worker_transport.rs",
+          "symbol": "csharp_receiving_read_policy_rejects_direct_mutation_envelopes"
+        }
+      ],
+      "qualification": "exact shared receiving policy tested over a synthetic peer; deployed browser qualification is separate"
+    },
+    {
+      "id": "SEC-READ-002",
+      "claim": "Trusted browser requests lose authentication authority on read, retain one pinned App ID, and grant fixed draft-save/upload routes only inside a reviewed write scope; rejected traffic is terminal.",
+      "enforcement": [
+        { "file": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs", "symbol": "Allows" },
+        { "file": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs", "symbol": "GameBannerUri" },
+        { "file": "bridge/Achimeld.Browser/BrowserRequestGuard.cs", "symbol": "InstallAsync" },
+        { "file": "bridge/read-worker/Program.cs", "symbol": "RequireRequestPolicyHealthy" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "tools/browser-policy-tests/Program.cs", "symbol": "ConfigurationUri" },
+        { "scope": "source", "file": "tools/browser-policy-tests/Program.cs", "symbol": "GameBannerUri" },
+        { "scope": "fixture", "file": "tools/browser-policy-tests/BrowserFixtures.cs", "symbol": "Forbidden browser request reached the synthetic upstream" }
+      ],
+      "qualification": "Application request policy and synthetic Chromium routing; installed enforcement, live compatibility and compromised-worker containment are separate"
+    },
+    {
+      "id": "SEC-SYNC-001",
+      "claim": "The receiver retains reviewed project values, a fresh complete remote snapshot and generated icon hashes; only selected prepared row IDs execute in dependency order, with fresh checks, read-back and no failed-step replay. Unsynced achievements remain eligible; Retired cards and text are preserved outside synchronization. A unique verified Steam identity rename can retire the old card when the reviewed replacement is imported.",
+      "enforcement": [
+        { "file": "bridge/Achimeld.Browser/SynchronizationSession.cs", "symbol": "RequireToken" },
+        { "file": "bridge/Achimeld.Browser/SynchronizationSession.cs", "symbol": "RequireOtherTargetsUnchanged" },
+        { "file": "bridge/Achimeld.Browser/SynchronizationSnapshotPolicy.cs", "symbol": "Validate" },
+        { "file": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs", "symbol": "BeginReviewedDraft" },
+        { "file": "crates/achimeld-app/src/synchronization.rs", "symbol": "save_journal" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "tools/browser-policy-tests/SynchronizationFixtures.cs", "symbol": "RunAsync" },
+        { "scope": "source", "file": "tools/read-policy-tests/Program.cs", "symbol": "RequireSynchronizationApp" }
+      ],
+      "qualification": "Synthetic portal and source checks; live selectors, JPEG conversion, installed enforcement and account-dependent writes require separate exact-package acceptance. Steam does not provide an atomic compare-and-save contract."
+    },
+    {
+      "id": "SEC-WIRE-001",
+      "claim": "Reject oversized/truncated/deep IPC frames, replay IDs and inconsistent replies; transport failure closes the reader.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-security/src/wire.rs",
+          "symbol": "read_frame"
+        },
+        {
+          "file": "crates/achimeld-browser/src/protocol.rs",
+          "symbol": "accept"
+        },
+        {
+          "file": "crates/achimeld-browser/src/worker.rs",
+          "symbol": "fail_closed"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-security/src/wire.rs",
+          "symbol": "bounded_mutations_never_panic_or_accept_invalid_frames"
+        },
+        {
+          "scope": "fixture",
+          "file": "crates/achimeld-security/src/worker_transport.rs",
+          "symbol": "csharp_stalled_reply_is_cancelled_and_health_loss_is_terminal"
+        }
+      ],
+      "qualification": "source and synthetic real-pipe fixtures"
+    },
+    {
+      "id": "SEC-NETWORK-001",
+      "claim": "The broker permits only bounded HTTPS CONNECT requests for approved hosts and globally routable destinations; policy loss is terminal.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-bootstrapper/src/broker/policy.rs",
+          "symbol": "connect_host"
+        },
+        {
+          "file": "crates/achimeld-bootstrapper/src/broker/policy.rs",
+          "symbol": "public_ip"
+        },
+        {
+          "file": "crates/achimeld-bootstrapper/src/wfp.rs",
+          "symbol": "same_filter"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/broker/policy.rs",
+          "symbol": "bounded_mutations_cannot_bypass_connect_destination_policy"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/wfp.rs",
+          "symbol": "malformed_filter_pointers_are_rejected_without_diagnostic_dereferences"
+        }
+      ],
+      "qualification": "Broker policy applies to both session modes. Default user sessions do not enforce OS socket denial; explicit protected sessions require installed WFP. Policy tests do not prove installed denial or socket attribution."
+    },
+    {
+      "id": "SEC-PROCESS-001",
+      "claim": "Owned process Jobs terminate descendants and Node stdio inheritance is limited to its declared handles.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-security/src/worker_transport.rs",
+          "symbol": "WorkerChild"
+        },
+        {
+          "file": "crates/achimeld-bootstrapper/src/platform/identity.rs",
+          "symbol": "monitored_image"
+        },
+        {
+          "file": "crates/achimeld-app/src/node_host.rs",
+          "symbol": "PROC_THREAD_ATTRIBUTE_HANDLE_LIST"
+        },
+        {
+          "file": "crates/achimeld-security/src/windows_arguments.rs",
+          "symbol": "command_line"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "fixture",
+          "file": "crates/achimeld-security/src/worker_transport.rs",
+          "symbol": "csharp_fragmented_large_unicode_frame_and_descendant_cleanup"
+        },
+        {
+          "scope": "fixture",
+          "file": "crates/achimeld-app/src/node_host.rs",
+          "symbol": "stdio_driver_round_trip_and_health_loss_terminate_child"
+        },
+        {
+          "scope": "fixture",
+          "file": "crates/achimeld-app/src/node_host.rs",
+          "symbol": "stdio_driver_playwright_forced_cleanup_and_health_loss_terminate_descendants"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/platform/identity.rs",
+          "symbol": "live_process_without_query_rights_is_not_treated_as_exited"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/platform/identity.rs",
+          "symbol": "inspected_process_retains_identity_when_later_image_queries_are_denied"
+        },
+        {
+          "scope": "fixture",
+          "file": "crates/achimeld-bootstrapper/src/platform/tests.rs",
+          "symbol": "console_app_launch_does_not_add_system_children"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-security/src/windows_arguments.rs",
+          "symbol": "native_parser_recovers_exact_arguments_including_invalid_utf16"
+        }
+      ],
+      "qualification": "Windows executable fixtures; installed launch recipes separate"
+    },
+    {
+      "id": "SEC-DATA-001",
+      "claim": "Normalized snapshots are bounded, DTD-free and bound to the requested App ID/revision; inventory parsing does not imply full project validation.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-browser/src/snapshot.rs",
+          "symbol": "parse_with_options"
+        },
+        {
+          "file": "crates/achimeld-persistence/src/lib.rs",
+          "symbol": "inspect_bytes"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-browser/src/snapshot.rs",
+          "symbol": "bounded_mutations_preserve_snapshot_identity_or_reject"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-persistence/src/lib.rs",
+          "symbol": "inventory_preserves_original_and_refuses_future_schema"
+        }
+      ],
+      "qualification": "bounded deterministic mutation regression tests; sustained coverage-guided fuzzing is separate"
+    },
+    {
+      "id": "SEC-DIAGNOSTICS-001",
+      "claim": "Supervision reports contain only declared bounded metadata; worker failures and declared owned-worker exit codes map to static diagnostics without echoing raw exceptions, request data or unknown failure codes.",
+      "enforcement": [
+        {
+          "file": "crates/achimeld-bootstrapper/src/supervision.rs",
+          "symbol": "REPORT_LIMITATIONS"
+        },
+        {
+          "file": "bridge/read-worker/WorkerFailure.cs",
+          "symbol": "Code"
+        },
+        {
+          "file": "crates/achimeld-browser/src/protocol.rs",
+          "symbol": "accept"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "crates/achimeld-bootstrapper/src/supervision.rs",
+          "symbol": "supervision_reports_have_only_declared_redacted_fields"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-browser/src/protocol.rs",
+          "symbol": "worker_diagnostics_use_declared_static_messages_and_never_echo_unknown_codes"
+        },
+        {
+          "scope": "source",
+          "file": "crates/achimeld-browser/src/protocol.rs",
+          "symbol": "monitor_exit_diagnostics_accept_only_the_declared_codes"
+        },
+        {
+          "scope": "source",
+          "file": "tools/browser-policy-tests/WorkerDiagnosticFixtures.cs",
+          "symbol": "Run"
+        }
+      ],
+      "qualification": "declared report shape tested; broader diagnostic review remains part of each audit"
+    },
+    {
+      "id": "SEC-BUILD-001",
+      "claim": "Package evidence binds locally built application libraries and pinned third-party runtimes to exact archived build inputs.",
+      "enforcement": [
+        {
+          "file": "build/Build-ReadWorker.ps1",
+          "symbol": "workerAssemblySha256"
+        },
+        {
+          "file": "tools/bridge-package/Program.cs",
+          "symbol": "Receiver source differs from packaged audit source"
+        },
+        {
+          "file": "build/Setup-Browser.ps1",
+          "symbol": "archiveSha256"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "package",
+          "file": "build/BridgePackage.ps1",
+          "symbol": "Build-ReadWorker.ps1"
+        },
+        {
+          "scope": "source",
+          "file": "build/Test-Migration.ps1",
+          "symbol": "getItem:Compile,ProjectReference"
+        }
+      ],
+      "qualification": "local source, dependency lock and package identity; independent reproducibility is separate"
+    },
+    {
+      "id": "SEC-INSTALL-001",
+      "claim": "Before privileged execution, pin the initial verifier to a separately selected trusted-build digest and execute its copied bytes only from protected staging.",
+      "enforcement": [
+        {
+          "file": "installer/Install-Development.ps1",
+          "symbol": "Assert-Verifier"
+        },
+        {
+          "file": "installer/Install-Development.ps1",
+          "symbol": "New-PackageAcl"
+        }
+      ],
+      "evidence": [
+        {
+          "scope": "source",
+          "file": "build/Test-InstallerContracts.ps1",
+          "symbol": "Mismatched verifier was not rejected"
+        }
+      ],
+      "qualification": "pure helper tests; privileged installation, ACL propagation and WFP setup require separate installed acceptance"
+    },
+    {
+      "id": "SEC-DESKTOP-001",
+      "claim": "Presentation receives read-only document state, validated commands and closed user intents; direct storage, browser and process authority belongs to the supervised host.",
+      "enforcement": [
+        { "file": "crates/achimeld-application/src/ports.rs", "symbol": "EditorPort" },
+        { "file": "build/Test-DesktopBoundaries.ps1", "symbol": "$allowed" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-ui/src/tests.rs", "symbol": "drawing_inspectors_never_edits_document_or_adds_history" },
+        { "scope": "source", "file": "crates/achimeld-app/tests/entry_points.rs", "symbol": "editor_refuses_unsupervised_startup" }
+      ],
+      "qualification": "source architecture and drift checks; presentation shares the host process and is not an OS sandbox"
+    },
+    {
+      "id": "SEC-DOCUMENT-001",
+      "claim": "Project inputs and commands validate before durable editor mutation; history applies reversible changes to candidates and commits atomically with preference persistence.",
+      "enforcement": [
+        { "file": "crates/achimeld-application/src/document.rs", "symbol": "from_parts" },
+        { "file": "crates/achimeld-application/src/history.rs", "symbol": "execute_with" },
+        { "file": "crates/achimeld-core/src/csv.rs", "symbol": "records" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-application/src/history.rs", "symbol": "failed_compound_edit_is_atomic_and_does_not_change_history" },
+        { "scope": "source", "file": "crates/achimeld-application/src/history.rs", "symbol": "malformed_entity_records_are_rejected_before_legacy_migration" },
+        { "scope": "source", "file": "crates/achimeld-core/src/csv.rs", "symbol": "limits_apply_to_the_final_record_without_a_newline" }
+      ],
+      "qualification": "deterministic regression fixtures; 128-entry/64-MiB history payload cap is not a total process-memory bound or sustained fuzzing claim"
+    },
+    {
+      "id": "SEC-STORAGE-001",
+      "claim": "Cooperating Windows save/recovery operations serialize through a file handle; saves refuse unowned destination CSVs and validate paired recovery inventory before rollback or cleanup. Ordinary loading pins read access without requiring a new writable sidecar.",
+      "enforcement": [
+        { "file": "crates/achimeld-persistence/src/project.rs", "symbol": "project_lock" },
+        { "file": "crates/achimeld-persistence/src/project.rs", "symbol": "recover_locked" },
+        { "file": "crates/achimeld-persistence/src/project.rs", "symbol": "retain_art" },
+        { "file": "crates/achimeld-persistence/src/project.rs", "symbol": "own_art_references" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-persistence/src/project.rs", "symbol": "separate_catalog_cannot_overwrite_an_unrelated_sibling" },
+        { "scope": "source", "file": "crates/achimeld-persistence/src/project.rs", "symbol": "project_handle_lock_prevents_concurrent_save_and_reopens_after_release" },
+        { "scope": "source", "file": "crates/achimeld-persistence/src/project.rs", "symbol": "committed_recovery_preserves_modified_auxiliary_files" },
+        { "scope": "source", "file": "crates/achimeld-persistence/src/project.rs", "symbol": "art_is_owned_deduplicated_and_portable_after_staging_is_gone" },
+        { "scope": "source", "file": "crates/achimeld-persistence/src/project.rs", "symbol": "art_content_collision_preserves_existing_bytes" }
+      ],
+      "qualification": "application-level recovery on Windows; unrelated same-user writers, hostile filesystem races, all storage-failure permutations and power-loss durability are not fully qualified"
+    },
+    {
+      "id": "SEC-EDITOR-001",
+      "claim": "Local editor automation accepts only declared tools, binds mutations to the current editor session/project/revision, retains bounded successful retry responses, and commits validated project changes through shared history while keeping portable collection authoring separate, without exposing browser or process dispatch.",
+      "enforcement": [
+        { "file": "crates/achimeld-mcp/src/lib.rs", "symbol": "validate_arguments" },
+        { "file": "crates/achimeld-security/src/editor_transport.rs", "symbol": "GetNamedPipeServerProcessId" },
+        { "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "preflight" },
+        { "file": "crates/achimeld-application/src/automation.rs", "symbol": "prepare" },
+        { "file": "crates/achimeld-application/src/style_collections.rs", "symbol": "portable" },
+        { "file": "crates/achimeld-app/src/desktop/style_viewer/collections.rs", "symbol": "collection_operation" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-mcp/src/lib.rs", "symbol": "schema_rejects_extra_authority_malformed_batches_and_invalid_enums" },
+        { "scope": "source", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "retry_staleness_busy_and_same_project_reopen_use_the_live_editor_session" },
+        { "scope": "fixture", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "real_windows_pipe_serves_the_stdio_facade_and_survives_disconnection" },
+        { "scope": "source", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "collection_edits_are_revision_pinned_and_import_is_one_undo_step" },
+        { "scope": "source", "file": "crates/achimeld-mcp/src/lib.rs", "symbol": "style_tools_bound_patches_and_keep_file_and_project_authority_explicit" }
+      ],
+      "qualification": "local source, stdio and current-account Windows pipe fixtures; cache eviction/restart, different-account ACL acceptance, installed package and external-client acceptance have separate limits in mcp-audit.md"
+    },
+    {
+      "id": "SEC-TRANSLATIONS-001",
+      "claim": "Achievement translation imports match stable IDs, field context and English source, reject shared or malformed rows, and commit through one revision-pinned undoable transaction; CSV exports never replace existing files.",
+      "enforcement": [
+        { "file": "crates/achimeld-application/src/translations.rs", "symbol": "import_achievements" },
+        { "file": "crates/achimeld-application/src/translations.rs", "symbol": "achievement_catalog" },
+        { "file": "crates/achimeld-app/src/translations.rs", "symbol": "export_cancellable" },
+        { "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "complete_prepared" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-application/src/translations.rs", "symbol": "stale_foreign_and_broken_placeholder_rows_reject_the_entire_import" },
+        { "scope": "source", "file": "crates/achimeld-application/src/translations.rs", "symbol": "shared_stat_rows_cannot_be_modified_through_achievement_translation_import" },
+        { "scope": "source", "file": "crates/achimeld-app/src/translations.rs", "symbol": "csv_round_trip_handles_unicode_quotes_lines_and_never_overwrites" },
+        { "scope": "source", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "real_windows_pipe_serves_the_stdio_facade_and_survives_disconnection" }
+      ],
+      "qualification": "bounded source and synthetic current-user Windows pipe fixtures; installed and live qualification is separate"
+    },
+    {
+      "id": "SEC-RENDER-001",
+      "claim": "Icon folder/mask dependencies reject combined cycles; composition has depth, plane-count, pixel-work and font-outline budgets, and checks cancellation at composition boundaries.",
+      "enforcement": [
+        { "file": "crates/achimeld-application/src/validation.rs", "symbol": "mask_sources" },
+        { "file": "crates/achimeld-imaging/src/renderer.rs", "symbol": "struct Work" },
+        { "file": "crates/achimeld-imaging/src/font.rs", "symbol": "65_536" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-application/src/history.rs", "symbol": "mixed_folder_and_mask_cycles_cannot_commit" },
+        { "scope": "source", "file": "crates/achimeld-imaging/src/tests.rs", "symbol": "branching_folder_mask_graph_has_a_total_render_work_limit" },
+        { "scope": "source", "file": "crates/achimeld-imaging/src/tests.rs", "symbol": "maintained_font_renderer_renders_unicode_and_rejects_malformed_fonts" }
+      ],
+      "qualification": "bounded composition fixtures; individual decoding/raster/filter primitives are not preempted and total CPU/RSS, fuzz coverage and reference pixel parity remain separate"
+    },
+    {
+      "id": "SEC-GRADIENT-001",
+      "claim": "Photoshop gradient imports bound bytes, descriptor complexity and preset/stop counts before a whole-library commit; exports publish complete files without replacing existing destinations. Native file access stays in the supervised host.",
+      "enforcement": [
+        { "file": "crates/achimeld-application/src/gradient_file.rs", "symbol": "pub fn decode" },
+        { "file": "crates/achimeld-app/src/editor_state.rs", "symbol": "pub fn import_gradients" },
+        { "file": "crates/achimeld-app/src/desktop/gradients.rs", "symbol": "pub(super) fn export" }
+      ],
+      "evidence": [
+        { "scope": "source", "file": "crates/achimeld-application/src/gradient_file_tests.rs", "symbol": "photoshop_gradient_rejects_truncation_unsupported_features_and_resource_bombs" },
+        { "scope": "source", "file": "crates/achimeld-app/src/desktop/gradients.rs", "symbol": "photoshop_gradient_files_import_atomically_and_exports_preserve_existing_files" }
+      ],
+      "qualification": "bounded local synthetic fixtures; Photoshop pixel parity, live Photoshop acceptance and sustained fuzz/CPU/RSS qualification remain separate; no worker operation or wire shape is added"
+    }
+  ]
+}

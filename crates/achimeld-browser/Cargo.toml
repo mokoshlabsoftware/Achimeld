@@ -1,0 +1,19 @@
+[package]
+name = "achimeld-browser"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+log.workspace = true
+achimeld-core = { path = "../achimeld-core" }
+achimeld-security = { path = "../achimeld-security" }
+serde.workspace = true
+serde_json.workspace = true
+roxmltree.workspace = true
+rand.workspace = true
+hex.workspace = true
+
+
+[lints]
+workspace = true

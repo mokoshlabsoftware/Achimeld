@@ -1,0 +1,21 @@
+{
+  "generator": "Built-in image_gen tool",
+  "icons": [
+    {
+      "name": "general-images",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Flat vector icon appearance, crisp simple professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster image asset of a vector-style icon, not a screenshot. Subject: a single landscape picture frame containing a simple mountain silhouette and a small sun cutout."
+    },
+    {
+      "name": "icon-images",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Flat vector icon appearance, crisp simple professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster image asset of a vector-style icon, not a screenshot. Subject: three stacked diamond-shaped layers, the upper layer bearing a small simple mountain cutout; a clear icon-layer stack silhouette."
+    },
+    {
+      "name": "atlases",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Flat vector icon appearance, crisp simple professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster image asset of a vector-style icon, not a screenshot. Subject: a square sprite sheet divided into a clean three by three grid of nine equal square tiles with consistent transparent gutters."
+    },
+    {
+      "name": "refresh",
+      "prompt": "Use case: logo-brand. Asset type: production desktop toolbar icon for Achimeld. Generate ONE monochrome white UI glyph on a genuinely transparent background. Flat vector icon appearance, crisp simple professional solid silhouette with restrained cutouts, balanced weight, readable at 20 pixels. Centered square canvas, symbol occupies roughly 80 percent of canvas. No text, no letters, no badge, no rounded square, no surrounding circle, no button background, no shadows, no gradients, no decoration. This is a raster image asset of a vector-style icon, not a screenshot. Subject: a broad circular clockwise arrow with a clear arrowhead and one opening, a familiar refresh action symbol."
+    }
+  ]
+}

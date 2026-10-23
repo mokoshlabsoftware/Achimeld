@@ -1,0 +1,22 @@
+{
+  "provider": "built-in image_gen",
+  "prompts": [
+    {
+      "name": "retired",
+      "prompt": "Use case: logo-brand. Asset type: tiny desktop achievement status icon. Create a single centered archive box with a small minus sign. Minimal flat white monochrome glyph, consistent medium bold strokes, square composition with generous transparent padding, readable at 20 pixels. Actual transparent background. No text, letters, colored backdrop, shadow or glow."
+    },
+    {
+      "name": "current",
+      "prompt": "Use case: logo-brand. Asset type: tiny desktop achievement status icon. Create a single centered two circular synchronization arrows surrounding a check mark. Minimal flat white monochrome glyph, consistent medium bold strokes, square composition with generous transparent padding, readable at 20 pixels. Actual transparent background. No text, letters, colored backdrop, shadow or glow."
+    },
+    {
+      "name": "outdated",
+      "prompt": "Use case: logo-brand. Asset type: tiny desktop achievement status icon. Create a single centered two circular synchronization arrows surrounding an exclamation mark. Minimal flat white monochrome glyph, consistent medium bold strokes, square composition with generous transparent padding, readable at 20 pixels. Actual transparent background. No text, letters, colored backdrop, shadow or glow."
+    },
+    {
+      "name": "unsynced",
+      "prompt": "Use case: logo-brand. Asset type: tiny desktop achievement status icon. Create a single centered cloud with a small clock. Minimal flat white monochrome glyph, consistent medium bold strokes, square composition with generous transparent padding, readable at 20 pixels. Actual transparent background. No text, letters, colored backdrop, shadow or glow."
+    }
+  ],
+  "preparation": "Unchanged generated source PNGs retained. Alpha-bounded glyphs fitted within 56x56 on 64x64 transparent PNG/RGBA canvases; linear mipmap filtering. Status visibility shares canvas-labels animation."
+}
