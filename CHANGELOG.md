@@ -2,6 +2,14 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.6.0 (2026-10-24)
+
+- Present Achimeld purpose, screenshots and installer options on GitHub
+
+## 0.2.5.1 (2026-10-24)
+
+- Explain Achimeld for game developers with screenshots and installer availability
+
 ## 0.2.5.0 (2026-10-23)
 
 - Enforce source-only GitHub releases and keep paid installers local

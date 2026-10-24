@@ -1,13 +1,96 @@
 # Achimeld
 
-Achimeld is a Windows desktop editor being implemented in Rust, with a locally maintained C# Steamworks read worker. This repository contains all application source and build inputs. See the [roadmap](ROADMAP.md), [implementation status](docs/rewrite-status.md), and [security audit entry point](docs/security/README.md).
+**Create, organize and style your game's achievements, then bring them into Steam Partner.**
 
-## Current capability and source
+Achimeld is a Windows desktop app for game developers. Keep achievement names,
+descriptions, translations, stats and icon artwork together in a local project,
+with a visual workspace for designing the whole collection. Review changes and
+synchronize with Steam Partner as your game evolves.
 
-Achimeld's source code is open source under Apache 2.0. This public repository
-contains the tracked development source outside the internal `private/` folder.
-Ready-made Windows installers are a separate paid offering. GitHub and GitLab
-host source, not installer downloads; installer sales are not yet configured.
+[Website](https://achimeld.com/) · [Get Achimeld](https://achimeld.com/#packages) · [Discord](https://discord.gg/bRSXsjZmU) · [Build from source](#for-developers)
+
+## What you can do
+
+- **Plan your achievements visually.** Arrange achievement cards on a zoomable
+  canvas, edit their details, manage stats and set progress thresholds.
+- **Create a consistent set of icons.** Combine artwork, text, gradients, shapes,
+  masks and effects in layers. Reuse styles across achievements and preview the
+  results together.
+- **Keep artwork organized.** Import images and atlases into the Art Data Bank,
+  reuse them in icons, and keep project artwork alongside your saved project.
+- **Manage names and translations.** Edit localized achievement text and use
+  unlock-value placeholders for milestones such as “Find 50 items”.
+- **Review changes before syncing.** Compare your project with Steam Partner,
+  choose which changes to send or bring back, and review the differences. Final
+  publication is performed in Steamworks.
+- **Connect your development tools.** The built-in [MCP server](docs/mcp-server.md)
+  lets compatible AI assistants work with achievements, stats, translations and
+  icon styles in the open editor.
+
+## Get Achimeld
+
+The source code is free and open source under the [Apache 2.0 license](LICENSE).
+The supporter package provides the same creative tools with a convenient Windows
+installer and helps fund development.
+
+| Option | What you get | How to get it |
+| --- | --- | --- |
+| **Free — build it yourself** | Source code and build tools. You compile the application on Windows. | Clone or download this repository, then follow the [build guide below](#for-developers). |
+| **$5 supporter package — coming soon** | A ready-made Windows installer, with the same core toolkit. | Visit [achimeld.com](https://achimeld.com/#packages) for installer availability and the purchase link when checkout opens. |
+
+**The supporter checkout is not live yet.** The website currently shows the
+installer as coming soon. GitHub releases contain source code; installers are not
+hosted on GitHub or GitLab.
+
+## Screenshots
+
+### Design achievement icons in layers
+
+Combine your game's artwork with gradients, text and effects, and see the result
+on the achievement card while you edit.
+
+![Achimeld's layered icon editor showing artwork, gradients, curves and vignette layers beside an achievement card.](docs/screenshots/layered-icon-editor.png)
+
+### Keep a whole collection visually consistent
+
+Work with shared icon styles across multiple achievements, including text and
+milestone values.
+
+![A collection of purple achievement icons connected to a shared style, with text and layer properties open.](docs/screenshots/shared-achievement-styles.png)
+
+### Keep your artwork in one place
+
+Browse imported images and atlases in the Art Data Bank, inspect artwork, and
+reuse it throughout the project.
+
+![The Art Data Bank showing a grid of game artwork and a selected image's preview and dimensions.](docs/screenshots/art-data-bank.png)
+
+### See the bigger picture
+
+Zoom out to organize the full achievement collection, then select an achievement
+to edit its name, description, linked stat and unlock value.
+
+![The achievement workspace zoomed out to show a complete collection, with a milestone achievement selected in the properties panel.](docs/screenshots/achievement-workspace.png)
+
+## For developers
+
+Achimeld is built with Rust and locally maintained C# libraries. This repository
+contains the public application source, artwork and build inputs. Internal
+publishing tools stay in the development repository's `private/` folder.
+
+The app is under active development. See the [roadmap](ROADMAP.md),
+[implementation status](docs/rewrite-status.md), [desktop feature status](docs/desktop-rewrite.md)
+and [security documentation](docs/security/README.md) for current feature support
+and known limitations.
+
+Steam Partner access requires permission to manage your game's Steamworks app.
+Sign in through Achimeld's dedicated browser window; the editor does not ask for
+your Steam password. Achimeld is not affiliated with or endorsed by Valve.
+
+<details>
+<summary><strong>Build, run and inspect Achimeld from source</strong></summary>
+
+### Source layout and implementation details
 
 - Rust package verifier, broker, Windows filtering policy, process Jobs and authenticated supervision: `crates/achimeld-bootstrapper`.
 - Native Rust desktop, local commands, undo, layered imaging and presentation: `crates/achimeld-app`, `crates/achimeld-application`, `crates/achimeld-ui`, `crates/achimeld-imaging` and `crates/achimeld-persistence`.
@@ -106,6 +189,8 @@ C:/Projects/AchimeldBuild/current/target/debug/achimeld-inspect.exe project C:/p
 ```
 
 The inspector does not launch a browser. The compatibility oracle uses local domain, parser and wire source. `build/RecordBaseline.ps1` records their current source hashes; changed vectors require deliberate review. Ordinary Rust tests consume committed vectors.
+
+</details>
 
 ## License
 

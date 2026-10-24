@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "distribution": "source-only",
-  "workingVersion": "0.2.5.0",
-  "gitlabSourceCommit": "f2ab19b82a03149a9d3ddecc66d324cbfab2e1ab",
+  "workingVersion": "0.2.6.0",
+  "gitlabSourceCommit": "25d148bd478db43404c47d4636c3e815a534333e",
   "installerBuilt": false,
   "installerUploaded": false,
   "files": [
@@ -32,7 +32,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "ffdf436e863cc6464c0c57cb04d148554c6787fb23ca16dbf57a1e94c0e5edef"
+      "sha256": "0c041ec20a5c706df5ce0f9c7d0a5ab60a60c52756137be11a25d2d23e60c5db"
     },
     {
       "path": "Cargo.lock",
@@ -52,7 +52,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "734be265271789cefe8215c002f9c864ba83e6958b3514d3bdf30489d9fe39e2"
+      "sha256": "d67f2aca209b7963ef2ca946835b9e3d6eedbe1e1ba423e88fe12c9c285628ef"
     },
     {
       "path": "ROADMAP.md",
@@ -3521,6 +3521,22 @@
     {
       "path": "docs/rewrite-status.md",
       "sha256": "0406bbc92df20c756ff84fd52005e7f3e51f42b4d39b8da347183810f776d0ab"
+    },
+    {
+      "path": "docs/screenshots/achievement-workspace.png",
+      "sha256": "8ea3b72e71e0c6f76fed44795ef39b3c1182bd63e93591dec2eb30c49f794489"
+    },
+    {
+      "path": "docs/screenshots/art-data-bank.png",
+      "sha256": "e81d44833431d00d4490ad0675060fccf6779ee949a62fb48a41522f7ad84bcf"
+    },
+    {
+      "path": "docs/screenshots/layered-icon-editor.png",
+      "sha256": "1576d2d55daac89fcd880cb9473879087d29bf4da7ef0d8708eb3955752811ee"
+    },
+    {
+      "path": "docs/screenshots/shared-achievement-styles.png",
+      "sha256": "4d5071ee4425a5f2c5c4bfd04eb7fc88e9c17642e188b3e52e9c7365c208e02e"
     },
     {
       "path": "docs/security-auditability.md",
