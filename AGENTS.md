@@ -50,29 +50,48 @@ checkout for this permanent location. Temporary validation/export checkouts may
 live under `C:\Projects\AchimeldBuild\current`.
 
 Track publishing scripts and internal release configuration in GitLab's `private/`
-directory. Export only explicitly approved public files and stable snapshots to
-GitHub; never mirror GitLab history or copy `private/`, credentials, or signing
-secrets there. Preserve uncommitted changes in either checkout.
+directory. GitHub receives **every tracked source file outside `private/`** from
+the selected clean GitLab commit, as a public snapshot with separate history.
+Do not maintain a second opt-in file list that silently omits new source. Never
+mirror GitLab history or copy `private/`, credentials, or signing secrets. Unsafe
+or generated tracked inputs must stop publication, not be silently excluded.
+Preserve uncommitted changes in either checkout.
+
+**Distribution contract: open-source code, paid ready-made installers.** GitLab
+stores development source (including `private/`); GitHub stores public source.
+Neither service may host compiled installers or application packages, whether in
+Git, LFS, release assets, package registries, CI artifacts, Pages, or disguised
+archives. Source artwork, build recipes and automatic source-code archives are
+allowed. Text-only CI audit evidence is allowed; compiled build outputs are not.
+
+**No installer uploads are currently enabled.** Lemon Squeezy is the planned paid
+delivery destination, deferred for later setup. Do not upload there, enable sales,
+or add an upload to Publish.bat without the user's explicit instruction. Publishing
+source and preparing a local installer never imply permission to distribute it.
+Never use GitHub/GitLab as a free installer host or fallback download location.
 
 Generated installers, packages, build outputs and audit evidence belong under
 `C:\Projects\AchimeldBuild`, outside both repositories. Build from a clean selected
-GitLab commit and record that exact source commit in the installer/package and
-GitHub release, together with the installer SHA-256. The public snapshot commit
-has its own identity because GitLab development history is not published.
+GitLab commit and record that exact source commit and installer SHA-256 in local
+metadata. Public source provenance may record these identities, but includes no
+installer bytes. The public snapshot has its own commit identity.
 
-The authoritative latest published installer is
-**`C:\Projects\AchimeldBuild\install\Achimeld-Setup.exe`**. Other agents
-must retrieve the installer from this fixed location. Read the adjacent
-`RELEASE-SOURCE.json` for its working version, exact GitLab source commit and
-installer SHA-256, and verify against `SHA256SUMS.txt`. `build/BuildPaths.ps1`
-owns this location through `(Get-AchimeldBuildPaths).Installer`. Promote the
-complete installer/metadata directory only after successful publication; keep
-previous copies in the dated build archive. Do not use unfinished setup files in
-random staging folders or place installer binaries in either source checkout.
+The authoritative latest verified local installer is
+**`C:\Projects\AchimeldBuild\install\Achimeld-Setup.exe`**. Other agents must
+retrieve the installer from this fixed location. Read adjacent `RELEASE-SOURCE.json`
+for its working version, exact GitLab source commit and installer SHA-256, and
+verify against `SHA256SUMS.txt`. `build/BuildPaths.ps1` owns this location through
+`(Get-AchimeldBuildPaths).Installer`. Promote the complete directory only after
+successful build verification and source publication; keep previous copies in the
+dated archive. Local promotion does not upload or sell the installer. Never use
+unfinished setup files in random staging folders or binaries in source checkouts.
 
-The dedicated operating guide is `private/PUBLISHING.md`. Keep it current when
-changing publishing, authentication, source export policy, repository locations,
-installer promotion, or failure recovery. It stays in the private GitLab folder.
+The operating guide is `private/PUBLISHING.md`. Keep it current when changing
+publishing, authentication, export policy, storage, delivery, or failure recovery.
+Run `private/Test-Publishing.ps1` after changing these boundaries. Its source-only
+release helper accepts no assets; never restore installer arguments or an upload
+command to the GitHub publisher. Check existing remote downloads separately when
+repairing a distribution mistake, while preserving source and provenance records.
 
 # Working versions and change history
 

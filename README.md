@@ -4,6 +4,11 @@ Achimeld is a Windows desktop editor being implemented in Rust, with a locally m
 
 ## Current capability and source
 
+Achimeld's source code is open source under Apache 2.0. This public repository
+contains the tracked development source outside the internal `private/` folder.
+Ready-made Windows installers are a separate paid offering. GitHub and GitLab
+host source, not installer downloads; installer sales are not yet configured.
+
 - Rust package verifier, broker, Windows filtering policy, process Jobs and authenticated supervision: `crates/achimeld-bootstrapper`.
 - Native Rust desktop, local commands, undo, layered imaging and presentation: `crates/achimeld-app`, `crates/achimeld-application`, `crates/achimeld-ui`, `crates/achimeld-imaging` and `crates/achimeld-persistence`.
 - Offline inspector and typed read client: `crates/achimeld-app`, `crates/achimeld-browser` and `crates/achimeld-security`.

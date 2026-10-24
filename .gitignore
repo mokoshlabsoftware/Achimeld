@@ -12,5 +12,15 @@
 *.rlib
 *.rmeta
 *.nupkg
+*.msi
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+# Prepared distribution archives belong under AchimeldBuild, never in source.
+*.zip
+*.7z
+*.tar
+*.gz
 *.achv.transaction*
 

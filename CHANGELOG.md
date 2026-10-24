@@ -2,6 +2,22 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.5.0 (2026-10-23)
+
+- Enforce source-only GitHub releases and keep paid installers local
+
+## 0.2.4.1 (2026-10-23)
+
+- Keep paid installers local and publish all non-private source without installer downloads
+
+## 0.2.4.0 (2026-10-23)
+
+- Use plain versioned GitHub release labels
+
+## 0.2.3.1 (2026-10-23)
+
+- Use plain versioned release names without preview labels
+
 ## 0.2.3.0 (2026-10-23)
 
 - Update text-source layout regression for two buttons

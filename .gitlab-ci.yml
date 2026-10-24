@@ -7,6 +7,8 @@ rust-windows:
   variables:
     CARGO_INCREMENTAL: "0"
   script:
+    # Source-only distribution gate; compiled outputs must stay on the runner.
+    - ./private/Test-Publishing.ps1
     - ./build/Audit.ps1 -Fixtures
     - ./build/Rust.ps1 -CargoArguments @('build','--workspace','--release','--locked')
   after_script:

@@ -1,11 +1,10 @@
 {
-  "schemaVersion": 1,
-  "workingVersion": "0.2.3.0",
-  "gitlabSourceCommit": "a5e19f7307523c2d01386657a5aa5ec21e3f3485",
-  "packageManifestSha256": "13411cc9c0bffdb358f31221b1ba4b5fd5479dbcb30f16fcfafb642f40c6cf20",
-  "verifierSha256": "28bf58bb4923eb667b473f250f3d324b6c601985cbf8d90d6b1865d9e24b66a3",
-  "installerSha256": "669e2de9885e18278fc92ff31e696bef1f3f2cb70bfddb33c3f262b50632bfca",
-  "packageMode": "development",
+  "schemaVersion": 2,
+  "distribution": "source-only",
+  "workingVersion": "0.2.5.0",
+  "gitlabSourceCommit": "f2ab19b82a03149a9d3ddecc66d324cbfab2e1ab",
+  "installerBuilt": false,
+  "installerUploaded": false,
   "files": [
     {
       "path": ".cargo/config.toml",
@@ -21,23 +20,19 @@
     },
     {
       "path": ".gitignore",
-      "sha256": "fa9d09ca40aa85807eafc2a3dfc0d0d87f48b1b61535d28b86493d627dd39aa5"
+      "sha256": "036d9da9150943ad6e36fbb92858400e58c43bd697c56520d13fc8af5d32fc87"
     },
     {
       "path": ".gitlab-ci.yml",
-      "sha256": "3962108ce622ed9dcd8cfdfd39cca3d8c4e749a59b2fef4ee5050e3e51c3ad66"
+      "sha256": "da77643703574bd46ae3816fe73ad79aeb0c55ee92b73ae01707bb24f4952203"
     },
     {
       "path": "AGENTS.md",
-      "sha256": "fb57ecb032a76a26caa9dfeebe26abf1cbd1fbf439a090b94afe74fd32f3b128"
-    },
-    {
-      "path": "LICENSE",
-      "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+      "sha256": "e87137a068533c6830670849eb13e8f4a6185b4f37e4a2af91b0ee4c93087ed3"
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "67b09ac51c915e1ec4d048977eb78e5fdcbf2a292b25d3b6b0a186ae6d0fa7e9"
+      "sha256": "ffdf436e863cc6464c0c57cb04d148554c6787fb23ca16dbf57a1e94c0e5edef"
     },
     {
       "path": "Cargo.lock",
@@ -52,12 +47,20 @@
       "sha256": "94abc6d538d5945b39b4d75ad6f053bc387fc351be798d04126283189231f6f5"
     },
     {
+      "path": "LICENSE",
+      "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+    },
+    {
       "path": "README.md",
-      "sha256": "619b9fb7854b9ac883640d7299efa10b3932cd68e82c580fc5651e30feb3771b"
+      "sha256": "734be265271789cefe8215c002f9c864ba83e6958b3514d3bdf30489d9fe39e2"
     },
     {
       "path": "ROADMAP.md",
       "sha256": "fb6d30df2fafaa57b9c70fd73156e054cf985395559b2a01765bdde794fb4b4c"
+    },
+    {
+      "path": "adversarial-audit-1.md",
+      "sha256": "a13faa9b74a5cbf4cba703dc6096fcd7aa7652bdcbe02b58c722c9f2a0f11034"
     },
     {
       "path": "bridge/Achimeld.Browser/Achimeld.Browser.csproj",
@@ -336,6 +339,10 @@
       "sha256": "5d4f48d9c9be741eba20a36ae719c1aa56a9545940c5a09a77ca3ba7f9a10dfa"
     },
     {
+      "path": "build/Get-UpdateNotes.ps1",
+      "sha256": "67b062420fc2c2d1a92173692e247d157423ed5e197b38a26b8d6d580793f5b7"
+    },
+    {
       "path": "build/Migrate-BuildStorage.ps1",
       "sha256": "f7a3477785987f0637582884b856c96bcb07e004204909d4fa46890c478d53a7"
     },
@@ -356,6 +363,10 @@
       "sha256": "7f257fb2bcd2d6d5f93b8fc41c24dff205c5f6377dad1b2ead587bdef1fd4cec"
     },
     {
+      "path": "build/Resize-ToolbarIcons.ps1",
+      "sha256": "315ed63ad41ff214a75f2698ff009a60aeed0dfacfe2af665841fdb8bd5d7cec"
+    },
+    {
       "path": "build/Rust.ps1",
       "sha256": "40ae9bb973dced56daf063ca89370344002866b9042ef515f047dcc0a6d67456"
     },
@@ -372,12 +383,20 @@
       "sha256": "3fa11fd5d0ffdbe96531b608bf1fee80e3e5f46962597a9abd9e803e2d47b81d"
     },
     {
+      "path": "build/Test-AuditFailure.ps1",
+      "sha256": "fabcc876024fad2a7026132a118818e94ae518b0abee6027f09a3c7cd5814e7b"
+    },
+    {
       "path": "build/Test-Bridge.ps1",
       "sha256": "007b2bba6c450590c6e1eee0e7a73c46ad468a7f19ec0668c412d51655a2476d"
     },
     {
       "path": "build/Test-BrowserRequests.ps1",
       "sha256": "99e10dc2dfe6b39e4d127560462cac8931bd06fa258e17ba29d00d163148d843"
+    },
+    {
+      "path": "build/Test-BuildAndRun.ps1",
+      "sha256": "23b1ece3d3dbb500697155184354950ad8b5f5a3f66f32de912bd9fd2bdfc2df"
     },
     {
       "path": "build/Test-BuildStorage.ps1",
@@ -1154,6 +1173,426 @@
     {
       "path": "crates/achimeld-ui/assets/strings.csv",
       "sha256": "95cf43f9859c83f4a2b49ec0d74f082abde128d1267171c6f3a1956338382010"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/art-atlases.png",
+      "sha256": "51b14d29f321fdc8d0374ff286f761d512b04cf7104f058d0329896659217441"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/art-general-images.png",
+      "sha256": "dc36c4b199b7bac60986025b2b52a92d1078f716b0d76ea0467e81a09d80d2b0"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/art-icon-images.png",
+      "sha256": "7799a87ce9b604832c571f6b8ed8a4910f82d8f194e2a6ee9f20210f6b6663d8"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/art-import.png",
+      "sha256": "bcd3d5e3108db0fe853b75498f3eadfe374dfc77ef02cb32cdede301f1e98779"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/art-refresh.png",
+      "sha256": "a448c5a0616f513a2701dd48a158104213246ced29f6f3160aec61f82dbf3040"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-add-source.png",
+      "sha256": "0212b88b035cbf9a9d98b94f62af612c5511914694a23089c602c0dd68348d2e"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-control-source.png",
+      "sha256": "92113d57bf281c5d32fda6e8b9aa130b43326992cc24856a6ec9743b9b3d29a2"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-darken-source.png",
+      "sha256": "9bf2f805be21b9f01feadd37f4497039b1c6605839685659107975df0a69ae9f"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-difference-source.png",
+      "sha256": "fdda17441e9d5435c1cd8d5cdfff6898f330e1fbad7132e84629f701593c06dc"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-lighten-source.png",
+      "sha256": "2039499f862a02d4a0b5c978e60fd4caa8b5427fdefeffab69a718c84040c951"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-multiply-source.png",
+      "sha256": "f329976535e1489133edce986235d199a828b63c354211367803ee8cc975fa83"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-normal-source.png",
+      "sha256": "0de4c727ca68884763241cd829d353d5be358d291e17e4fcd686845a8e05bba4"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-overlay-source.png",
+      "sha256": "71471b8ab1d50d6f99a42ef66c53b4e8391935d739377115f5c9437f78d2f90e"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-screen-source.png",
+      "sha256": "c6f6cf6fe67daa82c5d318a619ab5c8b5a5393d5a78cfeaf4cbd8f23b8f7fbd5"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-box-blur-source.png",
+      "sha256": "9a98fa263ee2f100a087a934aa8011a557c7aa3785d42e28ed4f59b0e5d1e511"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-color-overlay-source.png",
+      "sha256": "29a6b4cab76ca91a18fe39dd4319ab9ba2a35c9f1c9204895c6e88f923350c56"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-color-source.png",
+      "sha256": "19041cdc4b331683514f691f2e4060b1a32231a446999deff4d021b69de06c2c"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-gradient-overlay-source.png",
+      "sha256": "03d1cf4b6f8373bda8b05deeb251a0b54f88e20637496a75d6f4ffdd15941d67"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-inner-light-source.png",
+      "sha256": "e764282a00a663e1d588dd335a85858eea450e890c05a8f34cd810d7a88758fd"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-lens-blur-source.png",
+      "sha256": "525cd4f3e3b9e43cde20aec121390f9151b7e1111c6909290e212932c482ee27"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-outer-light-source.png",
+      "sha256": "9613e1017af88608207b4e91fb7b018f588bff8a4e22e60ddabbbb1808e204ed"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-outline-source.png",
+      "sha256": "1ae79b9d64ac998d097d4877fc5ebe38a1f31d17ad60f9ad4b1b5dfa85495825"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-perspective-source.png",
+      "sha256": "16e05691a0812f08991fc818553b86829b099d318f1cd16892d3ba65641cc327"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-pinch-source.png",
+      "sha256": "a8bef4ae2d01285fcc2f96e80573363a1ae1db47d2e6cef37773195cb52d1f79"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-shadow-source.png",
+      "sha256": "ffc0f6a18d076e445472f8248ce9db1670e1bb8901781dd5bad9a3f06b18e3bc"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-skew-source.png",
+      "sha256": "a38c1e975fbe0657bf613596932179abd10f9667f150e31eeb123ab53707493a"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-width-source.png",
+      "sha256": "143b12acf8835b4d9e42c288b89c4bb6ae75ca890124609ba631fa6a1b42e2e9"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-cover-canvas-source.png",
+      "sha256": "7b15ad7e4b05326ac7b7a1f919b0e2cbe28f8df67a80a33d2c75d28a06adec33"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-curve-linear-source.png",
+      "sha256": "14c9d995a8f042daaf4e85899a7bb00bab2cd7ffd39a976a4a5e1b6aa6249428"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-curve-logarithmic-source.png",
+      "sha256": "b55e167fb0f0bc0ae6f7b16f7f3031861e0eff66b191d51eee62a9d5eb5c83b2"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-curve-quadratic-source.png",
+      "sha256": "1cfc34f02e7b231c2c7a8a56376cc1e19866264654cf66b031c956ae4be56ec9"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-range-source.png",
+      "sha256": "2a636e2fff02ef0a080196507883c28afc7a9e8f244fa03afc8c94532a179158"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-seed-per-achievement-source.png",
+      "sha256": "586e97e051a8f8c4aa98056452b35b2878992dd63e624e3bc78a085fc802759e"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/gradient-explorer-source.png",
+      "sha256": "a7de4f1e635b38d8ff49b05f5f96d0797d530e39d79f608e5b9d51722f681c3c"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/gradient-flip-source.png",
+      "sha256": "c6245a918d92c306e1382e635ad550dbe1ae54b7b8714bf139583e95b0f36452"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/inspector-general.png",
+      "sha256": "cc648df2d156018172eca9ff6b30da689e3fdbfc3d48b378563288ebbf76fd2d"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/inspector-icon.png",
+      "sha256": "753e948851ae1cff780d73b415adf9fe2536bb9a4956722ec51671de10a4fa45"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/inspector-localization.png",
+      "sha256": "92dc3d11ec2f972ec3d0aefda1150eeea697afda1382c82381c4f04b22b521fe"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-background-source.png",
+      "sha256": "110dc2cfaf1c6da077aeb0aa4a54c9469b7228eceea3d08c41860b739160dd43"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-create-source.png",
+      "sha256": "dec0ca8f8f5a3bdd0f34041788a116d2c9ad1a601937d126fac4b7c6a5dc9c08"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-delete-source.png",
+      "sha256": "8d2e47f9f9fb9316a35595f2f21ba3193cfa166e43654b8a2a142f269e195d56"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-down-source.png",
+      "sha256": "940d97e778a3b5a7df9f3df2560ef549185cc648c5b052eacf7f96ad7bc29f83"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-folder-source.png",
+      "sha256": "0d65b6bf0a7e69e7d498a9c3404264f1d156aaa857eed192c1af30ad0a3ed866"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-import-source.png",
+      "sha256": "cc376dfe8b473d64d8a744f3ca2aa67794bcb322bc697024f4ce91060a101b10"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-reroll-source.png",
+      "sha256": "5ef7922a490108b92939d07c86e399a64283bc266c2879814955ad7110a7d0e9"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-up-source.png",
+      "sha256": "d988a61811a5ccd55becde9adbc57629a874ef5b12ae82dacd64ed5680d70aea"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-artifact3d-source.png",
+      "sha256": "b95ebb1e5fd63a9fa9db411098cb32dc97f3ceaa71126bc2fbb86da8679807c8"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-contrast.png",
+      "sha256": "8c151674f621fa76c6b6491da3da3f8cbb043b0ece1438ad1f1fca0fdd3c08d8"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-curves.png",
+      "sha256": "196d574857881d9dac88af08bea0c6bda1e00a83f99f60ae1c5b247509f0a917"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-explosion-source.png",
+      "sha256": "c03dbd5ad4079e9a785dc3fe02c1028a7991a65b1f5a9e847182989c6ce4b200"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-eye-source.png",
+      "sha256": "50be5d9b861056bd16d7140e035e3d4942782e4187945340fd06425b5ae8bddf"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-folder-generated.png",
+      "sha256": "030b712f2948b8e9c666fb785ddd7b8717ecb321f9027fa7399aa0fc5b051063"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-gradient-overlay.png",
+      "sha256": "c03eddcce5a56fbb16d49449331a09ea74b0bbc7ca7822c148e4739153f36c28"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-gradient.png",
+      "sha256": "f1c674b2f556e79ef4904d25a8f683c8a016192bd980df9301c9ad2debea9ea6"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-hue-saturation.png",
+      "sha256": "5938b87cf708f15345e5026ae4843721efa52a6b935f4270c6e016656c1c546c"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-mask-source.png",
+      "sha256": "ac7a8f21812de2381da29f89ce991292039c85933dfe563ef03a6934140cbf68"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-particle-source.png",
+      "sha256": "e009c1417c432ef45261c79e5a2dd57e38607a844d2f3f7fdcce7116822060e8"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-perlin-noise-generated.png",
+      "sha256": "b18f55cb3c2d530e3c2ab5bfe350916cf61fbef3df32255a969cb0f2487a564d"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-radial-blur-source.png",
+      "sha256": "bd1bbc50f1511dd1e14e2a07e1443d05557e2fa17c272d8da4fb76785808d1d6"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-selective-color.png",
+      "sha256": "d06daef357a9836fa8aca848042de5e62d5bccaba1f178dc7b6a2f17157034b8"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-shape.png",
+      "sha256": "6aba0555fc8e48cbe2390d27b0aa97998150d32bac6a78344f3ebf2e44faf1f0"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-solid.png",
+      "sha256": "a5cfa65132cdd70ea3eec795ecf2ea0ff36cfa1325ed4ca324e0808f1ca9018a"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-text.png",
+      "sha256": "05c415bfd0b8b60c7cb25c2b500f00067fc3c77f61ff1fa384e4fb2d33481d8f"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-text3d-source.png",
+      "sha256": "a347262cd7d106a0ad419f1a5c15e9597bb965199621537a491b1297eaa62b76"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-unsharp-mask.png",
+      "sha256": "6cd9fef16f590b6a2c7d612f1c9195ee8e107701d243dc3d4e4da13068835048"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-vignette.png",
+      "sha256": "10a76fe32f0db2ac171366d3a3f9a3160aa6711453dadad28709bab72f48de11"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-choose-art.png",
+      "sha256": "1958c07fc1aceccdf4c1bcf6202f16fc4ebebfb25b71f42649012df3d6638acc"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-copy.png",
+      "sha256": "655d04c5a2b69436be46d64cf8b29a58514b00e525ac33073cc41a3701c2441d"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-import-atlas.png",
+      "sha256": "e565f8b3206399a8aede3922ed2c13db26af840e9516327821d94d1a1e8c33f2"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-import-images.png",
+      "sha256": "4fae053ae078ff0e01faecb04a101b405c19533486292a7763faddf196dd9aef"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-paste.png",
+      "sha256": "362178566839d282afffa29986a0209e8e25105d628b262f54cb27acfb30ea91"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-use-in-icon.png",
+      "sha256": "98980b33d952cd7374dfd8b9fc1a778fe488d5c69efb6622a77db531dc4d05d4"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-app-style-source.png",
+      "sha256": "2e8b99ae51c49688fab3a7cee7089e634cdd0cfa402eeb7746bba4a6e26b1a15"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-browser-source.png",
+      "sha256": "d96473cf0904086386120cc735f7dfee3cf834c4f251b2c6bdca3cce38c15aa0"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-colors-source.png",
+      "sha256": "459b8273aa4940acd47127345b74a1eb96d640ee923095e449026b5c424851cb"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-general-source.png",
+      "sha256": "8048180a8b8cba237e8fd8c89947757561d2caa071627b7ca869b172dd8c1fc9"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-naming-source.png",
+      "sha256": "2d1292b4f134f3bd9be20131c9c39d695c1bc73938bf09fb936dc9d8fa464325"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-helpers-source.png",
+      "sha256": "1ae8cd3f8d47ef44f670bb54b5b038ab6e38cee4b52b5b85bb9532afbdff6adb"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-new-line.png",
+      "sha256": "41abdbecc316e5503ceb50d6954521025964957a3455eeae592c300bc5f35b5a"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-rows.png",
+      "sha256": "10e97de9c5c583f9775445fef6b891c39f6242a4b94a9ba2055c68fa327d7b6e"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-selection.png",
+      "sha256": "e987d993067c9f91ad4f1c479d2574602451e69e532cfbfd83ce610906c88449"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-style.png",
+      "sha256": "765b46bd4ee0bae0872ec6e3fbcdb92792d2dc76f9f938d72ce1d24c246564b6"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sort.png",
+      "sha256": "359067d730800096f0accf2455bfd3ad2f18facfbe96ef973eb4e1050e25115f"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-approve.png",
+      "sha256": "bc50a2e81520507df3ecb11db3daf540ce6be631aaad48bb4f06c95bce116ca0"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-cancel.png",
+      "sha256": "cd0310df089fa4a4145eb48366c43199d2dc2f9dcfc17d9d24e9c4a2e2c9eefe"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-import-source.png",
+      "sha256": "960d009eb9721d417ab17da1bb657f348eaa0b8ed9a7c90d7ff0b723ee992c1f"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-rename.png",
+      "sha256": "769eb6007a2196c1b14094b840855de1486fb912e8e1156f4409c9da8b8f007b"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-save-source.png",
+      "sha256": "29e9f41acdfc70de147ab182302355538075ec242ac3acf018b1d16e6231a76e"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-set-load.png",
+      "sha256": "b75e034ab34e6c11a26ddc7efac7694168e12dcd71015608de4295c0e1f7ae4a"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/style-set-save.png",
+      "sha256": "36fefbc6affb1f907e505fab1d1559d312af66d319b49f469c786d92281f4599"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sync-validate-initial-source.png",
+      "sha256": "4f2eeeb49085f957691628f755bbbdaef18f70153c242afe0bd6c1f10cbe1f7e"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/sync-validate-source.png",
+      "sha256": "6e8d201aa7fc06d0fe4c8f3686ed55ca602223ba9bc1219fd217450bd49f5994"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-achievements.png",
+      "sha256": "fcf9e62a91e8c2a6435ee86270b33ef3927c7c17d29f905a6ac30c955c8612d1"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-art-bank.png",
+      "sha256": "7881bf3e2e501f236ba755b880d6f0e92e0d70309755edd23c1427c8029f5ea6"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-stats.png",
+      "sha256": "a2716e66abb0a1cea25ee51db221b5de16f7265dd3c5e793caa65ce37f2195d3"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-steam.png",
+      "sha256": "e9abbd116a02057d9aa52836572116b5b5cd27611e475d552210dc3c9a994469"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-style-viewer.png",
+      "sha256": "9be47f28589784244bc8bedd8e63608f01c8e30641021e8480cceea2989bf63a"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-sync.png",
+      "sha256": "756a178d728195472cee82eb0e0fcf92a0298077637aa51fd1b443f7491ea466"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-bottom-left-refined.png",
+      "sha256": "e786ef9149ec55866853a55e6879b13d860ec410f2f19aef61d2842ad56a6ddb"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-bottom-left.png",
+      "sha256": "1aabf0b97f3a8b68062658b9198d37c72bd046f82e8231ed4cd5947c805c75a7"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-bottom-right.png",
+      "sha256": "7bdb9a8c3ee176994c36c51c6187b0e29a439f51e33014fd8f00479d98a63fb1"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-center.png",
+      "sha256": "956aadf88aa1afeeba5a0472edbf99053ec56c21a425eb9162648328566c8c7f"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-top-left.png",
+      "sha256": "287177cfd72672952a561d688321d5e0c23afd87e92fb721ef156542ceb263d5"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-top-right.png",
+      "sha256": "27fc69b7384ef06a1a5fc1ddb2f81a7715b526bdd96e14a1bca1584a2393f66f"
+    },
+    {
+      "path": "crates/achimeld-ui/assets/toolbar-originals/text-unlock-link-source.png",
+      "sha256": "d7488de7f339e41acadb9ddd86351e657d7cabcaac3e1b96c96ef0e4452a0869"
     },
     {
       "path": "crates/achimeld-ui/assets/toolbar/README.md",
@@ -3148,6 +3587,10 @@
       "sha256": "4bf86aac1a8130e642f0d91534f4166bb17027426c3f47708352d8462c15e513"
     },
     {
+      "path": "docs/update-notes.md",
+      "sha256": "b33e8327cbdbe60f2741722f484e236ab7ac9b12b2d53bb4881547dfd00090f0"
+    },
+    {
       "path": "docs/upper-application-bar.md",
       "sha256": "cae10fa814ad28f78a383553c4bad5955413a4a08bb73c59bacb789c68f9c7b2"
     },
@@ -3306,446 +3749,6 @@
     {
       "path": "tools/worker-fixture/WorkerFixture.csproj",
       "sha256": "b530730f99ebfba670e1b2a8f086341293267b4120f9d380c05fae523251f0fe"
-    },
-    {
-      "path": "build/Get-UpdateNotes.ps1",
-      "sha256": "67b062420fc2c2d1a92173692e247d157423ed5e197b38a26b8d6d580793f5b7"
-    },
-    {
-      "path": "build/Resize-ToolbarIcons.ps1",
-      "sha256": "315ed63ad41ff214a75f2698ff009a60aeed0dfacfe2af665841fdb8bd5d7cec"
-    },
-    {
-      "path": "build/Test-AuditFailure.ps1",
-      "sha256": "fabcc876024fad2a7026132a118818e94ae518b0abee6027f09a3c7cd5814e7b"
-    },
-    {
-      "path": "build/Test-BuildAndRun.ps1",
-      "sha256": "23b1ece3d3dbb500697155184354950ad8b5f5a3f66f32de912bd9fd2bdfc2df"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/art-atlases.png",
-      "sha256": "51b14d29f321fdc8d0374ff286f761d512b04cf7104f058d0329896659217441"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/art-general-images.png",
-      "sha256": "dc36c4b199b7bac60986025b2b52a92d1078f716b0d76ea0467e81a09d80d2b0"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/art-icon-images.png",
-      "sha256": "7799a87ce9b604832c571f6b8ed8a4910f82d8f194e2a6ee9f20210f6b6663d8"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/art-import.png",
-      "sha256": "bcd3d5e3108db0fe853b75498f3eadfe374dfc77ef02cb32cdede301f1e98779"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/art-refresh.png",
-      "sha256": "a448c5a0616f513a2701dd48a158104213246ced29f6f3160aec61f82dbf3040"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-add-source.png",
-      "sha256": "0212b88b035cbf9a9d98b94f62af612c5511914694a23089c602c0dd68348d2e"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-control-source.png",
-      "sha256": "92113d57bf281c5d32fda6e8b9aa130b43326992cc24856a6ec9743b9b3d29a2"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-darken-source.png",
-      "sha256": "9bf2f805be21b9f01feadd37f4497039b1c6605839685659107975df0a69ae9f"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-difference-source.png",
-      "sha256": "fdda17441e9d5435c1cd8d5cdfff6898f330e1fbad7132e84629f701593c06dc"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-lighten-source.png",
-      "sha256": "2039499f862a02d4a0b5c978e60fd4caa8b5427fdefeffab69a718c84040c951"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-multiply-source.png",
-      "sha256": "f329976535e1489133edce986235d199a828b63c354211367803ee8cc975fa83"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-normal-source.png",
-      "sha256": "0de4c727ca68884763241cd829d353d5be358d291e17e4fcd686845a8e05bba4"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-overlay-source.png",
-      "sha256": "71471b8ab1d50d6f99a42ef66c53b4e8391935d739377115f5c9437f78d2f90e"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/blend-screen-source.png",
-      "sha256": "c6f6cf6fe67daa82c5d318a619ab5c8b5a5393d5a78cfeaf4cbd8f23b8f7fbd5"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-box-blur-source.png",
-      "sha256": "9a98fa263ee2f100a087a934aa8011a557c7aa3785d42e28ed4f59b0e5d1e511"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-color-overlay-source.png",
-      "sha256": "29a6b4cab76ca91a18fe39dd4319ab9ba2a35c9f1c9204895c6e88f923350c56"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-color-source.png",
-      "sha256": "19041cdc4b331683514f691f2e4060b1a32231a446999deff4d021b69de06c2c"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-gradient-overlay-source.png",
-      "sha256": "03d1cf4b6f8373bda8b05deeb251a0b54f88e20637496a75d6f4ffdd15941d67"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-inner-light-source.png",
-      "sha256": "e764282a00a663e1d588dd335a85858eea450e890c05a8f34cd810d7a88758fd"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-lens-blur-source.png",
-      "sha256": "525cd4f3e3b9e43cde20aec121390f9151b7e1111c6909290e212932c482ee27"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-outer-light-source.png",
-      "sha256": "9613e1017af88608207b4e91fb7b018f588bff8a4e22e60ddabbbb1808e204ed"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-outline-source.png",
-      "sha256": "1ae79b9d64ac998d097d4877fc5ebe38a1f31d17ad60f9ad4b1b5dfa85495825"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-perspective-source.png",
-      "sha256": "16e05691a0812f08991fc818553b86829b099d318f1cd16892d3ba65641cc327"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-pinch-source.png",
-      "sha256": "a8bef4ae2d01285fcc2f96e80573363a1ae1db47d2e6cef37773195cb52d1f79"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-shadow-source.png",
-      "sha256": "ffc0f6a18d076e445472f8248ce9db1670e1bb8901781dd5bad9a3f06b18e3bc"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-skew-source.png",
-      "sha256": "a38c1e975fbe0657bf613596932179abd10f9667f150e31eeb123ab53707493a"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/effect-width-source.png",
-      "sha256": "143b12acf8835b4d9e42c288b89c4bb6ae75ca890124609ba631fa6a1b42e2e9"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-cover-canvas-source.png",
-      "sha256": "7b15ad7e4b05326ac7b7a1f919b0e2cbe28f8df67a80a33d2c75d28a06adec33"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-curve-linear-source.png",
-      "sha256": "14c9d995a8f042daaf4e85899a7bb00bab2cd7ffd39a976a4a5e1b6aa6249428"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-curve-logarithmic-source.png",
-      "sha256": "b55e167fb0f0bc0ae6f7b16f7f3031861e0eff66b191d51eee62a9d5eb5c83b2"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-curve-quadratic-source.png",
-      "sha256": "1cfc34f02e7b231c2c7a8a56376cc1e19866264654cf66b031c956ae4be56ec9"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-range-source.png",
-      "sha256": "2a636e2fff02ef0a080196507883c28afc7a9e8f244fa03afc8c94532a179158"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/explosion-seed-per-achievement-source.png",
-      "sha256": "586e97e051a8f8c4aa98056452b35b2878992dd63e624e3bc78a085fc802759e"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/gradient-explorer-source.png",
-      "sha256": "a7de4f1e635b38d8ff49b05f5f96d0797d530e39d79f608e5b9d51722f681c3c"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/gradient-flip-source.png",
-      "sha256": "c6245a918d92c306e1382e635ad550dbe1ae54b7b8714bf139583e95b0f36452"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/inspector-general.png",
-      "sha256": "cc648df2d156018172eca9ff6b30da689e3fdbfc3d48b378563288ebbf76fd2d"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/inspector-icon.png",
-      "sha256": "753e948851ae1cff780d73b415adf9fe2536bb9a4956722ec51671de10a4fa45"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/inspector-localization.png",
-      "sha256": "92dc3d11ec2f972ec3d0aefda1150eeea697afda1382c82381c4f04b22b521fe"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-background-source.png",
-      "sha256": "110dc2cfaf1c6da077aeb0aa4a54c9469b7228eceea3d08c41860b739160dd43"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-create-source.png",
-      "sha256": "dec0ca8f8f5a3bdd0f34041788a116d2c9ad1a601937d126fac4b7c6a5dc9c08"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-delete-source.png",
-      "sha256": "8d2e47f9f9fb9316a35595f2f21ba3193cfa166e43654b8a2a142f269e195d56"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-down-source.png",
-      "sha256": "940d97e778a3b5a7df9f3df2560ef549185cc648c5b052eacf7f96ad7bc29f83"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-folder-source.png",
-      "sha256": "0d65b6bf0a7e69e7d498a9c3404264f1d156aaa857eed192c1af30ad0a3ed866"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-import-source.png",
-      "sha256": "cc376dfe8b473d64d8a744f3ca2aa67794bcb322bc697024f4ce91060a101b10"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-reroll-source.png",
-      "sha256": "5ef7922a490108b92939d07c86e399a64283bc266c2879814955ad7110a7d0e9"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-action-up-source.png",
-      "sha256": "d988a61811a5ccd55becde9adbc57629a874ef5b12ae82dacd64ed5680d70aea"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-artifact3d-source.png",
-      "sha256": "b95ebb1e5fd63a9fa9db411098cb32dc97f3ceaa71126bc2fbb86da8679807c8"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-contrast.png",
-      "sha256": "8c151674f621fa76c6b6491da3da3f8cbb043b0ece1438ad1f1fca0fdd3c08d8"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-curves.png",
-      "sha256": "196d574857881d9dac88af08bea0c6bda1e00a83f99f60ae1c5b247509f0a917"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-explosion-source.png",
-      "sha256": "c03dbd5ad4079e9a785dc3fe02c1028a7991a65b1f5a9e847182989c6ce4b200"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-eye-source.png",
-      "sha256": "50be5d9b861056bd16d7140e035e3d4942782e4187945340fd06425b5ae8bddf"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-folder-generated.png",
-      "sha256": "030b712f2948b8e9c666fb785ddd7b8717ecb321f9027fa7399aa0fc5b051063"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-gradient-overlay.png",
-      "sha256": "c03eddcce5a56fbb16d49449331a09ea74b0bbc7ca7822c148e4739153f36c28"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-gradient.png",
-      "sha256": "f1c674b2f556e79ef4904d25a8f683c8a016192bd980df9301c9ad2debea9ea6"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-hue-saturation.png",
-      "sha256": "5938b87cf708f15345e5026ae4843721efa52a6b935f4270c6e016656c1c546c"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-mask-source.png",
-      "sha256": "ac7a8f21812de2381da29f89ce991292039c85933dfe563ef03a6934140cbf68"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-particle-source.png",
-      "sha256": "e009c1417c432ef45261c79e5a2dd57e38607a844d2f3f7fdcce7116822060e8"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-perlin-noise-generated.png",
-      "sha256": "b18f55cb3c2d530e3c2ab5bfe350916cf61fbef3df32255a969cb0f2487a564d"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-radial-blur-source.png",
-      "sha256": "bd1bbc50f1511dd1e14e2a07e1443d05557e2fa17c272d8da4fb76785808d1d6"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-selective-color.png",
-      "sha256": "d06daef357a9836fa8aca848042de5e62d5bccaba1f178dc7b6a2f17157034b8"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-shape.png",
-      "sha256": "6aba0555fc8e48cbe2390d27b0aa97998150d32bac6a78344f3ebf2e44faf1f0"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-solid.png",
-      "sha256": "a5cfa65132cdd70ea3eec795ecf2ea0ff36cfa1325ed4ca324e0808f1ca9018a"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-text.png",
-      "sha256": "05c415bfd0b8b60c7cb25c2b500f00067fc3c77f61ff1fa384e4fb2d33481d8f"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-text3d-source.png",
-      "sha256": "a347262cd7d106a0ad419f1a5c15e9597bb965199621537a491b1297eaa62b76"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-unsharp-mask.png",
-      "sha256": "6cd9fef16f590b6a2c7d612f1c9195ee8e107701d243dc3d4e4da13068835048"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/layer-vignette.png",
-      "sha256": "10a76fe32f0db2ac171366d3a3f9a3160aa6711453dadad28709bab72f48de11"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-choose-art.png",
-      "sha256": "1958c07fc1aceccdf4c1bcf6202f16fc4ebebfb25b71f42649012df3d6638acc"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-copy.png",
-      "sha256": "655d04c5a2b69436be46d64cf8b29a58514b00e525ac33073cc41a3701c2441d"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-import-atlas.png",
-      "sha256": "e565f8b3206399a8aede3922ed2c13db26af840e9516327821d94d1a1e8c33f2"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-import-images.png",
-      "sha256": "4fae053ae078ff0e01faecb04a101b405c19533486292a7763faddf196dd9aef"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-paste.png",
-      "sha256": "362178566839d282afffa29986a0209e8e25105d628b262f54cb27acfb30ea91"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/menu-use-in-icon.png",
-      "sha256": "98980b33d952cd7374dfd8b9fc1a778fe488d5c69efb6622a77db531dc4d05d4"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-app-style-source.png",
-      "sha256": "2e8b99ae51c49688fab3a7cee7089e634cdd0cfa402eeb7746bba4a6e26b1a15"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-browser-source.png",
-      "sha256": "d96473cf0904086386120cc735f7dfee3cf834c4f251b2c6bdca3cce38c15aa0"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-colors-source.png",
-      "sha256": "459b8273aa4940acd47127345b74a1eb96d640ee923095e449026b5c424851cb"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-general-source.png",
-      "sha256": "8048180a8b8cba237e8fd8c89947757561d2caa071627b7ca869b172dd8c1fc9"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/preferences-naming-source.png",
-      "sha256": "2d1292b4f134f3bd9be20131c9c39d695c1bc73938bf09fb936dc9d8fa464325"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-helpers-source.png",
-      "sha256": "1ae8cd3f8d47ef44f670bb54b5b038ab6e38cee4b52b5b85bb9532afbdff6adb"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-new-line.png",
-      "sha256": "41abdbecc316e5503ceb50d6954521025964957a3455eeae592c300bc5f35b5a"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-rows.png",
-      "sha256": "10e97de9c5c583f9775445fef6b891c39f6242a4b94a9ba2055c68fa327d7b6e"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-selection.png",
-      "sha256": "e987d993067c9f91ad4f1c479d2574602451e69e532cfbfd83ce610906c88449"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sort-style.png",
-      "sha256": "765b46bd4ee0bae0872ec6e3fbcdb92792d2dc76f9f938d72ce1d24c246564b6"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sort.png",
-      "sha256": "359067d730800096f0accf2455bfd3ad2f18facfbe96ef973eb4e1050e25115f"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-approve.png",
-      "sha256": "bc50a2e81520507df3ecb11db3daf540ce6be631aaad48bb4f06c95bce116ca0"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-cancel.png",
-      "sha256": "cd0310df089fa4a4145eb48366c43199d2dc2f9dcfc17d9d24e9c4a2e2c9eefe"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-import-source.png",
-      "sha256": "960d009eb9721d417ab17da1bb657f348eaa0b8ed9a7c90d7ff0b723ee992c1f"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-rename.png",
-      "sha256": "769eb6007a2196c1b14094b840855de1486fb912e8e1156f4409c9da8b8f007b"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-save-source.png",
-      "sha256": "29e9f41acdfc70de147ab182302355538075ec242ac3acf018b1d16e6231a76e"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-set-load.png",
-      "sha256": "b75e034ab34e6c11a26ddc7efac7694168e12dcd71015608de4295c0e1f7ae4a"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/style-set-save.png",
-      "sha256": "36fefbc6affb1f907e505fab1d1559d312af66d319b49f469c786d92281f4599"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sync-validate-initial-source.png",
-      "sha256": "4f2eeeb49085f957691628f755bbbdaef18f70153c242afe0bd6c1f10cbe1f7e"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/sync-validate-source.png",
-      "sha256": "6e8d201aa7fc06d0fe4c8f3686ed55ca602223ba9bc1219fd217450bd49f5994"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-achievements.png",
-      "sha256": "fcf9e62a91e8c2a6435ee86270b33ef3927c7c17d29f905a6ac30c955c8612d1"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-art-bank.png",
-      "sha256": "7881bf3e2e501f236ba755b880d6f0e92e0d70309755edd23c1427c8029f5ea6"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-stats.png",
-      "sha256": "a2716e66abb0a1cea25ee51db221b5de16f7265dd3c5e793caa65ce37f2195d3"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-steam.png",
-      "sha256": "e9abbd116a02057d9aa52836572116b5b5cd27611e475d552210dc3c9a994469"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-style-viewer.png",
-      "sha256": "9be47f28589784244bc8bedd8e63608f01c8e30641021e8480cceea2989bf63a"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/tab-sync.png",
-      "sha256": "756a178d728195472cee82eb0e0fcf92a0298077637aa51fd1b443f7491ea466"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-bottom-left-refined.png",
-      "sha256": "e786ef9149ec55866853a55e6879b13d860ec410f2f19aef61d2842ad56a6ddb"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-bottom-left.png",
-      "sha256": "1aabf0b97f3a8b68062658b9198d37c72bd046f82e8231ed4cd5947c805c75a7"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-bottom-right.png",
-      "sha256": "7bdb9a8c3ee176994c36c51c6187b0e29a439f51e33014fd8f00479d98a63fb1"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-center.png",
-      "sha256": "956aadf88aa1afeeba5a0472edbf99053ec56c21a425eb9162648328566c8c7f"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-top-left.png",
-      "sha256": "287177cfd72672952a561d688321d5e0c23afd87e92fb721ef156542ceb263d5"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-align-top-right.png",
-      "sha256": "27fc69b7384ef06a1a5fc1ddb2f81a7715b526bdd96e14a1bca1584a2393f66f"
-    },
-    {
-      "path": "crates/achimeld-ui/assets/toolbar-originals/text-unlock-link-source.png",
-      "sha256": "d7488de7f339e41acadb9ddd86351e657d7cabcaac3e1b96c96ef0e4452a0869"
-    },
-    {
-      "path": "docs/update-notes.md",
-      "sha256": "b33e8327cbdbe60f2741722f484e236ab7ac9b12b2d53bb4881547dfd00090f0"
     }
   ]
 }
