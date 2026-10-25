@@ -135,7 +135,6 @@ enum BankTab {
     Atlases,
 }
 
-#[derive(Default)]
 pub(crate) struct ViewerUi {
     tab: BankTab,
     search: String,
@@ -144,6 +143,26 @@ pub(crate) struct ViewerUi {
     unlock: String,
     saved_unlock: String,
     slot: usize,
+    banner_height: f32,
+    display_size: f32,
+    resolution_power: u32,
+}
+
+impl Default for ViewerUi {
+    fn default() -> Self {
+        Self {
+            tab: BankTab::default(),
+            search: String::new(),
+            atlas: None,
+            atlas_open: false,
+            unlock: String::new(),
+            saved_unlock: String::new(),
+            slot: 0,
+            banner_height: 64.0,
+            display_size: 256.0,
+            resolution_power: 9,
+        }
+    }
 }
 
 fn glyph(ctx: &egui::Context, name: &'static str, bytes: &'static [u8]) -> egui::Image<'static> {
@@ -175,7 +194,7 @@ impl Desktop {
         style: &str,
         edge: usize,
     ) -> Option<(egui::TextureId, egui::Vec2)> {
-        let key = format!("viewer-style:{style}");
+        let key = format!("viewer-style:{edge}:{style}");
         if let Some(preview) = port.style_viewer_style_preview(style, edge) {
             self.preview_texture(ui.ctx(), &key, preview);
         }
@@ -482,7 +501,8 @@ impl Desktop {
                 }
                 let columns = (ui.available_width() / 112.0).floor().max(1.0) as usize;
                 let width = ui.available_width() / columns as f32;
-                let height = width + 2.0 * ui.text_style_height(&egui::TextStyle::Small) + 8.0;
+                let height =
+                    width * 0.65 + 2.0 * ui.text_style_height(&egui::TextStyle::Small) + 8.0;
                 let rows = entries.len().div_ceil(columns);
                 let (_, grid) =
                     ui.allocate_space(egui::vec2(ui.available_width(), rows as f32 * height));
@@ -533,7 +553,7 @@ impl Desktop {
                         );
                         let image_rect = egui::Rect::from_min_size(
                             rect.min + egui::Vec2::splat(8.0),
-                            egui::Vec2::splat((width - 16.0).max(1.0)),
+                            egui::vec2((width - 16.0).max(1.0), (width * 0.65 - 16.0).max(1.0)),
                         );
                         if let Some(preview) = port.asset_preview(*atlas, id.as_deref()) {
                             let size = egui::vec2(preview.width as f32, preview.height as f32);

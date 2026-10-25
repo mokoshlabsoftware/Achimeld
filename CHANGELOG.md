@@ -2,6 +2,102 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.8.0 (2026-10-25)
+
+- Automate safe GitLab source synchronization during publishing
+
+## 0.2.7.1 (2026-10-25)
+
+- Push committed source to GitLab automatically before publishing
+
+## 0.2.7.0 (2026-10-25)
+
+- Fix publishing checks for gradient collection and inspector width
+
+## 0.2.6.21 (2026-10-25)
+
+- Keep inspector tabs within the selected panel width at fractional display scales
+
+## 0.2.6.20 (2026-10-25)
+
+- Fix the 2D gradient collection code check that blocked publishing
+
+## 0.2.6.19 (2026-10-25)
+
+- Close background editor connectors when the last Achimeld window closes so package files no longer block builds
+
+## 0.2.6.18 (2026-10-25)
+
+- Name the bootstrapper console and explain startup, app monitoring, and shutdown
+
+## 0.2.6.17 (2026-10-25)
+
+- Add saved 2D gradient collection and 1D or 2D particle gradient picker
+
+## 0.2.6.16 (2026-10-25)
+
+- Move 2D gradient point editing into a selection panel with shared color actions
+
+## 0.2.6.15 (2026-10-25)
+
+- Keep color panels above Layers and group color channels at the bottom
+
+## 0.2.6.14 (2026-10-25)
+
+- Add 2D gradient point actions and simpler selection controls
+
+## 0.2.6.13 (2026-10-25)
+
+- Make it easy to keep particles upright with a zero rotation range
+
+## 0.2.6.12 (2026-10-25)
+
+- Describe bootstrapper security in the console and show a smaller logo-only loading screen
+
+## 0.2.6.11 (2026-10-25)
+
+- Show file counts and verification phases while capturing build source
+
+## 0.2.6.10 (2026-10-25)
+
+- Keep development builds stable while source edits continue and detect in-use packages before compiling
+
+## 0.2.6.9 (2026-10-25)
+
+- Identify the Achimeld loading screen as the Achimeld Bootstrapper
+
+## 0.2.6.8 (2026-10-25)
+
+- Display the supplied Achimeld banner at the top of Help About
+
+## 0.2.6.7 (2026-10-25)
+
+- Show the Achimeld loading artwork while the supervised editor starts and hide the launcher console for desktop launches
+
+## 0.2.6.6 (2026-10-25)
+
+- Add a movable window size panel and allow Terminal to extend beyond the app bounds
+
+## 0.2.6.5 (2026-10-25)
+
+- Show the orange Achimeld artwork first and the existing editor image on the installer completion page
+
+## 0.2.6.4 (2026-10-25)
+
+- Display styles as gapless artwork-backed banners with overlaid names and remove the internal Icon Banner caption.
+
+## 0.2.6.3 (2026-10-25)
+
+- Standardize numeric knobs on the compact layer-properties slider and document application-wide usage and opacity exceptions.
+
+## 0.2.6.2 (2026-10-25)
+
+- Reorganize Style Viewer into adjustable banners, a sharp size-controlled preview, and artwork inputs; prevent thumbnail rendering from cancelling style previews.
+
+## 0.2.6.1 (2026-10-25)
+
+- Document Lemon Squeezy test installer delivery and pending store activation
+
 ## 0.2.6.0 (2026-10-24)
 
 - Present Achimeld purpose, screenshots and installer options on GitHub
@@ -33,6 +129,10 @@ The newest entry is the current working version. History starts here; earlier wo
 ## 0.2.2.2 (2026-10-23)
 
 - Validate both text-source buttons across narrow layouts and display scales
+
+## 0.2.2.1 (2026-10-23)
+
+- Stretch Properties tabs across the sidebar width
 
 ## 0.2.2.0 (2026-10-23)
 

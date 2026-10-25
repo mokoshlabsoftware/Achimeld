@@ -341,7 +341,7 @@ pub(crate) fn body_properties(
     // Keep a saved range's current appearance until the single value is edited.
     let mut overall_scale = layout(&parsed, instance).scale * 100.0;
     let scale_changed =
-        crate::opacity::value_slider(ui, "Overall scale", &mut overall_scale, 1.0..=200.0, "%", 1);
+        crate::sliders::value_slider(ui, "Overall scale", &mut overall_scale, 1.0..=200.0, "%", 1);
     if scale_changed {
         overall_scale = (overall_scale * 10.0).round() / 10.0;
         settings["scaleMin"] = json!(overall_scale / 100.0);
@@ -349,7 +349,7 @@ pub(crate) fn body_properties(
     }
     for (label, key) in [("Shape X", "shapeX"), ("Shape Y", "shapeY")] {
         let mut value = settings[key].as_f64().unwrap_or(1.0);
-        if crate::opacity::value_slider(ui, label, &mut value, 1.0..=10.0, "×", 2) {
+        if crate::sliders::value_slider(ui, label, &mut value, 1.0..=10.0, "×", 2) {
             settings[key] = json!(value);
         }
     }

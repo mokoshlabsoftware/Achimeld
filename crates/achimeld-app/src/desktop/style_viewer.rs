@@ -1090,23 +1090,25 @@ impl Host {
     }
     pub(super) fn viewer_image_preview(&mut self, index: usize) -> Option<Preview> {
         let viewer = self.style_viewer.as_mut()?;
+        viewer.prepare_render_document().ok()?;
         if index == viewer.state.images.len() {
             return viewer.import.as_ref()?.preview.clone();
         }
         let image = viewer.state.images.get(index)?;
         viewer.previews.preview(
             &format!("asset:image:{}", image.id),
-            viewer.editor.preview_revision(),
-            viewer.editor.document(),
+            viewer.render_generation,
+            &viewer.render_document.as_ref()?.2,
             viewer.store.asset_base(),
         )
     }
     pub(super) fn viewer_default_image_preview(&mut self) -> Option<Preview> {
         let viewer = self.style_viewer.as_mut()?;
+        viewer.prepare_render_document().ok()?;
         viewer.previews.preview(
-            "asset:image:c13dc47a-5afd-4bf3-a2bb-e5456020ac02",
-            viewer.editor.preview_revision(),
-            viewer.editor.document(),
+            "asset:image:c13dc47a-5afd-4bf3-a2bb-e5456020ac01",
+            viewer.render_generation,
+            &viewer.render_document.as_ref()?.2,
             viewer.store.asset_base(),
         )
     }
@@ -1174,6 +1176,43 @@ mod tests {
             std::thread::sleep(Duration::from_millis(10));
         }
     }
+    #[test]
+    fn viewer_thumbnails_do_not_cancel_unselected_style_detail() {
+        let mut host = host();
+        host.viewer_action(Action::Open);
+        let ids: Vec<_> = host
+            .style_viewer
+            .as_ref()
+            .unwrap()
+            .state
+            .styles
+            .iter()
+            .map(|style| style.id.clone())
+            .collect();
+        assert!(ids.len() >= 2);
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        loop {
+            host.poll_viewer();
+            let ready = ids
+                .iter()
+                .map(|id| {
+                    host.viewer_style_preview(id, 512)
+                        .is_some_and(|p| p.width == 512)
+                })
+                .collect::<Vec<_>>();
+            host.viewer_default_image_preview();
+            host.viewer_image_preview(0);
+            if ready.iter().all(|ready| *ready) {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "Visible unselected styles never reached final resolution"
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+
     fn bank_atlas(host: &mut Host) -> String {
         let art = crate::art_bank::encode(
             "Preview atlas".into(),

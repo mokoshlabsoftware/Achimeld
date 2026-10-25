@@ -28,6 +28,98 @@ fn button(pos: egui::Pos2, pressed: bool) -> egui::Event {
 }
 
 #[test]
+fn window_size_panel_applies_and_cancels_without_editing_the_project() {
+    let ctx = egui::Context::default();
+    let mut fixture = Fixture::new();
+    let mut desktop = Desktop::default();
+    let revision = fixture.editor.revision();
+    let frame = |desktop: &mut Desktop, fixture: &mut Fixture, events| {
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1440.0, 920.0),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ui| desktop.show(ui, fixture),
+        );
+        output.textures_delta.clear();
+        let mut shown = BTreeMap::new();
+        for shape in &output.shapes {
+            labels(&shape.shape, &mut shown);
+        }
+        let commands = output
+            .viewport_output
+            .remove(&egui::ViewportId::ROOT)
+            .map_or_else(Vec::new, |viewport| viewport.commands);
+        (shown, commands)
+    };
+    for _ in 0..3 {
+        frame(&mut desktop, &mut fixture, vec![]);
+    }
+    let click = |desktop: &mut Desktop, fixture: &mut Fixture, position| {
+        frame(
+            desktop,
+            fixture,
+            vec![egui::Event::PointerMoved(position), button(position, true)],
+        );
+        frame(
+            desktop,
+            fixture,
+            vec![egui::Event::PointerMoved(position), button(position, false)],
+        )
+    };
+    let windows = frame(&mut desktop, &mut fixture, vec![]).0["Windows"];
+    click(&mut desktop, &mut fixture, windows);
+    let menu = frame(&mut desktop, &mut fixture, vec![]).0;
+    click(&mut desktop, &mut fixture, menu["Set window size…"]);
+    let panel = frame(&mut desktop, &mut fixture, vec![]).0;
+    assert!(panel.contains_key("Width") && panel.contains_key("Height"));
+    let start = ctx
+        .memory(|memory| memory.area_rect(egui::Id::new("set-window-size")))
+        .unwrap();
+    let title = start.min + egui::vec2(60.0, 12.0);
+    frame(
+        &mut desktop,
+        &mut fixture,
+        vec![egui::Event::PointerMoved(title), button(title, true)],
+    );
+    let moved_title = title + egui::vec2(75.0, 45.0);
+    frame(
+        &mut desktop,
+        &mut fixture,
+        vec![egui::Event::PointerMoved(moved_title)],
+    );
+    frame(&mut desktop, &mut fixture, vec![button(moved_title, false)]);
+    let moved = ctx
+        .memory(|memory| memory.area_rect(egui::Id::new("set-window-size")))
+        .unwrap();
+    assert!(
+        moved.min.distance(start.min) > 50.0,
+        "Panel title must drag it"
+    );
+    let panel = frame(&mut desktop, &mut fixture, vec![]).0;
+    let (_, commands) = click(&mut desktop, &mut fixture, panel["Apply"]);
+    assert!(commands.contains(&egui::ViewportCommand::InnerSize(egui::vec2(1440.0, 920.0))));
+    assert!(desktop.window_size.is_none());
+    let windows = frame(&mut desktop, &mut fixture, vec![]).0["Windows"];
+    click(&mut desktop, &mut fixture, windows);
+    let menu = frame(&mut desktop, &mut fixture, vec![]).0;
+    click(&mut desktop, &mut fixture, menu["Set window size…"]);
+    let panel = frame(&mut desktop, &mut fixture, vec![]).0;
+    let (_, commands) = click(&mut desktop, &mut fixture, panel["Cancel"]);
+    assert!(
+        !commands
+            .iter()
+            .any(|command| matches!(command, egui::ViewportCommand::InnerSize(_)))
+    );
+    assert!(desktop.window_size.is_none());
+    assert_eq!(fixture.editor.revision(), revision);
+}
+
+#[test]
 fn windows_menu_resets_visible_and_closed_windows_without_editing() {
     for (visible, sidebar) in [(false, true), (true, true), (true, false)] {
         for scale in [1.0, 1.5] {

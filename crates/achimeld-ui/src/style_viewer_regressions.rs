@@ -89,8 +89,10 @@ fn viewer_is_canvas_mode_with_flush_file_actions_and_project_bank_selection() {
     let preview = ctx
         .data(|data| data.get_temp::<egui::Rect>(egui::Id::new("viewer-main-preview-rect")))
         .expect("Main preview");
-    assert!(banner.rect.right() <= slot.rect.left());
-    assert!(slot.rect.right() <= preview.left());
+    assert!(banner.rect.right() <= preview.left());
+    assert!(preview.right() <= slot.rect.left());
+    assert_eq!(preview.width(), 256.0);
+    assert!(banner.rect.height() < 150.0);
     assert!(preview.right() <= bank.rect.left());
     let pos = bank.rect.center();
     frame(
@@ -257,4 +259,30 @@ fn viewer_banner_context_rename_uses_viewer_intent_and_compact_layout_remains_av
         ctx.read_response(egui::Id::new("viewer-unlock-value"))
             .is_some()
     );
+}
+
+#[test]
+fn style_viewer_banners_are_wide_and_touch_without_spacing() {
+    let (mut fixture, mut desktop, first, _) = setup();
+    let mut second = fixture.viewer.as_ref().unwrap().styles[0].clone();
+    second.id = new_id();
+    second.name = "Second style".into();
+    let second_id = second.id.clone();
+    fixture.viewer.as_mut().unwrap().styles.push(second);
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    for _ in 0..2 {
+        frame(&ctx, &mut fixture, &mut desktop, 1440.0, vec![]);
+    }
+    let first = ctx
+        .read_response(egui::Id::new(("viewer-banner", &first)))
+        .unwrap()
+        .rect;
+    let second = ctx
+        .read_response(egui::Id::new(("viewer-banner", &second_id)))
+        .unwrap()
+        .rect;
+    assert_eq!(first.bottom(), second.top());
+    assert_eq!(first.x_range(), second.x_range());
+    assert!(first.width() > first.height() * 2.0);
 }

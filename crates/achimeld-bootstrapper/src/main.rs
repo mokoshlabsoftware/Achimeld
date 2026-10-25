@@ -5,6 +5,8 @@ mod manifest;
 #[cfg(windows)]
 mod platform;
 #[cfg(windows)]
+mod splash;
+#[cfg(windows)]
 mod supervision;
 #[cfg(windows)]
 mod telemetry;
@@ -14,7 +16,7 @@ mod udp_probes;
 mod wfp;
 
 #[cfg(windows)]
-fn run() -> Result<(), String> {
+fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
     use rand::RngCore;
     use std::{
         collections::{HashMap, HashSet, VecDeque},
@@ -244,6 +246,18 @@ fn run() -> Result<(), String> {
     let editor_arguments: Vec<&std::ffi::OsStr> =
         editor_arguments.iter().map(std::ffi::OsStr::new).collect();
     let editor = job.launch(&root, &pipe_name, &editor_arguments)?;
+    if let Some(splash) = splash {
+        // The splash belongs to the bootstrapper, never to the supervised Job.
+        // SAFETY: The editor process handle remains owned and live through this query.
+        splash.watch_editor(unsafe {
+            windows_sys::Win32::System::Threading::GetProcessId(editor.raw())
+        });
+        desktop_status(
+            "Monitoring Achimeld while it runs.\n\
+             You can minimize this window. Closing it will also stop Achimeld.\n\
+             The bootstrapper exits automatically when you close the main app.",
+        );
+    }
     let mut failure = false;
     let mut rejected_connections = 0;
     // SAFETY: editor is an owned live process handle for the entire bounded wait loop.
@@ -335,7 +349,66 @@ fn run() -> Result<(), String> {
 fn run() -> Result<(), String> {
     Err("Achimeld requires Windows".into())
 }
+#[cfg(windows)]
+fn desktop_status(message: &str) {
+    use std::io::Write;
+    // Status output is best-effort: a missing or closed terminal must not panic
+    // the supervisor. CLI/MCP output never passes through this desktop-only path.
+    let mut output = std::io::stdout().lock();
+    let _ = writeln!(output, "{message}");
+    let _ = output.flush();
+}
 fn main() {
+    #[cfg(windows)]
+    {
+        let arguments: Vec<_> = std::env::args().skip(1).collect();
+        let desktop = arguments.is_empty() || arguments == ["--protected"];
+        if desktop {
+            // Keep the console subsystem for the installer and CLI tools. Name
+            // visible terminals before attempting to hide an owned legacy console;
+            // GetConsoleWindow does not identify the visible Windows Terminal UI.
+            let title: Vec<u16> = "Achimeld Bootstrapper\0".encode_utf16().collect();
+            // SAFETY: The title is NUL-terminated and live for SetConsoleTitleW.
+            // The other calls inspect this process's console. Hide it only when
+            // this process is its sole client, so a terminal that launched Achimeld
+            // remains visible to its user.
+            unsafe {
+                windows_sys::Win32::System::Console::SetConsoleTitleW(title.as_ptr());
+                let console = windows_sys::Win32::System::Console::GetConsoleWindow();
+                let mut clients = [0_u32; 2];
+                let count = windows_sys::Win32::System::Console::GetConsoleProcessList(
+                    clients.as_mut_ptr(),
+                    clients.len() as u32,
+                );
+                if !console.is_null() && count == 1 && clients[0] == std::process::id() {
+                    windows_sys::Win32::UI::WindowsAndMessaging::ShowWindow(
+                        console,
+                        windows_sys::Win32::UI::WindowsAndMessaging::SW_HIDE,
+                    );
+                }
+            }
+            desktop_status(
+                "Achimeld Bootstrapper\n\
+                 =====================\n\
+                 This companion process starts and monitors the main Achimeld app.\n\n\
+                 Checking application files and preparing the supervised session...",
+            );
+        }
+        let splash = desktop.then(splash::Splash::start);
+        if let Err(error) = run(splash.as_ref()) {
+            eprintln!("Achimeld could not start: {error}");
+            if let Some(splash) = splash {
+                splash.show_failure();
+            }
+            std::process::exit(125);
+        }
+        if desktop {
+            desktop_status(
+                "Achimeld has closed. Monitoring finished; the bootstrapper is exiting.",
+            );
+        }
+    }
+    #[cfg(not(windows))]
     if let Err(error) = run() {
         eprintln!("Achimeld could not start: {error}");
         std::process::exit(125);

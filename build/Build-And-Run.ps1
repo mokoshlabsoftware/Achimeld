@@ -22,8 +22,24 @@ if ($RunCurrent) {
     $package = Join-Path $env:ACHIMELD_ARTIFACT_ROOT 'package'
     $built = [pscustomobject]@{ PackagePath = $package; VerifierSha256 = (Get-FileHash -LiteralPath (Join-Path $package 'Achimeld.exe') -Algorithm SHA256).Hash.ToLowerInvariant() }
 } else {
-Write-Host 'Building the Rust desktop application and its supervised worker...'
-& (Join-Path $PSScriptRoot 'BridgePackage.ps1') -Development -Offline:$Offline -PassThru | ForEach-Object {
+$currentPackage = [IO.Path]::GetFullPath((Join-Path $env:ACHIMELD_ARTIFACT_ROOT 'package')).TrimEnd('\') + '\'
+    $running = @(Get-Process -Name 'Achimeld','Achimeld.App','achimeld-app','achimeld-node-host','Achimeld.SteamWorker' -ErrorAction SilentlyContinue |
+    Where-Object {
+        $path = try { $_.Path } catch { $null }
+        $path -and [IO.Path]::GetFullPath($path).StartsWith($currentPackage, [StringComparison]::OrdinalIgnoreCase)
+    } | Select-Object -ExpandProperty Id)
+if ($running.Count) {
+    . (Join-Path $PSScriptRoot 'DevelopmentProcesses.ps1')
+    Stop-AchimeldIdleDevelopmentMcp -PackagePath $currentPackage.TrimEnd('\')
+    $running = @($running | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
+}
+if ($running.Count) {
+    throw "The current development build is still running (process IDs: $($running -join ', ')). Save and close it before building so the verified package can be promoted."
+}
+Write-Host 'Capturing the current source before the long build...'
+$snapshot = & (Join-Path $PSScriptRoot 'New-DevelopmentSourceSnapshot.ps1') -SourceRoot $repositoryRoot
+Write-Host 'Building the Rust desktop application and its supervised worker from the captured source...'
+& (Join-Path $snapshot 'build/BridgePackage.ps1') -Development -Offline:$Offline -PassThru | ForEach-Object {
     if ($_ -is [pscustomobject] -and $_.PSObject.Properties['PackagePath'] -and $_.PSObject.Properties['VerifierSha256']) { $built = $_ }
     else { Write-Host $_ }
 }

@@ -235,58 +235,12 @@ impl Desktop {
                             .id(row_id(&style.id, "apply"))
                             .bar(),
                     );
-                    let (fill, ink) = buttons::colors(
-                        ui,
-                        &response,
-                        if selected {
-                            buttons::ButtonStyle::Accent
-                        } else {
-                            buttons::ButtonStyle::Quiet
-                        },
-                    );
-                    let label_height = ui.text_style_height(&egui::TextStyle::Small) + 4.0;
-                    let image_rect = Rect::from_min_max(
-                        response.rect.min,
-                        egui::pos2(response.rect.right(), response.rect.bottom() - label_height),
-                    );
-                    if ui.is_rect_visible(response.rect) {
-                        if let Some((texture, _)) =
-                            self.saved_style_texture(ui, port, &style.id, &achievement, 128)
-                        {
-                            // Reveal three times the collapsed banner's 16%
-                            // image strip; the prompt shows the entire icon.
-                            ui.painter().image(
-                                texture,
-                                image_rect,
-                                Rect::from_min_max(egui::pos2(0.0, 0.26), egui::pos2(1.0, 0.74)),
-                                Color32::WHITE,
-                            );
-                        } else {
-                            ui.painter()
-                                .rect_filled(image_rect, 0, ui.visuals().extreme_bg_color);
-                        }
-                    }
-                    let label_rect = Rect::from_min_max(
-                        egui::pos2(response.rect.left(), image_rect.bottom()),
-                        response.rect.max,
-                    );
-                    ui.painter().rect_filled(label_rect, 0, fill);
-                    let mut job = egui::text::LayoutJob::simple(
-                        style.name.clone(),
-                        egui::TextStyle::Small.resolve(ui.style()),
-                        ink,
-                        (width - 8.0).max(1.0),
-                    );
-                    job.wrap.max_rows = 1;
-                    let galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
-                    ui.painter().with_clip_rect(label_rect).add(
-                        egui::epaint::TextShape::new(
-                            label_rect.center() - galley.size() * 0.5,
-                            galley,
-                            ink,
-                        )
-                        .with_override_text_color(ink),
-                    );
+                    let texture = if ui.is_rect_visible(response.rect) {
+                        self.saved_style_texture(ui, port, &style.id, &achievement, 128)
+                    } else {
+                        None
+                    };
+                    crate::style_banner::paint(ui, &response, &style.name, texture, selected);
                     response.widget_info(|| {
                         egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &style.name)
                     });

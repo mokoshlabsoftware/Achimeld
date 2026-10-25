@@ -162,6 +162,7 @@ dependencies = [
  "achimeld-security",
  "base64",
  "hex",
+ "image",
  "rand 0.8.8",
  "rsa",
  "serde",

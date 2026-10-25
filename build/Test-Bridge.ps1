@@ -13,6 +13,7 @@ $fixture=Join-Path $env:ACHIMELD_ARTIFACT_ROOT 'worker-fixture'
 if($LASTEXITCODE -ne 0){throw 'C# pipe fixture build failed.'}
 $env:ACHIMELD_TEST_WORKER=Join-Path $fixture 'WorkerFixture.exe'
 try {
+    & (Join-Path $PSScriptRoot 'Rust.ps1') -CargoArguments @('test','-p','achimeld-mcp','--locked','--offline','lifetime::tests::mcp_process_exits_with_open_stdin_after_last_editor_closes','--','--ignored','--exact')
     & (Join-Path $PSScriptRoot 'Rust.ps1') -CargoArguments @('test','-p','achimeld-security','--locked','--offline','csharp_','--','--ignored')
     & (Join-Path $PSScriptRoot 'Rust.ps1') -CargoArguments @('test','-p','achimeld-bootstrapper','--locked','--offline','console_app_launch','--','--ignored')
     & (Join-Path $PSScriptRoot 'Rust.ps1') -CargoArguments @('test','-p','achimeld-app','--bin','achimeld-node-host','--locked','--offline','tests::stdio_driver_round_trip_and_health_loss_terminate_child','--','--ignored','--exact')

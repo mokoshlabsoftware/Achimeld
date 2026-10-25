@@ -41,3 +41,4 @@ while ($directories.Count) {
 $binaries = @($files | Where-Object { [IO.Path]::GetExtension($_) -in @('.exe','.dll','.pdb','.lib','.obj','.rlib','.rmeta','.nupkg','.so','.dylib','.a','.o','.wasm') })
 if ($binaries.Count) { throw ('Compiled binaries remain in source: ' + ($binaries -join ', ')) }
 Write-Output 'External Rust/.NET storage, stable current paths, date rollover and source binary scan passed.'
+& (Join-Path $PSScriptRoot 'Test-DevelopmentProcesses.ps1')

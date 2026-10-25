@@ -90,7 +90,11 @@ fn slice_strip(ui: &egui::Ui, field: &ColorField, x: f64, rect: Rect) {
     ui.painter().add(egui::Shape::mesh(mesh));
 }
 
-pub(crate) fn presets(ui: &mut egui::Ui, map: &mut GradientMap) {
+pub(crate) fn presets(
+    ui: &mut egui::Ui,
+    port: Option<&dyn achimeld_application::EditorPort>,
+    map: &mut GradientMap,
+) {
     crate::inspector::field(ui, "Color map preset", 120.0, |ui| {
         crate::dropdowns::Dropdown::from_id_salt("2d-gradient-presets")
             .width(ui.available_width().min(180.0))
@@ -107,6 +111,19 @@ pub(crate) fn presets(ui: &mut egui::Ui, map: &mut GradientMap) {
                         .clicked()
                     {
                         *map = preset;
+                        ui.close();
+                    }
+                }
+                for preset in port.into_iter().flat_map(|port| port.gradient_maps()) {
+                    if ui
+                        .add(
+                            Button::new(&preset.name)
+                                .bar()
+                                .min_size(egui::vec2(ui.available_width(), 28.0)),
+                        )
+                        .clicked()
+                    {
+                        *map = preset.map.clone();
                         ui.close();
                     }
                 }
@@ -148,17 +165,15 @@ pub(crate) fn editor(ui: &mut egui::Ui, map: &mut GradientMap) -> egui::Response
         {
             state.reset_gesture();
         }
-        if ui
-            .add_enabled(
-                !state.selected.is_empty(),
-                Button::new("Delete").id(id.with("delete-points")).bar(),
-            )
-            .on_hover_text("Delete selected color points")
-            .clicked()
-        {
-            state.delete(map);
-        }
+        ui.add(
+            Button::new("?")
+                .id(id.with("gesture-help"))
+                .bar()
+                .min_size(Vec2::splat(buttons::bar_height(ui, 24.0))),
+        )
+        .on_hover_text("Click to test a slice · Ctrl-click sets the test slice even on a point\nDrag empty space to select · Drag selected points to move\nShift-click adds to selection · Alt-click removes\nDouble-click empty space to add a point");
     });
+    controls::slice(ui, &mut state.slice);
     let Ok(field) = map.compile() else {
         return ui.label("Invalid 2D gradient");
     };
@@ -174,6 +189,38 @@ pub(crate) fn editor(ui: &mut egui::Ui, map: &mut GradientMap) -> egui::Response
     );
     let mut response = ui.interact(rect.expand(5.0), id.with("map"), Sense::click_and_drag());
     interaction::handle(ui, &response, rect, map, &field, &mut state);
+    if response.secondary_clicked()
+        && let Some(pointer) = response.interact_pointer_pos()
+        && let Some(index) = hit(map, rect, pointer)
+    {
+        state.context_select(index);
+    }
+    buttons::context_menu(&response, |ui| {
+        if ui
+            .add_enabled(
+                !state.selected.is_empty() && map.points.len() + state.selected.len() <= MAX_POINTS,
+                Button::new("Clone"),
+            )
+            .clicked()
+        {
+            state.clone_selected(map);
+            ui.close();
+        }
+        if ui
+            .add_enabled(!state.selected.is_empty(), Button::new("Delete"))
+            .clicked()
+        {
+            state.delete(map);
+            ui.close();
+        }
+        if ui
+            .add_enabled(state.selected.len() >= 2, Button::new("Merge"))
+            .clicked()
+        {
+            state.merge_selected(map);
+            ui.close();
+        }
+    });
     // Gesture edits get their quick preview in this frame; refinement stays on the bounded worker.
     let field = if *map == before {
         field
@@ -247,9 +294,6 @@ pub(crate) fn editor(ui: &mut egui::Ui, map: &mut GradientMap) -> egui::Response
     {
         ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
     }
-    ui.weak("Click to test a slice · Drag empty space to select · Drag selected points to move");
-    ui.weak("Shift-click adds to selection · Ctrl-click removes · Double-click to add a point");
-    controls::slice(ui, &mut state.slice);
     slice_strip(ui, &field, state.slice, slice_rect);
     controls::show(ui, id, map, &mut state, outer);
     ui.data_mut(|data| data.insert_temp(id, state));

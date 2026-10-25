@@ -351,15 +351,9 @@ fn part_properties(ui: &mut egui::Ui, part: &mut Value) {
 
 fn slider(ui: &mut egui::Ui, label: &str, value: &mut Value, key: &str) {
     let mut n = value[key].as_f64().unwrap_or(0.0);
-    crate::inspector::field(ui, label, 120.0, |ui| {
-        ui.spacing_mut().slider_width = (ui.available_width() - 80.0).clamp(1.0, 160.0);
-        if ui
-            .add(egui::Slider::new(&mut n, 0.0..=1.0).max_decimals(2))
-            .changed()
-        {
-            value[key] = json!(n);
-        }
-    });
+    if crate::sliders::value_slider(ui, label, &mut n, 0.0..=1.0, "", 2) {
+        value[key] = json!(n);
+    }
 }
 
 fn choice(ui: &mut egui::Ui, label: &str, value: &mut Value, key: &str, options: &[&str]) {

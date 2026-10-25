@@ -19,8 +19,8 @@ fn grayscale_picker(ui: &mut egui::Ui, color: &mut Hsva) -> bool {
     ui.set_width(width);
     let mut gray = f64::from(rgba[0]);
     let mut alpha = f64::from(rgba[3]);
-    crate::opacity::value_slider(ui, "Gray", &mut gray, 0.0..=255.0, "", 0);
-    crate::opacity::value_slider(ui, "Alpha", &mut alpha, 0.0..=255.0, "", 0);
+    crate::sliders::value_slider(ui, "Gray", &mut gray, 0.0..=255.0, "", 0);
+    crate::sliders::value_slider(ui, "Alpha", &mut alpha, 0.0..=255.0, "", 0);
     rgba[..3].fill(gray.round() as u8);
     rgba[3] = alpha.round() as u8;
     let hex_id = ui.make_persistent_id("grayscale-hex");
@@ -109,29 +109,11 @@ fn nudge(ui: &mut egui::Ui, response: &egui::Response, value: &mut f32) {
 pub(crate) fn picker(ui: &mut egui::Ui, color: &mut Hsva) -> bool {
     let original = *color;
     let font = ui.text_style_height(&egui::TextStyle::Body);
-    let width =
-        ((font * 22.0).max(320.0) * 0.7).min((ui.ctx().content_rect().width() - 48.0).max(160.0));
+    let width = (font * 22.0)
+        .max(256.0)
+        .min((ui.ctx().content_rect().width() - 48.0).max(160.0));
     ui.set_width(width);
     ui.spacing_mut().interact_size.y = (ui.spacing().interact_size.y * 0.7).max(font + 4.0);
-    let mut rgba = color.to_srgba_unmultiplied();
-    let mut changed = false;
-    for (i, label) in ["Red", "Green", "Blue", "Alpha"].into_iter().enumerate() {
-        changed |= crate::fields::row(ui, label, |ui| {
-            ui.add_sized(
-                [ui.available_width(), ui.spacing().interact_size.y],
-                egui::DragValue::new(&mut rgba[i]).range(0..=255).speed(0.5),
-            )
-            .changed()
-        });
-    }
-    if changed {
-        let next = Hsva::from_srgba_unmultiplied(rgba);
-        // Keep the selected hue when numeric edits produce gray or black.
-        *color = Hsva {
-            h: if next.s == 0.0 { color.h } else { next.h },
-            ..next
-        };
-    }
     // The color editor is the explicit exception to the application's swatch-only fields.
     let hex_id = ui.make_persistent_id("color-hex");
     let bytes = color.to_srgba_unmultiplied();
@@ -226,6 +208,34 @@ pub(crate) fn picker(ui: &mut egui::Ui, color: &mut Hsva) -> bool {
         Color32::from(HsvaGamma { a, ..opaque })
     });
     *color = Hsva::from(hsv);
+    let mut rgba = color.to_srgba_unmultiplied();
+    let mut changed = false;
+    ui.columns(4, |columns| {
+        for (index, label) in ["R", "G", "B", "A"].into_iter().enumerate() {
+            columns[index].horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 2.0;
+                ui.label(label)
+                    .on_hover_text(["Red", "Green", "Blue", "Alpha"][index]);
+                changed |= ui
+                    .add_sized(
+                        [ui.available_width(), ui.spacing().interact_size.y],
+                        egui::DragValue::new(&mut rgba[index])
+                            .range(0..=255)
+                            .speed(0.5),
+                    )
+                    .on_hover_text(["Red", "Green", "Blue", "Alpha"][index])
+                    .changed();
+            });
+        }
+    });
+    if changed {
+        let next = Hsva::from_srgba_unmultiplied(rgba);
+        // Keep the selected hue when numeric edits produce gray or black.
+        *color = Hsva {
+            h: if next.s == 0.0 { color.h } else { next.h },
+            ..next
+        };
+    }
     color.to_srgba_unmultiplied() != original.to_srgba_unmultiplied()
 }
 
@@ -268,6 +278,7 @@ pub(crate) fn window(
     let grayscale = grayscale_scope(ui);
     egui::Window::new(crate::localization::text(ui.ctx(), title))
         .id(id)
+        .order(egui::Order::Tooltip)
         .open(open)
         .default_pos(egui::pos2(anchor.right() + 8.0, anchor.top()))
         .movable(true)
@@ -387,6 +398,31 @@ mod tests {
         }
     }
     #[test]
+    fn color_channels_share_the_bottom_row() {
+        let ctx = egui::Context::default();
+        let mut color = Hsva::from_srgba_unmultiplied([125, 191, 194, 170]);
+        let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            picker(ui, &mut color);
+        });
+        let labels: Vec<_> = output
+            .shapes
+            .iter()
+            .filter_map(|shape| {
+                if let egui::Shape::Text(text) = &shape.shape {
+                    Some((text.galley.text().to_owned(), text.pos.y))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let y = |name: &str| labels.iter().find(|(label, _)| label == name).unwrap().1;
+        for name in ["G", "B", "A"] {
+            assert!((y(name) - y("R")).abs() < 1.0);
+        }
+        assert!(y("R") > y("Hex"));
+        output.textures_delta.clear();
+    }
+    #[test]
     fn color_window_drags_by_its_title_without_changing_the_color() {
         let ctx = egui::Context::default();
         let id = egui::Id::new("draggable-color-editor-test");
@@ -473,9 +509,8 @@ mod tests {
                                 },
                             );
                             ui.set_style(ui.ctx().global_style());
-                            expected_width = (ui.text_style_height(&egui::TextStyle::Body) * 22.0)
-                                .max(320.0)
-                                * 0.7;
+                            expected_width =
+                                (ui.text_style_height(&egui::TextStyle::Body) * 22.0).max(256.0);
                             picker(ui, &mut color);
                             bounds = ui
                                 .ctx()

@@ -123,6 +123,8 @@ Audit includes full workspace lint/tests, real Windows pipe/process fixtures, th
 
 The development builder publishes the local worker and libraries, provisions the pinned browser, archives exact local source, rebuilds Rust executables with a fresh public development key, signs the complete inventory with an ephemeral in-memory private key, and verifies it. `Achimeld.NodeHost.exe` permits only the packaged Playwright driver command and packaged Node with explicit stdio inheritance.
 
+`build/Build-And-Run.ps1` first captures tracked changes and nonignored new source files in an isolated worktree under `current/development-sources`. The package build reads that fixed snapshot, so edits in the live checkout during compilation cannot change its source identity. The snapshot remains available for inspecting the exact build input. Close a running `current/package` development build before rebuilding; the launcher reports its process IDs before compilation because Windows cannot replace an in-use package.
+
 ## Steam reads and optional protected installation
 
 The verified package runs directly as the current user, including Steam sign-in and configuration reads. No installation or administrator approval is required:

@@ -1,6 +1,11 @@
 ID,Context,English,Polish,ChineseSimplified,ChineseTraditional,Japanese,Korean,French
 MenuWindows,Menu,Windows,Okna,窗口,視窗,ウィンドウ,창,Fenêtres
 MenuResetLayout,Menu,Reset layout,Resetuj układ,重置布局,重設版面配置,レイアウトをリセット,레이아웃 초기화,Réinitialiser la disposition
+MenuSetWindowSize,Menu,Set window size…,Ustaw rozmiar okna…,,,,,
+WindowSizeTitle,Window,Set window size,Ustaw rozmiar okna,,,,,
+WindowSizeUnit,Window,Window size in logical pixels,Rozmiar okna w pikselach logicznych,,,,,
+WindowSizeWidth,Window,Width,Szerokość,,,,,
+WindowSizeHeight,Window,Height,Wysokość,,,,,
 LyReferenceMask,Layers,Reference mask,Maska referencyjna,,,,,
 LyMaskSourceLayer,Layers,Source layer,Warstwa źródłowa,,,,,
 LyMaskReferenceHint,Layers,Copies the source layer’s mask and inversion. Updates with the source.,Kopiuje maskę i odwrócenie warstwy źródłowej. Aktualizuje się razem ze źródłem.,,,,,

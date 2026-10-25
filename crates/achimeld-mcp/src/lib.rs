@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::io::{BufRead, Write};
+#[cfg(any(windows, test))]
+mod lifetime;
 
 pub const MAXIMUM_BYTES: usize = 16 * 1024 * 1024;
 /// Leaves room for CSV text to be escaped in both the tool result and MCP response.
@@ -454,10 +456,38 @@ pub fn serve(
 
 #[cfg(windows)]
 pub fn run() -> Result<(), String> {
-    serve_cancellable(
-        std::io::BufReader::new(std::io::stdin()),
-        &mut std::io::stdout().lock(),
-        call_editor_cancellable,
+    run_with_discovery(|| {
+        achimeld_security::editor_transport::instances()
+            .map(|instances| {
+                instances
+                    .as_array()
+                    .is_some_and(|editors| !editors.is_empty())
+            })
+            .map_err(|error| error.to_string())
+    })
+}
+
+#[cfg(windows)]
+fn run_with_discovery(
+    editor_available: impl FnMut() -> Result<bool, String>,
+) -> Result<(), String> {
+    use std::os::windows::io::AsHandle;
+    // Do not retain Rust's global stdout lock on the worker: runtime exit flushes
+    // stdout, which would otherwise wait forever behind idle or blocked stdio.
+    let output = std::io::stdout()
+        .as_handle()
+        .try_clone_to_owned()
+        .map_err(|_| "MCP output unavailable")?;
+    lifetime::run(
+        move || {
+            serve_cancellable(
+                std::io::BufReader::new(std::io::stdin()),
+                &mut std::fs::File::from(output),
+                call_editor_cancellable,
+            )
+        },
+        editor_available,
+        std::time::Duration::from_secs(2),
     )
 }
 

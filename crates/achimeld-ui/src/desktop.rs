@@ -84,8 +84,14 @@ pub(crate) struct EntityDraft {
     pub error: String,
 }
 
+pub(crate) struct WindowSizeDraft {
+    width: u32,
+    height: u32,
+}
+
 pub struct Desktop {
     pub(crate) terminal: crate::terminal::Terminal,
+    pub(crate) window_size: Option<WindowSizeDraft>,
     pub(crate) sync_token: String,
     pub(crate) sync_choices: BTreeMap<String, String>,
     pub(crate) sync_filter: String,
@@ -125,6 +131,7 @@ pub struct Desktop {
     pub(crate) settings: bool,
     pub(crate) sort_open: bool,
     pub(crate) gradient_explorer: crate::gradient_explorer::Explorer,
+    pub(crate) gradient_map_collection: crate::gradient_map_collection::Collection,
     pub(crate) effect_explorer: crate::effect_explorer::Explorer,
     pub(crate) style_viewer_ui: crate::style_viewer::ViewerUi,
     pub(crate) style_viewer_link: crate::style_viewer::LinkDraft,
@@ -157,6 +164,7 @@ impl Default for Desktop {
     fn default() -> Self {
         Self {
             terminal: Default::default(),
+            window_size: None,
             sync_token: String::new(),
             sync_choices: BTreeMap::new(),
             sync_filter: String::new(),
@@ -196,6 +204,7 @@ impl Default for Desktop {
             settings: false,
             sort_open: false,
             gradient_explorer: Default::default(),
+            gradient_map_collection: Default::default(),
             effect_explorer: Default::default(),
             style_viewer_ui: Default::default(),
             style_viewer_link: Default::default(),
@@ -227,6 +236,73 @@ impl Default for Desktop {
     }
 }
 impl Desktop {
+    fn window_size_panel(&mut self, ctx: &egui::Context, enabled: bool) {
+        let Some(draft) = &mut self.window_size else {
+            return;
+        };
+        let mut open = true;
+        let mut apply = false;
+        let mut cancel = false;
+        egui::Window::new(crate::localization::text(ctx, "Set window size"))
+            .id(egui::Id::new("set-window-size"))
+            .open(&mut open)
+            .collapsible(false)
+            .resizable(false)
+            .enabled(enabled)
+            .default_width(300.0)
+            .frame(egui::Frame::window(&ctx.global_style()).inner_margin(0))
+            .show(ctx, |ui| {
+                egui::Frame::new().inner_margin(12).show(ui, |ui| {
+                    ui.label(crate::localization::text(
+                        ctx,
+                        "Window size in logical pixels",
+                    ));
+                    crate::fields::row(ui, &crate::localization::text(ctx, "Width"), |ui| {
+                        ui.add(egui::DragValue::new(&mut draft.width).range(1000..=8192));
+                    });
+                    crate::fields::row(ui, &crate::localization::text(ctx, "Height"), |ui| {
+                        ui.add(egui::DragValue::new(&mut draft.height).range(650..=8192));
+                    });
+                });
+                crate::buttons::bar(ui, 0.0, |ui| {
+                    let width = ui.available_width() / 2.0;
+                    let height = ui.spacing().interact_size.y;
+                    if ui
+                        .add_sized(
+                            [width, height],
+                            crate::buttons::Button::new(crate::localization::text(ctx, "Apply"))
+                                .bar(),
+                        )
+                        .clicked()
+                    {
+                        apply = true;
+                    }
+                    if ui
+                        .add_sized(
+                            [ui.available_width(), height],
+                            crate::buttons::Button::new(crate::localization::text(ctx, "Cancel"))
+                                .bar(),
+                        )
+                        .clicked()
+                    {
+                        cancel = true;
+                    }
+                });
+            });
+        if enabled && apply {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
+            ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(false));
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::vec2(
+                draft.width as f32,
+                draft.height as f32,
+            )));
+        }
+        if !open || cancel || apply || (enabled && ctx.input(|i| i.key_pressed(egui::Key::Escape)))
+        {
+            self.window_size = None;
+        }
+    }
+
     /// Read-only navigation exposed to the supervised editor automation host.
     pub fn automation_scene(&self) -> Value {
         serde_json::json!({"activeCanvas":match self.view { View::Achievements=>"Achievements",View::Stats=>"Stats",_=>"Other" },"selection":self.selection,"filter":self.filter,"camera":{"zoom":self.zoom,"offsetX":self.pan.x,"offsetY":self.pan.y}})
@@ -297,8 +373,10 @@ impl Desktop {
             inspector_panel.cancel_drag();
             let viewer_active = self.view == View::Style;
             let terminal = std::mem::take(&mut self.terminal);
+            let window_size = self.window_size.take();
             *self = Self::default();
             self.terminal = terminal;
+            self.window_size = window_size;
             self.recipe_clipboard = clipboard;
             self.layer_palette = palette;
             self.about = about;
@@ -625,6 +703,23 @@ impl Desktop {
                             }
                             3 => {
                                 if ui
+                                    .app_button(crate::localization::text(
+                                        ui.ctx(),
+                                        "Set window size…",
+                                    ))
+                                    .clicked()
+                                {
+                                    let fallback = ui.ctx().content_rect();
+                                    let size = ui.ctx().input(|input| {
+                                        input.viewport().inner_rect.unwrap_or(fallback).size()
+                                    });
+                                    self.window_size = Some(WindowSizeDraft {
+                                        width: size.x.round().clamp(1000.0, 8192.0) as u32,
+                                        height: size.y.round().clamp(650.0, 8192.0) as u32,
+                                    });
+                                    ui.close();
+                                }
+                                if ui
                                     .app_button(crate::localization::text(ui.ctx(), "Reset layout"))
                                     .clicked()
                                 {
@@ -901,10 +996,12 @@ impl Desktop {
         self.inspector_dock_preview(&ctx, inspector_bounds);
         self.layers_window(&ctx, port, root.is_enabled());
         self.gradient_explorer_window(&ctx, port, root.is_enabled());
+        self.gradient_map_collection_window(&ctx, port, root.is_enabled());
         self.effect_explorer_window(&ctx, port, root.is_enabled());
         self.terminal
             .observe_sync(port.synchronizing() && port.synchronization_review().is_none());
         self.terminal.show(&ctx, root.is_enabled());
+        self.window_size_panel(&ctx, root.is_enabled());
         // The floating window has its current frame position now. Connecting
         // visible icon rectangles takes only CPU geometry, with no render jobs.
         self.paint_layer_connections();

@@ -19,7 +19,7 @@ pub(crate) fn scalar(
     } else {
         ""
     };
-    if crate::opacity::value_slider(
+    if crate::sliders::value_slider(
         ui,
         label,
         &mut value,

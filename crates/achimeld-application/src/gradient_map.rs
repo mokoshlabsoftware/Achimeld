@@ -22,6 +22,27 @@ pub struct GradientMap {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GradientMapPreset {
+    pub id: String,
+    pub name: String,
+    pub map: GradientMap,
+}
+
+impl GradientMapPreset {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.id.is_empty()
+            || self.id.len() > 128
+            || self.name.trim().is_empty()
+            || self.name.len() > 256
+        {
+            return Err("Invalid 2D gradient name or identity".into());
+        }
+        self.map.validate()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct ColorPoint {
     pub x: f64,

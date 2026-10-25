@@ -491,7 +491,7 @@ fn field_label_preferences(ui: &mut egui::Ui, preferences: &mut achimeld_applica
     let mut preview = ui
         .data(|data| data.get_temp::<f64>(preview_id))
         .unwrap_or(45.0);
-    crate::opacity::value_slider(ui, "Bottom height", &mut preview, 0.0..=100.0, "%", 0);
+    crate::sliders::value_slider(ui, "Bottom height", &mut preview, 0.0..=100.0, "%", 0);
     ui.data_mut(|data| data.insert_temp(preview_id, preview));
 }
 

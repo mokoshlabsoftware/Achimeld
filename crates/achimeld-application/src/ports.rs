@@ -251,6 +251,18 @@ pub trait EditorPort {
     fn gradients(&self) -> &[crate::GradientPreset] {
         &[]
     }
+    fn gradient_maps(&self) -> &[crate::gradient_map::GradientMapPreset] {
+        &[]
+    }
+    fn save_gradient_map(
+        &mut self,
+        _preset: crate::gradient_map::GradientMapPreset,
+    ) -> Result<(), String> {
+        Err("2D gradient library unavailable".into())
+    }
+    fn delete_gradient_map(&mut self, _id: &str) -> Result<(), String> {
+        Err("2D gradient library unavailable".into())
+    }
     fn effect_presets(&self) -> &[crate::effect_presets::EffectPreset] {
         &[]
     }

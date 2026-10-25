@@ -11,6 +11,7 @@ pub(crate) struct State {
     pub styles: Vec<IconStyle>,
     pub style_collections: Vec<PathBuf>,
     pub gradients: Vec<GradientPreset>,
+    pub gradient_maps: Vec<achimeld_application::gradient_map::GradientMapPreset>,
     pub effect_presets: Vec<achimeld_application::effect_presets::EffectPreset>,
 }
 impl State {
@@ -25,6 +26,16 @@ impl State {
             gradient.validate()?;
             if !gradients.insert(&gradient.id) {
                 return Err("Duplicate gradient identity".into());
+            }
+        }
+        if self.gradient_maps.len() > 512 {
+            return Err("Too many 2D gradient presets".into());
+        }
+        let mut map_ids = std::collections::BTreeSet::new();
+        for preset in &self.gradient_maps {
+            preset.validate()?;
+            if !map_ids.insert(&preset.id) {
+                return Err("Duplicate 2D gradient identity".into());
             }
         }
         if self.styles.len() > 128 {
@@ -160,6 +171,24 @@ impl EditorState {
         } else {
             state.gradients.push(gradient);
         }
+        self.save(state)
+    }
+    pub fn gradient_map(
+        &mut self,
+        preset: achimeld_application::gradient_map::GradientMapPreset,
+    ) -> Result<(), String> {
+        preset.validate()?;
+        let mut state = self.state.clone();
+        if let Some(old) = state.gradient_maps.iter_mut().find(|p| p.id == preset.id) {
+            *old = preset;
+        } else {
+            state.gradient_maps.push(preset);
+        }
+        self.save(state)
+    }
+    pub fn delete_gradient_map(&mut self, id: &str) -> Result<(), String> {
+        let mut state = self.state.clone();
+        state.gradient_maps.retain(|p| p.id != id);
         self.save(state)
     }
     pub fn effect(
@@ -401,5 +430,36 @@ mod tests {
         assert_eq!(state.state.gradients, restored);
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
         assert_eq!(std::fs::read(&blocked).unwrap(), b"preserve");
+    }
+    #[test]
+    fn two_dimensional_gradient_collection_persists_and_validates() {
+        let root = root();
+        let path = root.join("map-state.json");
+        let mut state = EditorState::open(path.clone()).unwrap();
+        let mut preset = achimeld_application::gradient_map::GradientMapPreset {
+            id: achimeld_application::new_id(),
+            name: "Aurora".into(),
+            map: achimeld_application::gradient_map::presets().remove(0).1,
+        };
+        state.gradient_map(preset.clone()).unwrap();
+        assert_eq!(
+            EditorState::open(path.clone()).unwrap().state.gradient_maps,
+            vec![preset.clone()]
+        );
+        preset.name = "Aurora revised".into();
+        state.gradient_map(preset.clone()).unwrap();
+        assert_eq!(state.state.gradient_maps, vec![preset.clone()]);
+        let mut invalid = preset.clone();
+        invalid.name.clear();
+        assert!(state.gradient_map(invalid).is_err());
+        state.delete_gradient_map(&preset.id).unwrap();
+        assert!(
+            EditorState::open(path)
+                .unwrap()
+                .state
+                .gradient_maps
+                .is_empty()
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

@@ -261,10 +261,10 @@ fn gradient_editor_opens_visual_color_picker_and_protects_the_last_stop() {
     let red = fixture
         .labels
         .iter()
-        .find(|(text, _)| text == "Red")
+        .find(|(text, _)| text == "R")
         .expect("Visual red control")
         .1
-        + egui::vec2(150.0, 0.0);
+        + egui::vec2(35.0, 0.0);
     fixture.pointer(red, egui::PointerButton::Primary, true);
     let moved = red - egui::vec2(40.0, 0.0);
     fixture.frame(vec![egui::Event::PointerMoved(moved)]);

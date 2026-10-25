@@ -187,7 +187,7 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
             ("Scale", "scale", 0.05, 2.0, 100.0),
             ("Offset X", "offsetX", -1.0, 1.0, 100.0),
             ("Offset Y", "offsetY", -1.0, 1.0, 100.0),
-            ("Angle", "rotation", -360.0, 360.0, 1.0),
+            ("Shape angle", "rotation", -360.0, 360.0, 1.0),
         ] {
             super::sliders::scalar(ui, label, part, key, min..=max, false, factor);
         }

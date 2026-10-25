@@ -90,7 +90,7 @@ fn layers_match_only_project_styles_and_import_global_templates_from_separate_me
     frame(&mut desktop, &mut fixture, vec![]);
     let initial = frame(&mut desktop, &mut fixture, vec![]);
     assert!(!initial.iter().any(|(text, _)| text == &global.name));
-    let dropdown = position(&initial, "Icon Banner : No style");
+    let dropdown = position(&initial, "No style");
     let header = ctx
         .read_response(layer_palette::layers_panel_id().with("header"))
         .unwrap()

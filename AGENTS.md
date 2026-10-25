@@ -124,6 +124,10 @@ The upper title/menu bar, navigation/action bar, menu interaction, and Style Vie
 
 All popup dropdowns, selection lists, nested menus and context menus follow [Popup dropdown guide](docs/popup-dropdowns.md). Use the shared dropdown and button implementations; retain the guide's square, gapless, uncolored resting rows, one-point-smaller text, and keyboard/mouse ownership rules. The blend-mode list shows every supported mode together and previews each candidate for every layer type without committing edits.
 
+Style choices follow [Style banner standard](docs/style-banners.md): artwork fills the background with the style name overlaid in front, in one gapless vertical list. Do not use square style tiles or separate caption bands. “Icon banner” is internal terminology and must not appear as a user-facing label; show only the style name (or the localized no-style placeholder).
+
+Numeric sliders and knobs follow [Numeric slider and knob standard](docs/numeric-sliders.md). The default is the compact layer-properties control (Particle count): left label, thin horizontal rail, small solid circular handle, and editable number on the right. Use the shared implementation in `crates/achimeld-ui/src/sliders.rs`; do not introduce raw framework sliders or large outlined handles. The recessed opacity control remains a specialized opacity-only variant, not the default for new controls.
+
 The official format for every in-app user prompt is defined in [Application prompt windows](docs/application-prompts.md). Use that format whenever creating or changing a prompt, confirmation, warning, error, or acknowledgement dialog.
 
 Use the shared button implementation in `crates/achimeld-ui/src/buttons.rs` for application buttons, icon actions, upper toolbar tabs and title/menu buttons. Keep the style set limited to Standard, Accent (including selected tabs), and Quiet (menu/window actions). Derive all colors from the application palette; preview every style, selected and disabled states interactively in Preferences > App style.

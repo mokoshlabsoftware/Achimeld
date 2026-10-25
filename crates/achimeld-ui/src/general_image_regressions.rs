@@ -241,7 +241,7 @@ fn general_panel_draws_the_original_fields_and_shared_banner_without_editing() {
                 "Follows the progress stat type.",
                 "U. Value",
                 "D. Order",
-                "Icon Banner : Shiny Icon",
+                "Shiny Icon",
             ] {
                 assert!(
                     labels

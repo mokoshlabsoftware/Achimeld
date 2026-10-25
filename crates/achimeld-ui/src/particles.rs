@@ -102,9 +102,17 @@ impl Desktop {
             1.0,
             "°",
         );
+        if ui
+            .add(Button::new("No rotation"))
+            .on_hover_text("Set the rotation range to 0°–0° for every particle")
+            .clicked()
+        {
+            settings["rotationMin"] = json!(0.0);
+            settings["rotationMax"] = json!(0.0);
+        }
         for (label, key) in [("Shape X", "shapeX"), ("Shape Y", "shapeY")] {
             let mut value = settings[key].as_f64().unwrap_or(1.0);
-            if crate::opacity::value_slider(ui, label, &mut value, 1.0..=10.0, "×", 2) {
+            if crate::sliders::value_slider(ui, label, &mut value, 1.0..=10.0, "×", 2) {
                 settings[key] = json!(value);
             }
         }
@@ -164,11 +172,104 @@ impl Desktop {
                 .show(ui, |ui| shapes::show(ui, &mut settings));
         }
         ui.strong("Particle gradient");
+        buttons::bar(ui, 24.0, |ui| {
+            let is_2d = settings["colorMap"].is_object();
+            let icon = if is_2d {
+                glyph(
+                    ui.ctx(),
+                    "2d-gradient-collection",
+                    include_bytes!("../assets/toolbar/gradient-map-collection.rgba"),
+                )
+            } else {
+                glyph(
+                    ui.ctx(),
+                    "1d-gradient",
+                    include_bytes!("../assets/toolbar/layer-gradient.rgba"),
+                )
+            };
+            let response = ui.add(
+                Button::new((
+                    icon,
+                    if is_2d {
+                        "2D gradient ▾"
+                    } else {
+                        "1D gradient ▾"
+                    },
+                ))
+                .id(ui.id().with("particle-gradient-type"))
+                .bar()
+                .image_tint_follows_text_color(true),
+            );
+            buttons::menu_popup(ui, &response, |ui| {
+                if ui
+                    .add(
+                        Button::new((
+                            glyph(
+                                ui.ctx(),
+                                "1d-gradient",
+                                include_bytes!("../assets/toolbar/layer-gradient.rgba"),
+                            ),
+                            "1D gradient",
+                        ))
+                        .bar()
+                        .image_tint_follows_text_color(true),
+                    )
+                    .clicked()
+                {
+                    settings["colorMap"] = Value::Null;
+                    port.finish_group();
+                    ui.close();
+                }
+                if ui
+                    .add(
+                        Button::new((
+                            glyph(
+                                ui.ctx(),
+                                "2d-gradient-collection",
+                                include_bytes!("../assets/toolbar/gradient-map-collection.rgba"),
+                            ),
+                            "2D gradient",
+                        ))
+                        .bar()
+                        .image_tint_follows_text_color(true),
+                    )
+                    .clicked()
+                {
+                    if !is_2d {
+                        settings["colorMap"] = json!(map_from_gradient(&settings["gradient"]));
+                    }
+                    settings["colorMode"] = json!("Particle");
+                    port.finish_group();
+                    ui.close();
+                }
+            });
+            let collection = ui.add(
+                Button::new(glyph(
+                    ui.ctx(),
+                    "2d-gradient-collection",
+                    include_bytes!("../assets/toolbar/gradient-map-collection.rgba"),
+                ))
+                .id(ui.id().with("open-2d-gradient-collection"))
+                .bar()
+                .min_size(Vec2::splat(buttons::bar_height(ui, 24.0)))
+                .image_tint_follows_text_color(true),
+            );
+            collection.widget_info(|| {
+                egui::WidgetInfo::labeled(
+                    egui::WidgetType::Button,
+                    collection.enabled(),
+                    "2D Gradient Collection",
+                )
+            });
+            if collection.on_hover_text("2D Gradient Collection").clicked() {
+                crate::gradient_map_collection::request(ui.ctx());
+            }
+        });
         let has_map = settings["colorMap"].is_object();
         if has_map {
             ui.weak("Each particle uses a different random top-to-bottom slice of this color map.");
             let mut map = serde_json::from_value(settings["colorMap"].clone()).unwrap_or_default();
-            crate::gradient_map::presets(ui, &mut map);
+            crate::gradient_map::presets(ui, Some(port), &mut map);
             crate::gradient_map::editor(ui, &mut map);
             settings["colorMap"] = json!(map);
         } else {
@@ -180,27 +281,6 @@ impl Desktop {
                 &["Particle", "Spawn radius", "Random"],
             );
             crate::layers::gradient_presets(ui, port, &mut settings["gradient"]);
-            if ui.add(Button::new("Use a 2D color map")).clicked() {
-                let mut stops: Vec<_> = settings["gradient"]["stops"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|s| {
-                        Some((
-                            s["offset"].as_f64()?,
-                            achimeld_application::gradient_map::decode_color(
-                                s["colorHex"].as_str()?,
-                            )?,
-                        ))
-                    })
-                    .collect();
-                stops.sort_by(|a, b| a.0.total_cmp(&b.0));
-                settings["colorMap"] = json!(
-                    achimeld_application::gradient_map::GradientMap::from_stops(&stops)
-                );
-                settings["colorMode"] = json!("Particle");
-                port.finish_group();
-            }
         }
         crate::inspector::choice(
             ui,
@@ -227,6 +307,22 @@ impl Desktop {
             layer["particles"] = settings;
         }
     }
+}
+
+fn map_from_gradient(gradient: &Value) -> achimeld_application::gradient_map::GradientMap {
+    let mut stops: Vec<_> = gradient["stops"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|s| {
+            Some((
+                s["offset"].as_f64()?,
+                achimeld_application::gradient_map::decode_color(s["colorHex"].as_str()?)?,
+            ))
+        })
+        .collect();
+    stops.sort_by(|a, b| a.0.total_cmp(&b.0));
+    achimeld_application::gradient_map::GradientMap::from_stops(&stops)
 }
 
 pub(crate) fn action_bar(

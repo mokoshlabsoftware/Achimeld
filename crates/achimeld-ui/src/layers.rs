@@ -381,7 +381,7 @@ impl Desktop {
                         ("Angular blur", "angularBlur"),
                     ] {
                         let mut value = layer["adjustment"][key].as_f64().unwrap_or(0.0);
-                        if crate::opacity::value_slider(ui, label, &mut value, 0.0..=100.0, "%", 1)
+                        if crate::sliders::value_slider(ui, label, &mut value, 0.0..=100.0, "%", 1)
                         {
                             layer["adjustment"][key] = json!(value);
                         }
@@ -533,7 +533,7 @@ fn reference_choice(
 }
 pub(crate) fn opacity(ui: &mut egui::Ui, value: &mut Value) {
     let mut percent = value["opacity"].as_f64().unwrap_or(1.0) * 100.0;
-    if crate::opacity::value_slider(ui, "Opacity", &mut percent, 0.0..=100.0, "%", 0) {
+    if crate::sliders::value_slider(ui, "Opacity", &mut percent, 0.0..=100.0, "%", 0) {
         value["opacity"] = json!(percent / 100.0);
     }
 }
@@ -948,16 +948,8 @@ fn adjustment_slider(
         _ => 0.0,
     };
     let mut number = value[key].as_f64().unwrap_or(default);
-    if crate::fields::row(ui, label, |ui| {
-        ui.spacing_mut().slider_width = (ui.available_width() - 80.0).clamp(1.0, 180.0);
-        ui.add(
-            egui::Slider::new(&mut number, range)
-                .clamping(egui::SliderClamping::Edits)
-                .step_by(step),
-        )
-    })
-    .changed()
-    {
+    let decimals = if step < 1.0 { 1 } else { 0 };
+    if crate::sliders::value_slider(ui, label, &mut number, range, "", decimals) {
         value[key] = json!(number);
     }
 }

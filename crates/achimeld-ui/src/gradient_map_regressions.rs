@@ -86,19 +86,14 @@ impl MapFixture {
                     .ctx()
                     .read_response(editor_id.with("delete-points"))
                     .map(|r| r.rect);
-                self.values = [
-                    "Test slice",
-                    "Point X",
-                    "Point Y",
-                    "Power",
-                    "X influence",
-                    "Y influence",
-                ]
-                .iter()
-                .filter_map(|label| {
-                    ui.data(|data| data.get_temp::<egui::Rect>(editor_id.with(("value", *label))))
-                })
-                .collect();
+                self.values = ["Test slice", "Power", "X influence", "Y influence"]
+                    .iter()
+                    .filter_map(|label| {
+                        ui.data(|data| {
+                            data.get_temp::<egui::Rect>(editor_id.with(("value", *label)))
+                        })
+                    })
+                    .collect();
             },
         );
         self.labels.clear();
@@ -294,12 +289,17 @@ fn particle_color_map_double_click_adds_one_sampled_point_and_respects_anchors_a
 }
 
 #[test]
-fn particle_color_map_uses_inline_controls_and_delete_instead_of_an_edit_menu() {
+fn particle_color_map_has_context_actions_and_inline_controls() {
     let mut f = MapFixture::new(1.0, 400.0);
     f.frame(vec![]);
     f.frame(vec![]);
+    assert!(f.labels.iter().any(|(s, _)| s == "?"));
+    assert!(!f.labels.iter().any(|(s, _)| s.contains("Shift-click")));
     f.click(f.at(0.4, 0.6), egui::PointerButton::Secondary);
-    assert!(!egui::Popup::is_any_open(&f.ctx));
+    assert!(egui::Popup::is_any_open(&f.ctx));
+    assert!(f.labels.iter().any(|(s, _)| s == "Clone"));
+    assert!(f.labels.iter().any(|(s, _)| s == "Delete"));
+    assert!(f.labels.iter().any(|(s, _)| s == "Merge"));
     assert!(
         !f.labels
             .iter()
@@ -310,6 +310,23 @@ fn particle_color_map_uses_inline_controls_and_delete_instead_of_an_edit_menu() 
     assert!(f.swatch.is_some());
     f.click(f.delete.unwrap().center(), egui::PointerButton::Primary);
     assert_eq!(f.map.points.len(), EDGE_POINTS - 1);
+    f.map.validate().unwrap();
+}
+
+#[test]
+fn particle_color_map_context_clone_and_delete_edit_the_selected_point() {
+    let mut f = MapFixture::new(1.0, 400.0);
+    f.frame(vec![]);
+    f.frame(vec![]);
+    f.click(f.at(0.0, 0.0), egui::PointerButton::Secondary);
+    let command =
+        |f: &MapFixture, name: &str| f.labels.iter().find(|(label, _)| label == name).unwrap().1;
+    f.click(command(&f, "Clone"), egui::PointerButton::Primary);
+    assert_eq!(f.map.points.len(), EDGE_POINTS + 1);
+    f.map.validate().unwrap();
+    f.click(f.at(0.01, 0.01), egui::PointerButton::Secondary);
+    f.click(command(&f, "Delete"), egui::PointerButton::Primary);
+    assert_eq!(f.map.points.len(), EDGE_POINTS);
     f.map.validate().unwrap();
 }
 

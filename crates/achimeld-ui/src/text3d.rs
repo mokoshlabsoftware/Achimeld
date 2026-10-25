@@ -156,20 +156,14 @@ fn slider(
         settings[key]
             .as_f64()
             .unwrap_or(if key == "reflectivity" { 0.55 } else { 0.0 });
-    crate::inspector::field(ui, label, 200.0, |ui| {
-        ui.spacing_mut().slider_width = (ui.available_width() - 80.0).clamp(1.0, 180.0);
-        if ui
-            .add(
-                egui::Slider::new(&mut value, range)
-                    .clamping(egui::SliderClamping::Edits)
-                    .max_decimals(2),
-            )
-            .on_hover_text(crate::localization::text(ui.ctx(), hint))
-            .changed()
-        {
+    let response = ui.scope(|ui| {
+        if crate::sliders::value_slider(ui, label, &mut value, range, "", 2) {
             settings[key] = serde_json::json!(value);
         }
     });
+    response
+        .response
+        .on_hover_text(crate::localization::text(ui.ctx(), hint));
 }
 
 fn axes(

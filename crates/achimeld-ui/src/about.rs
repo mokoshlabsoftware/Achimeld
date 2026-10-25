@@ -66,7 +66,21 @@ impl Desktop {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     egui::ScrollArea::vertical().id_salt(("help-body", self.help_page as u8)).max_height(body_height).show(ui, |ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                            ui.heading("Achimeld");
+                            if self.help_page == HelpPage::About {
+                                let banner_id = egui::Id::new("about-banner");
+                                let banner = ctx.data(|data| data.get_temp::<egui::TextureHandle>(banner_id)).unwrap_or_else(|| {
+                                    let color = egui::ColorImage::from_rgba_unmultiplied(
+                                        [734, 205], include_bytes!("../assets/about-banner.rgba"));
+                                    let banner = ctx.load_texture("about-banner", color,
+                                        egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)));
+                                    ctx.data_mut(|data| data.insert_temp(banner_id, banner.clone()));
+                                    banner
+                                });
+                                let width = ui.available_width();
+                                ui.image((banner.id(), egui::vec2(width, width * 205.0 / 734.0)));
+                            } else {
+                                ui.heading("Achimeld");
+                            }
                             centered(ui, format!("{} {}", text(ctx, "Version"), crate::change_log::current_version()));
                             ui.add_space(4.0);
                             if self.help_page == HelpPage::About {

@@ -153,6 +153,18 @@ impl Desktop {
                     ((ui.available_width() - text_width) / (2.0 * tabs.len() as f32)).max(0.0),
                 );
             }
+            let extra_padding = ((ui.available_width()
+                - if full_labels {
+                    needed_width
+                } else {
+                    short_width
+                })
+                / (2.0 * tabs.len() as f32))
+                .max(0.0);
+            // Button frames store whole-point margins. Round down so distributing
+            // spare width cannot round the tab row beyond the inspector's width.
+            ui.spacing_mut().button_padding.x =
+                (ui.spacing().button_padding.x + extra_padding).floor();
             for (index, (tab, name, image)) in tabs.into_iter().enumerate() {
                 let label = if full_labels {
                     &name

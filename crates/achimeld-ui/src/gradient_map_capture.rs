@@ -85,13 +85,13 @@ fn native_particle_color_map_screenshot() {
                 ui.vertical(|ui| {
                     ui.set_width(map_width);
                     let map = self.settings.color_map.as_mut().unwrap();
-                    crate::gradient_map::presets(ui, map);
+                    crate::gradient_map::presets(ui, None, map);
                     let rect = crate::gradient_map::editor(ui, map).rect.shrink(5.0);
                     self.pointer = Some(egui::pos2(
                         egui::lerp(rect.x_range(), 0.4),
                         egui::lerp(rect.y_range(), 0.4),
                     ));
-                    ui.weak("All points can move · Shift/Ctrl-click to adjust the selection");
+                    ui.weak("All points can move · Shift-click adds · Alt-click removes");
                 });
                 ui.separator();
                 ui.vertical(|ui| {

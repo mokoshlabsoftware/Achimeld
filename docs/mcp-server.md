@@ -1,5 +1,7 @@
 # Local editor MCP
 
+Build and Run also recovers connectors from older packages: if only exact `Achimeld.exe --mcp` processes remain in the current development package, it closes those connectors before building. Any editor, supervisor, worker or other command preserves the save-and-close build guard. Cleanup validates the executable path and process start time against a retained process handle; it does not terminate processes from other packages.
+
 Achimeld implements the original Achiever MCP workflow against its open Rust editor. The original checkout is a behavioral reference, never a build dependency.
 
 Build a fresh verified package with `build-and-run.bat --offline --build-only`, then open Achimeld normally. Configure an MCP client with the absolute verified package path:
@@ -8,7 +10,7 @@ Build a fresh verified package with `build-and-run.bat --offline --build-only`, 
 {"mcpServers":{"achimeld":{"command":"C:\\Projects\\AchimeldBuild\\current\\package\\Achimeld.exe","args":["--mcp"]}}}
 ```
 
-The MCP process verifies and retains locks on its signed package. It does not start the desktop or browser. Run both as the same normal Windows account. Direct startup of `achimeld-app.exe` still requires supervision. Protection applies to the separately launched editor; `--protected --mcp` is unsupported.
+The MCP process verifies and retains locks on its signed package while an editor is available. It exits after two seconds with no editor endpoint, even if the client keeps stdin open or stops reading stdout, releasing the package for rebuilding. This grace also applies when started without an editor and tolerates brief endpoint recreation between requests. With multiple editors, it remains available until the last one closes. Open the desktop before connecting; reconnect the MCP client after reopening the desktop. It does not start the desktop or browser. Run both as the same normal Windows account. Direct startup of `achimeld-app.exe` still requires supervision. Protection applies to the separately launched editor; `--protected --mcp` is unsupported.
 
 The tools are `list_instances`, `get_scene`, `get_node`, `list_icon_styles`, `get_achievement_translations`, `export_achievement_translations`, `import_achievement_translations`, `create_achievement`, `create_stat`, `update_node`, `move_nodes`, `select_node`, `configure_stat`, `link_achievement_stat`, `add_general_image`, `apply_icon_style`, `export_achievement_icons`, `undo`, and `redo`.
 

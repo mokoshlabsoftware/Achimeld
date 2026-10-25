@@ -36,6 +36,7 @@ fn particle_color_map_release_click_guides_slice_and_empty_drag_selects_without_
     f.pointer(point, egui::PointerButton::Primary, true);
     f.slice_is("50.0%");
     f.pointer(point, egui::PointerButton::Primary, false);
+    f.frame(vec![]);
     f.slice_is("40.0%");
     f.drag(f.at(0.2, 0.2), f.at(0.8, 0.8));
     f.slice_is("40.0%");
@@ -46,7 +47,68 @@ fn particle_color_map_release_click_guides_slice_and_empty_drag_selects_without_
 }
 
 #[test]
-fn particle_color_map_marquee_shift_ctrl_and_group_drag_work_at_multiple_scales() {
+fn ctrl_drag_on_a_point_sets_slice_without_moving_or_selecting_it() {
+    let mut f = MapFixture::new(1.0, 420.0);
+    f.frame(vec![]);
+    f.frame(vec![]);
+    let before = f.map.clone();
+    f.modifiers = egui::Modifiers::CTRL;
+    f.drag(f.at(1.0 / 3.0, 0.0), f.at(0.8, 0.6));
+    f.modifiers = egui::Modifiers::NONE;
+    f.frame(vec![]);
+    f.slice_is("33.3%");
+    assert_eq!(f.map, before);
+    assert!(f.selected.is_empty());
+}
+
+#[test]
+fn multiple_points_offer_unify_color_then_shared_color_edit_and_merge() {
+    let mut f = MapFixture::new(1.0, 420.0);
+    f.map.points[1].color_hex = "#FFFF0000".into();
+    f.frame(vec![]);
+    f.frame(vec![]);
+    f.click(f.at(0.0, 0.0), egui::PointerButton::Primary);
+    f.modified_click(f.at(1.0 / 3.0, 0.0), egui::Modifiers::SHIFT);
+    assert!(f.labels.iter().any(|(s, _)| s == "Unify color"));
+    assert!(
+        !f.labels
+            .iter()
+            .any(|(s, _)| s == "Power" || s == "Point X" || s == "Point Y")
+    );
+    let unify = f.labels.iter().find(|(s, _)| s == "Unify color").unwrap().1;
+    f.click(unify, egui::PointerButton::Primary);
+    assert_eq!(f.map.points[0].color_hex, f.map.points[1].color_hex);
+    let swatch = f
+        .swatch
+        .expect("Unified selection needs a shared color swatch");
+    f.click(swatch.center(), egui::PointerButton::Primary);
+    assert!(f.labels.iter().any(|(s, _)| s == "Point color"));
+    f.key(egui::Key::Escape);
+    let merge = f.labels.iter().find(|(s, _)| s == "Merge").unwrap().1;
+    f.click(merge, egui::PointerButton::Primary);
+    assert_eq!(f.map.points.len(), EDGE_POINTS - 1);
+    assert!(f.labels.iter().any(|(s, _)| s == "Point settings"));
+    assert!(f.labels.iter().any(|(s, _)| s == "Power"));
+    f.map.validate().unwrap();
+}
+
+#[test]
+fn merging_the_last_two_points_keeps_the_selection_panel_valid() {
+    let mut f = MapFixture::new(1.0, 420.0);
+    f.map.points.truncate(2);
+    f.frame(vec![]);
+    f.frame(vec![]);
+    f.click(f.at(0.0, 0.0), egui::PointerButton::Primary);
+    f.modified_click(f.at(1.0 / 3.0, 0.0), egui::Modifiers::SHIFT);
+    let merge = f.labels.iter().find(|(s, _)| s == "Merge").unwrap().1;
+    f.click(merge, egui::PointerButton::Primary);
+    assert_eq!(f.map.points.len(), 1);
+    assert!(f.labels.iter().any(|(s, _)| s == "Point settings"));
+    f.map.validate().unwrap();
+}
+
+#[test]
+fn particle_color_map_marquee_shift_alt_and_group_drag_work_at_multiple_scales() {
     for (scale, width, font) in [(1.0, 420.0, 13.0), (1.5, 280.0, 18.0), (2.0, 240.0, 24.0)] {
         let mut f = MapFixture::new(scale, width);
         f.font = font;
@@ -75,6 +137,9 @@ fn particle_color_map_marquee_shift_ctrl_and_group_drag_work_at_multiple_scales(
         f.modified_click(f.at(0.75, 0.6), egui::Modifiers::SHIFT);
         assert_eq!(f.selected.len(), 3);
         f.modified_click(f.at(0.55, 0.65), egui::Modifiers::CTRL);
+        f.slice_is("55.0%");
+        assert_eq!(f.selected.len(), 3);
+        f.modified_click(f.at(0.55, 0.65), egui::Modifiers::ALT);
         assert_eq!(f.selected.len(), 2);
         f.modified_click(f.at(0.75, 0.6), egui::Modifiers::SHIFT);
         assert_eq!(
@@ -85,17 +150,14 @@ fn particle_color_map_marquee_shift_ctrl_and_group_drag_work_at_multiple_scales(
         assert_eq!(
             f.map.points.len(),
             EDGE_POINTS + 3,
-            "Ctrl deselects, without deleting a saved point"
+            "Alt deselects, without deleting a saved point"
         );
-        assert_eq!(f.values.len(), 6);
-        for rect in &f.values[1..] {
-            assert!(
-                (rect.left() - f.values[0].left()).abs() < 1.0
-                    && (rect.right() - f.values[0].right()).abs() < 1.0,
-                "Numeric columns must align at {scale}: {:?}",
-                f.values
-            );
-        }
+        assert_eq!(
+            f.values.len(),
+            1,
+            "Multi-selection shows only the test slice slider"
+        );
+        assert!(f.labels.iter().any(|(s, _)| s == "Merge"));
         assert!(
             f.bounds.right() <= f.bounds.left() + width + 1.0,
             "Controls overflow at {scale}: {:?}",

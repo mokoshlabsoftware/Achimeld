@@ -1911,6 +1911,18 @@ impl EditorPort for Host {
     fn gradients(&self) -> &[achimeld_application::GradientPreset] {
         &self.editor_state.state.gradients
     }
+    fn gradient_maps(&self) -> &[achimeld_application::gradient_map::GradientMapPreset] {
+        &self.editor_state.state.gradient_maps
+    }
+    fn save_gradient_map(
+        &mut self,
+        preset: achimeld_application::gradient_map::GradientMapPreset,
+    ) -> Result<(), String> {
+        self.editor_state.gradient_map(preset)
+    }
+    fn delete_gradient_map(&mut self, id: &str) -> Result<(), String> {
+        self.editor_state.delete_gradient_map(id)
+    }
     fn effect_presets(&self) -> &[achimeld_application::effect_presets::EffectPreset] {
         &self.editor_state.state.effect_presets
     }

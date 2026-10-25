@@ -43,6 +43,7 @@ impl Terminal {
             .default_size([900.0, 440.0])
             .min_size([360.0, 200.0])
             .collapsible(false)
+            .constrain(false)
             .enabled(enabled)
             .frame(egui::Frame::window(&ctx.global_style()).inner_margin(0))
             .show(ctx, |ui| {
@@ -132,6 +133,35 @@ mod tests {
         assert!(
             desktop.terminal.open,
             "A previously open Terminal stays open"
+        );
+    }
+
+    #[test]
+    fn terminal_can_extend_past_application_bounds() {
+        let ctx = egui::Context::default();
+        let mut terminal = Terminal {
+            open: true,
+            ..Default::default()
+        };
+        for _ in 0..3 {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(600.0, 400.0),
+                    )),
+                    ..Default::default()
+                },
+                |_ui| terminal.show(&ctx, true),
+            );
+            output.textures_delta.clear();
+        }
+        let rect = ctx
+            .memory(|memory| memory.area_rect(egui::Id::new("application-terminal")))
+            .unwrap();
+        assert!(
+            rect.right() > 600.0,
+            "Terminal must remain partially offscreen: {rect:?}"
         );
     }
 

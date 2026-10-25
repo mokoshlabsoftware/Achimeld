@@ -88,7 +88,7 @@ impl Desktop {
                 .resizable(true)
                 .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
                 .show(ui, |ui| {
-                    self.viewer_libraries(ui, port, &state, &mut actions);
+                    self.viewer_libraries(ui, port, &state, &mut viewer, &mut actions);
                 });
         }
         if wide {
@@ -99,7 +99,7 @@ impl Desktop {
                 .resizable(true)
                 .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
                 .show(ui, |ui| {
-                    self.viewer_bank(ui, port, &state, &mut viewer, &mut actions);
+                    self.viewer_sidebar(ui, port, &state, &mut viewer, &mut actions);
                 });
         }
         egui::CentralPanel::default()
@@ -110,40 +110,22 @@ impl Desktop {
                         .default_open(true)
                         .show(ui, |ui| {
                             ui.allocate_ui(egui::vec2(ui.available_width(), 260.0), |ui| {
-                                self.viewer_libraries(ui, port, &state, &mut actions)
+                                self.viewer_libraries(ui, port, &state, &mut viewer, &mut actions)
                             });
                         });
                 }
                 if !wide {
-                    egui::CollapsingHeader::new("Preview artwork · Art Data Bank").show(ui, |ui| {
-                        ui.allocate_ui(egui::vec2(ui.available_width(), 240.0), |ui| {
-                            self.viewer_bank(ui, port, &state, &mut viewer, &mut actions)
-                        });
-                    });
-                }
-                if ui.available_width() >= 460.0 {
-                    egui::Panel::left("style-viewer-inputs")
-                        .default_size(220.0)
-                        .min_size(180.0)
-                        .max_size(300.0)
-                        .resizable(true)
-                        .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
+                    egui::CollapsingHeader::new("Preview artwork · Art Data Bank")
+                        .default_open(true)
                         .show(ui, |ui| {
-                            self.viewer_inputs(ui, port, &state, &mut viewer, &mut actions);
-                        });
-                    egui::CentralPanel::default()
-                        .frame(egui::Frame::new().inner_margin(12))
-                        .show(ui, |ui| {
-                            self.viewer_main_preview(ui, port, &state, &mut actions)
-                        });
-                } else {
-                    egui::ScrollArea::vertical()
-                        .id_salt("viewer-narrow-center")
-                        .show(ui, |ui| {
-                            self.viewer_inputs(ui, port, &state, &mut viewer, &mut actions);
-                            self.viewer_main_preview(ui, port, &state, &mut actions);
+                            ui.allocate_ui(egui::vec2(ui.available_width(), 240.0), |ui| {
+                                self.viewer_sidebar(ui, port, &state, &mut viewer, &mut actions)
+                            });
                         });
                 }
+                egui::Frame::new().inner_margin(12).show(ui, |ui| {
+                    self.viewer_main_preview(ui, port, &state, &mut viewer, &mut actions);
+                });
             });
         self.style_viewer_ui = viewer;
         for action in actions {
@@ -156,51 +138,51 @@ impl Desktop {
         ui: &mut egui::Ui,
         port: &mut dyn EditorPort,
         state: &StyleViewerState,
+        viewer: &mut ViewerUi,
         actions: &mut Vec<Action>,
     ) {
-        let height = ui.available_height().max(120.0);
-        let top = height * 0.45;
-        ui.allocate_ui(egui::vec2(ui.available_width(), top), |ui| {
-            buttons::bar(ui, 24.0, |ui| {
-                if ui
-                    .add_sized(
-                        [ui.available_width(), ui.spacing().interact_size.y],
-                        buttons::Button::selectable(
-                            state.active_collection.is_none(),
-                            "Project styles",
-                        )
-                        .bar()
-                        .id(egui::Id::new("viewer-project-library")),
-                    )
-                    .clicked()
-                {
-                    actions.push(Action::SelectCollection(None));
-                }
-            });
-            egui::ScrollArea::vertical()
-                .id_salt("viewer-project-styles-scroll")
-                .max_height((top - buttons::bar_height(ui, 24.0)).max(40.0))
-                .auto_shrink([false, false])
-                .show(ui, |ui| {
-                    if state.styles.is_empty() {
-                        ui.weak("Styles saved in this project appear here.");
-                    }
-                    ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                    for style in &state.styles {
-                        self.viewer_banner(ui, port, state, style, actions);
-                    }
-                });
-        });
-        ui.separator();
-        buttons::bar(ui, 24.0, |ui| {
-            ui.add_space(8.0);
-            ui.strong("App styles & collections");
-        });
+        let mut height = f64::from(viewer.banner_height);
+        if crate::sliders::value_slider(ui, "Banner height", &mut height, 48.0..=240.0, " pt", 0) {
+            viewer.banner_height = height as f32;
+        }
         egui::ScrollArea::vertical()
-            .id_salt("viewer-app-styles-scroll")
+            .id_salt("viewer-libraries-scroll")
             .auto_shrink([false, false])
             .show(ui, |ui| {
-                for collection in &state.collections {
+                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+                buttons::bar(ui, 24.0, |ui| {
+                    if ui
+                        .add(
+                            buttons::Button::selectable(
+                                state.active_collection.is_none(),
+                                "Project styles",
+                            )
+                            .bar(),
+                        )
+                        .clicked()
+                    {
+                        actions.push(Action::SelectCollection(None));
+                    }
+                });
+                for style in &state.styles {
+                    self.viewer_banner(ui, port, state, style, viewer.banner_height, actions);
+                }
+                let builtin =
+                    |item: &&achimeld_application::style_viewer::StyleViewerCollection| {
+                        item.read_only && item.name != "Saved app styles"
+                    };
+                let mut divided = false;
+                for collection in state
+                    .collections
+                    .iter()
+                    .filter(|item| !builtin(item))
+                    .chain(state.collections.iter().filter(builtin))
+                {
+                    if collection.read_only && collection.name != "Saved app styles" && !divided {
+                        ui.separator();
+                        ui.strong("Built in styles");
+                        divided = true;
+                    }
                     buttons::bar(ui, 24.0, |ui| {
                         let label = format!(
                             "{}{} · {}",
@@ -256,7 +238,14 @@ impl Desktop {
                         for style in &collection.styles {
                             let mut style = style.clone();
                             style.id = format!("{}/{}", collection.id, style.id);
-                            self.viewer_banner(ui, port, state, &style, actions);
+                            self.viewer_banner(
+                                ui,
+                                port,
+                                state,
+                                &style,
+                                viewer.banner_height,
+                                actions,
+                            );
                         }
                     });
                 }
@@ -269,56 +258,26 @@ impl Desktop {
         port: &mut dyn EditorPort,
         state: &StyleViewerState,
         style: &IconStyle,
+        banner_height: f32,
         actions: &mut Vec<Action>,
     ) {
         let selected = state.selected_style.as_deref() == Some(&style.id);
         let width = ui.available_width();
-        let band = ui.text_style_height(&egui::TextStyle::Button) + 12.0;
+        let height = banner_height
+            .min(width * 0.65)
+            .max(ui.text_style_height(&egui::TextStyle::Button) + 12.0);
         let response = ui.add_sized(
-            [width, width * 0.48 + band],
+            [width, height],
             buttons::Button::selectable(selected, "")
                 .bar()
                 .id(egui::Id::new(("viewer-banner", &style.id))),
         );
-        let (fill, ink) = buttons::colors(
-            ui,
-            &response,
-            if selected {
-                buttons::ButtonStyle::Accent
-            } else {
-                buttons::ButtonStyle::Quiet
-            },
-        );
-        let image =
-            egui::Rect::from_min_max(response.rect.min, response.rect.max - egui::vec2(0.0, band));
-        if ui.is_rect_visible(response.rect)
-            && let Some((texture, _)) =
-                self.viewer_texture(ui, port, &style.id, if selected { 512 } else { 256 })
-        {
-            ui.painter().image(
-                texture,
-                image,
-                egui::Rect::from_min_max(egui::pos2(0.0, 0.26), egui::pos2(1.0, 0.74)),
-                egui::Color32::WHITE,
-            );
-        }
-        let label = egui::Rect::from_min_max(
-            egui::pos2(response.rect.left(), image.bottom()),
-            response.rect.max,
-        );
-        ui.painter().rect_filled(label, 0, fill);
-        let mut job = egui::text::LayoutJob::simple(
-            style.name.clone(),
-            egui::TextStyle::Button.resolve(ui.style()),
-            ink,
-            (width - 16.0).max(1.0),
-        );
-        job.wrap.max_rows = 1;
-        let galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
-        ui.painter().with_clip_rect(label).add(
-            egui::epaint::TextShape::new(label.center() - galley.size() * 0.5, galley, ink)
-                .with_override_text_color(ink),
-        );
+        let texture = if ui.is_rect_visible(response.rect) {
+            self.viewer_texture(ui, port, &style.id, 256)
+        } else {
+            None
+        };
+        crate::style_banner::paint(ui, &response, &style.name, texture, selected);
         response.widget_info(|| {
             egui::WidgetInfo::selected(
                 egui::WidgetType::Button,
@@ -333,6 +292,22 @@ impl Desktop {
         self.viewer_style_menu(&response, port, style, state, state.busy, actions);
     }
 
+    fn viewer_sidebar(
+        &mut self,
+        ui: &mut egui::Ui,
+        port: &mut dyn EditorPort,
+        state: &StyleViewerState,
+        viewer: &mut ViewerUi,
+        actions: &mut Vec<Action>,
+    ) {
+        egui::CollapsingHeader::new("Preview inputs")
+            .default_open(true)
+            .show(ui, |ui| {
+                self.viewer_inputs(ui, port, state, viewer, actions);
+            });
+        self.viewer_bank(ui, port, state, viewer, actions);
+    }
+
     fn viewer_inputs(
         &mut self,
         ui: &mut egui::Ui,
@@ -341,10 +316,9 @@ impl Desktop {
         viewer: &mut ViewerUi,
         actions: &mut Vec<Action>,
     ) {
-        egui::ScrollArea::vertical().id_salt("viewer-inputs-scroll").auto_shrink([false, true]).show(ui, |ui| {
+        egui::ScrollArea::vertical().id_salt("viewer-inputs-scroll").max_height((ui.available_height() * 0.45).clamp(100.0, 300.0)).auto_shrink([false, true]).show(ui, |ui| {
             egui::Frame::new().inner_margin(10).show(ui, |ui| {
-                ui.strong("Preview inputs");
-                ui.weak("Select a slot, then choose artwork on the right. These IDs drive every style preview.");
+                ui.weak("Select a slot, then choose artwork below. These IDs drive every style preview.");
                 crate::fields::row(ui, "Unlock value", |ui| {
                     let field = ui.add(egui::TextEdit::singleline(&mut viewer.unlock).id(egui::Id::new("viewer-unlock-value")).desired_width(74.0).char_limit(64));
                     let mut candidate = state.preview.clone(); candidate.unlock_value = viewer.unlock.trim().into();
@@ -407,6 +381,7 @@ impl Desktop {
         ui: &mut egui::Ui,
         port: &mut dyn EditorPort,
         state: &StyleViewerState,
+        viewer: &mut ViewerUi,
         actions: &mut Vec<Action>,
     ) {
         egui::ScrollArea::vertical()
@@ -434,17 +409,39 @@ impl Desktop {
                 if let Some(style) = style {
                     ui.vertical_centered(|ui| {
                         ui.heading(&style.name);
-                        let edge = ui
-                            .available_width()
-                            .min((ui.available_height() - 130.0).max(160.0))
-                            .min(680.0);
+                        let mut resolution = viewer.resolution_power - 6;
+                        if crate::sliders::discrete_slider(
+                            ui,
+                            "Resolution",
+                            &mut resolution,
+                            &[64, 128, 256, 512],
+                            " px",
+                        ) {
+                            viewer.resolution_power = resolution + 6;
+                        }
+                        let mut size = f64::from(viewer.display_size);
+                        if crate::sliders::value_slider(
+                            ui,
+                            "Display size",
+                            &mut size,
+                            48.0..=512.0,
+                            " pt",
+                            0,
+                        ) {
+                            viewer.display_size = size as f32;
+                        }
+                        let edge = viewer.display_size.min(ui.available_width());
                         let (rect, response) =
                             ui.allocate_exact_size(egui::Vec2::splat(edge), egui::Sense::click());
                         ui.ctx().data_mut(|data| {
                             data.insert_temp(egui::Id::new("viewer-main-preview-rect"), rect)
                         });
-                        if let Some((texture, size)) = self.viewer_texture(ui, port, &style.id, 512)
-                        {
+                        if let Some((texture, size)) = self.viewer_texture(
+                            ui,
+                            port,
+                            &style.id,
+                            1usize << viewer.resolution_power,
+                        ) {
                             ui.painter().image(
                                 texture,
                                 fit(size, rect),

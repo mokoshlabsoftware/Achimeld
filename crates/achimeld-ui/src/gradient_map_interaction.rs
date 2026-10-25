@@ -1,4 +1,7 @@
-use super::{ColorField, ColorPoint, GradientMap, MAX_POINTS, encode_color, hit, position, screen};
+use super::{
+    ColorField, ColorPoint, GradientMap, MAX_POINTS, decode_color, encode_color, hit, position,
+    screen,
+};
 use egui::{Pos2, Rect};
 use std::collections::BTreeSet;
 
@@ -11,7 +14,7 @@ enum SelectionMode {
 
 impl SelectionMode {
     fn from_modifiers(modifiers: egui::Modifiers) -> Self {
-        if modifiers.ctrl || modifiers.command {
+        if modifiers.alt {
             Self::Remove
         } else if modifiers.shift {
             Self::Add
@@ -102,6 +105,99 @@ impl State {
         });
         self.selected.clear();
         self.active = None;
+        self.reset_gesture();
+    }
+
+    pub fn clone_selected(&mut self, map: &mut GradientMap) {
+        if self.selected.is_empty() || map.points.len() + self.selected.len() > MAX_POINTS {
+            return;
+        }
+        let originals: Vec<_> = self
+            .selected
+            .iter()
+            .map(|&i| map.points[i].clone())
+            .collect();
+        // Move the complete copy together so its relative layout is preserved.
+        let offset = (1..=40)
+            .flat_map(|step| {
+                let distance = f64::from(step) * 0.01;
+                [
+                    (distance, distance),
+                    (-distance, distance),
+                    (distance, -distance),
+                    (-distance, -distance),
+                ]
+            })
+            .find(|&(dx, dy)| {
+                originals.iter().all(|point| {
+                    let (x, y) = (point.x + dx, point.y + dy);
+                    (0.0..=1.0).contains(&x)
+                        && (0.0..=1.0).contains(&y)
+                        && map
+                            .points
+                            .iter()
+                            .all(|other| (x - other.x).powi(2) + (y - other.y).powi(2) >= 1e-8)
+                })
+            });
+        let Some((dx, dy)) = offset else { return };
+        let first = map.points.len();
+        map.points.extend(originals.into_iter().map(|mut point| {
+            point.x += dx;
+            point.y += dy;
+            point
+        }));
+        self.selected = (first..map.points.len()).collect();
+        self.active = Some(first);
+        self.reset_gesture();
+    }
+
+    pub fn merge_selected(&mut self, map: &mut GradientMap) {
+        if self.selected.len() < 2 {
+            return;
+        }
+        let count = self.selected.len() as f64;
+        let points: Vec<_> = self.selected.iter().map(|&i| &map.points[i]).collect();
+        let average =
+            |get: fn(&ColorPoint) -> f64| points.iter().map(|p| get(p)).sum::<f64>() / count;
+        let mut merged = points[0].clone();
+        merged.x = average(|p| p.x);
+        merged.y = average(|p| p.y);
+        merged.power = average(|p| p.power);
+        merged.range_x = average(|p| p.range_x);
+        merged.range_y = average(|p| p.range_y);
+        let colors: Vec<_> = points
+            .iter()
+            .filter_map(|p| decode_color(&p.color_hex))
+            .collect();
+        if colors.len() != points.len() {
+            return;
+        }
+        merged.color_hex = encode_color(std::array::from_fn(|channel| {
+            (colors.iter().map(|c| f64::from(c[channel])).sum::<f64>() / count).round() as u8
+        }));
+        // An averaged position can coincide with an unselected point.
+        if map.points.iter().enumerate().any(|(i, p)| {
+            !self.selected.contains(&i)
+                && (merged.x - p.x).powi(2) + (merged.y - p.y).powi(2) < 1e-8
+        }) {
+            merged.x = points[0].x;
+            merged.y = points[0].y;
+        }
+        let first = *self.selected.first().unwrap();
+        map.points[first] = merged;
+        for &index in self.selected.iter().rev() {
+            if index != first {
+                map.points.remove(index);
+            }
+        }
+        self.selected.clear();
+        self.selected.insert(first);
+        self.active = Some(first);
+        self.reset_gesture();
+    }
+
+    pub fn context_select(&mut self, index: usize) {
+        self.point_selection(index, SelectionMode::Replace);
         self.reset_gesture();
     }
 
@@ -205,7 +301,8 @@ pub(super) fn handle(
         return;
     }
     let primary = egui::PointerButton::Primary;
-    let mode = SelectionMode::from_modifiers(ui.input(|i| i.modifiers));
+    let modifiers = ui.input(|i| i.modifiers);
+    let mode = SelectionMode::from_modifiers(modifiers);
     if let Some(Gesture::Move { expected, .. }) = &state.gesture
         && expected != &map.points
     {
@@ -215,7 +312,13 @@ pub(super) fn handle(
         || (state.gesture.is_none() && response.drag_started_by(primary)))
         && let Some(origin) = ui.input(|i| i.pointer.press_origin())
     {
-        state.press(map, rect, origin, mode);
+        if modifiers.ctrl || modifiers.command {
+            state.slice = position(rect, origin)[0];
+            ui.ctx().request_repaint();
+            state.gesture = Some(Gesture::Ignore);
+        } else {
+            state.press(map, rect, origin, mode);
+        }
         response.request_focus();
     }
     if (response.dragged_by(primary) || response.drag_stopped_by(primary))
@@ -304,6 +407,7 @@ pub(super) fn handle(
                 }
             } else if matches!(mode, SelectionMode::Replace) {
                 state.slice = position(rect, pointer)[0];
+                ui.ctx().request_repaint();
                 state.selected.clear();
                 state.active = None;
                 state.color = false;
@@ -331,5 +435,45 @@ pub(super) fn handle(
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clone_preserves_point_properties_and_selects_the_copies() {
+        let mut map = GradientMap::default();
+        let mut state = State::default();
+        state.selected.extend([0, 1]);
+        let originals = map.points[..2].to_vec();
+        state.clone_selected(&mut map);
+        assert_eq!(map.points.len(), 14);
+        assert_eq!(state.selected, [12, 13].into());
+        for (original, copy) in originals.iter().zip(&map.points[12..]) {
+            assert_eq!(original.color_hex, copy.color_hex);
+            assert_eq!(original.power, copy.power);
+            assert_eq!(original.range_x, copy.range_x);
+            assert_eq!(original.range_y, copy.range_y);
+            assert!((copy.x - original.x - (map.points[12].x - originals[0].x)).abs() < 1e-12);
+            assert!((copy.y - original.y - (map.points[12].y - originals[0].y)).abs() < 1e-12);
+        }
+        map.validate().unwrap();
+    }
+
+    #[test]
+    fn merge_averages_selected_points_and_keeps_a_valid_map() {
+        let mut map = GradientMap::default();
+        map.points[0].color_hex = "#FFFF0000".into();
+        map.points[1].color_hex = "#FF0000FF".into();
+        let mut state = State::default();
+        state.selected.extend([0, 1]);
+        state.merge_selected(&mut map);
+        assert_eq!(map.points.len(), 11);
+        assert_eq!(state.selected, [0].into());
+        assert_eq!(map.points[0].color_hex, "#FF800080");
+        assert!((map.points[0].x - 1.0 / 6.0).abs() < 1e-10);
+        map.validate().unwrap();
     }
 }

@@ -15,6 +15,7 @@ transcript digest is recorded in the embedded assets' `authoring.json`.
 
 | Finding | Fix and regression evidence |
 | --- | --- |
+| Client-owned `--mcp` processes waited indefinitely on open stdin after the desktop closed, retaining package locks and blocking builds. | Main-thread endpoint lifetime monitoring ends the facade after two seconds without an editor, independently of blocked stdio. `closing_last_editor_does_not_wait_for_idle_stdio`, `no_editor_at_startup_also_releases_idle_stdio`, and `client_exit_and_discovery_failure_do_not_leave_an_owner_waiting` cover lifetime behavior; `mcp_process_exits_with_open_stdin_after_last_editor_closes` exercises process exit with a real Windows endpoint and open stdin. Endpoint discovery remains a same-user lifetime hint, not an authentication boundary. |
 | File import retries depended on the source remaining available. | Retry lookup precedes file access; artwork is owned and deduplicated. `file_artwork_is_owned_deduplicated_and_retries_need_no_source_file`. |
 | Reopening the same project could retain previous retry records. | Each host editor session has a separate identity. `retry_staleness_busy_and_same_project_reopen_use_the_live_editor_session`. |
 | Early client disconnect could stall acceptance; closing immediately after a response could discard unread bytes. | Recreate disconnected instances and retain server handles until acknowledgment/timeout. `real_windows_pipe_serves_the_stdio_facade_and_survives_disconnection`. |

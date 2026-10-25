@@ -1085,7 +1085,7 @@ impl Desktop {
                         egui::Color32::from_rgba_unmultiplied(fill.r(), fill.g(), fill.b(), 220),
                     );
                 }
-                let title = format!("{} {name}", crate::localization::text(ui.ctx(), "GnBnLb"));
+                let title = name.clone();
                 let mut job = egui::text::LayoutJob::simple(
                     title,
                     egui::TextStyle::Small.resolve(ui.style()),
