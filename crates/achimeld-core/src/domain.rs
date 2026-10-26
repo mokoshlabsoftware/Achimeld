@@ -146,6 +146,24 @@ pub const LANGUAGES: [&str; 7] = [
     "French",
 ];
 
+/// Interface choices are independent of the versioned project/Steam text schema.
+pub const INTERFACE_LANGUAGES: [&str; 14] = [
+    "English",
+    "Polish",
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "Japanese",
+    "Korean",
+    "French",
+    "German",
+    "Spanish",
+    "Italian",
+    "Portuguese",
+    "Dutch",
+    "Russian",
+    "Ukrainian",
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;

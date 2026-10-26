@@ -551,6 +551,33 @@ impl Viewer {
                 json!(collection.summary.styles);
             project["styleViewerLibraryImages"][&collection.summary.id] = json!(collection.images);
         }
+        if let Some(blend) = &self.blend
+            && let Some(style) = project["iconStyles"]
+                .as_array_mut()
+                .and_then(|styles| styles.iter_mut().find(|s| s["id"] == blend.achievement_id))
+            && let Some(layer) = style["recipe"]["layers"]
+                .as_array_mut()
+                .and_then(|layers| layers.iter_mut().find(|l| l["id"] == blend.layer_id))
+        {
+            layer["blendMode"] = json!(blend.mode);
+        }
+        if let Some(style) = self.state.selected() {
+            let recipe = project["iconStyles"]
+                .as_array()
+                .and_then(|styles| styles.iter().find(|s| s["id"] == style.id))
+                .map_or(style.recipe, |s| s["recipe"].clone());
+            let defaults = project["styleViewerDefaultImages"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default();
+            if let Some(entity) = project["achievements"]
+                .as_array_mut()
+                .and_then(|a| a.first_mut())
+            {
+                entity["icon"] = recipe;
+                self.state.preview.apply_images(entity, &defaults);
+            }
+        }
         self.render_document = Some((
             revision,
             self.library_revision,

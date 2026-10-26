@@ -1,130 +1,16 @@
 //! Presentation for a host-owned preview document, independent of the canvas.
+mod deletion;
 mod layout;
-use crate::{Desktop, buttons, buttons::UiButtonExt as _, icons};
+pub(crate) struct DeleteStyle {
+    project: String,
+    style: String,
+    replacement: Option<String>,
+}
+use crate::{Desktop, buttons, icons};
 use achimeld_application::{
     EditorPort, UiRequest,
-    style_viewer::{
-        SteamAchievementSet, SteamAchievementSetLink, StyleViewerAction as Action, StyleViewerState,
-    },
+    style_viewer::{StyleViewerAction as Action, StyleViewerState},
 };
-
-pub(crate) struct LinkDraft {
-    style: Option<String>,
-    app: u32,
-    base: bool,
-    id: String,
-    name: String,
-}
-impl Default for LinkDraft {
-    fn default() -> Self {
-        Self {
-            style: None,
-            app: 0,
-            base: true,
-            id: String::new(),
-            name: String::new(),
-        }
-    }
-}
-impl LinkDraft {
-    fn show(
-        &mut self,
-        ui: &mut egui::Ui,
-        state: &StyleViewerState,
-        app: u32,
-        actions: &mut Vec<Action>,
-    ) {
-        ui.strong("Steam Achievement Set");
-        ui.label("Link a style to a game's Base game or custom achievement set. Links are saved in this style set.");
-        if state.selected_style != self.style {
-            self.style = state.selected_style.clone();
-            self.app = app;
-            self.base = true;
-            self.id.clear();
-            self.name.clear();
-            if let Some(link) = state
-                .steam_sets
-                .iter()
-                .find(|link| Some(&link.style_id) == self.style.as_ref())
-            {
-                self.app = link.app_id;
-                if let SteamAchievementSet::Custom { id, name } = &link.set {
-                    self.base = false;
-                    self.id = id.clone();
-                    self.name = name.clone();
-                }
-            }
-        }
-        ui.add_enabled_ui(self.style.is_some() && !state.busy, |ui| {
-            crate::fields::row(ui, "Steam App ID", |ui| {
-                ui.add(egui::DragValue::new(&mut self.app).range(0..=u32::MAX));
-            });
-            buttons::bar(ui, 24.0, |ui| {
-                for (base, label) in [(true, "Base game"), (false, "Custom set")] {
-                    if ui
-                        .add(buttons::Button::selectable(self.base == base, label).bar())
-                        .clicked()
-                    {
-                        self.base = base;
-                    }
-                }
-            });
-            if !self.base {
-                crate::fields::row(ui, "Steam set ID", |ui| {
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.id)
-                            .desired_width(ui.available_width())
-                            .char_limit(128),
-                    );
-                });
-                crate::fields::row(ui, "Set name", |ui| {
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.name)
-                            .desired_width(ui.available_width())
-                            .char_limit(256),
-                    );
-                });
-            }
-            if ui.app_button("Link selected style").clicked()
-                && let Some(style_id) = &self.style
-            {
-                actions.push(Action::LinkSet(SteamAchievementSetLink {
-                    style_id: style_id.clone(),
-                    app_id: self.app,
-                    set: if self.base {
-                        SteamAchievementSet::BaseGame
-                    } else {
-                        SteamAchievementSet::Custom {
-                            id: self.id.trim().into(),
-                            name: self.name.trim().into(),
-                        }
-                    },
-                }));
-            }
-        });
-        for link in state
-            .steam_sets
-            .iter()
-            .filter(|link| Some(&link.style_id) == self.style.as_ref())
-        {
-            ui.horizontal_wrapped(|ui| {
-                ui.label(match &link.set {
-                    SteamAchievementSet::BaseGame => format!("App {} · Base game", link.app_id),
-                    SteamAchievementSet::Custom { id, name } => {
-                        format!("App {} · {name} · Set {id}", link.app_id)
-                    }
-                });
-                if ui
-                    .add_enabled(!state.busy, buttons::Button::new("Unlink"))
-                    .clicked()
-                {
-                    actions.push(Action::UnlinkSet(link.clone()));
-                }
-            });
-        }
-        ui.weak("Enter set details from Steamworks. Automatic set discovery and Steam updates are not available yet.");
-    }
-}
 
 #[derive(Clone, Copy, Default, PartialEq)]
 enum BankTab {
@@ -138,13 +24,19 @@ enum BankTab {
 pub(crate) struct ViewerUi {
     tab: BankTab,
     search: String,
+    name_filter: String,
     atlas: Option<String>,
     atlas_open: bool,
     unlock: String,
     saved_unlock: String,
     slot: usize,
     banner_height: f32,
-    display_size: f32,
+    pub(crate) options_open: bool,
+    builtins_open: bool,
+    project_open: bool,
+    zoom: f32,
+    pan: egui::Vec2,
+    pub(crate) deletion: Option<DeleteStyle>,
     resolution_power: u32,
 }
 
@@ -153,13 +45,19 @@ impl Default for ViewerUi {
         Self {
             tab: BankTab::default(),
             search: String::new(),
+            name_filter: String::new(),
             atlas: None,
             atlas_open: false,
             unlock: String::new(),
             saved_unlock: String::new(),
             slot: 0,
             banner_height: 64.0,
-            display_size: 256.0,
+            options_open: false,
+            builtins_open: true,
+            project_open: true,
+            zoom: 1.0,
+            pan: egui::Vec2::ZERO,
+            deletion: None,
             resolution_power: 9,
         }
     }
@@ -208,39 +106,25 @@ impl Desktop {
         response: &egui::Response,
         port: &dyn EditorPort,
         style: &achimeld_application::IconStyle,
-        state: &StyleViewerState,
+        _state: &StyleViewerState,
         busy: bool,
         actions: &mut Vec<Action>,
     ) {
         buttons::context_menu(response, |ui| {
-            if style.id.contains('/')
-                && ui
-                    .add_enabled(!busy, buttons::Button::new("Import into project").bar())
-                    .clicked()
+            if ui
+                .add_enabled(!busy, buttons::Button::new("Duplicate into project").bar())
+                .clicked()
             {
-                actions.push(Action::ImportStyle(style.id.clone()));
+                actions.push(Action::DuplicateStyle(style.id.clone()));
                 ui.close();
             }
-            let editable = style.id.split_once('/').is_none_or(|(id, _)| {
-                state
-                    .collections
-                    .iter()
-                    .any(|item| item.id == id && !item.read_only)
-            });
+            let editable = !style.id.contains('/');
             if ui
                 .add_enabled(
                     !busy && editable,
-                    buttons::Button::new((
-                        glyph(
-                            ui.ctx(),
-                            "viewer-rename",
-                            include_bytes!("../assets/toolbar/style-rename.rgba"),
-                        ),
-                        "Rename style…",
-                    ))
-                    .id(egui::Id::new("viewer-rename-menu"))
-                    .bar()
-                    .image_tint_follows_text_color(true),
+                    buttons::Button::new("Rename style…")
+                        .id(egui::Id::new("viewer-rename-menu"))
+                        .bar(),
                 )
                 .clicked()
             {
@@ -250,27 +134,12 @@ impl Desktop {
             if ui
                 .add_enabled(
                     !busy && editable,
-                    buttons::Button::new("Remove from style set").bar(),
+                    buttons::Button::new("Delete project style…").bar(),
                 )
                 .clicked()
             {
-                actions.push(Action::RemoveStyle(style.id.clone()));
+                self.open_style_delete(port, &style.id);
                 ui.close();
-            }
-            for collection in state.collections.iter().filter(|item| !item.read_only) {
-                if ui
-                    .add_enabled(
-                        !busy,
-                        buttons::Button::new(format!("Copy to {}", collection.name)).bar(),
-                    )
-                    .clicked()
-                {
-                    actions.push(Action::CopyToCollection {
-                        style: style.id.clone(),
-                        collection: collection.id.clone(),
-                    });
-                    ui.close();
-                }
             }
         });
     }
@@ -635,4 +504,20 @@ impl Desktop {
                 }
             });
     }
+}
+
+fn clicked_once(response: &egui::Response) -> bool {
+    if !response.clicked() {
+        return false;
+    }
+    let frame = response.ctx.cumulative_frame_nr();
+    response.ctx.data_mut(|data| {
+        let key = response.id.with("activation-frame");
+        if data.get_temp::<u64>(key) == Some(frame) {
+            false
+        } else {
+            data.insert_temp(key, frame);
+            true
+        }
+    })
 }

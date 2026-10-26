@@ -1,11 +1,11 @@
 [
   {
     "id": "c13dc47a-5afd-4bf3-a2bb-e5456020a003",
-    "name": "Color studies",
+    "name": "Built-in",
     "styles": [
       {
         "id": "a7fe8826-f6e6-469a-a7dc-ee8a3091d016",
-        "name": "Mosaica · Mint shine",
+        "name": "Mint shine",
         "recipe": {
           "backgroundColorHex": null,
           "layers": [
@@ -395,7 +395,7 @@
       },
       {
         "id": "2b060720-2e33-4310-9959-01b87b43b317",
-        "name": "Waifus · Citrus prism",
+        "name": "Citrus prism",
         "recipe": {
           "layers": [
             {
@@ -661,7 +661,7 @@
       },
       {
         "id": "7bee02fd-5198-4cb3-a9e7-fd60c2f658f5",
-        "name": "Waifus · Violet dusk",
+        "name": "Violet dusk",
         "recipe": {
           "layers": [
             {
@@ -971,7 +971,7 @@
       },
       {
         "id": "398f987c-0d01-4a54-806a-23b820ae03bd",
-        "name": "Waifus · Bronze focus",
+        "name": "Bronze focus",
         "recipe": {
           "layers": [
             {
@@ -1134,7 +1134,7 @@
       },
       {
         "id": "81fb5569-2181-4aed-8d07-4f7eddb44748",
-        "name": "Waifus · Lagoon ribbon",
+        "name": "Lagoon ribbon",
         "recipe": {
           "layers": [
             {
@@ -1525,7 +1525,7 @@
       },
       {
         "id": "32d12634-4a88-44bf-b212-512803ca0c56",
-        "name": "Waifus · Citrus neon",
+        "name": "Citrus neon",
         "recipe": {
           "layers": [
             {
@@ -1925,7 +1925,7 @@
       },
       {
         "id": "b8d9d5ce-1df5-45af-9604-b8df8bba6a98",
-        "name": "Waifus · Azure shine",
+        "name": "Azure shine",
         "recipe": {
           "layers": [
             {
@@ -2178,7 +2178,7 @@
       },
       {
         "id": "5c2955c4-8240-4dbb-b7fe-80d1099c7b7b",
-        "name": "Waifus · Lime pulse",
+        "name": "Lime pulse",
         "recipe": {
           "layers": [
             {

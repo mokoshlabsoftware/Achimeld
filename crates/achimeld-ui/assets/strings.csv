@@ -1,649 +1,701 @@
-ID,Context,English,Polish,ChineseSimplified,ChineseTraditional,Japanese,Korean,French
-MenuWindows,Menu,Windows,Okna,窗口,視窗,ウィンドウ,창,Fenêtres
-MenuResetLayout,Menu,Reset layout,Resetuj układ,重置布局,重設版面配置,レイアウトをリセット,레이아웃 초기화,Réinitialiser la disposition
-MenuSetWindowSize,Menu,Set window size…,Ustaw rozmiar okna…,,,,,
-WindowSizeTitle,Window,Set window size,Ustaw rozmiar okna,,,,,
-WindowSizeUnit,Window,Window size in logical pixels,Rozmiar okna w pikselach logicznych,,,,,
-WindowSizeWidth,Window,Width,Szerokość,,,,,
-WindowSizeHeight,Window,Height,Wysokość,,,,,
-LyReferenceMask,Layers,Reference mask,Maska referencyjna,,,,,
-LyMaskSourceLayer,Layers,Source layer,Warstwa źródłowa,,,,,
-LyMaskReferenceHint,Layers,Copies the source layer’s mask and inversion. Updates with the source.,Kopiuje maskę i odwrócenie warstwy źródłowej. Aktualizuje się razem ze źródłem.,,,,,
-LyMaskNoSource,Layers,No source mask: fully reveals.,Brak maski źródłowej: pełna widoczność.,,,,,
-LyMaskGrayHint,Layers,White reveals. Black hides.,Biel odsłania. Czerń ukrywa.,,,,,
-LyMaskLegacyAlpha,Layers,Legacy transparency mask,Starsza maska przezroczystości,,,,,
-LyMaskToGray,Layers,Use grayscale mask,Użyj maski w skali szarości,,,,,
-LyMaskGrayValue,Color,Gray,Szarość,,,,,
-LyReroll,Layers,Re-roll all random layers,Wylosuj ponownie wszystkie warstwy losowe,,,,,
-LyUseMask,Layers,Use mask,Użyj maski,,,,,
-LyMaskSource,Layers,Mask source,Źródło maski,,,,,
-LyRmMask,Layers,Remove mask,Odłącz maskę,,,,,
-LyDelMask,Layers,Delete mask,Usuń maskę,,,,,
-LyAddMask,Layers,Add mask,Dodaj maskę,,,,,
-LyReplaceMask,Layers,Replace mask,Zastąp maskę,,,,,
-LyUseMaskFrom,Layers,Use mask from,Użyj maski z,,,,,
-LyReferenceMaskTo,Layers,Reference mask to,Udostępnij maskę warstwie,,,,,
-LyInvertMask,Layers,Invert mask,Odwróć maskę,,,,,
-LyOutFolder,Layers,Remove from folder,Wyjmij z folderu,,,,,
-SvInv,Layers,Invert vignette,Odwróć winietę,,,,,
-SvInHt,Layers,Fill the center instead of the edges.,Wypełnij środek zamiast krawędzi.,,,,,
-SvFill,Layers,Fill,Wypełnienie,,,,,
-SvGrad,Layers,Gradient map,Mapa gradientu,,,,,
-SvHint,Layers,Stops follow the fade from transparent to full strength.,Punkty gradientu odpowiadają przejściu od przezroczystości do pełnego krycia.,,,,,
-UnTxHt,Localization,Use {0} in names or descriptions to insert the unlock value.,Użyj {0} w nazwach lub opisach aby wstawić wartość odblokowania.,在名称或描述中使用 {0} 插入解锁值。,在名稱或描述中使用 {0} 插入解鎖值。,名前や説明に {0} を使うと解除値が入ります。,이름이나 설명에 {0}을 사용하면 잠금 해제 값이 삽입됩니다.,Utilisez {0} dans les noms ou descriptions pour insérer la valeur de déblocage.
-UnTxPr,Localization,Preview,Podgląd,预览,預覽,プレビュー,미리 보기,Aperçu
-PRLYPV,Preferences,Show finished icon preview in Layers,Pokaż podgląd gotowej ikony w Warstwach,显示图层中的成品图标预览,顯示圖層中的成品圖示預覽,レイヤーに完成アイコンを表示,레이어에 완성 아이콘 미리보기 표시,Afficher l’aperçu de l’icône dans Calques
-PRLYCN,Preferences,Show connections to affected icons,Pokaż połączenia z edytowanymi ikonami,显示受影响图标的连接,顯示受影響圖示的連線,変更対象アイコンへの接続を表示,영향받는 아이콘 연결 표시,Afficher les connexions aux icônes concernées
-PRLYCL,Palette,Layer connection lines,Linie połączeń warstw,图层连接线,圖層連線,レイヤー接続線,레이어 연결선,Lignes de connexion des calques
-PRNOUT,Palette,Selected icon outline,Obramowanie wybranej ikony,选中图标边框,選取圖示框線,選択アイコンの枠線,선택 아이콘 테두리,Contour de l’icône sélectionnée
-PRNSHD,Palette,Node focus overlay,Przyciemnienie węzłów,节点聚焦遮罩,節點聚焦遮罩,ノードのフォーカスオーバーレイ,노드 강조 오버레이,Voile de focus des nœuds
-LyAfSt,Layers,AFFECT STYLE enabled,ZMIANA STYLU włączona,样式编辑已启用,樣式編輯已啟用,スタイル編集有効,스타일 편집 활성화,MODIFIER LE STYLE activé
-LyAfIc,Layers,AFFECT ICON enabled,ZMIANA IKONY włączona,图标编辑已启用,圖示編輯已啟用,アイコン編集有効,아이콘 편집 활성화,MODIFIER L’ICÔNE activé
-PRCANA,Preferences,Canvas colors,Kolory obszaru roboczego,画布颜色,畫布色彩,キャンバスの色,캔버스 색상,Couleurs du canevas
-PRBGTP,Preferences,Background top,Tło u góry,背景顶部,背景頂部,背景の上部,배경 위쪽,Fond en haut
-PRBGBT,Preferences,Background bottom,Tło u dołu,背景底部,背景底部,背景の下部,배경 아래쪽,Fond en bas
-PRGRID,Preferences,Grid,Siatka,网格,網格,グリッド,격자,Grille
-PRBGMP,Preferences,Gradient midpoint,Środek gradientu,渐变中点,漸層中點,グラデーションの中間点,그라데이션 중간점,Point médian du dégradé
-HPMENU,Menu,Help,Pomoc,帮助,說明,ヘルプ,도움말,Aide
-HPABOU,Menu,About,O aplikacji,关于,關於,このアプリについて,정보,À propos
-HPCHLG,Menu,Change log,Historia zmian,更改日志,變更記錄,変更履歴,변경 기록,Historique des modifications
-HPVERS,About,Version,Wersja,版本,版本,バージョン,버전,Version
-HPHIST,About,Newest changes first. History starts with version tracking.,Najnowsze zmiany na górze. Historia zaczyna się od wprowadzenia wersjonowania.,,,,,
-GrInCh,Gradient,Input channel,Kanał wejściowy,输入通道,輸入通道,入力チャンネル,입력 채널,Canal d’entrée
-WkGrid,Working area,Node grid settings,Ustawienia siatki węzłów,,,,,
-WkSort,Working area,Sort,Sortuj,,,,,
-WkAcRw,Working area,Achievements per row,Osiągnięcia w wierszu,,,,,
-WkStRw,Working area,Stats per row,Statystyki w wierszu,,,,,
-WkAlgn,Working area,Align,Wyrównaj,对齐,對齊,整列,정렬,Aligner
-TfCopy,Transform,Copy transform,Kopiuj transformację,复制变换,複製變換,変形をコピー,변환 복사,Copier la transformation
-TfPast,Transform,Paste transform,Wklej transformację,粘贴变换,貼上變換,変形を貼り付け,변환 붙여넣기,Coller la transformation
-SyChAc,Synchronization,Open achievements in Chrome,Otwórz osiągnięcia w Chrome,在 Chrome 中打开成就,在 Chrome 中開啟成就,Chrome で実績を開く,Chrome에서 업적 열기,Ouvrir les succès dans Chrome
-SyChSt,Synchronization,Open stats in Chrome,Otwórz statystyki w Chrome,在 Chrome 中打开统计数据,在 Chrome 中開啟統計資料,Chrome で統計を開く,Chrome에서 통계 열기,Ouvrir les statistiques dans Chrome
-FIMENU,Menu,File,Plik,文件,檔案,ファイル,파일,Fichier
-FINEWW,Menu,New,Nowy,新建,新增,新規,새로 만들기,Nouveau
-FIOPEN,Menu,Open,Otwórz,打开,開啟,開く,열기,Ouvrir
-FIRECE,Menu,Open Recent,Otwórz ostatnie,打开最近使用的文件,開啟最近使用的檔案,最近使ったファイルを開く,최근 파일 열기,Ouvrir les fichiers récents
-FINONE,Menu,No recent files,Brak ostatnich plików,没有最近使用的文件,沒有最近使用的檔案,最近使ったファイルはありません,최근 파일 없음,Aucun fichier récent
-FISAVE,Menu,Save,Zapisz,保存,儲存,保存,저장,Enregistrer
-FISVAS,Menu,Save As,Zapisz jako,另存为,另存新檔,名前を付けて保存,다른 이름으로 저장,Enregistrer sous
-FIPSET,Menu,Project Settings,Ustawienia projektu,项目设置,專案設定,プロジェクト設定,프로젝트 설정,Paramètres du projet
-FIATLS,Menu,Import Atlases,Importuj atlasy,导入图集,匯入圖集,アトラスをインポート,아틀라스 가져오기,Importer des atlas
-TLExpo,Menu,Export Achievement Icons,Eksportuj ikony osiągnięć,,,,,
-TLMENU,Menu,Tools,Narzędzia,工具,工具,ツール,도구,Outils
-FIPREF,Menu,Preferences,Preferencje,首选项,偏好設定,環境設定,환경 설정,Préférences
-FIEXIT,Menu,Exit,Zakończ,退出,結束,終了,끝내기,Quitter
-TBWORK,Shell,Working,Praca,工作,工作,作業,작업,Travail
-TBSTEA,Shell,Steam,Steam,Steam,Steam,Steam,Steam,Steam
-SYNCHR,Shell,Synchronize,Synchronizuj,同步,同步,同期,동기화,Synchroniser
-INDETA,Inspector,Details,Szczegóły,详细信息,詳細資料,詳細,세부 정보,Détails
-INACTI,Inspector,Activity,Aktywność,活动,活動,アクティビティ,활동,Activité
-STREAD,Status,Ready,Gotowe,就绪,就緒,準備完了,준비됨,Prêt
-STACNT,Status,Achievements:,Osiągnięcia:,成就：,成就：,実績：,업적:,Succès :
-STELAP,Status,Elapsed,Upłynęło,已用时间,經過時間,経過時間,경과,Écoulé
-PLWORK,Placeholder,Working view will appear here,Tutaj pojawi się widok pracy,工作视图将显示在此处,工作檢視將顯示於此,作業ビューがここに表示されます,작업 보기가 여기에 표시됩니다,La vue de travail apparaîtra ici
-PLSTEA,Placeholder,Steam view will appear here,Tutaj pojawi się widok Steam,Steam 视图将显示在此处,Steam 檢視將顯示於此,Steam ビューがここに表示されます,Steam 보기가 여기에 표시됩니다,La vue Steam apparaîtra ici
-PLDETA,Placeholder,Select an item to inspect,Wybierz element do sprawdzenia,选择要检查的项目,選取要檢查的項目,調べる項目を選択してください,검사할 항목을 선택하세요,Sélectionnez un élément à examiner
-PLACTI,Placeholder,No recent activity,Brak ostatniej aktywności,无最近活动,沒有最近活動,最近のアクティビティはありません,최근 활동 없음,Aucune activité récente
-WNPREF,Preferences,Preferences,Preferencje,首选项,偏好設定,環境設定,환경 설정,Préférences
-PRAPPE,Preferences,Appearance,Wygląd,外观,外觀,外観,모양,Apparence
-PRCOLO,Preferences,Palette,Paleta,调色板,調色盤,パレット,팔레트,Palette
-PRWIND,Palette,Window,Okno,窗口,視窗,ウィンドウ,창,Fenêtre
-PRPANE,Palette,Panel,Panel,面板,面板,パネル,패널,Panneau
-PRCONT,Palette,Control,Kontrolka,控件,控制項,コントロール,컨트롤,Contrôle
-PRBORD,Palette,Border,Obramowanie,边框,框線,境界線,테두리,Bordure
-PRPTXT,Palette,Primary text,Tekst główny,主要文本,主要文字,主テキスト,기본 텍스트,Texte principal
-PRMTXT,Palette,Muted text,Tekst wyciszony,次要文本,柔和文字,控えめなテキスト,보조 텍스트,Texte atténué
-PRACCE,Palette,Accent,Akcent,强调色,強調色,アクセント,강조,Accent
-PRSUCC,Palette,Success,Sukces,成功,成功,成功,성공,Succès
-PRWARN,Palette,Warning,Ostrzeżenie,警告,警告,警告,경고,Avertissement
-PRERRO,Palette,Error,Błąd,错误,錯誤,エラー,오류,Erreur
-PRRADI,Preferences,Control corner radius,Promień kontrolek,控件圆角,控制項圓角,コントロールの角丸,컨트롤 모서리 반경,Rayon des contrôles
-PRHEAD,Preferences,Header font size,Rozmiar nagłówka,标题字号,標題字型大小,見出しフォントサイズ,헤더 글꼴 크기,Taille des titres
-PRNORM,Preferences,Normal font size,Normalny rozmiar,常规字号,一般字型大小,標準フォントサイズ,일반 글꼴 크기,Taille normale
-PRSMAL,Preferences,Small font size,Mały rozmiar,小字号,小字型大小,小フォントサイズ,작은 글꼴 크기,Petite taille
-PRLANG,Preferences,Language,Język,语言,語言,言語,언어,Langue
-PRNAMI,Preferences,Naming,Nazewnictwo,Nombres,Nombres,命名,이름 지정,Nommage
-PRACHN,Preferences,Achievement naming convention,Konwencja nazw osiągnięć,成就命名规则,成就命名規則,実績の命名規則,업적 이름 규칙,Convention de nommage des succès
-PRACHH,Preferences,"Use {0} for the number, for example ACHIEVEMENT_{0:000}.","Użyj {0} jako numeru, na przykład ACHIEVEMENT_{0:000}.","数字使用 {0}，例如 ACHIEVEMENT_{0:000}。","數字使用 {0}，例如 ACHIEVEMENT_{0:000}。","数字には {0} を使います。例: ACHIEVEMENT_{0:000}。","숫자에는 {0}을 사용합니다. 예: ACHIEVEMENT_{0:000}.","Utilisez {0} pour le numéro, par exemple ACHIEVEMENT_{0:000}."
-PRDARK,Preferences,Dark defaults,Ciemne domyślne,深色默认值,深色預設值,ダーク既定値,어두운 기본값,Valeurs sombres
-PRLIGH,Preferences,Light defaults,Jasne domyślne,浅色默认值,淺色預設值,ライト既定値,밝은 기본값,Valeurs claires
-PRSAVB,Preferences,Save,Zapisz,保存,儲存,保存,저장,Enregistrer
-PRCANC,Preferences,Cancel,Anuluj,取消,取消,キャンセル,취소,Annuler
-PRBROW,Preferences,Browser,Przeglądarka,,,,,
-PRBREX,Preferences,Chrome executable,Plik wykonywalny Chrome,,,,,
-PRBRDT,Preferences,Detect,Wykryj,,,,,
-PRBRBS,Preferences,Browse...,Przeglądaj...,,,,,
-PRBRHI,Preferences,Path to chrome.exe. Leave blank to detect Google Chrome automatically.,Ścieżka do chrome.exe. Pozostaw puste aby wykryć Google Chrome automatycznie.,,,,,
-PRBRIN,Validation,Enter a valid path to chrome.exe.,Podaj prawidłową ścieżkę do chrome.exe.,,,,,
-PRBRND,Validation,Google Chrome was not detected. Browse for chrome.exe.,Nie wykryto Google Chrome. Wskaż plik chrome.exe.,,,,,
-PRBROF,Preferences,Browser profile folder,Folder profilu przeglądarki,,,,,
-PRBRDF,Preferences,Use default,Użyj domyślnego,,,,,
-PRBRPH,Preferences,Leave blank to use Achimeld's private profile at %LOCALAPPDATA%\Achimeld\Browser\ChromeProfile. Choose an existing Chrome profile folder to reuse a signed-in session. Chrome ignores remote debugging on its default profile folder.,Pozostaw puste aby użyć prywatnego profilu Achimeld w %LOCALAPPDATA%\Achimeld\Browser\ChromeProfile. Wybierz istniejący folder profilu Chrome aby ponownie użyć zalogowanej sesji. Chrome ignoruje zdalne debugowanie w domyślnym folderze profilu.,,,,,
-PRBPIN,Validation,Enter a valid profile folder path.,Podaj prawidłową ścieżkę folderu profilu.,,,,,
-PRBRPT,Preferences,Remote debugging port,Zdalny port debugowania,,,,,
-PRBRDH,Preferences,Used when Achimeld starts Chrome to attach to. Chrome requires a non-default profile folder for this port to stay open.,Używany gdy Achimeld uruchamia Chrome w celu dołączenia. Chrome wymaga niedomyślnego folderu profilu aby ten port pozostał otwarty.,,,,,
-PRBFLT,Preferences,Chrome executable|chrome.exe|Executables (*.exe)|*.exe,Plik wykonywalny Chrome|chrome.exe|Pliki wykonywalne (*.exe)|*.exe,,,,,
-PRINVC,Validation,Enter a hexadecimal color,Wprowadź kolor szesnastkowy,请输入十六进制颜色,請輸入十六進位色彩,16進数の色を入力してください,16진수 색상을 입력하세요,Saisissez une couleur hexadécimale
-WNMINI,Window,Minimize,Minimalizuj,最小化,最小化,最小化,최소화,Réduire
-WNMAXI,Window,Maximize or restore,Maksymalizuj lub przywróć,最大化或还原,最大化或還原,最大化または元に戻す,최대화 또는 복원,Agrandir ou restaurer
-WNCLOS,Window,Close,Zamknij,关闭,關閉,閉じる,닫기,Fermer
-LNENGL,Language,English,English,English,English,English,English,English
-LNPOLI,Language,Polski,Polski,Polski,Polski,Polski,Polski,Polski
-LNZHSP,Language,简体中文,简体中文,简体中文,简体中文,简体中文,简体中文,简体中文
-LNZHTR,Language,繁體中文,繁體中文,繁體中文,繁體中文,繁體中文,繁體中文,繁體中文
-LNJAPA,Language,日本語,日本語,日本語,日本語,日本語,日本語,日本語
-LNKORE,Language,한국어,한국어,한국어,한국어,한국어,한국어,한국어
-LNFREN,Language,Français,Français,Français,Français,Français,Français,Français
-CdAchv,Card,Achievement,,,,,,
-CdStat,Card,Stat,,,,,,
-AtMiss,Atlas,Atlas unavailable,,,,,,
-StaleT,Steam,Snapshot read {0:g},,,,,,
-NoSnap,Steam,No complete Steam snapshot is available,,,,,,
-DfNone,Steam,No differences,,,,,,
-DfRemo,Steam,Remote only,,,,,,
-DfChan,Steam,Values differ,,,,,,
-SySafe,Sync,Execution is disabled because the coordinator cannot bind execution to this reviewed plan. Refresh support and an approval token are required.,,,,,,
-WkArea,Accessibility,Working editor,,,,,,
-WkAddA,Working,Add Achievement,,,,,,
-WkAddS,Working,Add Stat,,,,,,
-WkFull,Working,Open Full Size Icon,,,,,,
-WkDele,Working,Delete,,,,,,
-WkDupl,Working,Duplicate,,,,,,
-WkCopy,Working,Copy,,,,,,
-WkPste,Working,Paste,,,,,,
-WkUndo,Working,Undo,,,,,,
-WkRedo,Working,Redo,,,,,,
-WkFilt,Working,Filter achievements and stats,,,,,,
-WkNode,Working,Achievements,,,,,,
-WkClsT,Working,Close tab,,,,,,
-WkZmOt,Working,Zoom out,,,,,,
-WkZmRs,Working,Reset zoom and pan,,,,,,
-WkZmIn,Working,Zoom in,,,,,,
-WkZmMn,Working,−,,,,,,
-WkZmPc,Working,100%,,,,,,
-WkZmPl,Working,+,,,,,,
-IcPrev,Accessibility,Achievement icon preview,,,,,,
-StArea,Accessibility,Steam snapshot view,,,,,,
-StSnap,Steam,Last remote snapshot,,,,,,
-StList,Accessibility,Remote achievements and stats,,,,,,
-StName,Steam,Internal name,,,,,,
-StApiN,Steam,Steam API name,,,,,,
-StType,Steam,Type,,,,,,
-StStat,Steam,Status,,,,,,
-StDiff,Steam,Differences,,,,,,
-InGene,Inspector,General,,,,,,
-InName,Inspector,Internal name,,,,,,
-InApiN,Inspector,Steam API name,,,,,,
-InSetB,Inspector,Set by,,,,,,
-InHidd,Inspector,Hidden until unlocked,Ukryte do odblokowania,解锁前隐藏,解鎖前隱藏,解除するまで非表示,잠금 해제 전 숨김,Masqué jusqu’au déverrouillage
-HdAlow,Preferences,Allow hidden achievements,Zezwalaj na ukryte osiągnięcia,允许隐藏成就,允許隱藏成就,非表示の実績を許可,숨겨진 업적 허용,Autoriser les succès masqués
-HdHelp,Preferences,Steam-hidden achievements are disabled by default. Enable them in Preferences to hide achievements from players until unlocked.,Ukryte osiągnięcia Steam są domyślnie wyłączone. Włącz je w Preferencjach aby ukrywać osiągnięcia przed graczami do odblokowania.,Steam 隐藏成就默认禁用。可在偏好设置中启用以在解锁前对玩家隐藏成就。,Steam 隱藏成就預設停用。可在偏好設定中啟用以在解鎖前對玩家隱藏成就。,Steam の非表示実績は既定で無効です。設定で有効にすると解除するまでプレイヤーに表示されません。,Steam 숨겨진 업적은 기본적으로 비활성화됩니다. 환경설정에서 활성화하면 잠금 해제 전까지 플레이어에게 숨겨집니다。,Les succès Steam masqués sont désactivés par défaut. Activez-les dans les préférences pour les masquer aux joueurs jusqu’au déverrouillage.
-HdTitl,Achievements,Hidden Steam achievements,Ukryte osiągnięcia Steam,Steam 隐藏成就,Steam 隱藏成就,Steam の非表示実績,Steam 숨겨진 업적,Succès Steam masqués
-HdConf,Achievements,Are you sure? Hidden achievements will be hidden from players until unlocked.,Czy na pewno? Ukryte osiągnięcia będą niewidoczne dla graczy do odblokowania.,确定吗？隐藏成就将在解锁前对玩家隐藏。,確定嗎？隱藏成就將在解鎖前對玩家隱藏。,よろしいですか？非表示の実績は解除するまでプレイヤーに表示されません。,계속하시겠습니까? 숨겨진 업적은 잠금 해제 전까지 플레이어에게 숨겨집니다。,Voulez-vous continuer ? Les succès masqués seront cachés aux joueurs jusqu’au déverrouillage.
-HdWarn,Achievements,Project saved. At least one achievement is hidden on Steam until unlocked.,Projekt zapisany. Co najmniej jedno osiągnięcie jest ukryte na Steam do odblokowania.,项目已保存。至少有一个成就在 Steam 上解锁前隐藏。,專案已儲存。至少有一個成就在 Steam 上解鎖前隱藏。,プロジェクトを保存しました。少なくとも1つの実績が Steam で解除するまで非表示です。,프로젝트가 저장되었습니다. 하나 이상의 업적이 Steam에서 잠금 해제 전까지 숨겨집니다。,Projet enregistré. Au moins un succès est masqué sur Steam jusqu’au déverrouillage.
-HdYess,Achievements,Yes—allow it,Tak — zezwól,是—允许,是—允許,はい（許可）,예—허용,Oui — autoriser
-HdNope,Achievements,Cancel,Anuluj,取消,取消,キャンセル,취소,Annuler
-HdOkay,Achievements,OK,OK,确定,確定,OK,확인,OK
-InOrdr,Inspector,Display order,,,,,,
-InLoca,Inspector,Localization,,,,,,
-InDisp,Inspector,English display name,,,,,,
-InExpN,Inspector,Name exported to Steam,,,,,,
-InDesc,Inspector,English description,,,,,,
-InIcon,Inspector,Icon,,,,,,
-InTile,Inspector,Atlas art value,,,,,,
-InScal,Inspector,Scale (centered),,,,,,
-InStab,Inspector,Tile assignment remains stable when display order changes.,,,,,,
-InSync,Inspector,Sync,,,,,,
-InStat,Inspector,Current state,,,,,,
-InAppl,Inspector,Apply,,,,,,
-InCons,Inspector,Constraints,,,,,,
-InMini,Inspector,Minimum,,,,,,
-InMaxi,Inspector,Maximum,,,,,,
-InNoLm,Inspector,Leave minimum and maximum empty for no limits. Zero is an explicit limit.,Pozostaw minimum i maksimum puste aby nie ustawiać limitów. Zero jest konkretnym limitem.,,,,,
-InDefa,Inspector,Default value,,,,,,
-InIncr,Inspector,Increment only,,,,,,
-InMxCh,Inspector,Maximum change,,,,,,
-InAggr,Inspector,Aggregated,,,,,,
-InAvRw,Inspector,Average-rate window (seconds),,,,,,
-VlReqd,Validation,A value is required.,,,,,,
-VlAppI,Validation,Enter a nonzero Steam App ID.,,,,,,
-VlPosi,Validation,Enter a positive whole number.,,,,,,
-VlUnit,Validation,Enter a value from zero through one.,,,,,,
-VlHexx,Validation,Enter a hexadecimal color.,,,,,,
-VlNneg,Validation,Enter a nonnegative whole number.,,,,,,
-VlApiN,Validation,Enter a valid Steam API name.,,,,,,
-VlInte,Validation,Enter a whole number.,,,,,,
-VlRang,Validation,Minimum cannot exceed maximum.,,,,,,
-VlNumb,Validation,Enter a number or leave the field empty.,,,,,,
-VlPosN,Validation,Enter a positive number.,,,,,,
-VlScal,Validation,Enter a scale from 0.1 through 4.,,,,,,
-PsTitl,Project settings,Project Settings,,,,,,
-PsName,Project settings,Display name,,,,,,
-PsAppI,Project settings,Steam App ID,,,,,,
-PsAtla,Project settings,Atlas path,,,,,,
-PsCsvP,Project settings,Localization CSV path,,,,,,
-PsTile,Project settings,Tile width and height,,,,,,
-PsOffs,Project settings,Left and top offset,,,,,,
-PsSpac,Project settings,Horizontal and vertical spacing,,,,,,
-PsTrav,Project settings,Atlas traversal,,,,,,
-PsOutp,Project settings,Icon size,,,,,,
-PsUnac,Project settings,Unachieved icon mode,,,,,,
-PsOpac,Project settings,Unachieved opacity,,,,,,
-PsTint,Project settings,Unachieved tint,,,,,,
-PsLoca,Project settings,Edit project localization,,,,,,
-LcTitl,Localization,Project Localization,,,,,,
-LcIddd,Localization,ID,,,,,,
-LcCont,Localization,Context,,,,,,
-SyTitl,Sync,Synchronization,Synchronizacja,,,,,
-SyOper,Sync,Planned operations and exclusions,,,,,,
-SyIncl,Sync,Included,,,,,,
-SyKind,Sync,Operation,,,,,,
-SyTarg,Sync,Target,,,,,,
-SyDiff,Sync,Differences,,,,,,
-SyClos,Sync,Close,,,,,,
-SyExec,Sync,Execute reviewed plan,,,,,,
-OpFail,Operation,The operation could not be completed.,,,,,,
-OpTitl,Operation,Achimeld operation,,,,,,
-NewPro,Project,Untitled Project,,,,,,
-FiFilt,File,Achimeld projects|*.achv,,,,,,
-DiProm,File,Discard unsaved changes?,,,,,,
-DiTitl,File,Unsaved changes,,,,,,
-SvProm,File,Do you want to save your changes before exiting?,Czy chcesz zapisać zmiany przed zakończeniem?,是否要在退出前保存更改？,是否要在結束前儲存變更？,終了する前に変更を保存しますか？,종료하기 전에 변경 내용을 저장하시겠습니까?,Voulez-vous enregistrer vos modifications avant de quitter ?
-SvDisc,File,Don't Save,Nie zapisuj,不保存,不儲存,保存しない,저장 안 함,Ne pas enregistrer
-AtTitl,Atlas explorer,Import Atlases,Importuj atlasy,导入图集,匯入圖集,アトラスをインポート,아틀라스 가져오기,Importer des atlas
-AtNeed,Atlas explorer,Create or open a project first.,Najpierw utwórz lub otwórz projekt.,请先创建或打开项目。,請先建立或開啟專案。,先にプロジェクトを作成または開いてください。,먼저 프로젝트를 만들거나 여세요.,Créez ou ouvrez d’abord un projet.
-AtAddA,Atlas explorer,Add atlas,,,,,,
-ExTitl,Export,Export Achievement Icons,Eksport ikon osiągnięć,,,,,
-ExPath,Export,Destination folder,Folder docelowy,,,,,
-ExForm,Export,Image format,Format obrazu,,,,,
-ExWidt,Export,Width (pixels),Szerokość (piksele),,,,,
-ExHeig,Export,Height (pixels),Wysokość (piksele),,,,,
-ExHint,Export,Exports color and grayscale icons for every renderable achievement. Matching filenames are overwritten. JPEG uses a black background for transparency.,Eksportuje kolorowe i szare ikony każdego możliwego do wyrenderowania osiągnięcia. Pliki o tych samych nazwach są nadpisywane. JPEG zastępuje przezroczystość czarnym tłem.,,,,,
-ExVali,Export,Choose an absolute destination folder and whole dimensions from 1 to 4096 pixels.,Wybierz bezwzględną ścieżkę folderu i całkowite wymiary od 1 do 4096 pikseli.,,,,,
-ExCanc,Export,Cancel,Anuluj,,,,,
-ExGoDo,Export,Export,Eksportuj,,,,,
-ExNeed,Export,Create or open a project first.,Najpierw utwórz lub otwórz projekt.,,,,,
-ExNone,Export,The project has no achievements to export.,Projekt nie ma osiągnięć do wyeksportowania.,,,,,
-ExDone,Export,Exported {0} achievements ({1} images).,Wyeksportowano {0} osiągnięć ({1} obrazów).,,,,,
-ExSome,Export,Exported {0} achievements. {1} failed.,Wyeksportowano {0} osiągnięć. Niepowodzenie: {1}.,,,,,
-AtAddI,Atlas explorer,Add image,,,,,,
-AtBrow,Atlas explorer,Browse,,,,,,
-AtRemo,Atlas explorer,Remove,,,,,,
-AtName,Atlas explorer,Display name,,,,,,
-AtPath,Atlas explorer,Image path,,,,,,
-AtGrid,Atlas explorer,Grid generator,,,,,,
-AtCols,Atlas explorer,Columns,,,,,,
-AtRows,Atlas explorer,Rows,,,,,,
-AtSqWr,Atlas explorer,The current grid does not produce square tiles.,,,,,,
-AtAtla,Atlas explorer,Atlas,,,,,,
-AtImag,Atlas explorer,Standalone image,,,,,,
-AtNoIm,Atlas explorer,No standalone images are referenced. Add one in Import Atlases.,,,,,,
-InISrc,Inspector,Icon source,,,,,,
-LyType,Layers,Layer type,Typ warstwy,图层类型,圖層類型,レイヤーの種類,레이어 유형,Type de calque
-InAtls,Inspector,Atlas,,,,,,
-InStIm,Inspector,Standalone image,,,,,,
-InStAr,Inspector,Imported Steam artwork,,,,,,
-InText,Inspector,Text,,,,,,
-InSoli,Inspector,Solid,,,,,,
-InGrad,Inspector,Gradient,,,,,,
-InBgCl,Inspector,Background color,,,,,,
-InLays,Inspector,Layers and folders,Warstwy i foldery,图层和文件夹,圖層與資料夾,レイヤーとフォルダー,레이어와 폴더,Calques et dossiers
-InLyHt,Inspector,Layers are drawn from bottom to top. Drag to reorder. Atlas tiles keep their transparency.,,,,,,
-InAdAt,Inspector,Add atlas layer,,,,,,
-InAdIm,Inspector,Add image layer,,,,,,
-InAdTx,Inspector,Add text layer,,,,,,
-InAdSo,Inspector,Add solid layer,,,,,,
-InAdGr,Inspector,Add gradient layer,,,,,,
-InLyBk,Inspector,Send backward,,,,,,
-InLyFw,Inspector,Bring forward,,,,,,
-InLyRm,Inspector,Remove layer,,,,,,
-InLyVs,Inspector,Visible,,,,,,
-InTxct,Inspector,Text,,,,,,
-InFont,Inspector,Font,,,,,,
-InFSiz,Inspector,Font size,,,,,,
-InColr,Inspector,Color,,,,,,
-InOutl,Inspector,Outline,,,,,,
-InOuCl,Inspector,Outline color,,,,,,
-InOuWd,Inspector,Outline width,,,,,,
-InAlgn,Inspector,Alignment,,,,,,
-InAlCn,Inspector,Center,,,,,,
-InAlTL,Inspector,Top left,,,,,,
-InAlTR,Inspector,Top right,,,,,,
-InAlBL,Inspector,Bottom left,,,,,,
-InAlBR,Inspector,Bottom right,,,,,,
-InBlnd,Inspector,Blend mode,,,,,,
-InBlNo,Inspector,Normal,,,,,,
-InBlMu,Inspector,Multiply,,,,,,
-InBlSc,Inspector,Screen,,,,,,
-InBlOv,Inspector,Overlay,,,,,,
-InBlDk,Inspector,Darken,,,,,,
-InBlLt,Inspector,Lighten,,,,,,
-InBlAd,Inspector,Add,,,,,,
-InBlDf,Inspector,Difference,,,,,,
-InGrKd,Inspector,Gradient type,,,,,,
-InGrAn,Inspector,Angle,,,,,,
-InGrSt,Inspector,Gradient stops,,,,,,
-InAdSt,Inspector,Add stop,,,,,,
-InRmSt,Inspector,Remove stop,,,,,,
-InOffs,Inspector,Offset,,,,,,
-InLinr,Inspector,Linear,,,,,,
-InRadi,Inspector,Radial,,,,,,
-CpSvSq,Color picker,Saturation and brightness,,,,,,
-CpHuee,Color picker,Hue,,,,,,
-CpRedd,Color picker,Red,,,,,,
-CpGren,Color picker,Green,,,,,,
-CpBlue,Color picker,Blue,,,,,,
-CpAlph,Color picker,Alpha,,,,,,
-CpOpen,Color picker,Open color picker,,,,,,
-CpHexx,Color picker,Hex color,,,,,,
-ImFilt,File,PNG JPEG and Photoshop images|*.png;*.jpg;*.jpeg;*.psd;*.psb,,,,,,
-InStId,Inspector,Steam achievement ID,,,,,,
-InNoId,Inspector,Assigned by Steam after synchronization,,,,,,
-InNone,Inspector,None,,,,,,
-InProg,Inspector,Progress stat,,,,,,
-InUnlk,Inspector,Unlock value,,,,,,
-InUTyp,Inspector,Unlock value type,Typ wartości odblokowania,,,,,
-InInte,Inspector,Integer,Całkowita,,,,,
-InFloa,Inspector,Float,Zmiennoprzecinkowa,,,,,
-InUFol,Inspector,Follows the progress stat type.,Zgodny z typem statystyki postępu.,,,,,
-InLock,Inspector,Unachieved icon (image library),,,,,,
-InAuto,Inspector,Generate from achieved icon,,,,,,
-InAchI,Inspector,Achieved icon,,,,,,
-SyStrt,Sync,Sign in to Steamworks then read the current configuration to review your changes.,,,,,,
-SyLogn,Sync,Sign in to Steamworks in the Achimeld Chrome window. Synchronization will continue automatically.,Zaloguj się do Steamworks w oknie Chrome Achimeld. Synchronizacja będzie kontynuowana automatycznie.,请在 Achimeld 的 Chrome 窗口中登录 Steamworks。同步将自动继续。,請在 Achimeld 的 Chrome 視窗中登入 Steamworks。同步將自動繼續。,Achimeld の Chrome ウィンドウで Steamworks にサインインしてください。同期は自動的に続行されます。,Achimeld Chrome 창에서 Steamworks에 로그인하세요. 동기화가 자동으로 계속됩니다.,Connectez-vous à Steamworks dans la fenêtre Chrome Achimeld. La synchronisation reprendra automatiquement.
-SyRedy,Sync,Select changes to import or export. Import updates this project. Export saves and verifies the Steamworks draft. Publication is a separate step in Steamworks.,,,,,,
-SyPhLo,Sync,1. Sign in to Steamworks,1. Zaloguj się do Steamworks,,,,,
-SyPhIm,Sync,2. Import achievements and stats,2. Importuj osiągnięcia i statystyki,,,,,
-SyPhRv,Sync,Review imports and exports,Przejrzyj import i eksport,,,,,
-SyPhEx,Sync,3. Export Achimeld contents,3. Eksportuj zawartość Achimeld,,,,,
-SyPhDn,Sync,Export completed,Eksport zakończony,,,,,
-SyPhHt,Sync,Synchronize reads Steam and exports your project automatically. Sign in only when prompted. Imports are available separately.,Synchronizacja automatycznie odczytuje Steam i eksportuje projekt. Zaloguj się tylko na żądanie. Import jest dostępny osobno.,同步会自动读取 Steam 并导出项目。仅在提示时登录。导入可单独执行。,同步會自動讀取 Steam 並匯出專案。僅在提示時登入。匯入可單獨執行。,同期は Steam を読み取りプロジェクトを自動的にエクスポートします。求められた場合のみサインインしてください。インポートは別途行えます。,동기화는 Steam을 읽고 프로젝트를 자동으로 내보냅니다. 요청할 때만 로그인하세요. 가져오기는 별도로 사용할 수 있습니다.,La synchronisation lit Steam et exporte automatiquement votre projet. Connectez-vous uniquement lorsque demandé. Les imports sont disponibles séparément.
-SyImpt,Sync,Import selected,Importuj wybrane,,,,,
-SyExpt,Sync,Export selected,Eksportuj wybrane,,,,,
-SyImDn,Sync,Selected achievements and stats were imported. Read Steam again to review exports or stop here.,Wybrane osiągnięcia i statystyki zostały zaimportowane. Odczytaj Steam ponownie aby przejrzeć eksport lub zakończ tutaj.,,,,,
-SyDone,Sync,The selected changes were saved and verified. Publish the draft in Steamworks to make it live.,,,,,,
-SySign,Sync,Sign in to Steamworks,,,,,,
-SyConn,Sync,Opening Steamworks in Chrome. Please wait…,Otwieranie Steamworks w Chrome. Proszę czekać…,,,,,
-SyDeny,Sync,Steamworks denied access. Check your account permissions in Chrome then try signing in again.,Steamworks odmówił dostępu. Sprawdź uprawnienia konta w Chrome i spróbuj zalogować się ponownie.,,,,,
-SyUnkn,Sync,Could not confirm the Steamworks sign-in page. Check the page in Chrome then try signing in again.,Nie udało się rozpoznać strony logowania Steamworks. Sprawdź stronę w Chrome i spróbuj zalogować się ponownie.,,,,,
-SyRead,Sync,Read Steam,,,,,,
-SyBrTg,Sync,Browser,Przeglądarka,,,,,
-SyBrMg,Sync,Managed Chrome (launch),Zarządzana przeglądarka Chrome (uruchom),,,,,
-SyBrLb,Sync,Chrome on port {0} ({1}),Chrome na porcie {0} ({1}),,,,,
-SyBrSc,Sync,Scan,Skanuj,,,,,
-SyBrSt,Sync,Start Chrome with debugging,Uruchom Chrome z debugowaniem,,,,,
-SyBrNn,Sync,No running Chrome with remote debugging was found.,Nie znaleziono uruchomionej przeglądarki Chrome ze zdalnym debugowaniem.,,,,,
-LyHint,Layers,Drag to reorder · Drop artwork or PSD layers · Ctrl+C / Ctrl+V / Ctrl+D · Frontmost layer at the top,Przeciągnij aby zmienić kolejność · Upuść obraz lub warstwy PSD · Ctrl+C / Ctrl+V / Ctrl+D · Najwyższa warstwa na górze,,,,,
-IcDrop,Layers,Drop artwork here to import general images or icon layers,Upuść tutaj obraz aby zaimportować obraz ogólny lub warstwy ikony,,,,,
-LyProp,Layers,Layer properties,Właściwości warstwy,,,,,
-LyDrag,Layers,Drag this tab to detach the Layers window,Przeciągnij kartę aby odłączyć okno warstw,,,,,
-LyFlot,Layers,Detach,Odłącz,,,,,
-LyDock,Layers,Dock,Zadokuj,,,,,
-LyAddd,Layers,Create layer,Utwórz warstwę,,,,,
-LySize,Layers,Resize Layers window,Zmień rozmiar okna warstw,,,,,
-InAcAt,Inspector,Achievement atlas,Atlas osiągnięcia,,,,,
-InGnIm,Inspector,General image,Obraz ogólny,,,,,
-InGnHt,Inspector,Layers can use this image instead of an atlas tile.,Warstwy mogą użyć tego obrazu zamiast kafelka atlasu.,,,,,
-InGnMs,Validation,The referenced general image ID does not exist.,Obraz ogólny o wskazanym ID nie istnieje.,,,,,
-InGnAt,Inspector,General atlas,Atlas ogólny,,,,,
-InGnAH,Inspector,Layers linked to the general atlas follow its atlas and tile index.,Warstwy połączone z atlasem ogólnym używają wskazanego atlasu i indeksu kafelka.,,,,,
-InLkGn,Layers,Link to general atlas,Połącz z atlasem ogólnym,,,,,
-InGnAM,Validation,Choose a general atlas on the achievement.,Wybierz atlas ogólny przy osiągnięciu.,,,,,
-InAdGn,Inspector,Add general image layer,Dodaj warstwę obrazu ogólnego,,,,,
-InLkVl,Layers,Link tile to unlock value,Połącz kafelek z wartością odblokowania,,,,,
-InLkNu,Layers,Link to unlock value,Połącz z wartością odblokowania,,,,,
-InOuPl,Layers,Outline placement,Położenie obrysu,,,,,
-InOuIn,Layers,Inward,Do wewnątrz,,,,,
-InOuCn,Layers,Centered,Wyśrodkowany,,,,,
-InOuOt,Layers,Outward,Na zewnątrz,,,,,
-LyCopy,Layers,Copy style,Kopiuj styl,,,,,
-LyPast,Layers,Paste style,Wklej styl,,,,,
-InTran,Layers,Transform,Przekształcenie,,,,,
-InOpac,Layers,Opacity,Przezroczystość,,,,,
-LyPerc,Layers,%,%,,,,,
-InOffX,Layers,Horizontal offset (px),Przesunięcie poziome (px),,,,,
-InOffY,Layers,Vertical offset (px),Przesunięcie pionowe (px),,,,,
-LyPick,Layers,Choose a tile from the atlas,Wybierz kafelek z atlasu,,,,,
-LyDelL,Layers,Delete layer,Usuń warstwę,,,,,
-LyClon,Layers,Clone layer,Klonuj warstwę,,,,,
-FxList,Layers,Effects,Efekty,,,,,
-FxFold,Layers,Expand or collapse effects,Rozwiń lub zwiń efekty,,,,,
-FxAddd,Layers,Add effect,Dodaj efekt,,,,,
-FxDele,Layers,Delete effect,Usuń efekt,,,,,
-FxPlus,Layers,fx+,fx+,,,,,
-FxVisi,Layers,Effect visible,Efekt widoczny,,,,,
-FxColO,Layers,Color overlay,Nakładka koloru,,,,,
-FxOutl,Layers,Outline,Obrys,,,,,
-FxShad,Layers,Shadow,Cień,,,,,
-FxColr,Layers,Effect color,Kolor efektu,,,,,
-FxOffX,Layers,Horizontal offset,Przesunięcie poziome,,,,,
-FxOffY,Layers,Vertical offset,Przesunięcie pionowe,,,,,
-FxBlur,Layers,Blur,Rozmycie,,,,,
-FxAfOt,Layers,Affect outline,Wpływ na obrys,,,,,
-FxCutO,Layers,Cutout (px),Wycięcie (px),,,,,
-FxCutH,Layers,Expand the original alpha by this width before inversion to leave a gap before the inner light.,Rozszerz oryginalny kanał alfa o tę szerokość przed odwróceniem aby zostawić odstęp przed światłem wewnętrznym.,,,,,
-TpTitl,Atlas tile picker,Choose atlas tile,Wybierz kafelek atlasu,,,,,
-TpHint,Atlas tile picker,"Click a tile to select it. Double-click to accept.","Kliknij kafelek i wybierz go. Kliknij dwukrotnie i zatwierdź.",,,,,
-TpSele,Atlas tile picker,Selected tile: {0},Wybrany kafelek: {0},,,,,
-TpLoad,Atlas tile picker,Loading atlas…,Wczytywanie atlasu…,,,,,
-TpFail,Atlas tile picker,The atlas could not be loaded.,Nie udało się wczytać atlasu.,,,,,
-TpUseT,Atlas tile picker,Use tile,Użyj kafelka,,,,,
-WkStat,Working,Stats,Statystyki,,,,,
-InATyp,Inspector,Achievement type,Typ osiągnięcia,,,,,
-InManu,Inspector,Manual,Ręczne,,,,,
-InTied,Inspector,Tied to stat,Powiązane ze statystyką,,,,,
-CdTied,Card,Tied to {0},Powiązane z {0},,,,,
-
-TLTerm,Menu,Terminal,Terminal,终端,終端,ターミナル,터미널,Terminal
-TrCopy,Terminal,Copy all,Kopiuj wszystko,全部复制,全部複製,すべてコピー,모두 복사,Tout copier
-TrCler,Terminal,Clear,Wyczyść,,,,,
-AcBlck,Actions,This action is unavailable. Finish the current operation or select an item first.,Ta czynność jest niedostępna. Zakończ bieżącą operację lub wybierz element.,,,,,
-AcProj,Actions,Create or open a project before using this action.,Utwórz lub otwórz projekt przed użyciem tej czynności.,,,,,
-AcCapt,Actions,Could not capture the mouse for dragging. Release the mouse buttons and try again.,Nie udało się przechwycić myszy. Zwolnij przyciski i spróbuj ponownie.,,,,,
-
-FxInLt,Layers,Inner light,Światło wewnętrzne,,,,,
-FxUseB,Layers,Enable box blur,Włącz rozmycie pudełkowe,,,,,
-FxBCol,Layers,Box blur color,Kolor rozmycia,,,,,
-FxBBln,Layers,Box blur blending,Mieszanie rozmycia,,,,,
-FxBOpa,Layers,Box blur opacity (%),Krycie rozmycia (%),,,,,
-
-InSdfV,Layers,SDF vignette,Winieta SDF,,,,,
-InAdSv,Layers,Add SDF vignette,Dodaj winietę SDF,,,,,
-InSvRo,Layers,Roundness (0–1),Zaokrąglenie (0–1),,,,,
-InSvIn,Layers,Inset (0–0.95),Wcięcie (0–0.95),,,,,
-InSvSo,Layers,Softness (0–1),Miękkość (0–1),,,,,
-
-FxBoxB,Layers,Box blur,Rozmycie pudełkowe,,,,,
-InShap,Layers,Shape,Kształt,,,,,
-InAdSh,Layers,Add shape,Dodaj kształt,,,,,
-ShRect,Layers,Rectangle,Prostokąt,,,,,
-ShSphr,Layers,Sphere,Sfera,,,,,
-ShNgon,Layers,N-gon (regular polygon),N-kąt (wielokąt foremny),,,,,
-ShStar,Layers,Star,Gwiazda,,,,,
-ShVcnt,Layers,Sides / star points (3–64),Boki / ramiona gwiazdy (3–64),,,,,
-ShORnd,Layers,Outer corner rounding (0–1),Zaokrąglenie zewnętrznych wierzchołków (0–1),,,,,
-ShIRad,Layers,Inner radius (0.01–1),Promień wewnętrzny (0.01–1),,,,,
-ShIRnd,Layers,Inner corner rounding (0–1),Zaokrąglenie wewnętrznych wierzchołków (0–1),,,,,
-ShHint,Layers,Lower inner radius makes deep concave valleys; raise it toward 1 for a convex outline. Rounding 0 keeps sharp corners; 1 makes them fully rounded.,Mniejszy promień wewnętrzny tworzy głębokie wklęsłe wierzchołki; zbliż go do 1 aby uzyskać wypukły obrys. Zaokrąglenie 0 zachowuje ostre wierzchołki; 1 w pełni je zaokrągla.,,,,,
-ShSclX,Layers,X scale,Skala X,,,,,
-ShSclY,Layers,Y scale,Skala Y,,,,,
-ShRotn,Layers,Rotation (degrees),Obrót (stopnie),,,,,
-
-SyAuth,Sync,Signed in to Steamworks.,Zalogowano do Steamworks.,已登录 Steamworks。,已登入 Steamworks。,Steamworks にサインインしました。,Steamworks에 로그인했습니다.,Connecté à Steamworks.
-SyCncl,Sync,Synchronization cancelled.,Synchronizacja anulowana.,同步已取消。,同步已取消。,同期をキャンセルしました。,동기화가 취소되었습니다.,Synchronisation annulée.
-SyFail,Sync,Synchronization stopped because of an error,Synchronizacja zatrzymana z powodu błędu,,,,,
-SyStBt,Sync,Stop synchronization,Zatrzymaj synchronizację,,,,,
-SyStop,Sync,Stopping synchronization. Any Steam save already in progress will finish verification first.,Zatrzymywanie synchronizacji. Trwający zapis Steam najpierw zakończy weryfikację.,,,,,
-GnImgs,Image editor,General images,Obrazy ogólne,通用图像,通用影像,共通画像,공용 이미지,Images générales
-GnImpt,Image editor,Import,Importuj,导入,匯入,インポート,가져오기,Importer
-GnHint,Image editor,"Copy an image or atlas tile from icon layers, then paste it here. IDs stay fixed when images are removed.",Skopiuj obraz lub kafelek atlasu z warstw ikony i wklej go tutaj. Usunięcie obrazów nie zmienia ich identyfikatorów.,从图标图层复制图像或图集单元，然后粘贴到此处。移除图像时，编号保持不变。,從圖示圖層複製影像或圖集區塊，再貼到此處。移除影像時，編號保持不變。,アイコンのレイヤーから画像やアトラスタイルをコピーし、ここに貼り付けます。画像を削除しても ID は変わりません。,아이콘 레이어의 이미지나 아틀라스 타일을 복사해 여기에 붙여넣으세요. 이미지를 제거해도 ID는 바뀌지 않습니다.,"Copiez une image ou une tuile d’atlas depuis les calques de l’icône, puis collez-la ici. Les identifiants restent fixes après la suppression d’images."
-GnTile,Image editor,Add atlas tile,Dodaj kafelek atlasu,添加图集单元,新增圖集區塊,アトラスタイルを追加,아틀라스 타일 추가,Ajouter une tuile d’atlas
-GnUseI,Image editor,Use selected image in icon,Użyj wybranego obrazu w ikonie,在图标中使用所选图像,在圖示中使用所選影像,選択した画像をアイコンに使用,선택한 이미지를 아이콘에 사용,Utiliser l’image sélectionnée dans l’icône
-GnName,Image editor,General image {0},Obraz ogólny {0},通用图像 {0},通用影像 {0},共通画像 {0},공용 이미지 {0},Image générale {0}
-GnIdTx,Image editor,ID {0},ID {0},编号 {0},編號 {0},ID {0},ID {0},ID {0}
-GnAtTl,Image editor,Atlas tile #{0},Kafelek atlasu #{0},图集单元 #{0},圖集區塊 #{0},アトラスタイル #{0},아틀라스 타일 #{0},Tuile d’atlas n° {0}
-LyCpLy,Image editor,Copy layer,Kopiuj warstwę,复制图层,複製圖層,レイヤーをコピー,레이어 복사,Copier le calque
-LyPsLy,Image editor,Paste layer or folder,Wklej warstwę lub folder,粘贴图层或文件夹,貼上圖層或資料夾,レイヤーまたはフォルダーを貼り付け,레이어 또는 폴더 붙여넣기,Coller un calque ou un dossier
-LyRepD,Image editor,Replace from disk...,Zastąp plikiem z dysku...,从磁盘替换...,從磁碟替換...,ディスクから置換...,디스크에서 교체...,Remplacer depuis le disque...
-LyRepA,Image editor,Replace from atlas...,Zastąp kafelkiem atlasu...,从图集替换...,從圖集替換...,アトラスから置換...,아틀라스에서 교체...,Remplacer depuis un atlas...
-LyCrFd,Image editor,Create folder,Utwórz folder,创建文件夹,建立資料夾,フォルダーを作成,폴더 만들기,Créer un dossier
-LyFdCf,Image editor,Folder contents and mask...,Zawartość i maska folderu...,文件夹内容和蒙版...,資料夾內容與遮色片...,フォルダーの内容とマスク...,폴더 내용과 마스크...,Contenu et masque du dossier...
-LyPsMk,Image editor,Paste image as folder mask,Wklej obraz jako maskę folderu,将图像粘贴为文件夹蒙版,將影像貼為資料夾遮色片,画像をフォルダーのマスクとして貼り付け,이미지를 폴더 마스크로 붙여넣기,Coller l’image comme masque du dossier
-LyMkHt,Image editor,Masks use image transparency. Add a General image layer to use it as a mask.,"Maski korzystają z przezroczystości obrazu. Dodaj warstwę obrazu ogólnego, aby użyć jej jako maski.",蒙版使用图像透明度。添加通用图像图层以将其用作蒙版。,遮色片使用影像透明度。新增通用影像圖層以將其作為遮色片。,マスクには画像の透明度を使用します。共通画像レイヤーを追加すると、マスクとして使用できます。,마스크는 이미지의 투명도를 사용합니다. 공용 이미지 레이어를 추가해 마스크로 사용하세요.,Les masques utilisent la transparence des images. Ajoutez un calque d’image générale pour l’utiliser comme masque.
-FxBlHt,Image editor,Normal applies the chosen color. Multiply darkens; Screen lightens. Opacity controls the strength.,"Tryb normalny stosuje wybrany kolor. Mnożenie przyciemnia, a ekran rozjaśnia. Krycie określa siłę efektu.",正常模式应用所选颜色。正片叠底使图像变暗，滤色使图像变亮。不透明度控制效果强度。,一般模式套用所選顏色。色彩增值使影像變暗，濾色使影像變亮。不透明度控制效果強度。,通常は選択した色を適用します。乗算は暗く、スクリーンは明るくします。不透明度で効果の強さを調整します。,"일반은 선택한 색상을 적용합니다. 곱하기는 어둡게, 스크린은 밝게 만듭니다. 불투명도로 강도를 조절합니다.",Normal applique la couleur choisie. Produit assombrit et Écran éclaircit. L’opacité règle l’intensité.
-ShShap,Image editor,Shape,Kształt,形状,形狀,形状,도형,Forme
-FdName,Folders,Folder,Folder,文件夹,資料夾,フォルダー,폴더,Dossier
-FdProp,Folders,Folder properties,Właściwości folderu,文件夹属性,資料夾屬性,フォルダーのプロパティ,폴더 속성,Propriétés du dossier
-FdCopy,Folders,Copy folder,Kopiuj folder,复制文件夹,複製資料夾,フォルダーをコピー,폴더 복사,Copier le dossier
-FdClon,Folders,Clone folder,Klonuj folder,克隆文件夹,複製資料夾,フォルダーを複製,폴더 복제,Dupliquer le dossier
-FdDele,Folders,Delete folder,Usuń folder,删除文件夹,刪除資料夾,フォルダーを削除,폴더 삭제,Supprimer le dossier
-FdMask,Folders,Folder mask,Maska folderu,,,,,
-FdEdit,Folders,Edit mask,Edytuj maskę,,,,,
-FdOpen,Folders,Expand folder,Rozwiń folder,展开文件夹,展開資料夾,フォルダーを展開,폴더 펼치기,Développer le dossier
-FdClos,Folders,Collapse folder,Zwiń folder,折叠文件夹,收合資料夾,フォルダーを折りたたむ,폴더 접기,Réduire le dossier
-LyMask,Layers,Mask,Maska,,,,,
-LyScal,Layers,Scale,Skala,,,,,
-LyOffX,Layers,X (px),X (px),,,,,
-LyOffY,Layers,Y (px),Y (px),,,,,
-AdEdit,Adjustments,Edit adjustment,Edytuj dopasowanie,,,,,
-AdList,Adjustments,Adjustment layers,Warstwy dopasowania,,,,,
-AdCrvs,Adjustments,Curves,Krzywe,,,,,
-AdCont,Adjustments,Brightness / contrast,Jasność / kontrast,,,,,
-AdHueS,Adjustments,Hue / saturation,Barwa / nasycenie,,,,,
-AdSlct,Adjustments,Selective color,Kolor selektywny,,,,,
-AdGrad,Adjustments,Gradient overlay,Nakładka gradientu,,,,,
-FxGrad,Layer effects,Gradient overlay,Nakładka gradientowa,,,,,
-WkSoId,Canvas,Sort by ID,Sortuj według ID,,,,,
-WkSoSt,Canvas,Sort by icon style,Sortuj według stylu ikony,,,,,
-WkSoAc,Canvas,Sort by stat activation,Sortuj według aktywacji statystyki,,,,,
-PRGENE,Preferences,General,Ogólne,常规,一般,一般,일반,Général
-PRTYPO,Preferences,Typography and controls,Typografia i kontrolki,字体与控件,字型與控制項,文字とコントロール,글꼴 및 컨트롤,Typographie et contrôles
-PRSAMP,Preferences,Sample,Przykład,示例,範例,サンプル,예시,Exemple
-PRADVA,Preferences,Advanced settings,Ustawienia zaawansowane,高级设置,進階設定,詳細設定,고급 설정,Paramètres avancés
-PRERRS,Validation,Needs attention,Wymaga uwagi,需要处理,需要處理,要確認,확인 필요,À vérifier
-PRPROH,Preferences,Leave blank to use Achimeld’s private profile. A custom folder can reuse a signed-in session.,Pozostaw puste aby użyć prywatnego profilu Achimeld. Własny folder pozwala użyć zalogowanej sesji.,,,,,
-PRVPAL,Validation,Check the colors in Appearance before saving.,Sprawdź kolory w sekcji Wygląd przed zapisaniem.,,,,,
-PRVBRO,Validation,Check the paths in Browser before saving.,Sprawdź ścieżki w sekcji Przeglądarka przed zapisaniem.,,,,,
-PRVBTH,Validation,Check Appearance colors and Browser paths before saving.,Sprawdź kolory w sekcji Wygląd i ścieżki w sekcji Przeglądarka przed zapisaniem.,,,,,
-WkNeLn,Canvas,Start each icon style on a new line,Każdy styl ikony w nowym wierszu,,,,,
-WkRows,Canvas,Order by rows (X first),Układaj wierszami (najpierw X),,,,,
-WkCols,Canvas,Order by columns (Y first),Układaj kolumnami (najpierw Y),,,,,
-WkAllI,Canvas,Order all icons,Układaj wszystkie ikony,,,,,
-WkSelI,Canvas,Order selected icons only,Układaj tylko wybrane ikony,,,,,
-WkAcCl,Canvas,Achievements per column,Osiągnięcia w kolumnie,,,,,
-WkStCl,Canvas,Stats per column,Statystyki w kolumnie,,,,,
-InStyl,Inspector,Select icon style,Wybierz styl ikony,,,,,
-GnStyl,Inspector,Style,Styl,,,,,
-InStHt,Inspector,Choose an existing icon style,Wybierz istniejący styl ikony,,,,,
-GnNoSt,Image editor,No style,Brak stylu,无样式,無樣式,スタイルなし,스타일 없음,Aucun style
-GnBnLb,Image editor,Icon Banner :,Baner ikony :,,,,,
-GnAtIm,Image editor,Import from atlas,Importuj z atlasu,,,,,
-PRSPAC,Preferences,Inspector spacing (px),Odstępy inspektora (px),,,,,
-
-AdUsmk,Layers,Unsharp Mask,Maska wyostrzająca,反锐化蒙版,不銳利遮罩,アンシャープマスク,언샵 마스크,Masque flou
-UsAmnt,Layers,Amount (%),Siła (%),数量 (%),總量 (%),適用量 (%),양 (%),Gain (%)
-UsRads,Layers,Radius (pixels),Promień (piksele),半径 (像素),半徑 (像素),半径 (ピクセル),반경 (픽셀),Rayon (pixels)
-UsThrs,Layers,Threshold (levels),Próg (poziomy),阈值 (色阶),臨界值 (色階),しきい値 (レベル),한계값 (레벨),Seuil (niveaux)
-
-LyArts,Layers,Art layers,Warstwy graficzne,美术图层,美術圖層,アートレイヤー,아트 레이어,Calques artistiques
-
-LyLink,Layers,Link to,Połącz z,,,,,
-LyUnHt,Layers,Open General settings and edit the unlock value,Otwórz ustawienia ogólne i edytuj wartość odblokowania,,,,,
-LyAnVl,Validation,Angle must be from -360 through 360.,Kąt musi być od -360 do 360.,,,,,
-GrNgon,Layers,N-gon,Wielokąt,多边形,多邊形,多角形,다각형,Polygone
-GrStar,Layers,Star,Gwiazda,星形,星形,星形,별,Étoile
-
-"SecLim","Security","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts."
-"SecDev","Security","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active."
-"SecClr","Security","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile"
-"SecOff","Security","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced."
-"SecRun","Security","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first."
-"SecBrw","Security","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled."
-"SecTit","Security","Security","Security","Security","Security","Security","Security","Security"
-"SecExp","Security","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report"
-"SecErr","Security","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed."
-
-"Abt000","About","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool"
-"Abt001","About","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation."
-"Abt002","About","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation."
-"Abt003","About","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations."
-"Abt004","About","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality."
-
-"Aa0001","Interface","fx","fx","fx","fx","fx","fx","fx"
-"Aa0002","Interface","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color"
-"Aa0003","Interface","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop"
-"Aa0004","Interface","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop"
-"Aa0005","Interface","ID","ID","ID","ID","ID","ID","ID"
-"Aa0006","Interface","Close","Close","Close","Close","Close","Close","Close"
-
-GnBank,Image editor,Choose from Art Data Bank,,,,,,
-GnImportImages,Image editor,Import images,,,,,,
-GnProjectStyles,Image editor,Project styles,,,,,,
-GnDeleteStyle,Image editor,Delete project style,,,,,,
-GnGlobalStyle,Image editor,Import global style into project,,,,,,
-GnNoGlobal,Image editor,No global styles available,,,,,,
-GnSaveStyle,Image editor,Save current icon as a project style,,,,,,
-GnSaveProjectStyle,Image editor,Save project style,,,,,,
-GnClient,Image editor,Game client,,,,,,
-GnServer,Image editor,Game server,,,,,,
-GnOfficial,Image editor,Official game server,,,,,,
-GnSelectSource,Image editor,Choose general image,,,,,,
-GnImportLayer,Image editor,Layer source / folder mask,,,,,,
-LpTitle,Layer properties,Layer properties,,,,,,
-LpType,Layer properties,Layer type,,,,,,
-LpName,Layer properties,Name,Nazwa,名称,名稱,名前,이름,Nom
-TxExport,Achievement localization,Export achievement translations…,,,,,,
-TxImport,Achievement localization,Import achievement translations…,,,,,,
-TxCsvE,Achievement localization,Export CSV…,,,,,,
-TxCsvI,Achievement localization,Import CSV…,,,,,,
-JS1qNb,Art Data Bank usage and deletion,Duplicate artwork,,,,,,
-0idYO1,Art Data Bank usage and deletion,Delete artwork,,,,,,
-e8ET3G,Art Data Bank usage and deletion,{0} copy,,,,,,
-0ycnqg,Art Data Bank usage and deletion,Used by {0} achievements,,,,,,
-ikzj4G,Art Data Bank usage and deletion,No achievements use this artwork.,,,,,,
-AC5AMg,Art Data Bank usage and deletion,"Delete ""{0}""?",,,,,,
-e0O8Lo,Art Data Bank usage and deletion,Image layers using this artwork will become empty. Other layers will be preserved. You can undo this deletion.,,,,,,
-TP9wLV,Art Data Bank usage and deletion,This artwork no longer exists.,,,,,,
-11FgnF,Art Data Bank usage and deletion,Empty image,,,,,,
-4DY4YZ,Art Data Bank usage and deletion,Used by 1 achievement,,,,,,
-SaMake,Icon style nodes,Create icon style node,Utwórz węzeł stylu ikony,,,,,
-SaLocal,Icon style nodes,Icon style node,Węzeł stylu ikony,,,,,
-SaEdit,Icon style nodes,Edit own style…,Edytuj własny styl…,,,,,
-SaScope,Icon style nodes,Icon style node · excluded from Steam,Węzeł stylu ikony · wyłączony ze Steam,,,,,
-SaLink,Icon style nodes,Linked style,Powiązany styl,关联样式,關聯樣式,リンクされたスタイル,연결된 스타일,Style lié
-SaOpen,Icon style nodes,Edit style…,Edytuj styl…,编辑样式…,編輯樣式…,スタイルを編集…,스타일 편집…,Modifier le style…
-AiCreate,Reusable art images,Create art image,Utwórz obraz artystyczny,,,,,
-AiType,Reusable art images,Art image,Obraz artystyczny,,,,,
-AiScope,Reusable art images,Art image · reusable composition,Obraz artystyczny · kompozycja wielokrotnego użytku,,,,,
-AiEdit,Reusable art images,Edit image layers…,Edytuj warstwy obrazu…,,,,,
-AiImage,Reusable art images,Image,Obraz,,,,,
-SoHelpers,Node grid sorting,Include helpers at the end,Uwzględnij elementy pomocnicze na końcu,,,,,
-T3Push,3D text,Push,Rozsunięcie,,,,,
-T3Emboss,3D text,Emboss,Fazowanie,,,,,
-T3FullColor,3D text,Full color,Pełny kolor,,,,,
-T3FullMask,3D text,Full mask,Pełna maska,,,,,
-T3FaceMask,3D text,Face mask,Maska lica,,,,,
-T3EmbossMask,3D text,Emboss mask,Maska fazowania,,,,,
-T3Smooth,3D text,Smooth normals,Wygładzone normalne,,,,,
-T3Shadows,3D text,Letter shadows,Cienie liter,,,,,
-T3PushHint,3D text,Negative values thin the letters; positive values make them bolder.,Wartości ujemne zwężają litery; dodatnie je pogrubiają.,,,,,
-T3EmbossHint,3D text,Adds a raised beveled rim around the letter faces.,Dodaje wypukłą fazowaną krawędź wokół lica liter.,,,,,
-T3ShadowHint,3D text,Strength of shadows cast by the text onto other letter surfaces.,Siła cieni rzucanych przez tekst na pozostałe powierzchnie liter.,,,,,
-T3MinusFace,3D text,Emboss mask − face,Maska fazowania − lico,,,,,
-T3Reflect,3D text,Reflectivity,Refleksyjność,,,,,
-T3ReflectHint,3D text,Strength of the glossy reflection highlight.,Siła refleksu połysku.,,,,,
-T3MinusHint,3D text,Embossed text with flat faces removed; keeps bevels and 3D sides.,Wytłoczony tekst bez płaskich lic; zachowuje fazowania i boki 3D.,,,,,
-
-PrefLayerSidebar,Preferences,Layer properties in right sidebar,Właściwości warstwy na prawym pasku bocznym,,,,,
-PrefLayerSidebarHint,Preferences,Use a compact Layers window and edit the selected layer or effect in the right sidebar.,Kompaktowe okno warstw i edycja wybranej warstwy lub efektu na prawym pasku bocznym.,,,,,
-PrefFxMini,Preferences,Display mini values in FX rows,Wyświetlaj miniwartości w wierszach efektów,,,,,
-FxOutLt,Layers,Outer light,Światło zewnętrzne,,,,,
-FxCutout,Layers,Cutout,Wycięcie,,,,,
-FxSoftLight,Layers,Soft light,Miękkie światło,,,,,
-FxLightColor,Layers,Light color,Kolor światła,,,,,
-FxLightOpacity,Layers,Light opacity,Krycie światła,,,,,
-FxLightBlend,Layers,Light blend,Mieszanie światła,,,,,
-Steam sync,Achievement general,Steam sync,Synchronizacja Steam,,,,,
-Active,Achievement sync status,Active,Aktywne,,,,,
-Unsynced,Achievement sync status,Unsynced,Niezsynchronizowane,,,,,
-Retired,Achievement sync status,Retired,Wycofane,,,,,
+"ID","Context","English","Polish","ChineseSimplified","ChineseTraditional","Japanese","Korean","French","German","Spanish","Italian","Portuguese","Dutch","Russian","Ukrainian"
+"MenuWindows","Menu","Windows","Okna","窗口","視窗","ウィンドウ","창","Fenêtres","Fenster","Ventanas","Finestre","Janelas","Vensters","Окна","Вікна"
+"MenuResetLayout","Menu","Reset layout","Resetuj układ","重置布局","重設版面配置","レイアウトをリセット","레이아웃 초기화","Réinitialiser la disposition","Layout zurücksetzen","Restablecer distribución","Ripristina disposizione","Repor disposição","Indeling herstellen","Сбросить расположение","Скинути розташування"
+"MenuSetWindowSize","Menu","Set window size…","Ustaw rozmiar okna…","","","","","","Fenstergröße festlegen","Ajustar tamaño de ventana","Imposta dimensioni finestra","Definir tamanho da janela","Venstergrootte instellen","Задать размер окна","Задати розмір вікна"
+"WindowSizeTitle","Window","Set window size","Ustaw rozmiar okna","","","","","","Fenstergröße festlegen","Ajustar tamaño de ventana","Imposta dimensioni finestra","Definir tamanho da janela","Venstergrootte instellen","Задать размер окна","Задати розмір вікна"
+"WindowSizeUnit","Window","Window size in logical pixels","Rozmiar okna w pikselach logicznych","","","","","","","","","","","",""
+"WindowSizeWidth","Window","Width","Szerokość","","","","","","Breite","Anchura","Larghezza","Largura","Breedte","Ширина","Ширина"
+"WindowSizeHeight","Window","Height","Wysokość","","","","","","Höhe","Altura","Altezza","Altura","Hoogte","Высота","Висота"
+"LyReferenceMask","Layers","Reference mask","Maska referencyjna","","","","","","","","","","","",""
+"LyMaskSourceLayer","Layers","Source layer","Warstwa źródłowa","","","","","","","","","","","",""
+"LyMaskReferenceHint","Layers","Copies the source layer’s mask and inversion. Updates with the source.","Kopiuje maskę i odwrócenie warstwy źródłowej. Aktualizuje się razem ze źródłem.","","","","","","","","","","","",""
+"LyMaskNoSource","Layers","No source mask: fully reveals.","Brak maski źródłowej: pełna widoczność.","","","","","","","","","","","",""
+"LyMaskGrayHint","Layers","White reveals. Black hides.","Biel odsłania. Czerń ukrywa.","","","","","","","","","","","",""
+"LyMaskLegacyAlpha","Layers","Legacy transparency mask","Starsza maska przezroczystości","","","","","","","","","","","",""
+"LyMaskToGray","Layers","Use grayscale mask","Użyj maski w skali szarości","","","","","","","","","","","",""
+"LyMaskGrayValue","Color","Gray","Szarość","","","","","","","","","","","",""
+"LyReroll","Layers","Re-roll all random layers","Wylosuj ponownie wszystkie warstwy losowe","","","","","","","","","","","",""
+"LyUseMask","Layers","Use mask","Użyj maski","","","","","","","","","","","",""
+"LyMaskSource","Layers","Mask source","Źródło maski","","","","","","","","","","","",""
+"LyRmMask","Layers","Remove mask","Odłącz maskę","","","","","","","","","","","",""
+"LyDelMask","Layers","Delete mask","Usuń maskę","","","","","","","","","","","",""
+"LyAddMask","Layers","Add mask","Dodaj maskę","","","","","","","","","","","",""
+"LyReplaceMask","Layers","Replace mask","Zastąp maskę","","","","","","","","","","","",""
+"LyUseMaskFrom","Layers","Use mask from","Użyj maski z","","","","","","","","","","","",""
+"LyReferenceMaskTo","Layers","Reference mask to","Udostępnij maskę warstwie","","","","","","","","","","","",""
+"LyInvertMask","Layers","Invert mask","Odwróć maskę","","","","","","","","","","","",""
+"LyOutFolder","Layers","Remove from folder","Wyjmij z folderu","","","","","","","","","","","",""
+"SvInv","Layers","Invert vignette","Odwróć winietę","","","","","","","","","","","",""
+"SvInHt","Layers","Fill the center instead of the edges.","Wypełnij środek zamiast krawędzi.","","","","","","","","","","","",""
+"SvFill","Layers","Fill","Wypełnienie","","","","","","","","","","","",""
+"SvGrad","Layers","Gradient map","Mapa gradientu","","","","","","","","","","","",""
+"SvHint","Layers","Stops follow the fade from transparent to full strength.","Punkty gradientu odpowiadają przejściu od przezroczystości do pełnego krycia.","","","","","","","","","","","",""
+"UnTxHt","Localization","Use {0} in names or descriptions to insert the unlock value.","Użyj {0} w nazwach lub opisach aby wstawić wartość odblokowania.","在名称或描述中使用 {0} 插入解锁值。","在名稱或描述中使用 {0} 插入解鎖值。","名前や説明に {0} を使うと解除値が入ります。","이름이나 설명에 {0}을 사용하면 잠금 해제 값이 삽입됩니다.","Utilisez {0} dans les noms ou descriptions pour insérer la valeur de déblocage.","","","","","","",""
+"UnTxPr","Localization","Preview","Podgląd","预览","預覽","プレビュー","미리 보기","Aperçu","Vorschau","Vista previa","Anteprima","Pré-visualização","Voorbeeld","Предпросмотр","Попередній перегляд"
+"PRLYPV","Preferences","Show finished icon preview in Layers","Pokaż podgląd gotowej ikony w Warstwach","显示图层中的成品图标预览","顯示圖層中的成品圖示預覽","レイヤーに完成アイコンを表示","레이어에 완성 아이콘 미리보기 표시","Afficher l’aperçu de l’icône dans Calques","","","","","","",""
+"PRLYCN","Preferences","Show connections to affected icons","Pokaż połączenia z edytowanymi ikonami","显示受影响图标的连接","顯示受影響圖示的連線","変更対象アイコンへの接続を表示","영향받는 아이콘 연결 표시","Afficher les connexions aux icônes concernées","","","","","","",""
+"PRLYCL","Palette","Layer connection lines","Linie połączeń warstw","图层连接线","圖層連線","レイヤー接続線","레이어 연결선","Lignes de connexion des calques","","","","","","",""
+"PRNOUT","Palette","Selected icon outline","Obramowanie wybranej ikony","选中图标边框","選取圖示框線","選択アイコンの枠線","선택 아이콘 테두리","Contour de l’icône sélectionnée","","","","","","",""
+"PRNSHD","Palette","Node focus overlay","Przyciemnienie węzłów","节点聚焦遮罩","節點聚焦遮罩","ノードのフォーカスオーバーレイ","노드 강조 오버레이","Voile de focus des nœuds","","","","","","",""
+"LyAfSt","Layers","AFFECT STYLE enabled","ZMIANA STYLU włączona","样式编辑已启用","樣式編輯已啟用","スタイル編集有効","스타일 편집 활성화","MODIFIER LE STYLE activé","","","","","","",""
+"LyAfIc","Layers","AFFECT ICON enabled","ZMIANA IKONY włączona","图标编辑已启用","圖示編輯已啟用","アイコン編集有効","아이콘 편집 활성화","MODIFIER L’ICÔNE activé","","","","","","",""
+"PRCANA","Preferences","Canvas colors","Kolory obszaru roboczego","画布颜色","畫布色彩","キャンバスの色","캔버스 색상","Couleurs du canevas","","","","","","",""
+"PRBGTP","Preferences","Background top","Tło u góry","背景顶部","背景頂部","背景の上部","배경 위쪽","Fond en haut","","","","","","",""
+"PRBGBT","Preferences","Background bottom","Tło u dołu","背景底部","背景底部","背景の下部","배경 아래쪽","Fond en bas","","","","","","",""
+"PRGRID","Preferences","Grid","Siatka","网格","網格","グリッド","격자","Grille","Raster","Cuadrícula","Griglia","Grelha","Raster","Сетка","Сітка"
+"PRBGMP","Preferences","Gradient midpoint","Środek gradientu","渐变中点","漸層中點","グラデーションの中間点","그라데이션 중간점","Point médian du dégradé","","","","","","",""
+"HPMENU","Menu","Help","Pomoc","帮助","說明","ヘルプ","도움말","Aide","Hilfe","Ayuda","Aiuto","Ajuda","Help","Справка","Довідка"
+"HPABOU","Menu","About","O aplikacji","关于","關於","このアプリについて","정보","À propos","Über","Acerca de","Informazioni","Acerca de","Over","О программе","Про програму"
+"HPCHLG","Menu","Change log","Historia zmian","更改日志","變更記錄","変更履歴","변경 기록","Historique des modifications","Änderungsverlauf","Historial de cambios","Cronologia modifiche","Histórico de alterações","Wijzigingslogboek","История изменений","Історія змін"
+"HPVERS","About","Version","Wersja","版本","版本","バージョン","버전","Version","Version","Versión","Versione","Versão","Versie","Версия","Версія"
+"HPHIST","About","Newest changes first. History starts with version tracking.","Najnowsze zmiany na górze. Historia zaczyna się od wprowadzenia wersjonowania.","","","","","","","","","","","",""
+"GrInCh","Gradient","Input channel","Kanał wejściowy","输入通道","輸入通道","入力チャンネル","입력 채널","Canal d’entrée","","","","","","",""
+"WkGrid","Working area","Node grid settings","Ustawienia siatki węzłów","","","","","","","","","","","",""
+"WkSort","Working area","Sort","Sortuj","","","","","","Sortieren","Ordenar","Ordina","Ordenar","Sorteren","Сортировка","Сортування"
+"WkAcRw","Working area","Achievements per row","Osiągnięcia w wierszu","","","","","","","","","","","",""
+"WkStRw","Working area","Stats per row","Statystyki w wierszu","","","","","","","","","","","",""
+"WkAlgn","Working area","Align","Wyrównaj","对齐","對齊","整列","정렬","Aligner","Ausrichten","Alinear","Allinea","Alinhar","Uitlijnen","Выровнять","Вирівняти"
+"TfCopy","Transform","Copy transform","Kopiuj transformację","复制变换","複製變換","変形をコピー","변환 복사","Copier la transformation","","","","","","",""
+"TfPast","Transform","Paste transform","Wklej transformację","粘贴变换","貼上變換","変形を貼り付け","변환 붙여넣기","Coller la transformation","","","","","","",""
+"SyChAc","Synchronization","Open achievements in Chrome","Otwórz osiągnięcia w Chrome","在 Chrome 中打开成就","在 Chrome 中開啟成就","Chrome で実績を開く","Chrome에서 업적 열기","Ouvrir les succès dans Chrome","","","","","","",""
+"SyChSt","Synchronization","Open stats in Chrome","Otwórz statystyki w Chrome","在 Chrome 中打开统计数据","在 Chrome 中開啟統計資料","Chrome で統計を開く","Chrome에서 통계 열기","Ouvrir les statistiques dans Chrome","","","","","","",""
+"FIMENU","Menu","File","Plik","文件","檔案","ファイル","파일","Fichier","Datei","Archivo","File","Ficheiro","Bestand","Файл","Файл"
+"FINEWW","Menu","New","Nowy","新建","新增","新規","새로 만들기","Nouveau","Neu","Nuevo","Nuovo","Novo","Nieuw","Создать","Створити"
+"FIOPEN","Menu","Open","Otwórz","打开","開啟","開く","열기","Ouvrir","Öffnen","Abrir","Apri","Abrir","Openen","Открыть","Відкрити"
+"FIRECE","Menu","Open Recent","Otwórz ostatnie","打开最近使用的文件","開啟最近使用的檔案","最近使ったファイルを開く","최근 파일 열기","Ouvrir les fichiers récents","Zuletzt geöffnet","Abrir recientes","Apri recenti","Abrir recentes","Recent openen","Недавние файлы","Нещодавні файли"
+"FINONE","Menu","No recent files","Brak ostatnich plików","没有最近使用的文件","沒有最近使用的檔案","最近使ったファイルはありません","최근 파일 없음","Aucun fichier récent","Keine zuletzt geöffneten Dateien","No hay archivos recientes","Nessun file recente","Sem ficheiros recentes","Geen recente bestanden","Нет недавних файлов","Немає нещодавніх файлів"
+"FISAVE","Menu","Save","Zapisz","保存","儲存","保存","저장","Enregistrer","Speichern","Guardar","Salva","Guardar","Opslaan","Сохранить","Зберегти"
+"FISVAS","Menu","Save As","Zapisz jako","另存为","另存新檔","名前を付けて保存","다른 이름으로 저장","Enregistrer sous","Speichern unter","Guardar como","Salva con nome","Guardar como","Opslaan als","Сохранить как","Зберегти як"
+"FIPSET","Menu","Project Settings","Ustawienia projektu","项目设置","專案設定","プロジェクト設定","프로젝트 설정","Paramètres du projet","Projekteinstellungen","Configuración del proyecto","Impostazioni progetto","Definições do projeto","Projectinstellingen","Настройки проекта","Налаштування проєкту"
+"FIATLS","Menu","Import Atlases","Importuj atlasy","导入图集","匯入圖集","アトラスをインポート","아틀라스 가져오기","Importer des atlas","Atlanten importieren","Importar atlas","Importa atlanti","Importar atlas","Atlassen importeren","Импортировать атласы","Імпортувати атласи"
+"TLExpo","Menu","Export Achievement Icons","Eksportuj ikony osiągnięć","","","","","","Errungenschaftssymbole exportieren","Exportar iconos de logros","Esporta icone degli obiettivi","Exportar ícones de conquistas","Prestatiepictogrammen exporteren","Экспортировать значки достижений","Експортувати значки досягнень"
+"TLMENU","Menu","Tools","Narzędzia","工具","工具","ツール","도구","Outils","Werkzeuge","Herramientas","Strumenti","Ferramentas","Gereedschappen","Инструменты","Інструменти"
+"FIPREF","Menu","Preferences","Preferencje","首选项","偏好設定","環境設定","환경 설정","Préférences","Einstellungen","Preferencias","Preferenze","Preferências","Voorkeuren","Параметры","Параметри"
+"FIEXIT","Menu","Exit","Zakończ","退出","結束","終了","끝내기","Quitter","Beenden","Salir","Esci","Sair","Afsluiten","Выход","Вихід"
+"TBWORK","Shell","Working","Praca","工作","工作","作業","작업","Travail","Bearbeitung","Edición","Modifica","Edição","Bewerken","Редактирование","Редагування"
+"TBSTEA","Shell","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam","Steam"
+"SYNCHR","Shell","Synchronize","Synchronizuj","同步","同步","同期","동기화","Synchroniser","Synchronisieren","Sincronizar","Sincronizza","Sincronizar","Synchroniseren","Синхронизировать","Синхронізувати"
+"INDETA","Inspector","Details","Szczegóły","详细信息","詳細資料","詳細","세부 정보","Détails","Details","Detalles","Dettagli","Detalhes","Details","Подробности","Подробиці"
+"INACTI","Inspector","Activity","Aktywność","活动","活動","アクティビティ","활동","Activité","","","","","","",""
+"STREAD","Status","Ready","Gotowe","就绪","就緒","準備完了","준비됨","Prêt","Bereit","Listo","Pronto","Pronto","Gereed","Готово","Готово"
+"STACNT","Status","Achievements:","Osiągnięcia:","成就：","成就：","実績：","업적:","Succès :","Errungenschaften:","Logros:","Obiettivi:","Conquistas:","Prestaties:","Достижения:","Досягнення:"
+"STELAP","Status","Elapsed","Upłynęło","已用时间","經過時間","経過時間","경과","Écoulé","","","","","","",""
+"PLWORK","Placeholder","Working view will appear here","Tutaj pojawi się widok pracy","工作视图将显示在此处","工作檢視將顯示於此","作業ビューがここに表示されます","작업 보기가 여기에 표시됩니다","La vue de travail apparaîtra ici","","","","","","",""
+"PLSTEA","Placeholder","Steam view will appear here","Tutaj pojawi się widok Steam","Steam 视图将显示在此处","Steam 檢視將顯示於此","Steam ビューがここに表示されます","Steam 보기가 여기에 표시됩니다","La vue Steam apparaîtra ici","","","","","","",""
+"PLDETA","Placeholder","Select an item to inspect","Wybierz element do sprawdzenia","选择要检查的项目","選取要檢查的項目","調べる項目を選択してください","검사할 항목을 선택하세요","Sélectionnez un élément à examiner","","","","","","",""
+"PLACTI","Placeholder","No recent activity","Brak ostatniej aktywności","无最近活动","沒有最近活動","最近のアクティビティはありません","최근 활동 없음","Aucune activité récente","","","","","","",""
+"WNPREF","Preferences","Preferences","Preferencje","首选项","偏好設定","環境設定","환경 설정","Préférences","Einstellungen","Preferencias","Preferenze","Preferências","Voorkeuren","Параметры","Параметри"
+"PRAPPE","Preferences","Appearance","Wygląd","外观","外觀","外観","모양","Apparence","Darstellung","Apariencia","Aspetto","Aspeto","Uiterlijk","Внешний вид","Вигляд"
+"PRCOLO","Preferences","Palette","Paleta","调色板","調色盤","パレット","팔레트","Palette","","","","","","",""
+"PRWIND","Palette","Window","Okno","窗口","視窗","ウィンドウ","창","Fenêtre","Fenster","Ventana","Finestra","Janela","Venster","Окно","Вікно"
+"PRPANE","Palette","Panel","Panel","面板","面板","パネル","패널","Panneau","","","","","","",""
+"PRCONT","Palette","Control","Kontrolka","控件","控制項","コントロール","컨트롤","Contrôle","","","","","","",""
+"PRBORD","Palette","Border","Obramowanie","边框","框線","境界線","테두리","Bordure","","","","","","",""
+"PRPTXT","Palette","Primary text","Tekst główny","主要文本","主要文字","主テキスト","기본 텍스트","Texte principal","","","","","","",""
+"PRMTXT","Palette","Muted text","Tekst wyciszony","次要文本","柔和文字","控えめなテキスト","보조 텍스트","Texte atténué","","","","","","",""
+"PRACCE","Palette","Accent","Akcent","强调色","強調色","アクセント","강조","Accent","","","","","","",""
+"PRSUCC","Palette","Success","Sukces","成功","成功","成功","성공","Succès","Erfolgreich","Correcto","Operazione riuscita","Sucesso","Geslaagd","Успешно","Успішно"
+"PRWARN","Palette","Warning","Ostrzeżenie","警告","警告","警告","경고","Avertissement","Warnung","Advertencia","Avviso","Aviso","Waarschuwing","Предупреждение","Попередження"
+"PRERRO","Palette","Error","Błąd","错误","錯誤","エラー","오류","Erreur","Fehler","Error","Errore","Erro","Fout","Ошибка","Помилка"
+"PRRADI","Preferences","Control corner radius","Promień kontrolek","控件圆角","控制項圓角","コントロールの角丸","컨트롤 모서리 반경","Rayon des contrôles","","","","","","",""
+"PRHEAD","Preferences","Header font size","Rozmiar nagłówka","标题字号","標題字型大小","見出しフォントサイズ","헤더 글꼴 크기","Taille des titres","","","","","","",""
+"PRNORM","Preferences","Normal font size","Normalny rozmiar","常规字号","一般字型大小","標準フォントサイズ","일반 글꼴 크기","Taille normale","","","","","","",""
+"PRSMAL","Preferences","Small font size","Mały rozmiar","小字号","小字型大小","小フォントサイズ","작은 글꼴 크기","Petite taille","","","","","","",""
+"PRLANG","Preferences","Language","Język","语言","語言","言語","언어","Langue","Sprache","Idioma","Lingua","Idioma","Taal","Язык","Мова"
+"PRNAMI","Preferences","Naming","Nazewnictwo","Nombres","Nombres","命名","이름 지정","Nommage","","","","","","",""
+"PRACHN","Preferences","Achievement naming convention","Konwencja nazw osiągnięć","成就命名规则","成就命名規則","実績の命名規則","업적 이름 규칙","Convention de nommage des succès","","","","","","",""
+"PRACHH","Preferences","Use {0} for the number, for example ACHIEVEMENT_{0:000}.","Użyj {0} jako numeru, na przykład ACHIEVEMENT_{0:000}.","数字使用 {0}，例如 ACHIEVEMENT_{0:000}。","數字使用 {0}，例如 ACHIEVEMENT_{0:000}。","数字には {0} を使います。例: ACHIEVEMENT_{0:000}。","숫자에는 {0}을 사용합니다. 예: ACHIEVEMENT_{0:000}.","Utilisez {0} pour le numéro, par exemple ACHIEVEMENT_{0:000}.","","","","","","",""
+"PRDARK","Preferences","Dark defaults","Ciemne domyślne","深色默认值","深色預設值","ダーク既定値","어두운 기본값","Valeurs sombres","","","","","","",""
+"PRLIGH","Preferences","Light defaults","Jasne domyślne","浅色默认值","淺色預設值","ライト既定値","밝은 기본값","Valeurs claires","","","","","","",""
+"PRSAVB","Preferences","Save","Zapisz","保存","儲存","保存","저장","Enregistrer","Speichern","Guardar","Salva","Guardar","Opslaan","Сохранить","Зберегти"
+"PRCANC","Preferences","Cancel","Anuluj","取消","取消","キャンセル","취소","Annuler","Abbrechen","Cancelar","Annulla","Cancelar","Annuleren","Отмена","Скасувати"
+"PRBROW","Preferences","Browser","Przeglądarka","","","","","","","","","","","",""
+"PRBREX","Preferences","Chrome executable","Plik wykonywalny Chrome","","","","","","","","","","","",""
+"PRBRDT","Preferences","Detect","Wykryj","","","","","","","","","","","",""
+"PRBRBS","Preferences","Browse...","Przeglądaj...","","","","","","Durchsuchen","Examinar","Sfoglia","Procurar","Bladeren","Обзор","Огляд"
+"PRBRHI","Preferences","Path to chrome.exe. Leave blank to detect Google Chrome automatically.","Ścieżka do chrome.exe. Pozostaw puste aby wykryć Google Chrome automatycznie.","","","","","","","","","","","",""
+"PRBRIN","Validation","Enter a valid path to chrome.exe.","Podaj prawidłową ścieżkę do chrome.exe.","","","","","","","","","","","",""
+"PRBRND","Validation","Google Chrome was not detected. Browse for chrome.exe.","Nie wykryto Google Chrome. Wskaż plik chrome.exe.","","","","","","","","","","","",""
+"PRBROF","Preferences","Browser profile folder","Folder profilu przeglądarki","","","","","","","","","","","",""
+"PRBRDF","Preferences","Use default","Użyj domyślnego","","","","","","","","","","","",""
+"PRBRPH","Preferences","Leave blank to use Achimeld's private profile at %LOCALAPPDATA%\Achimeld\Browser\ChromeProfile. Choose an existing Chrome profile folder to reuse a signed-in session. Chrome ignores remote debugging on its default profile folder.","Pozostaw puste aby użyć prywatnego profilu Achimeld w %LOCALAPPDATA%\Achimeld\Browser\ChromeProfile. Wybierz istniejący folder profilu Chrome aby ponownie użyć zalogowanej sesji. Chrome ignoruje zdalne debugowanie w domyślnym folderze profilu.","","","","","","","","","","","",""
+"PRBPIN","Validation","Enter a valid profile folder path.","Podaj prawidłową ścieżkę folderu profilu.","","","","","","","","","","","",""
+"PRBRPT","Preferences","Remote debugging port","Zdalny port debugowania","","","","","","","","","","","",""
+"PRBRDH","Preferences","Used when Achimeld starts Chrome to attach to. Chrome requires a non-default profile folder for this port to stay open.","Używany gdy Achimeld uruchamia Chrome w celu dołączenia. Chrome wymaga niedomyślnego folderu profilu aby ten port pozostał otwarty.","","","","","","","","","","","",""
+"PRBFLT","Preferences","Chrome executable|chrome.exe|Executables (*.exe)|*.exe","Plik wykonywalny Chrome|chrome.exe|Pliki wykonywalne (*.exe)|*.exe","","","","","","","","","","","",""
+"PRINVC","Validation","Enter a hexadecimal color","Wprowadź kolor szesnastkowy","请输入十六进制颜色","請輸入十六進位色彩","16進数の色を入力してください","16진수 색상을 입력하세요","Saisissez une couleur hexadécimale","","","","","","",""
+"WNMINI","Window","Minimize","Minimalizuj","最小化","最小化","最小化","최소화","Réduire","","","","","","",""
+"WNMAXI","Window","Maximize or restore","Maksymalizuj lub przywróć","最大化或还原","最大化或還原","最大化または元に戻す","최대화 또는 복원","Agrandir ou restaurer","","","","","","",""
+"WNCLOS","Window","Close","Zamknij","关闭","關閉","閉じる","닫기","Fermer","Schließen","Cerrar","Chiudi","Fechar","Sluiten","Закрыть","Закрити"
+"LNENGL","Language","English","English","English","English","English","English","English","","","","","","",""
+"LNPOLI","Language","Polski","Polski","Polski","Polski","Polski","Polski","Polski","","","","","","",""
+"LNZHSP","Language","简体中文","简体中文","简体中文","简体中文","简体中文","简体中文","简体中文","","","","","","",""
+"LNZHTR","Language","繁體中文","繁體中文","繁體中文","繁體中文","繁體中文","繁體中文","繁體中文","","","","","","",""
+"LNJAPA","Language","日本語","日本語","日本語","日本語","日本語","日本語","日本語","","","","","","",""
+"LNKORE","Language","한국어","한국어","한국어","한국어","한국어","한국어","한국어","","","","","","",""
+"LNFREN","Language","Français","Français","Français","Français","Français","Français","Français","","","","","","",""
+"CdAchv","Card","Achievement","","","","","","","Errungenschaft","Logro","Obiettivo","Conquista","Prestatie","Достижение","Досягнення"
+"CdStat","Card","Stat","","","","","","","Statistik","Estadística","Statistica","Estatística","Statistiek","Показатель","Показник"
+"AtMiss","Atlas","Atlas unavailable","","","","","","","","","","","","",""
+"StaleT","Steam","Snapshot read {0:g}","","","","","","","","","","","","",""
+"NoSnap","Steam","No complete Steam snapshot is available","","","","","","","","","","","","",""
+"DfNone","Steam","No differences","","","","","","","","","","","","",""
+"DfRemo","Steam","Remote only","","","","","","","","","","","","",""
+"DfChan","Steam","Values differ","","","","","","","","","","","","",""
+"SySafe","Sync","Execution is disabled because the coordinator cannot bind execution to this reviewed plan. Refresh support and an approval token are required.","","","","","","","","","","","","",""
+"WkArea","Accessibility","Working editor","","","","","","","Arbeitseditor","Editor de trabajo","Editor di lavoro","Editor de trabalho","Werkeditor","Рабочий редактор","Робочий редактор"
+"WkAddA","Working","Add Achievement","","","","","","","Errungenschaft hinzufügen","Añadir logro","Aggiungi obiettivo","Adicionar conquista","Prestatie toevoegen","Добавить достижение","Додати досягнення"
+"WkAddS","Working","Add Stat","","","","","","","Statistik hinzufügen","Añadir estadística","Aggiungi statistica","Adicionar estatística","Statistiek toevoegen","Добавить показатель","Додати показник"
+"WkFull","Working","Open Full Size Icon","","","","","","","","","","","","",""
+"WkDele","Working","Delete","","","","","","","Löschen","Eliminar","Elimina","Eliminar","Verwijderen","Удалить","Видалити"
+"WkDupl","Working","Duplicate","","","","","","","Duplizieren","Duplicar","Duplica","Duplicar","Dupliceren","Дублировать","Дублювати"
+"WkCopy","Working","Copy","","","","","","","Kopieren","Copiar","Copia","Copiar","Kopiëren","Копировать","Копіювати"
+"WkPste","Working","Paste","","","","","","","Einfügen","Pegar","Incolla","Colar","Plakken","Вставить","Вставити"
+"WkUndo","Working","Undo","","","","","","","Rückgängig","Deshacer","Annulla","Anular","Ongedaan maken","Отменить","Скасувати"
+"WkRedo","Working","Redo","","","","","","","Wiederholen","Rehacer","Ripeti","Refazer","Opnieuw uitvoeren","Повторить","Повторити"
+"WkFilt","Working","Filter achievements and stats","","","","","","","","","","","","",""
+"WkNode","Working","Achievements","","","","","","","Errungenschaften","Logros","Obiettivi","Conquistas","Prestaties","Достижения","Досягнення"
+"WkClsT","Working","Close tab","","","","","","","Tab schließen","Cerrar pestaña","Chiudi scheda","Fechar separador","Tabblad sluiten","Закрыть вкладку","Закрити вкладку"
+"WkZmOt","Working","Zoom out","","","","","","","Verkleinern","Alejar","Riduci","Reduzir","Uitzoomen","Уменьшить","Зменшити"
+"WkZmRs","Working","Reset zoom and pan","","","","","","","Zoom und Ansicht zurücksetzen","Restablecer zoom y posición","Ripristina zoom e posizione","Repor zoom e posição","Zoom en positie herstellen","Сбросить масштаб и положение","Скинути масштаб і положення"
+"WkZmIn","Working","Zoom in","","","","","","","Vergrößern","Acercar","Ingrandisci","Ampliar","Inzoomen","Увеличить","Збільшити"
+"WkZmMn","Working","−","","","","","","","","","","","","",""
+"WkZmPc","Working","100%","","","","","","","","","","","","",""
+"WkZmPl","Working","+","","","","","","","","","","","","",""
+"IcPrev","Accessibility","Achievement icon preview","","","","","","","","","","","","",""
+"StArea","Accessibility","Steam snapshot view","","","","","","","","","","","","",""
+"StSnap","Steam","Last remote snapshot","","","","","","","","","","","","",""
+"StList","Accessibility","Remote achievements and stats","","","","","","","","","","","","",""
+"StName","Steam","Internal name","","","","","","","Interner Name","Nombre interno","Nome interno","Nome interno","Interne naam","Внутреннее имя","Внутрішня назва"
+"StApiN","Steam","Steam API name","","","","","","","","","","","","",""
+"StType","Steam","Type","","","","","","","Typ","Tipo","Tipo","Tipo","Type","Тип","Тип"
+"StStat","Steam","Status","","","","","","","Status","Estado","Stato","Estado","Status","Состояние","Стан"
+"StDiff","Steam","Differences","","","","","","","","","","","","",""
+"InGene","Inspector","General","","","","","","","Allgemein","General","Generale","Geral","Algemeen","Общие","Загальні"
+"InName","Inspector","Internal name","","","","","","","Interner Name","Nombre interno","Nome interno","Nome interno","Interne naam","Внутреннее имя","Внутрішня назва"
+"InApiN","Inspector","Steam API name","","","","","","","","","","","","",""
+"InSetB","Inspector","Set by","","","","","","","","","","","","",""
+"InHidd","Inspector","Hidden until unlocked","Ukryte do odblokowania","解锁前隐藏","解鎖前隱藏","解除するまで非表示","잠금 해제 전 숨김","Masqué jusqu’au déverrouillage","","","","","","",""
+"HdAlow","Preferences","Allow hidden achievements","Zezwalaj na ukryte osiągnięcia","允许隐藏成就","允許隱藏成就","非表示の実績を許可","숨겨진 업적 허용","Autoriser les succès masqués","","","","","","",""
+"HdHelp","Preferences","Steam-hidden achievements are disabled by default. Enable them in Preferences to hide achievements from players until unlocked.","Ukryte osiągnięcia Steam są domyślnie wyłączone. Włącz je w Preferencjach aby ukrywać osiągnięcia przed graczami do odblokowania.","Steam 隐藏成就默认禁用。可在偏好设置中启用以在解锁前对玩家隐藏成就。","Steam 隱藏成就預設停用。可在偏好設定中啟用以在解鎖前對玩家隱藏成就。","Steam の非表示実績は既定で無効です。設定で有効にすると解除するまでプレイヤーに表示されません。","Steam 숨겨진 업적은 기본적으로 비활성화됩니다. 환경설정에서 활성화하면 잠금 해제 전까지 플레이어에게 숨겨집니다。","Les succès Steam masqués sont désactivés par défaut. Activez-les dans les préférences pour les masquer aux joueurs jusqu’au déverrouillage.","","","","","","",""
+"HdTitl","Achievements","Hidden Steam achievements","Ukryte osiągnięcia Steam","Steam 隐藏成就","Steam 隱藏成就","Steam の非表示実績","Steam 숨겨진 업적","Succès Steam masqués","","","","","","",""
+"HdConf","Achievements","Are you sure? Hidden achievements will be hidden from players until unlocked.","Czy na pewno? Ukryte osiągnięcia będą niewidoczne dla graczy do odblokowania.","确定吗？隐藏成就将在解锁前对玩家隐藏。","確定嗎？隱藏成就將在解鎖前對玩家隱藏。","よろしいですか？非表示の実績は解除するまでプレイヤーに表示されません。","계속하시겠습니까? 숨겨진 업적은 잠금 해제 전까지 플레이어에게 숨겨집니다。","Voulez-vous continuer ? Les succès masqués seront cachés aux joueurs jusqu’au déverrouillage.","","","","","","",""
+"HdWarn","Achievements","Project saved. At least one achievement is hidden on Steam until unlocked.","Projekt zapisany. Co najmniej jedno osiągnięcie jest ukryte na Steam do odblokowania.","项目已保存。至少有一个成就在 Steam 上解锁前隐藏。","專案已儲存。至少有一個成就在 Steam 上解鎖前隱藏。","プロジェクトを保存しました。少なくとも1つの実績が Steam で解除するまで非表示です。","프로젝트가 저장되었습니다. 하나 이상의 업적이 Steam에서 잠금 해제 전까지 숨겨집니다。","Projet enregistré. Au moins un succès est masqué sur Steam jusqu’au déverrouillage.","","","","","","",""
+"HdYess","Achievements","Yes—allow it","Tak — zezwól","是—允许","是—允許","はい（許可）","예—허용","Oui — autoriser","","","","","","",""
+"HdNope","Achievements","Cancel","Anuluj","取消","取消","キャンセル","취소","Annuler","Abbrechen","Cancelar","Annulla","Cancelar","Annuleren","Отмена","Скасувати"
+"HdOkay","Achievements","OK","OK","确定","確定","OK","확인","OK","OK","Aceptar","OK","OK","OK","ОК","Гаразд"
+"InOrdr","Inspector","Display order","","","","","","","","","","","","",""
+"InLoca","Inspector","Localization","","","","","","","","","","","","",""
+"InDisp","Inspector","English display name","","","","","","","","","","","","",""
+"InExpN","Inspector","Name exported to Steam","","","","","","","","","","","","",""
+"InDesc","Inspector","English description","","","","","","","","","","","","",""
+"InIcon","Inspector","Icon","","","","","","","","","","","","",""
+"InTile","Inspector","Atlas art value","","","","","","","","","","","","",""
+"InScal","Inspector","Scale (centered)","","","","","","","","","","","","",""
+"InStab","Inspector","Tile assignment remains stable when display order changes.","","","","","","","","","","","","",""
+"InSync","Inspector","Sync","","","","","","","Synchronisieren","Sincronizar","Sincronizza","Sincronizar","Synchroniseren","Синхронизация","Синхронізація"
+"InStat","Inspector","Current state","","","","","","","","","","","","",""
+"InAppl","Inspector","Apply","","","","","","","Anwenden","Aplicar","Applica","Aplicar","Toepassen","Применить","Застосувати"
+"InCons","Inspector","Constraints","","","","","","","","","","","","",""
+"InMini","Inspector","Minimum","","","","","","","","","","","","",""
+"InMaxi","Inspector","Maximum","","","","","","","","","","","","",""
+"InNoLm","Inspector","Leave minimum and maximum empty for no limits. Zero is an explicit limit.","Pozostaw minimum i maksimum puste aby nie ustawiać limitów. Zero jest konkretnym limitem.","","","","","","","","","","","",""
+"InDefa","Inspector","Default value","","","","","","","","","","","","",""
+"InIncr","Inspector","Increment only","","","","","","","","","","","","",""
+"InMxCh","Inspector","Maximum change","","","","","","","","","","","","",""
+"InAggr","Inspector","Aggregated","","","","","","","","","","","","",""
+"InAvRw","Inspector","Average-rate window (seconds)","","","","","","","","","","","","",""
+"VlReqd","Validation","A value is required.","","","","","","","","","","","","",""
+"VlAppI","Validation","Enter a nonzero Steam App ID.","","","","","","","","","","","","",""
+"VlPosi","Validation","Enter a positive whole number.","","","","","","","","","","","","",""
+"VlUnit","Validation","Enter a value from zero through one.","","","","","","","","","","","","",""
+"VlHexx","Validation","Enter a hexadecimal color.","","","","","","","","","","","","",""
+"VlNneg","Validation","Enter a nonnegative whole number.","","","","","","","","","","","","",""
+"VlApiN","Validation","Enter a valid Steam API name.","","","","","","","","","","","","",""
+"VlInte","Validation","Enter a whole number.","","","","","","","","","","","","",""
+"VlRang","Validation","Minimum cannot exceed maximum.","","","","","","","","","","","","",""
+"VlNumb","Validation","Enter a number or leave the field empty.","","","","","","","","","","","","",""
+"VlPosN","Validation","Enter a positive number.","","","","","","","","","","","","",""
+"VlScal","Validation","Enter a scale from 0.1 through 4.","","","","","","","","","","","","",""
+"PsTitl","Project settings","Project Settings","","","","","","","Projekteinstellungen","Configuración del proyecto","Impostazioni progetto","Definições do projeto","Projectinstellingen","Настройки проекта","Налаштування проєкту"
+"PsName","Project settings","Display name","","","","","","","Anzeigename","Nombre visible","Nome visualizzato","Nome apresentado","Weergavenaam","Отображаемое имя","Відображувана назва"
+"PsAppI","Project settings","Steam App ID","","","","","","","","","","","","",""
+"PsAtla","Project settings","Atlas path","","","","","","","","","","","","",""
+"PsCsvP","Project settings","Localization CSV path","","","","","","","","","","","","",""
+"PsTile","Project settings","Tile width and height","","","","","","","","","","","","",""
+"PsOffs","Project settings","Left and top offset","","","","","","","","","","","","",""
+"PsSpac","Project settings","Horizontal and vertical spacing","","","","","","","","","","","","",""
+"PsTrav","Project settings","Atlas traversal","","","","","","","","","","","","",""
+"PsOutp","Project settings","Icon size","","","","","","","","","","","","",""
+"PsUnac","Project settings","Unachieved icon mode","","","","","","","","","","","","",""
+"PsOpac","Project settings","Unachieved opacity","","","","","","","","","","","","",""
+"PsTint","Project settings","Unachieved tint","","","","","","","","","","","","",""
+"PsLoca","Project settings","Edit project localization","","","","","","","","","","","","",""
+"LcTitl","Localization","Project Localization","","","","","","","","","","","","",""
+"LcIddd","Localization","ID","","","","","","","","","","","","",""
+"LcCont","Localization","Context","","","","","","","Kontext","Contexto","Contesto","Contexto","Context","Контекст","Контекст"
+"SyTitl","Sync","Synchronization","Synchronizacja","","","","","","Synchronisierung","Sincronización","Sincronizzazione","Sincronização","Synchronisatie","Синхронизация","Синхронізація"
+"SyOper","Sync","Planned operations and exclusions","","","","","","","","","","","","",""
+"SyIncl","Sync","Included","","","","","","","","","","","","",""
+"SyKind","Sync","Operation","","","","","","","","","","","","",""
+"SyTarg","Sync","Target","","","","","","","","","","","","",""
+"SyDiff","Sync","Differences","","","","","","","","","","","","",""
+"SyClos","Sync","Close","","","","","","","Schließen","Cerrar","Chiudi","Fechar","Sluiten","Закрыть","Закрити"
+"SyExec","Sync","Execute reviewed plan","","","","","","","","","","","","",""
+"OpFail","Operation","The operation could not be completed.","","","","","","","","","","","","",""
+"OpTitl","Operation","Achimeld operation","","","","","","","","","","","","",""
+"NewPro","Project","Untitled Project","","","","","","","","","","","","",""
+"FiFilt","File","Achimeld projects|*.achv","","","","","","","","","","","","",""
+"DiProm","File","Discard unsaved changes?","","","","","","","Ungespeicherte Änderungen verwerfen?","¿Descartar los cambios sin guardar?","Scartare le modifiche non salvate?","Descartar as alterações por guardar?","Niet-opgeslagen wijzigingen verwerpen?","Отменить несохранённые изменения?","Відкинути незбережені зміни?"
+"DiTitl","File","Unsaved changes","","","","","","","Ungespeicherte Änderungen","Cambios sin guardar","Modifiche non salvate","Alterações por guardar","Niet-opgeslagen wijzigingen","Несохранённые изменения","Незбережені зміни"
+"SvProm","File","Do you want to save your changes before exiting?","Czy chcesz zapisać zmiany przed zakończeniem?","是否要在退出前保存更改？","是否要在結束前儲存變更？","終了する前に変更を保存しますか？","종료하기 전에 변경 내용을 저장하시겠습니까?","Voulez-vous enregistrer vos modifications avant de quitter ?","","","","","","",""
+"SvDisc","File","Don't Save","Nie zapisuj","不保存","不儲存","保存しない","저장 안 함","Ne pas enregistrer","Nicht speichern","No guardar","Non salvare","Não guardar","Niet opslaan","Не сохранять","Не зберігати"
+"AtTitl","Atlas explorer","Import Atlases","Importuj atlasy","导入图集","匯入圖集","アトラスをインポート","아틀라스 가져오기","Importer des atlas","Atlanten importieren","Importar atlas","Importa atlanti","Importar atlas","Atlassen importeren","Импортировать атласы","Імпортувати атласи"
+"AtNeed","Atlas explorer","Create or open a project first.","Najpierw utwórz lub otwórz projekt.","请先创建或打开项目。","請先建立或開啟專案。","先にプロジェクトを作成または開いてください。","먼저 프로젝트를 만들거나 여세요.","Créez ou ouvrez d’abord un projet.","","","","","","",""
+"AtAddA","Atlas explorer","Add atlas","","","","","","","","","","","","",""
+"ExTitl","Export","Export Achievement Icons","Eksport ikon osiągnięć","","","","","","Errungenschaftssymbole exportieren","Exportar iconos de logros","Esporta icone degli obiettivi","Exportar ícones de conquistas","Prestatiepictogrammen exporteren","Экспортировать значки достижений","Експортувати значки досягнень"
+"ExPath","Export","Destination folder","Folder docelowy","","","","","","","","","","","",""
+"ExForm","Export","Image format","Format obrazu","","","","","","","","","","","",""
+"ExWidt","Export","Width (pixels)","Szerokość (piksele)","","","","","","","","","","","",""
+"ExHeig","Export","Height (pixels)","Wysokość (piksele)","","","","","","","","","","","",""
+"ExHint","Export","Exports color and grayscale icons for every renderable achievement. Matching filenames are overwritten. JPEG uses a black background for transparency.","Eksportuje kolorowe i szare ikony każdego możliwego do wyrenderowania osiągnięcia. Pliki o tych samych nazwach są nadpisywane. JPEG zastępuje przezroczystość czarnym tłem.","","","","","","","","","","","",""
+"ExVali","Export","Choose an absolute destination folder and whole dimensions from 1 to 4096 pixels.","Wybierz bezwzględną ścieżkę folderu i całkowite wymiary od 1 do 4096 pikseli.","","","","","","","","","","","",""
+"ExCanc","Export","Cancel","Anuluj","","","","","","Abbrechen","Cancelar","Annulla","Cancelar","Annuleren","Отмена","Скасувати"
+"ExGoDo","Export","Export","Eksportuj","","","","","","Exportieren","Exportar","Esporta","Exportar","Exporteren","Экспорт","Експорт"
+"ExNeed","Export","Create or open a project first.","Najpierw utwórz lub otwórz projekt.","","","","","","","","","","","",""
+"ExNone","Export","The project has no achievements to export.","Projekt nie ma osiągnięć do wyeksportowania.","","","","","","","","","","","",""
+"ExDone","Export","Exported {0} achievements ({1} images).","Wyeksportowano {0} osiągnięć ({1} obrazów).","","","","","","","","","","","",""
+"ExSome","Export","Exported {0} achievements. {1} failed.","Wyeksportowano {0} osiągnięć. Niepowodzenie: {1}.","","","","","","","","","","","",""
+"AtAddI","Atlas explorer","Add image","","","","","","","","","","","","",""
+"AtBrow","Atlas explorer","Browse","","","","","","","Durchsuchen","Examinar","Sfoglia","Procurar","Bladeren","Обзор","Огляд"
+"AtRemo","Atlas explorer","Remove","","","","","","","Entfernen","Quitar","Rimuovi","Remover","Verwijderen","Убрать","Прибрати"
+"AtName","Atlas explorer","Display name","","","","","","","Anzeigename","Nombre visible","Nome visualizzato","Nome apresentado","Weergavenaam","Отображаемое имя","Відображувана назва"
+"AtPath","Atlas explorer","Image path","","","","","","","","","","","","",""
+"AtGrid","Atlas explorer","Grid generator","","","","","","","","","","","","",""
+"AtCols","Atlas explorer","Columns","","","","","","","Spalten","Columnas","Colonne","Colunas","Kolommen","Столбцы","Стовпці"
+"AtRows","Atlas explorer","Rows","","","","","","","Zeilen","Filas","Righe","Linhas","Rijen","Строки","Рядки"
+"AtSqWr","Atlas explorer","The current grid does not produce square tiles.","","","","","","","","","","","","",""
+"AtAtla","Atlas explorer","Atlas","","","","","","","","","","","","",""
+"AtImag","Atlas explorer","Standalone image","","","","","","","","","","","","",""
+"AtNoIm","Atlas explorer","No standalone images are referenced. Add one in Import Atlases.","","","","","","","","","","","","",""
+"InISrc","Inspector","Icon source","","","","","","","","","","","","",""
+"LyType","Layers","Layer type","Typ warstwy","图层类型","圖層類型","レイヤーの種類","레이어 유형","Type de calque","Ebenentyp","Tipo de capa","Tipo di livello","Tipo de camada","Laagtype","Тип слоя","Тип шару"
+"InAtls","Inspector","Atlas","","","","","","","","","","","","",""
+"InStIm","Inspector","Standalone image","","","","","","","","","","","","",""
+"InStAr","Inspector","Imported Steam artwork","","","","","","","","","","","","",""
+"InText","Inspector","Text","","","","","","","Text","Texto","Testo","Texto","Tekst","Текст","Текст"
+"InSoli","Inspector","Solid","","","","","","","Vollton","Sólido","Tinta unita","Sólido","Effen","Сплошная заливка","Суцільна заливка"
+"InGrad","Inspector","Gradient","","","","","","","Farbverlauf","Degradado","Gradiente","Gradiente","Kleurverloop","Градиент","Градієнт"
+"InBgCl","Inspector","Background color","","","","","","","","","","","","",""
+"InLays","Inspector","Layers and folders","Warstwy i foldery","图层和文件夹","圖層與資料夾","レイヤーとフォルダー","레이어와 폴더","Calques et dossiers","Ebenen und Ordner","Capas y carpetas","Livelli e cartelle","Camadas e pastas","Lagen en mappen","Слои и папки","Шари й папки"
+"InLyHt","Inspector","Layers are drawn from bottom to top. Drag to reorder. Atlas tiles keep their transparency.","","","","","","","","","","","","",""
+"InAdAt","Inspector","Add atlas layer","","","","","","","","","","","","",""
+"InAdIm","Inspector","Add image layer","","","","","","","","","","","","",""
+"InAdTx","Inspector","Add text layer","","","","","","","","","","","","",""
+"InAdSo","Inspector","Add solid layer","","","","","","","","","","","","",""
+"InAdGr","Inspector","Add gradient layer","","","","","","","","","","","","",""
+"InLyBk","Inspector","Send backward","","","","","","","","","","","","",""
+"InLyFw","Inspector","Bring forward","","","","","","","","","","","","",""
+"InLyRm","Inspector","Remove layer","","","","","","","","","","","","",""
+"InLyVs","Inspector","Visible","","","","","","","","","","","","",""
+"InTxct","Inspector","Text","","","","","","","Text","Texto","Testo","Texto","Tekst","Текст","Текст"
+"InFont","Inspector","Font","","","","","","","Schriftart","Fuente","Carattere","Tipo de letra","Lettertype","Шрифт","Шрифт"
+"InFSiz","Inspector","Font size","","","","","","","Schriftgröße","Tamaño de fuente","Dimensione carattere","Tamanho da letra","Lettergrootte","Размер шрифта","Розмір шрифту"
+"InColr","Inspector","Color","","","","","","","Farbe","Color","Colore","Cor","Kleur","Цвет","Колір"
+"InOutl","Inspector","Outline","","","","","","","","","","","","",""
+"InOuCl","Inspector","Outline color","","","","","","","","","","","","",""
+"InOuWd","Inspector","Outline width","","","","","","","","","","","","",""
+"InAlgn","Inspector","Alignment","","","","","","","Ausrichtung","Alineación","Allineamento","Alinhamento","Uitlijning","Выравнивание","Вирівнювання"
+"InAlCn","Inspector","Center","","","","","","","Mitte","Centro","Centro","Centro","Midden","Центр","Центр"
+"InAlTL","Inspector","Top left","","","","","","","","","","","","",""
+"InAlTR","Inspector","Top right","","","","","","","","","","","","",""
+"InAlBL","Inspector","Bottom left","","","","","","","","","","","","",""
+"InAlBR","Inspector","Bottom right","","","","","","","","","","","","",""
+"InBlnd","Inspector","Blend mode","","","","","","","Mischmodus","Modo de fusión","Metodo di fusione","Modo de mistura","Mengmodus","Режим наложения","Режим накладання"
+"InBlNo","Inspector","Normal","","","","","","","","","","","","",""
+"InBlMu","Inspector","Multiply","","","","","","","","","","","","",""
+"InBlSc","Inspector","Screen","","","","","","","","","","","","",""
+"InBlOv","Inspector","Overlay","","","","","","","","","","","","",""
+"InBlDk","Inspector","Darken","","","","","","","","","","","","",""
+"InBlLt","Inspector","Lighten","","","","","","","","","","","","",""
+"InBlAd","Inspector","Add","","","","","","","Hinzufügen","Añadir","Aggiungi","Adicionar","Toevoegen","Добавить","Додати"
+"InBlDf","Inspector","Difference","","","","","","","","","","","","",""
+"InGrKd","Inspector","Gradient type","","","","","","","","","","","","",""
+"InGrAn","Inspector","Angle","","","","","","","Winkel","Ángulo","Angolo","Ângulo","Hoek","Угол","Кут"
+"InGrSt","Inspector","Gradient stops","","","","","","","","","","","","",""
+"InAdSt","Inspector","Add stop","","","","","","","","","","","","",""
+"InRmSt","Inspector","Remove stop","","","","","","","","","","","","",""
+"InOffs","Inspector","Offset","","","","","","","Versatz","Desplazamiento","Spostamento","Deslocamento","Verschuiving","Смещение","Зсув"
+"InLinr","Inspector","Linear","","","","","","","","","","","","",""
+"InRadi","Inspector","Radial","","","","","","","","","","","","",""
+"CpSvSq","Color picker","Saturation and brightness","","","","","","","","","","","","",""
+"CpHuee","Color picker","Hue","","","","","","","","","","","","",""
+"CpRedd","Color picker","Red","","","","","","","","","","","","",""
+"CpGren","Color picker","Green","","","","","","","","","","","","",""
+"CpBlue","Color picker","Blue","","","","","","","","","","","","",""
+"CpAlph","Color picker","Alpha","","","","","","","","","","","","",""
+"CpOpen","Color picker","Open color picker","","","","","","","","","","","","",""
+"CpHexx","Color picker","Hex color","","","","","","","","","","","","",""
+"ImFilt","File","PNG JPEG and Photoshop images|*.png;*.jpg;*.jpeg;*.psd;*.psb","","","","","","","","","","","","",""
+"InStId","Inspector","Steam achievement ID","","","","","","","","","","","","",""
+"InNoId","Inspector","Assigned by Steam after synchronization","","","","","","","","","","","","",""
+"InNone","Inspector","None","","","","","","","Keine","Ninguno","Nessuno","Nenhum","Geen","Нет","Немає"
+"InProg","Inspector","Progress stat","","","","","","","","","","","","",""
+"InUnlk","Inspector","Unlock value","","","","","","","","","","","","",""
+"InUTyp","Inspector","Unlock value type","Typ wartości odblokowania","","","","","","","","","","","",""
+"InInte","Inspector","Integer","Całkowita","","","","","","","","","","","",""
+"InFloa","Inspector","Float","Zmiennoprzecinkowa","","","","","","","","","","","",""
+"InUFol","Inspector","Follows the progress stat type.","Zgodny z typem statystyki postępu.","","","","","","","","","","","",""
+"InLock","Inspector","Unachieved icon (image library)","","","","","","","","","","","","",""
+"InAuto","Inspector","Generate from achieved icon","","","","","","","","","","","","",""
+"InAchI","Inspector","Achieved icon","","","","","","","","","","","","",""
+"SyStrt","Sync","Sign in to Steamworks then read the current configuration to review your changes.","","","","","","","","","","","","",""
+"SyLogn","Sync","Sign in to Steamworks in the Achimeld Chrome window. Synchronization will continue automatically.","Zaloguj się do Steamworks w oknie Chrome Achimeld. Synchronizacja będzie kontynuowana automatycznie.","请在 Achimeld 的 Chrome 窗口中登录 Steamworks。同步将自动继续。","請在 Achimeld 的 Chrome 視窗中登入 Steamworks。同步將自動繼續。","Achimeld の Chrome ウィンドウで Steamworks にサインインしてください。同期は自動的に続行されます。","Achimeld Chrome 창에서 Steamworks에 로그인하세요. 동기화가 자동으로 계속됩니다.","Connectez-vous à Steamworks dans la fenêtre Chrome Achimeld. La synchronisation reprendra automatiquement.","","","","","","",""
+"SyRedy","Sync","Select changes to import or export. Import updates this project. Export saves and verifies the Steamworks draft. Publication is a separate step in Steamworks.","","","","","","","","","","","","",""
+"SyPhLo","Sync","1. Sign in to Steamworks","1. Zaloguj się do Steamworks","","","","","","","","","","","",""
+"SyPhIm","Sync","2. Import achievements and stats","2. Importuj osiągnięcia i statystyki","","","","","","","","","","","",""
+"SyPhRv","Sync","Review imports and exports","Przejrzyj import i eksport","","","","","","","","","","","",""
+"SyPhEx","Sync","3. Export Achimeld contents","3. Eksportuj zawartość Achimeld","","","","","","","","","","","",""
+"SyPhDn","Sync","Export completed","Eksport zakończony","","","","","","","","","","","",""
+"SyPhHt","Sync","Synchronize reads Steam and exports your project automatically. Sign in only when prompted. Imports are available separately.","Synchronizacja automatycznie odczytuje Steam i eksportuje projekt. Zaloguj się tylko na żądanie. Import jest dostępny osobno.","同步会自动读取 Steam 并导出项目。仅在提示时登录。导入可单独执行。","同步會自動讀取 Steam 並匯出專案。僅在提示時登入。匯入可單獨執行。","同期は Steam を読み取りプロジェクトを自動的にエクスポートします。求められた場合のみサインインしてください。インポートは別途行えます。","동기화는 Steam을 읽고 프로젝트를 자동으로 내보냅니다. 요청할 때만 로그인하세요. 가져오기는 별도로 사용할 수 있습니다.","La synchronisation lit Steam et exporte automatiquement votre projet. Connectez-vous uniquement lorsque demandé. Les imports sont disponibles séparément.","","","","","","",""
+"SyImpt","Sync","Import selected","Importuj wybrane","","","","","","Auswahl importieren","Importar selección","Importa selezione","Importar seleção","Selectie importeren","Импортировать выбранное","Імпортувати вибране"
+"SyExpt","Sync","Export selected","Eksportuj wybrane","","","","","","Auswahl exportieren","Exportar selección","Esporta selezione","Exportar seleção","Selectie exporteren","Экспортировать выбранное","Експортувати вибране"
+"SyImDn","Sync","Selected achievements and stats were imported. Read Steam again to review exports or stop here.","Wybrane osiągnięcia i statystyki zostały zaimportowane. Odczytaj Steam ponownie aby przejrzeć eksport lub zakończ tutaj.","","","","","","","","","","","",""
+"SyDone","Sync","The selected changes were saved and verified. Publish the draft in Steamworks to make it live.","","","","","","","","","","","","",""
+"SySign","Sync","Sign in to Steamworks","","","","","","","","","","","","",""
+"SyConn","Sync","Opening Steamworks in Chrome. Please wait…","Otwieranie Steamworks w Chrome. Proszę czekać…","","","","","","","","","","","",""
+"SyDeny","Sync","Steamworks denied access. Check your account permissions in Chrome then try signing in again.","Steamworks odmówił dostępu. Sprawdź uprawnienia konta w Chrome i spróbuj zalogować się ponownie.","","","","","","","","","","","",""
+"SyUnkn","Sync","Could not confirm the Steamworks sign-in page. Check the page in Chrome then try signing in again.","Nie udało się rozpoznać strony logowania Steamworks. Sprawdź stronę w Chrome i spróbuj zalogować się ponownie.","","","","","","","","","","","",""
+"SyRead","Sync","Read Steam","","","","","","","","","","","","",""
+"SyBrTg","Sync","Browser","Przeglądarka","","","","","","","","","","","",""
+"SyBrMg","Sync","Managed Chrome (launch)","Zarządzana przeglądarka Chrome (uruchom)","","","","","","","","","","","",""
+"SyBrLb","Sync","Chrome on port {0} ({1})","Chrome na porcie {0} ({1})","","","","","","","","","","","",""
+"SyBrSc","Sync","Scan","Skanuj","","","","","","","","","","","",""
+"SyBrSt","Sync","Start Chrome with debugging","Uruchom Chrome z debugowaniem","","","","","","","","","","","",""
+"SyBrNn","Sync","No running Chrome with remote debugging was found.","Nie znaleziono uruchomionej przeglądarki Chrome ze zdalnym debugowaniem.","","","","","","","","","","","",""
+"LyHint","Layers","Drag to reorder · Drop artwork or PSD layers · Ctrl+C / Ctrl+V / Ctrl+D · Frontmost layer at the top","Przeciągnij aby zmienić kolejność · Upuść obraz lub warstwy PSD · Ctrl+C / Ctrl+V / Ctrl+D · Najwyższa warstwa na górze","","","","","","","","","","","",""
+"IcDrop","Layers","Drop artwork here to import general images or icon layers","Upuść tutaj obraz aby zaimportować obraz ogólny lub warstwy ikony","","","","","","","","","","","",""
+"LyProp","Layers","Layer properties","Właściwości warstwy","","","","","","Ebeneneigenschaften","Propiedades de capa","Proprietà del livello","Propriedades da camada","Laageigenschappen","Свойства слоя","Властивості шару"
+"LyDrag","Layers","Drag this tab to detach the Layers window","Przeciągnij kartę aby odłączyć okno warstw","","","","","","","","","","","",""
+"LyFlot","Layers","Detach","Odłącz","","","","","","","","","","","",""
+"LyDock","Layers","Dock","Zadokuj","","","","","","","","","","","",""
+"LyAddd","Layers","Create layer","Utwórz warstwę","","","","","","Ebene erstellen","Crear capa","Crea livello","Criar camada","Laag maken","Создать слой","Створити шар"
+"LySize","Layers","Resize Layers window","Zmień rozmiar okna warstw","","","","","","","","","","","",""
+"InAcAt","Inspector","Achievement atlas","Atlas osiągnięcia","","","","","","","","","","","",""
+"InGnIm","Inspector","General image","Obraz ogólny","","","","","","Allgemeines Bild","Imagen general","Immagine generale","Imagem geral","Algemene afbeelding","Общее изображение","Загальне зображення"
+"InGnHt","Inspector","Layers can use this image instead of an atlas tile.","Warstwy mogą użyć tego obrazu zamiast kafelka atlasu.","","","","","","","","","","","",""
+"InGnMs","Validation","The referenced general image ID does not exist.","Obraz ogólny o wskazanym ID nie istnieje.","","","","","","","","","","","",""
+"InGnAt","Inspector","General atlas","Atlas ogólny","","","","","","","","","","","",""
+"InGnAH","Inspector","Layers linked to the general atlas follow its atlas and tile index.","Warstwy połączone z atlasem ogólnym używają wskazanego atlasu i indeksu kafelka.","","","","","","","","","","","",""
+"InLkGn","Layers","Link to general atlas","Połącz z atlasem ogólnym","","","","","","","","","","","",""
+"InGnAM","Validation","Choose a general atlas on the achievement.","Wybierz atlas ogólny przy osiągnięciu.","","","","","","","","","","","",""
+"InAdGn","Inspector","Add general image layer","Dodaj warstwę obrazu ogólnego","","","","","","","","","","","",""
+"InLkVl","Layers","Link tile to unlock value","Połącz kafelek z wartością odblokowania","","","","","","","","","","","",""
+"InLkNu","Layers","Link to unlock value","Połącz z wartością odblokowania","","","","","","","","","","","",""
+"InOuPl","Layers","Outline placement","Położenie obrysu","","","","","","","","","","","",""
+"InOuIn","Layers","Inward","Do wewnątrz","","","","","","","","","","","",""
+"InOuCn","Layers","Centered","Wyśrodkowany","","","","","","","","","","","",""
+"InOuOt","Layers","Outward","Na zewnątrz","","","","","","","","","","","",""
+"LyCopy","Layers","Copy style","Kopiuj styl","","","","","","","","","","","",""
+"LyPast","Layers","Paste style","Wklej styl","","","","","","","","","","","",""
+"InTran","Layers","Transform","Przekształcenie","","","","","","","","","","","",""
+"InOpac","Layers","Opacity","Przezroczystość","","","","","","Deckkraft","Opacidad","Opacità","Opacidade","Dekking","Непрозрачность","Непрозорість"
+"LyPerc","Layers","%","%","","","","","","","","","","","",""
+"InOffX","Layers","Horizontal offset (px)","Przesunięcie poziome (px)","","","","","","","","","","","",""
+"InOffY","Layers","Vertical offset (px)","Przesunięcie pionowe (px)","","","","","","","","","","","",""
+"LyPick","Layers","Choose a tile from the atlas","Wybierz kafelek z atlasu","","","","","","","","","","","",""
+"LyDelL","Layers","Delete layer","Usuń warstwę","","","","","","Ebene löschen","Eliminar capa","Elimina livello","Eliminar camada","Laag verwijderen","Удалить слой","Видалити шар"
+"LyClon","Layers","Clone layer","Klonuj warstwę","","","","","","","","","","","",""
+"FxList","Layers","Effects","Efekty","","","","","","Effekte","Efectos","Effetti","Efeitos","Effecten","Эффекты","Ефекти"
+"FxFold","Layers","Expand or collapse effects","Rozwiń lub zwiń efekty","","","","","","","","","","","",""
+"FxAddd","Layers","Add effect","Dodaj efekt","","","","","","Effekt hinzufügen","Añadir efecto","Aggiungi effetto","Adicionar efeito","Effect toevoegen","Добавить эффект","Додати ефект"
+"FxDele","Layers","Delete effect","Usuń efekt","","","","","","","","","","","",""
+"FxPlus","Layers","fx+","fx+","","","","","","","","","","","",""
+"FxVisi","Layers","Effect visible","Efekt widoczny","","","","","","","","","","","",""
+"FxColO","Layers","Color overlay","Nakładka koloru","","","","","","","","","","","",""
+"FxOutl","Layers","Outline","Obrys","","","","","","","","","","","",""
+"FxShad","Layers","Shadow","Cień","","","","","","","","","","","",""
+"FxColr","Layers","Effect color","Kolor efektu","","","","","","","","","","","",""
+"FxOffX","Layers","Horizontal offset","Przesunięcie poziome","","","","","","Horizontaler Versatz","Desplazamiento horizontal","Spostamento orizzontale","Deslocamento horizontal","Horizontale verschuiving","Смещение по горизонтали","Горизонтальний зсув"
+"FxOffY","Layers","Vertical offset","Przesunięcie pionowe","","","","","","Vertikaler Versatz","Desplazamiento vertical","Spostamento verticale","Deslocamento vertical","Verticale verschuiving","Смещение по вертикали","Вертикальний зсув"
+"FxBlur","Layers","Blur","Rozmycie","","","","","","","","","","","",""
+"FxAfOt","Layers","Affect outline","Wpływ na obrys","","","","","","","","","","","",""
+"FxCutO","Layers","Cutout (px)","Wycięcie (px)","","","","","","","","","","","",""
+"FxCutH","Layers","Expand the original alpha by this width before inversion to leave a gap before the inner light.","Rozszerz oryginalny kanał alfa o tę szerokość przed odwróceniem aby zostawić odstęp przed światłem wewnętrznym.","","","","","","","","","","","",""
+"TpTitl","Atlas tile picker","Choose atlas tile","Wybierz kafelek atlasu","","","","","","","","","","","",""
+"TpHint","Atlas tile picker","Click a tile to select it. Double-click to accept.","Kliknij kafelek i wybierz go. Kliknij dwukrotnie i zatwierdź.","","","","","","","","","","","",""
+"TpSele","Atlas tile picker","Selected tile: {0}","Wybrany kafelek: {0}","","","","","","","","","","","",""
+"TpLoad","Atlas tile picker","Loading atlas…","Wczytywanie atlasu…","","","","","","","","","","","",""
+"TpFail","Atlas tile picker","The atlas could not be loaded.","Nie udało się wczytać atlasu.","","","","","","","","","","","",""
+"TpUseT","Atlas tile picker","Use tile","Użyj kafelka","","","","","","","","","","","",""
+"WkStat","Working","Stats","Statystyki","","","","","","Statistiken","Estadísticas","Statistiche","Estatísticas","Statistieken","Статистика","Статистика"
+"InATyp","Inspector","Achievement type","Typ osiągnięcia","","","","","","","","","","","",""
+"InManu","Inspector","Manual","Ręczne","","","","","","","","","","","",""
+"InTied","Inspector","Tied to stat","Powiązane ze statystyką","","","","","","","","","","","",""
+"CdTied","Card","Tied to {0}","Powiązane z {0}","","","","","","","","","","","",""
+"TLTerm","Menu","Terminal","Terminal","终端","終端","ターミナル","터미널","Terminal","","","","","","",""
+"TrCopy","Terminal","Copy all","Kopiuj wszystko","全部复制","全部複製","すべてコピー","모두 복사","Tout copier","Alles kopieren","Copiar todo","Copia tutto","Copiar tudo","Alles kopiëren","Копировать всё","Копіювати все"
+"TrCler","Terminal","Clear","Wyczyść","","","","","","Leeren","Limpiar","Cancella","Limpar","Wissen","Очистить","Очистити"
+"AcBlck","Actions","This action is unavailable. Finish the current operation or select an item first.","Ta czynność jest niedostępna. Zakończ bieżącą operację lub wybierz element.","","","","","","","","","","","",""
+"AcProj","Actions","Create or open a project before using this action.","Utwórz lub otwórz projekt przed użyciem tej czynności.","","","","","","","","","","","",""
+"AcCapt","Actions","Could not capture the mouse for dragging. Release the mouse buttons and try again.","Nie udało się przechwycić myszy. Zwolnij przyciski i spróbuj ponownie.","","","","","","","","","","","",""
+"FxInLt","Layers","Inner light","Światło wewnętrzne","","","","","","","","","","","",""
+"FxUseB","Layers","Enable box blur","Włącz rozmycie pudełkowe","","","","","","","","","","","",""
+"FxBCol","Layers","Box blur color","Kolor rozmycia","","","","","","","","","","","",""
+"FxBBln","Layers","Box blur blending","Mieszanie rozmycia","","","","","","","","","","","",""
+"FxBOpa","Layers","Box blur opacity (%)","Krycie rozmycia (%)","","","","","","","","","","","",""
+"InSdfV","Layers","SDF vignette","Winieta SDF","","","","","","","","","","","",""
+"InAdSv","Layers","Add SDF vignette","Dodaj winietę SDF","","","","","","","","","","","",""
+"InSvRo","Layers","Roundness (0–1)","Zaokrąglenie (0–1)","","","","","","","","","","","",""
+"InSvIn","Layers","Inset (0–0.95)","Wcięcie (0–0.95)","","","","","","","","","","","",""
+"InSvSo","Layers","Softness (0–1)","Miękkość (0–1)","","","","","","","","","","","",""
+"FxBoxB","Layers","Box blur","Rozmycie pudełkowe","","","","","","","","","","","",""
+"InShap","Layers","Shape","Kształt","","","","","","Form","Forma","Forma","Forma","Vorm","Фигура","Фігура"
+"InAdSh","Layers","Add shape","Dodaj kształt","","","","","","","","","","","",""
+"ShRect","Layers","Rectangle","Prostokąt","","","","","","","","","","","",""
+"ShSphr","Layers","Sphere","Sfera","","","","","","","","","","","",""
+"ShNgon","Layers","N-gon (regular polygon)","N-kąt (wielokąt foremny)","","","","","","","","","","","",""
+"ShStar","Layers","Star","Gwiazda","","","","","","","","","","","",""
+"ShVcnt","Layers","Sides / star points (3–64)","Boki / ramiona gwiazdy (3–64)","","","","","","","","","","","",""
+"ShORnd","Layers","Outer corner rounding (0–1)","Zaokrąglenie zewnętrznych wierzchołków (0–1)","","","","","","","","","","","",""
+"ShIRad","Layers","Inner radius (0.01–1)","Promień wewnętrzny (0.01–1)","","","","","","","","","","","",""
+"ShIRnd","Layers","Inner corner rounding (0–1)","Zaokrąglenie wewnętrznych wierzchołków (0–1)","","","","","","","","","","","",""
+"ShHint","Layers","Lower inner radius makes deep concave valleys; raise it toward 1 for a convex outline. Rounding 0 keeps sharp corners; 1 makes them fully rounded.","Mniejszy promień wewnętrzny tworzy głębokie wklęsłe wierzchołki; zbliż go do 1 aby uzyskać wypukły obrys. Zaokrąglenie 0 zachowuje ostre wierzchołki; 1 w pełni je zaokrągla.","","","","","","","","","","","",""
+"ShSclX","Layers","X scale","Skala X","","","","","","","","","","","",""
+"ShSclY","Layers","Y scale","Skala Y","","","","","","","","","","","",""
+"ShRotn","Layers","Rotation (degrees)","Obrót (stopnie)","","","","","","","","","","","",""
+"SyAuth","Sync","Signed in to Steamworks.","Zalogowano do Steamworks.","已登录 Steamworks。","已登入 Steamworks。","Steamworks にサインインしました。","Steamworks에 로그인했습니다.","Connecté à Steamworks.","","","","","","",""
+"SyCncl","Sync","Synchronization cancelled.","Synchronizacja anulowana.","同步已取消。","同步已取消。","同期をキャンセルしました。","동기화가 취소되었습니다.","Synchronisation annulée.","","","","","","",""
+"SyFail","Sync","Synchronization stopped because of an error","Synchronizacja zatrzymana z powodu błędu","","","","","","","","","","","",""
+"SyStBt","Sync","Stop synchronization","Zatrzymaj synchronizację","","","","","","Synchronisierung stoppen","Detener sincronización","Interrompi sincronizzazione","Parar sincronização","Synchronisatie stoppen","Остановить синхронизацию","Зупинити синхронізацію"
+"SyStop","Sync","Stopping synchronization. Any Steam save already in progress will finish verification first.","Zatrzymywanie synchronizacji. Trwający zapis Steam najpierw zakończy weryfikację.","","","","","","","","","","","",""
+"GnImgs","Image editor","General images","Obrazy ogólne","通用图像","通用影像","共通画像","공용 이미지","Images générales","Allgemeine Bilder","Imágenes generales","Immagini generali","Imagens gerais","Algemene afbeeldingen","Общие изображения","Загальні зображення"
+"GnImpt","Image editor","Import","Importuj","导入","匯入","インポート","가져오기","Importer","Importieren","Importar","Importa","Importar","Importeren","Импорт","Імпорт"
+"GnHint","Image editor","Copy an image or atlas tile from icon layers, then paste it here. IDs stay fixed when images are removed.","Skopiuj obraz lub kafelek atlasu z warstw ikony i wklej go tutaj. Usunięcie obrazów nie zmienia ich identyfikatorów.","从图标图层复制图像或图集单元，然后粘贴到此处。移除图像时，编号保持不变。","從圖示圖層複製影像或圖集區塊，再貼到此處。移除影像時，編號保持不變。","アイコンのレイヤーから画像やアトラスタイルをコピーし、ここに貼り付けます。画像を削除しても ID は変わりません。","아이콘 레이어의 이미지나 아틀라스 타일을 복사해 여기에 붙여넣으세요. 이미지를 제거해도 ID는 바뀌지 않습니다.","Copiez une image ou une tuile d’atlas depuis les calques de l’icône, puis collez-la ici. Les identifiants restent fixes après la suppression d’images.","","","","","","",""
+"GnTile","Image editor","Add atlas tile","Dodaj kafelek atlasu","添加图集单元","新增圖集區塊","アトラスタイルを追加","아틀라스 타일 추가","Ajouter une tuile d’atlas","","","","","","",""
+"GnUseI","Image editor","Use selected image in icon","Użyj wybranego obrazu w ikonie","在图标中使用所选图像","在圖示中使用所選影像","選択した画像をアイコンに使用","선택한 이미지를 아이콘에 사용","Utiliser l’image sélectionnée dans l’icône","","","","","","",""
+"GnName","Image editor","General image {0}","Obraz ogólny {0}","通用图像 {0}","通用影像 {0}","共通画像 {0}","공용 이미지 {0}","Image générale {0}","","","","","","",""
+"GnIdTx","Image editor","ID {0}","ID {0}","编号 {0}","編號 {0}","ID {0}","ID {0}","ID {0}","","","","","","",""
+"GnAtTl","Image editor","Atlas tile #{0}","Kafelek atlasu #{0}","图集单元 #{0}","圖集區塊 #{0}","アトラスタイル #{0}","아틀라스 타일 #{0}","Tuile d’atlas n° {0}","","","","","","",""
+"LyCpLy","Image editor","Copy layer","Kopiuj warstwę","复制图层","複製圖層","レイヤーをコピー","레이어 복사","Copier le calque","Ebene kopieren","Copiar capa","Copia livello","Copiar camada","Laag kopiëren","Копировать слой","Копіювати шар"
+"LyPsLy","Image editor","Paste layer or folder","Wklej warstwę lub folder","粘贴图层或文件夹","貼上圖層或資料夾","レイヤーまたはフォルダーを貼り付け","레이어 또는 폴더 붙여넣기","Coller un calque ou un dossier","","","","","","",""
+"LyRepD","Image editor","Replace from disk...","Zastąp plikiem z dysku...","从磁盘替换...","從磁碟替換...","ディスクから置換...","디스크에서 교체...","Remplacer depuis le disque...","","","","","","",""
+"LyRepA","Image editor","Replace from atlas...","Zastąp kafelkiem atlasu...","从图集替换...","從圖集替換...","アトラスから置換...","아틀라스에서 교체...","Remplacer depuis un atlas...","","","","","","",""
+"LyCrFd","Image editor","Create folder","Utwórz folder","创建文件夹","建立資料夾","フォルダーを作成","폴더 만들기","Créer un dossier","Ordner erstellen","Crear carpeta","Crea cartella","Criar pasta","Map maken","Создать папку","Створити папку"
+"LyFdCf","Image editor","Folder contents and mask...","Zawartość i maska folderu...","文件夹内容和蒙版...","資料夾內容與遮色片...","フォルダーの内容とマスク...","폴더 내용과 마스크...","Contenu et masque du dossier...","","","","","","",""
+"LyPsMk","Image editor","Paste image as folder mask","Wklej obraz jako maskę folderu","将图像粘贴为文件夹蒙版","將影像貼為資料夾遮色片","画像をフォルダーのマスクとして貼り付け","이미지를 폴더 마스크로 붙여넣기","Coller l’image comme masque du dossier","","","","","","",""
+"LyMkHt","Image editor","Masks use image transparency. Add a General image layer to use it as a mask.","Maski korzystają z przezroczystości obrazu. Dodaj warstwę obrazu ogólnego, aby użyć jej jako maski.","蒙版使用图像透明度。添加通用图像图层以将其用作蒙版。","遮色片使用影像透明度。新增通用影像圖層以將其作為遮色片。","マスクには画像の透明度を使用します。共通画像レイヤーを追加すると、マスクとして使用できます。","마스크는 이미지의 투명도를 사용합니다. 공용 이미지 레이어를 추가해 마스크로 사용하세요.","Les masques utilisent la transparence des images. Ajoutez un calque d’image générale pour l’utiliser comme masque.","","","","","","",""
+"FxBlHt","Image editor","Normal applies the chosen color. Multiply darkens; Screen lightens. Opacity controls the strength.","Tryb normalny stosuje wybrany kolor. Mnożenie przyciemnia, a ekran rozjaśnia. Krycie określa siłę efektu.","正常模式应用所选颜色。正片叠底使图像变暗，滤色使图像变亮。不透明度控制效果强度。","一般模式套用所選顏色。色彩增值使影像變暗，濾色使影像變亮。不透明度控制效果強度。","通常は選択した色を適用します。乗算は暗く、スクリーンは明るくします。不透明度で効果の強さを調整します。","일반은 선택한 색상을 적용합니다. 곱하기는 어둡게, 스크린은 밝게 만듭니다. 불투명도로 강도를 조절합니다.","Normal applique la couleur choisie. Produit assombrit et Écran éclaircit. L’opacité règle l’intensité.","","","","","","",""
+"ShShap","Image editor","Shape","Kształt","形状","形狀","形状","도형","Forme","Form","Forma","Forma","Forma","Vorm","Фигура","Фігура"
+"FdName","Folders","Folder","Folder","文件夹","資料夾","フォルダー","폴더","Dossier","Ordner","Carpeta","Cartella","Pasta","Map","Папка","Папка"
+"FdProp","Folders","Folder properties","Właściwości folderu","文件夹属性","資料夾屬性","フォルダーのプロパティ","폴더 속성","Propriétés du dossier","","","","","","",""
+"FdCopy","Folders","Copy folder","Kopiuj folder","复制文件夹","複製資料夾","フォルダーをコピー","폴더 복사","Copier le dossier","","","","","","",""
+"FdClon","Folders","Clone folder","Klonuj folder","克隆文件夹","複製資料夾","フォルダーを複製","폴더 복제","Dupliquer le dossier","","","","","","",""
+"FdDele","Folders","Delete folder","Usuń folder","删除文件夹","刪除資料夾","フォルダーを削除","폴더 삭제","Supprimer le dossier","Ordner löschen","Eliminar carpeta","Elimina cartella","Eliminar pasta","Map verwijderen","Удалить папку","Видалити папку"
+"FdMask","Folders","Folder mask","Maska folderu","","","","","","","","","","","",""
+"FdEdit","Folders","Edit mask","Edytuj maskę","","","","","","","","","","","",""
+"FdOpen","Folders","Expand folder","Rozwiń folder","展开文件夹","展開資料夾","フォルダーを展開","폴더 펼치기","Développer le dossier","","","","","","",""
+"FdClos","Folders","Collapse folder","Zwiń folder","折叠文件夹","收合資料夾","フォルダーを折りたたむ","폴더 접기","Réduire le dossier","","","","","","",""
+"LyMask","Layers","Mask","Maska","","","","","","Maske","Máscara","Maschera","Máscara","Masker","Маска","Маска"
+"LyScal","Layers","Scale","Skala","","","","","","Skalierung","Escala","Scala","Escala","Schaal","Масштаб","Масштаб"
+"LyOffX","Layers","X (px)","X (px)","","","","","","","","","","","",""
+"LyOffY","Layers","Y (px)","Y (px)","","","","","","","","","","","",""
+"AdEdit","Adjustments","Edit adjustment","Edytuj dopasowanie","","","","","","","","","","","",""
+"AdList","Adjustments","Adjustment layers","Warstwy dopasowania","","","","","","","","","","","",""
+"AdCrvs","Adjustments","Curves","Krzywe","","","","","","","","","","","",""
+"AdCont","Adjustments","Brightness / contrast","Jasność / kontrast","","","","","","","","","","","",""
+"AdHueS","Adjustments","Hue / saturation","Barwa / nasycenie","","","","","","","","","","","",""
+"AdSlct","Adjustments","Selective color","Kolor selektywny","","","","","","","","","","","",""
+"AdGrad","Adjustments","Gradient overlay","Nakładka gradientu","","","","","","","","","","","",""
+"FxGrad","Layer effects","Gradient overlay","Nakładka gradientowa","","","","","","","","","","","",""
+"WkSoId","Canvas","Sort by ID","Sortuj według ID","","","","","","","","","","","",""
+"WkSoSt","Canvas","Sort by icon style","Sortuj według stylu ikony","","","","","","","","","","","",""
+"WkSoAc","Canvas","Sort by stat activation","Sortuj według aktywacji statystyki","","","","","","","","","","","",""
+"PRGENE","Preferences","General","Ogólne","常规","一般","一般","일반","Général","Allgemein","General","Generale","Geral","Algemeen","Общие","Загальні"
+"PRTYPO","Preferences","Typography and controls","Typografia i kontrolki","字体与控件","字型與控制項","文字とコントロール","글꼴 및 컨트롤","Typographie et contrôles","","","","","","",""
+"PRSAMP","Preferences","Sample","Przykład","示例","範例","サンプル","예시","Exemple","","","","","","",""
+"PRADVA","Preferences","Advanced settings","Ustawienia zaawansowane","高级设置","進階設定","詳細設定","고급 설정","Paramètres avancés","","","","","","",""
+"PRERRS","Validation","Needs attention","Wymaga uwagi","需要处理","需要處理","要確認","확인 필요","À vérifier","","","","","","",""
+"PRPROH","Preferences","Leave blank to use Achimeld’s private profile. A custom folder can reuse a signed-in session.","Pozostaw puste aby użyć prywatnego profilu Achimeld. Własny folder pozwala użyć zalogowanej sesji.","","","","","","","","","","","",""
+"PRVPAL","Validation","Check the colors in Appearance before saving.","Sprawdź kolory w sekcji Wygląd przed zapisaniem.","","","","","","","","","","","",""
+"PRVBRO","Validation","Check the paths in Browser before saving.","Sprawdź ścieżki w sekcji Przeglądarka przed zapisaniem.","","","","","","","","","","","",""
+"PRVBTH","Validation","Check Appearance colors and Browser paths before saving.","Sprawdź kolory w sekcji Wygląd i ścieżki w sekcji Przeglądarka przed zapisaniem.","","","","","","","","","","","",""
+"WkNeLn","Canvas","Start each icon style on a new line","Każdy styl ikony w nowym wierszu","","","","","","","","","","","",""
+"WkRows","Canvas","Order by rows (X first)","Układaj wierszami (najpierw X)","","","","","","","","","","","",""
+"WkCols","Canvas","Order by columns (Y first)","Układaj kolumnami (najpierw Y)","","","","","","","","","","","",""
+"WkAllI","Canvas","Order all icons","Układaj wszystkie ikony","","","","","","","","","","","",""
+"WkSelI","Canvas","Order selected icons only","Układaj tylko wybrane ikony","","","","","","","","","","","",""
+"WkAcCl","Canvas","Achievements per column","Osiągnięcia w kolumnie","","","","","","","","","","","",""
+"WkStCl","Canvas","Stats per column","Statystyki w kolumnie","","","","","","","","","","","",""
+"InStyl","Inspector","Select icon style","Wybierz styl ikony","","","","","","","","","","","",""
+"GnStyl","Inspector","Style","Styl","","","","","","Stil","Estilo","Stile","Estilo","Stijl","Стиль","Стиль"
+"InStHt","Inspector","Choose an existing icon style","Wybierz istniejący styl ikony","","","","","","","","","","","",""
+"GnNoSt","Image editor","No style","Brak stylu","无样式","無樣式","スタイルなし","스타일 없음","Aucun style","Kein Stil","Sin estilo","Nessuno stile","Sem estilo","Geen stijl","Без стиля","Без стилю"
+"GnBnLb","Image editor","Icon Banner :","Baner ikony :","","","","","","","","","","","",""
+"GnAtIm","Image editor","Import from atlas","Importuj z atlasu","","","","","","","","","","","",""
+"PRSPAC","Preferences","Inspector spacing (px)","Odstępy inspektora (px)","","","","","","","","","","","",""
+"AdUsmk","Layers","Unsharp Mask","Maska wyostrzająca","反锐化蒙版","不銳利遮罩","アンシャープマスク","언샵 마스크","Masque flou","","","","","","",""
+"UsAmnt","Layers","Amount (%)","Siła (%)","数量 (%)","總量 (%)","適用量 (%)","양 (%)","Gain (%)","","","","","","",""
+"UsRads","Layers","Radius (pixels)","Promień (piksele)","半径 (像素)","半徑 (像素)","半径 (ピクセル)","반경 (픽셀)","Rayon (pixels)","","","","","","",""
+"UsThrs","Layers","Threshold (levels)","Próg (poziomy)","阈值 (色阶)","臨界值 (色階)","しきい値 (レベル)","한계값 (레벨)","Seuil (niveaux)","","","","","","",""
+"LyArts","Layers","Art layers","Warstwy graficzne","美术图层","美術圖層","アートレイヤー","아트 레이어","Calques artistiques","","","","","","",""
+"LyLink","Layers","Link to","Połącz z","","","","","","","","","","","",""
+"LyUnHt","Layers","Open General settings and edit the unlock value","Otwórz ustawienia ogólne i edytuj wartość odblokowania","","","","","","","","","","","",""
+"LyAnVl","Validation","Angle must be from -360 through 360.","Kąt musi być od -360 do 360.","","","","","","","","","","","",""
+"GrNgon","Layers","N-gon","Wielokąt","多边形","多邊形","多角形","다각형","Polygone","","","","","","",""
+"GrStar","Layers","Star","Gwiazda","星形","星形","星形","별","Étoile","","","","","","",""
+"SecLim","Security","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","The dedicated Steam browser remains sensitive. Monitoring cannot prove that no data was disclosed. Only the local broker can connect to approved Steam hosts.","","","","","","",""
+"SecDev","Security","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","Development package verified. Windows restrictions enforced; monitoring active.","","","","","","",""
+"SecClr","Security","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","Sign out and clear dedicated Steam profile","","","","","","",""
+"SecOff","Security","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","Network restrictions are not enforced.","","","","","","",""
+"SecRun","Security","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","Start Achimeld using Achimeld.exe. Install its Windows policy first.","","","","","","",""
+"SecBrw","Security","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","Achimeld uses its verified bundled browser and a dedicated persistent Steam profile. Authentication happens on Steam. External browsers and custom profiles are disabled.","","","","","","",""
+"SecTit","Security","Security","Security","Security","Security","Security","Security","Security","Sicherheit","Seguridad","Sicurezza","Segurança","Beveiliging","Безопасность","Безпека"
+"SecExp","Security","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","Export redacted report","","","","","","",""
+"SecErr","Security","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","The security operation could not be completed.","","","","","","",""
+"Abt000","About","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","Unofficial Steamworks Achievement Management Tool","","","","","","",""
+"Abt001","About","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","Automatically create and update achievement definitions in your own Steamworks Partner account using browser automation.","","","","","","",""
+"Abt002","About","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","This application is an independent third-party tool and is not affiliated with, endorsed by, or supported by Valve Corporation.","","","","","","",""
+"Abt003","About","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","Steam sign-in stays in the dedicated browser profile. Playwright can access that authenticated session; see Security for monitoring coverage and limitations.","","","","","","",""
+"Abt004","About","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","Steamworks website changes may affect automation functionality.","","","","","","",""
+"Aa0001","Interface","fx","fx","fx","fx","fx","fx","fx","","","","","","",""
+"Aa0002","Interface","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","Gradient stops — position / hexadecimal color","","","","","","",""
+"Aa0003","Interface","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","Add gradient stop","","","","","","",""
+"Aa0004","Interface","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","Remove gradient stop","","","","","","",""
+"Aa0005","Interface","ID","ID","ID","ID","ID","ID","ID","","","","","","",""
+"Aa0006","Interface","Close","Close","Close","Close","Close","Close","Close","Schließen","Cerrar","Chiudi","Fechar","Sluiten","Закрыть","Закрити"
+"GnBank","Image editor","Choose from Art Data Bank","","","","","","","","","","","","",""
+"GnImportImages","Image editor","Import images","","","","","","","Bilder importieren","Importar imágenes","Importa immagini","Importar imagens","Afbeeldingen importeren","Импортировать изображения","Імпортувати зображення"
+"GnProjectStyles","Image editor","Project styles","","","","","","","Projektstile","Estilos del proyecto","Stili del progetto","Estilos do projeto","Projectstijlen","Стили проекта","Стилі проєкту"
+"GnDeleteStyle","Image editor","Delete project style","","","","","","","","","","","","",""
+"GnGlobalStyle","Image editor","Import global style into project","","","","","","","","","","","","",""
+"GnNoGlobal","Image editor","No global styles available","","","","","","","","","","","","",""
+"GnSaveStyle","Image editor","Save current icon as a project style","","","","","","","","","","","","",""
+"GnSaveProjectStyle","Image editor","Save project style","","","","","","","","","","","","",""
+"GnClient","Image editor","Game client","","","","","","","","","","","","",""
+"GnServer","Image editor","Game server","","","","","","","","","","","","",""
+"GnOfficial","Image editor","Official game server","","","","","","","","","","","","",""
+"GnSelectSource","Image editor","Choose general image","","","","","","","","","","","","",""
+"GnImportLayer","Image editor","Layer source / folder mask","","","","","","","","","","","","",""
+"LpTitle","Layer properties","Layer properties","","","","","","","Ebeneneigenschaften","Propiedades de capa","Proprietà del livello","Propriedades da camada","Laageigenschappen","Свойства слоя","Властивості шару"
+"LpType","Layer properties","Layer type","","","","","","","Ebenentyp","Tipo de capa","Tipo di livello","Tipo de camada","Laagtype","Тип слоя","Тип шару"
+"LpName","Layer properties","Name","Nazwa","名称","名稱","名前","이름","Nom","Name","Nombre","Nome","Nome","Naam","Имя","Назва"
+"TxExport","Achievement localization","Export achievement translations…","","","","","","","Errungenschaftsübersetzungen exportieren","Exportar traducciones de logros","Esporta traduzioni degli obiettivi","Exportar traduções de conquistas","Prestatievertalingen exporteren","Экспортировать переводы достижений","Експортувати переклади досягнень"
+"TxImport","Achievement localization","Import achievement translations…","","","","","","","Errungenschaftsübersetzungen importieren","Importar traducciones de logros","Importa traduzioni degli obiettivi","Importar traduções de conquistas","Prestatievertalingen importeren","Импортировать переводы достижений","Імпортувати переклади досягнень"
+"TxCsvE","Achievement localization","Export CSV…","","","","","","","","","","","","",""
+"TxCsvI","Achievement localization","Import CSV…","","","","","","","","","","","","",""
+"JS1qNb","Art Data Bank usage and deletion","Duplicate artwork","","","","","","","","","","","","",""
+"0idYO1","Art Data Bank usage and deletion","Delete artwork","","","","","","","","","","","","",""
+"e8ET3G","Art Data Bank usage and deletion","{0} copy","","","","","","","","","","","","",""
+"0ycnqg","Art Data Bank usage and deletion","Used by {0} achievements","","","","","","","","","","","","",""
+"ikzj4G","Art Data Bank usage and deletion","No achievements use this artwork.","","","","","","","","","","","","",""
+"AC5AMg","Art Data Bank usage and deletion","Delete ""{0}""?","","","","","","","","","","","","",""
+"e0O8Lo","Art Data Bank usage and deletion","Image layers using this artwork will become empty. Other layers will be preserved. You can undo this deletion.","","","","","","","","","","","","",""
+"TP9wLV","Art Data Bank usage and deletion","This artwork no longer exists.","","","","","","","","","","","","",""
+"11FgnF","Art Data Bank usage and deletion","Empty image","","","","","","","","","","","","",""
+"4DY4YZ","Art Data Bank usage and deletion","Used by 1 achievement","","","","","","","","","","","","",""
+"SaMake","Icon style nodes","Create icon style node","Utwórz węzeł stylu ikony","","","","","","","","","","","",""
+"SaLocal","Icon style nodes","Icon style node","Węzeł stylu ikony","","","","","","","","","","","",""
+"SaEdit","Icon style nodes","Edit own style…","Edytuj własny styl…","","","","","","","","","","","",""
+"SaScope","Icon style nodes","Icon style node · excluded from Steam","Węzeł stylu ikony · wyłączony ze Steam","","","","","","","","","","","",""
+"SaLink","Icon style nodes","Linked style","Powiązany styl","关联样式","關聯樣式","リンクされたスタイル","연결된 스타일","Style lié","Verknüpfter Stil","Estilo vinculado","Stile collegato","Estilo associado","Gekoppelde stijl","Связанный стиль","Пов’язаний стиль"
+"SaOpen","Icon style nodes","Edit style…","Edytuj styl…","编辑样式…","編輯樣式…","スタイルを編集…","스타일 편집…","Modifier le style…","","","","","","",""
+"AiCreate","Reusable art images","Create art image","Utwórz obraz artystyczny","","","","","","","","","","","",""
+"AiType","Reusable art images","Art image","Obraz artystyczny","","","","","","","","","","","",""
+"AiScope","Reusable art images","Art image · reusable composition","Obraz artystyczny · kompozycja wielokrotnego użytku","","","","","","","","","","","",""
+"AiEdit","Reusable art images","Edit image layers…","Edytuj warstwy obrazu…","","","","","","","","","","","",""
+"AiImage","Reusable art images","Image","Obraz","","","","","","Bild","Imagen","Immagine","Imagem","Afbeelding","Изображение","Зображення"
+"SoHelpers","Node grid sorting","Include helpers at the end","Uwzględnij elementy pomocnicze na końcu","","","","","","","","","","","",""
+"T3Push","3D text","Push","Rozsunięcie","","","","","","","","","","","",""
+"T3Emboss","3D text","Emboss","Fazowanie","","","","","","","","","","","",""
+"T3FullColor","3D text","Full color","Pełny kolor","","","","","","","","","","","",""
+"T3FullMask","3D text","Full mask","Pełna maska","","","","","","","","","","","",""
+"T3FaceMask","3D text","Face mask","Maska lica","","","","","","","","","","","",""
+"T3EmbossMask","3D text","Emboss mask","Maska fazowania","","","","","","","","","","","",""
+"T3Smooth","3D text","Smooth normals","Wygładzone normalne","","","","","","","","","","","",""
+"T3Shadows","3D text","Letter shadows","Cienie liter","","","","","","","","","","","",""
+"T3PushHint","3D text","Negative values thin the letters; positive values make them bolder.","Wartości ujemne zwężają litery; dodatnie je pogrubiają.","","","","","","","","","","","",""
+"T3EmbossHint","3D text","Adds a raised beveled rim around the letter faces.","Dodaje wypukłą fazowaną krawędź wokół lica liter.","","","","","","","","","","","",""
+"T3ShadowHint","3D text","Strength of shadows cast by the text onto other letter surfaces.","Siła cieni rzucanych przez tekst na pozostałe powierzchnie liter.","","","","","","","","","","","",""
+"T3MinusFace","3D text","Emboss mask − face","Maska fazowania − lico","","","","","","","","","","","",""
+"T3Reflect","3D text","Reflectivity","Refleksyjność","","","","","","","","","","","",""
+"T3ReflectHint","3D text","Strength of the glossy reflection highlight.","Siła refleksu połysku.","","","","","","","","","","","",""
+"T3MinusHint","3D text","Embossed text with flat faces removed; keeps bevels and 3D sides.","Wytłoczony tekst bez płaskich lic; zachowuje fazowania i boki 3D.","","","","","","","","","","","",""
+"PrefLayerSidebar","Preferences","Layer properties in right sidebar","Właściwości warstwy na prawym pasku bocznym","","","","","","","","","","","",""
+"PrefLayerSidebarHint","Preferences","Use a compact Layers window and edit the selected layer or effect in the right sidebar.","Kompaktowe okno warstw i edycja wybranej warstwy lub efektu na prawym pasku bocznym.","","","","","","","","","","","",""
+"PrefFxMini","Preferences","Display mini values in FX rows","Wyświetlaj miniwartości w wierszach efektów","","","","","","","","","","","",""
+"FxOutLt","Layers","Outer light","Światło zewnętrzne","","","","","","","","","","","",""
+"FxCutout","Layers","Cutout","Wycięcie","","","","","","","","","","","",""
+"FxSoftLight","Layers","Soft light","Miękkie światło","","","","","","","","","","","",""
+"FxLightColor","Layers","Light color","Kolor światła","","","","","","","","","","","",""
+"FxLightOpacity","Layers","Light opacity","Krycie światła","","","","","","","","","","","",""
+"FxLightBlend","Layers","Light blend","Mieszanie światła","","","","","","","","","","","",""
+"Steam sync","Achievement general","Steam sync","Synchronizacja Steam","","","","","","","","","","","",""
+"Active","Achievement sync status","Active","Aktywne","","","","","","Aktiv","Activo","Attivo","Ativo","Actief","Активно","Активне"
+"Unsynced","Achievement sync status","Unsynced","Niezsynchronizowane","","","","","","Nicht synchronisiert","Sin sincronizar","Non sincronizzato","Não sincronizado","Niet gesynchroniseerd","Не синхронизировано","Не синхронізовано"
+"Retired","Achievement sync status","Retired","Wycofane","","","","","","Stillgelegt","Retirado","Ritirato","Retirado","Buiten gebruik","Выведено из использования","Виведено з використання"
+"InstallerWindowTitle","InstallerMessage.SetupWindowTitle","Setup - Achimeld __VERSION__","Instalacja - Achimeld __VERSION__","安装 - Achimeld __VERSION__","安裝 - Achimeld __VERSION__","セットアップ - Achimeld __VERSION__","설치 - Achimeld __VERSION__","Installation - Achimeld __VERSION__","Setup - Achimeld __VERSION__","Instalación - Achimeld __VERSION__","Installazione - Achimeld __VERSION__","Instalação - Achimeld __VERSION__","Installatie - Achimeld __VERSION__","Установка - Achimeld __VERSION__","Встановлення - Achimeld __VERSION__"
+"InstallerWelcomeTitle","InstallerMessage.WelcomeLabel1","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__","Achimeld __VERSION__"
+"InstallerInfoTitle","InstallerMessage.WizardInfoBefore","Steam Partner information","Informacje o Steam Partner","Steam Partner 信息","Steam Partner 資訊","Steam Partner の情報","Steam Partner 정보","Informations Steam Partner","Steam-Partner-Informationen","Información de Steam Partner","Informazioni su Steam Partner","Informações do Steam Partner","Steam Partner-informatie","Информация о Steam Partner","Інформація про Steam Partner"
+"InstallerInfoLabel","InstallerMessage.InfoBeforeLabel","Please read how Achimeld connects to Steamworks Partner.","Przeczytaj, jak Achimeld łączy się ze Steamworks Partner.","请阅读 Achimeld 如何连接 Steamworks Partner。","請閱讀 Achimeld 如何連線至 Steamworks Partner。","Achimeld と Steamworks Partner の接続についてお読みください。","Achimeld가 Steamworks Partner에 연결하는 방법을 읽어 주세요.","Découvrez comment Achimeld se connecte à Steamworks Partner.","Erfahren Sie, wie Achimeld sich mit Steamworks Partner verbindet.","Lea cómo se conecta Achimeld a Steamworks Partner.","Scopri come Achimeld si collega a Steamworks Partner.","Saiba como o Achimeld se liga ao Steamworks Partner.","Lees hoe Achimeld verbinding maakt met Steamworks Partner.","Узнайте, как Achimeld подключается к Steamworks Partner.","Дізнайтеся, як Achimeld підключається до Steamworks Partner."
+"InstallerDirTitle","InstallerMessage.WizardSelectDir","Installation folder","Folder instalacji","安装文件夹","安裝資料夾","インストール先フォルダー","설치 폴더","Dossier d’installation","Installationsordner","Carpeta de instalación","Cartella di installazione","Pasta de instalação","Installatiemap","Папка установки","Папка встановлення"
+"InstallerDirDescription","InstallerMessage.SelectDirDesc","Choose where to install Achimeld __VERSION__.","Wybierz miejsce instalacji Achimeld __VERSION__.","选择 Achimeld __VERSION__ 的安装位置。","選擇 Achimeld __VERSION__ 的安裝位置。","Achimeld __VERSION__ のインストール先を選択してください。","Achimeld __VERSION__을 설치할 위치를 선택하세요.","Choisissez où installer Achimeld __VERSION__.","Wählen Sie den Installationsort für Achimeld __VERSION__.","Elija dónde instalar Achimeld __VERSION__.","Scegli dove installare Achimeld __VERSION__.","Escolha onde instalar o Achimeld __VERSION__.","Kies waar u Achimeld __VERSION__ wilt installeren.","Выберите место установки Achimeld __VERSION__.","Виберіть місце встановлення Achimeld __VERSION__."
+"InstallerDirLabel","InstallerMessage.SelectDirLabel3","Choose a dedicated Achimeld folder. Click Next to start the installation process.","Wybierz osobny folder dla Achimeld. Kliknij Dalej, aby rozpocząć instalację.","选择 Achimeld 专用文件夹。单击“下一步”开始安装。","選擇 Achimeld 專用資料夾。按一下「下一步」開始安裝。","Achimeld 専用のフォルダーを選択し、「次へ」をクリックしてインストールを開始してください。","Achimeld 전용 폴더를 선택하세요. 다음을 클릭하면 설치가 시작됩니다.","Choisissez un dossier réservé à Achimeld. Cliquez sur Suivant pour lancer l’installation.","Wählen Sie einen eigenen Achimeld-Ordner. Klicken Sie auf Weiter, um die Installation zu starten.","Elija una carpeta exclusiva para Achimeld. Haga clic en Siguiente para iniciar la instalación.","Scegli una cartella dedicata ad Achimeld. Fai clic su Avanti per avviare l’installazione.","Escolha uma pasta exclusiva para o Achimeld. Clique em Seguinte para iniciar a instalação.","Kies een aparte map voor Achimeld. Klik op Volgende om de installatie te starten.","Выберите отдельную папку для Achimeld. Нажмите «Далее», чтобы начать установку.","Виберіть окрему папку для Achimeld. Натисніть «Далі», щоб почати встановлення."
+"InstallerNext","InstallerMessage.ButtonNext","&Next","&Dalej","下一步(&N)","下一步(&N)","次へ(&N)","다음(&N)","&Suivant","&Weiter","&Siguiente","&Avanti","&Seguinte","&Volgende","&Далее","&Далі"
+"InstallerInstall","InstallerMessage.ButtonInstall","&Next","&Dalej","下一步(&N)","下一步(&N)","次へ(&N)","다음(&N)","&Suivant","&Weiter","&Siguiente","&Avanti","&Seguinte","&Volgende","&Далее","&Далі"
+"InstallerBack","InstallerMessage.ButtonBack","&Back","&Wstecz","上一步(&B)","上一步(&B)","戻る(&B)","뒤로(&B)","&Précédent","&Zurück","&Atrás","&Indietro","&Anterior","&Vorige","&Назад","&Назад"
+"InstallerCancelMessage","InstallerMessage.ButtonCancel","Cancel","Anuluj","取消","取消","キャンセル","취소","Annuler","Abbrechen","Cancelar","Annulla","Cancelar","Annuleren","Отмена","Скасувати"
+"InstallerFinish","InstallerMessage.ButtonFinish","&Finish","&Zakończ","完成(&F)","完成(&F)","完了(&F)","마침(&F)","&Terminer","&Fertigstellen","&Finalizar","&Fine","&Concluir","&Voltooien","&Готово","&Готово"
+"InstallerBrowse","InstallerMessage.ButtonBrowse","&Browse...","&Przeglądaj…","浏览(&B)…","瀏覽(&B)…","参照(&B)…","찾아보기(&B)…","&Parcourir…","&Durchsuchen…","&Examinar…","&Sfoglia…","&Procurar…","&Bladeren…","&Обзор…","&Огляд…"
+"InstallerSlogan","Installer","Make Steam achievements simpler.","Ułatw sobie pracę z osiągnięciami Steam.","让 Steam 成就管理更简单。","讓 Steam 成就管理更簡單。","Steam 実績をもっと簡単に。","Steam 도전 과제를 더 간편하게.","Simplifiez la gestion des succès Steam.","Steam-Errungenschaften einfacher verwalten.","Simplifica la gestión de logros de Steam.","Semplifica la gestione degli obiettivi di Steam.","Simplifique a gestão de conquistas do Steam.","Maak Steam-prestaties eenvoudiger.","Упростите работу с достижениями Steam.","Спростіть роботу з досягненнями Steam."
+"InstallerMaintain","Installer","Maintain Achimeld","Zarządzaj instalacją Achimeld","维护 Achimeld","維護 Achimeld","Achimeld のメンテナンス","Achimeld 유지 관리","Gérer l’installation d’Achimeld","Achimeld verwalten","Administrar Achimeld","Gestisci Achimeld","Gerir o Achimeld","Achimeld beheren","Управление Achimeld","Керування Achimeld"
+"InstallerChooseAction","Installer","Choose what to do with your installed copy.","Wybierz czynność dla zainstalowanej kopii.","选择对已安装副本执行的操作。","選擇對已安裝版本執行的操作。","インストール済みのソフトウェアに対する操作を選択してください。","설치된 프로그램에 수행할 작업을 선택하세요.","Choisissez une action pour votre installation.","Wählen Sie eine Aktion für Ihre installierte Version.","Elija qué hacer con la versión instalada.","Scegli cosa fare con la copia installata.","Escolha o que fazer com a cópia instalada.","Kies wat u met de geïnstalleerde versie wilt doen.","Выберите действие для установленной копии.","Виберіть дію для встановленої копії."
+"InstallerInstalledVersion","Installer","Installed version: {0}","Zainstalowana wersja: {0}","已安装版本：{0}","已安裝版本：{0}","インストール済みのバージョン：{0}","설치된 버전: {0}","Version installée : {0}","Installierte Version: {0}","Versión instalada: {0}","Versione installata: {0}","Versão instalada: {0}","Geïnstalleerde versie: {0}","Установленная версия: {0}","Встановлена версія: {0}"
+"InstallerIncomingVersion","Installer","Installer version: {0}","Wersja instalatora: {0}","安装程序版本：{0}","安裝程式版本：{0}","インストーラーのバージョン：{0}","설치 프로그램 버전: {0}","Version de l’installateur : {0}","Installer-Version: {0}","Versión del instalador: {0}","Versione dell’installatore: {0}","Versão do instalador: {0}","Installatieversie: {0}","Версия установщика: {0}","Версія інсталятора: {0}"
+"InstallerKeepProjects","Installer","Your projects and personal settings are kept.","Twoje projekty i ustawienia osobiste zostaną zachowane.","您的项目和个人设置将保留。","您的專案與個人設定將保留。","プロジェクトと個人設定は保持されます。","프로젝트와 개인 설정은 유지됩니다.","Vos projets et paramètres personnels sont conservés.","Ihre Projekte und persönlichen Einstellungen bleiben erhalten.","Se conservarán sus proyectos y ajustes personales.","I progetti e le impostazioni personali vengono conservati.","Os seus projetos e definições pessoais são preservados.","Uw projecten en persoonlijke instellingen blijven behouden.","Ваши проекты и личные настройки сохранятся.","Ваші проєкти й особисті налаштування буде збережено."
+"InstallerUpdate","Installer","Update","Aktualizuj","更新","更新","更新","업데이트","Mettre à jour","Aktualisieren","Actualizar","Aggiorna","Atualizar","Bijwerken","Обновить","Оновити"
+"InstallerRepair","Installer","Repair","Napraw","修复","修復","修復","복구","Réparer","Reparieren","Reparar","Ripara","Reparar","Herstellen","Восстановить","Відновити"
+"InstallerUninstall","Installer","Uninstall","Odinstaluj","卸载","解除安裝","アンインストール","제거","Désinstaller","Deinstallieren","Desinstalar","Disinstalla","Desinstalar","Verwijderen","Удалить","Видалити"
+"InstallerDesktop","Installer","Create a desktop shortcut","Utwórz skrót na pulpicie","创建桌面快捷方式","建立桌面捷徑","デスクトップにショートカットを作成","바탕 화면 바로 가기 만들기","Créer un raccourci sur le bureau","Desktop-Verknüpfung erstellen","Crear un acceso directo en el escritorio","Crea un collegamento sul desktop","Criar um atalho no ambiente de trabalho","Een bureaubladsnelkoppeling maken","Создать ярлык на рабочем столе","Створити ярлик на робочому столі"
+"InstallerLaunch","Installer","Launch Achimeld","Uruchom Achimeld","启动 Achimeld","啟動 Achimeld","Achimeld を起動","Achimeld 실행","Lancer Achimeld","Achimeld starten","Iniciar Achimeld","Avvia Achimeld","Iniciar Achimeld","Achimeld starten","Запустить Achimeld","Запустити Achimeld"
+"InstallerCancel","Installer","Cancel","Anuluj","取消","取消","キャンセル","취소","Annuler","Abbrechen","Cancelar","Annulla","Cancelar","Annuleren","Отмена","Скасувати"
+"InstallerWorkingTitle","Installer","Installing Achimeld {0}","Instalowanie Achimeld {0}","正在安装 Achimeld {0}","正在安裝 Achimeld {0}","Achimeld {0} をインストール中","Achimeld {0} 설치 중","Installation d’Achimeld {0}","Achimeld {0} wird installiert","Instalando Achimeld {0}","Installazione di Achimeld {0}","A instalar o Achimeld {0}","Achimeld {0} installeren","Установка Achimeld {0}","Встановлення Achimeld {0}"
+"InstallerWorkingDescription","Installer","Files, verification and network policy","Pliki, weryfikacja i zasady sieciowe","文件、验证和网络策略","檔案、驗證與網路原則","ファイル、検証、ネットワークポリシー","파일, 검증 및 네트워크 정책","Fichiers, vérification et règles réseau","Dateien, Überprüfung und Netzwerkrichtlinie","Archivos, verificación y política de red","File, verifica e criteri di rete","Ficheiros, verificação e política de rede","Bestanden, verificatie en netwerkbeleid","Файлы, проверка и сетевые правила","Файли, перевірка та мережеві правила"
+"InstallerPreparing","Installer","Preparing installation","Przygotowywanie instalacji","正在准备安装","正在準備安裝","インストールを準備中","설치 준비 중","Préparation de l’installation","Installation wird vorbereitet","Preparando la instalación","Preparazione dell’installazione","A preparar a instalação","Installatie voorbereiden","Подготовка установки","Підготовка встановлення"
+"InstallerChecking","Installer","Checking required components.","Sprawdzanie wymaganych składników.","正在检查必需组件。","正在檢查必要元件。","必要なコンポーネントを確認しています。","필수 구성 요소를 확인하고 있습니다.","Vérification des composants requis.","Erforderliche Komponenten werden überprüft.","Comprobando los componentes necesarios.","Verifica dei componenti necessari.","A verificar os componentes necessários.","Vereiste onderdelen controleren.","Проверка необходимых компонентов.","Перевірка необхідних компонентів."
+"InstallerCopying","Installer","Copying replacement files","Kopiowanie nowych plików","正在复制新文件","正在複製新檔案","新しいファイルをコピー中","새 파일 복사 중","Copie des nouveaux fichiers","Ersatzdateien werden kopiert","Copiando los archivos nuevos","Copia dei nuovi file","A copiar os novos ficheiros","Nieuwe bestanden kopiëren","Копирование новых файлов","Копіювання нових файлів"
+"InstallerProtecting","Installer","Protecting application files","Zabezpieczanie plików aplikacji","正在保护应用文件","正在保護應用程式檔案","アプリケーションファイルを保護中","앱 파일 보호 중","Protection des fichiers de l’application","Anwendungsdateien werden geschützt","Protegiendo los archivos de la aplicación","Protezione dei file dell’applicazione","A proteger os ficheiros da aplicação","Toepassingsbestanden beveiligen","Защита файлов приложения","Захист файлів програми"
+"InstallerVerifying","Installer","Verifying the complete replacement","Weryfikowanie nowej instalacji","正在验证完整的新安装","正在驗證完整的新安裝","新しいインストール全体を検証中","새 설치 전체 검증 중","Vérification de la nouvelle installation","Neue Installation wird überprüft","Verificando la instalación nueva","Verifica della nuova installazione","A verificar a nova instalação","Nieuwe installatie verifiëren","Проверка новой установки","Перевірка нового встановлення"
+"InstallerBackup","Installer","Keeping previous files for rollback","Zachowywanie poprzednich plików do przywrócenia","正在保留旧文件以便回滚","正在保留舊檔案以便復原","復元用に以前のファイルを保持中","롤백을 위해 이전 파일 보관 중","Conservation des anciens fichiers pour restauration","Vorherige Dateien werden zur Wiederherstellung aufbewahrt","Conservando los archivos anteriores para restaurarlos","Conservazione dei file precedenti per il ripristino","A guardar os ficheiros anteriores para restauro","Vorige bestanden bewaren voor herstel","Сохранение прежних файлов для отката","Збереження попередніх файлів для відновлення"
+"InstallerMove","Installer","Putting the replacement in place","Umieszczanie nowych plików w folderze docelowym","正在放置新文件","正在放置新檔案","新しいファイルを配置中","새 파일 배치 중","Mise en place des nouveaux fichiers","Neue Dateien werden bereitgestellt","Colocando los archivos nuevos","Posizionamento dei nuovi file","A colocar os novos ficheiros","Nieuwe bestanden plaatsen","Размещение новых файлов","Розміщення нових файлів"
+"InstallerRemovePolicy","Installer","Removing the previous network policy","Usuwanie poprzednich zasad sieciowych","正在移除旧网络策略","正在移除舊網路原則","以前のネットワークポリシーを削除中","이전 네트워크 정책 제거 중","Suppression des anciennes règles réseau","Vorherige Netzwerkrichtlinie wird entfernt","Eliminando la política de red anterior","Rimozione dei criteri di rete precedenti","A remover a política de rede anterior","Vorig netwerkbeleid verwijderen","Удаление прежних сетевых правил","Видалення попередніх мережевих правил"
+"InstallerInstallPolicy","Installer","Installing network policy","Instalowanie zasad sieciowych","正在安装网络策略","正在安裝網路原則","ネットワークポリシーをインストール中","네트워크 정책 설치 중","Installation des règles réseau","Netzwerkrichtlinie wird installiert","Instalando la política de red","Installazione dei criteri di rete","A instalar a política de rede","Netwerkbeleid installeren","Установка сетевых правил","Встановлення мережевих правил"
+"InstallerRestore","Installer","Restoring the previous installation","Przywracanie poprzedniej instalacji","正在恢复以前的安装","正在還原先前的安裝","以前のインストールを復元中","이전 설치 복원 중","Restauration de l’installation précédente","Vorherige Installation wird wiederhergestellt","Restaurando la instalación anterior","Ripristino dell’installazione precedente","A restaurar a instalação anterior","Vorige installatie herstellen","Восстановление прежней установки","Відновлення попереднього встановлення"
+"InstallerRestoreFiles","Installer","Restoring files","Przywracanie plików","正在恢复文件","正在還原檔案","ファイルを復元中","파일 복원 중","Restauration des fichiers","Dateien werden wiederhergestellt","Restaurando los archivos","Ripristino dei file","A restaurar os ficheiros","Bestanden herstellen","Восстановление файлов","Відновлення файлів"
+"InstallerCleanup","Installer","Removing the previous application files","Usuwanie poprzednich plików aplikacji","正在删除旧应用文件","正在刪除舊應用程式檔案","以前のアプリケーションファイルを削除中","이전 앱 파일 제거 중","Suppression des anciens fichiers","Vorherige Anwendungsdateien werden entfernt","Eliminando los archivos anteriores","Rimozione dei vecchi file dell’applicazione","A remover os ficheiros anteriores","Vorige toepassingsbestanden verwijderen","Удаление прежних файлов приложения","Видалення попередніх файлів програми"
+"InstallerComplete","Installer","Installation complete","Instalacja zakończona","安装完成","安裝完成","インストール完了","설치 완료","Installation terminée","Installation abgeschlossen","Instalación completada","Installazione completata","Instalação concluída","Installatie voltooid","Установка завершена","Встановлення завершено"
+"InstallerRunning","Installer","Achimeld is running. Close it, then run Setup again. No installation changes have been made.","Achimeld jest uruchomiony. Zamknij go i uruchom instalator ponownie. Nie wprowadzono żadnych zmian.","Achimeld 正在运行。请关闭它，然后重新运行安装程序。尚未进行任何安装更改。","Achimeld 正在執行。請關閉後重新執行安裝程式。尚未進行任何安裝變更。","Achimeld が実行中です。終了してからセットアップを再実行してください。インストールの変更は行われていません。","Achimeld가 실행 중입니다. 종료한 다음 설치 프로그램을 다시 실행하세요. 설치 변경 사항은 없습니다.","Achimeld est en cours d’exécution. Fermez-le, puis relancez l’installation. Aucune modification n’a été effectuée.","Achimeld wird ausgeführt. Schließen Sie es und starten Sie Setup erneut. Es wurden keine Installationsänderungen vorgenommen.","Achimeld está abierto. Ciérrelo y vuelva a ejecutar el instalador. No se ha realizado ningún cambio.","Achimeld è in esecuzione. Chiudilo e riavvia l’installazione. Non è stata apportata alcuna modifica.","O Achimeld está em execução. Feche-o e execute novamente o instalador. Não foram feitas alterações.","Achimeld is actief. Sluit het en start de installatie opnieuw. Er zijn geen wijzigingen aangebracht.","Achimeld запущен. Закройте его и снова запустите установщик. Изменения не внесены.","Achimeld запущено. Закрийте його та знову запустіть інсталятор. Зміни не внесено."
+"InstallerCloseToRemove","Installer","Close Achimeld before uninstalling it.","Zamknij Achimeld przed odinstalowaniem.","请先关闭 Achimeld 再卸载。","請先關閉 Achimeld 再解除安裝。","アンインストールする前に Achimeld を終了してください。","제거하기 전에 Achimeld를 종료하세요.","Fermez Achimeld avant de le désinstaller.","Schließen Sie Achimeld vor der Deinstallation.","Cierre Achimeld antes de desinstalarlo.","Chiudi Achimeld prima di disinstallarlo.","Feche o Achimeld antes de o desinstalar.","Sluit Achimeld voordat u het verwijdert.","Закройте Achimeld перед удалением.","Закрийте Achimeld перед видаленням."
+"InstallerCancelRestore","Installer","Cancelling and restoring the previous state...","Anulowanie i przywracanie poprzedniego stanu…","正在取消并恢复以前的状态…","正在取消並還原先前的狀態…","キャンセルして以前の状態を復元中…","취소 및 이전 상태 복원 중…","Annulation et restauration de l’état précédent…","Abbruch und Wiederherstellung des vorherigen Zustands…","Cancelando y restaurando el estado anterior…","Annullamento e ripristino dello stato precedente…","A cancelar e restaurar o estado anterior…","Annuleren en vorige toestand herstellen…","Отмена и восстановление прежнего состояния…","Скасування та відновлення попереднього стану…"
+"InstallerWelcomeLabel2","InstallerMessage.WelcomeLabel2","Automatically sync achievements to the Steamworks partner website and add them in bulk with AI agents and MCP integration. Create your own achievement icons with the built-in art tools—all in one app.%n%nAchimeld is not endorsed by, affiliated with, or sponsored by Valve Corporation.%n%nThis product is licensed under the Apache License, Version 2.0. Please review and accept the license on the next page.","Automatycznie synchronizuj osiągnięcia z portalem partnerskim Steamworks i dodawaj je zbiorczo za pomocą agentów AI oraz integracji MCP. Twórz własne ikony osiągnięć za pomocą wbudowanych narzędzi graficznych — wszystko w jednej aplikacji.%n%nAchimeld nie jest wspierany ani sponsorowany przez Valve Corporation i nie jest z nią powiązany.%n%nProdukt jest udostępniany na licencji Apache w wersji 2.0. Przeczytaj i zaakceptuj licencję na następnej stronie.","自动将成就同步到 Steamworks 合作伙伴网站，并通过 AI 代理和 MCP 集成批量添加成就。使用内置绘图工具创建自己的成就图标——所有功能尽在一个应用中。%n%nAchimeld 未获 Valve Corporation 认可或赞助，与该公司不存在隶属关系。%n%n本产品采用 Apache 许可证 2.0 版。请在下一页阅读并接受许可证。","自動將成就同步到 Steamworks 合作夥伴網站，並透過 AI 代理和 MCP 整合大量新增成就。使用內建繪圖工具建立自己的成就圖示——所有功能盡在一個應用程式中。%n%nAchimeld 未獲 Valve Corporation 認可或贊助，與該公司並無隸屬關係。%n%n本產品採用 Apache 授權條款 2.0 版。請在下一頁閱讀並接受授權條款。","Steamworks パートナーサイトに実績を自動同期し、AI エージェントと MCP 連携で一括追加できます。内蔵の画像制作ツールで独自の実績アイコンも作成できます。すべてがひとつのアプリに揃っています。%n%nAchimeld は Valve Corporation による承認や支援を受けておらず、同社とは関係ありません。%n%n本製品は Apache License バージョン 2.0 に基づいて提供されます。次のページでライセンスを確認し、同意してください。","도전 과제를 Steamworks 파트너 웹사이트에 자동으로 동기화하고 AI 에이전트와 MCP 통합으로 한꺼번에 추가하세요. 내장 그래픽 도구로 자신만의 도전 과제 아이콘도 만들 수 있습니다. 모든 기능이 하나의 앱에 담겨 있습니다.%n%nAchimeld는 Valve Corporation의 승인이나 후원을 받지 않으며 해당 회사와 제휴 관계가 없습니다.%n%n이 제품은 Apache 라이선스 버전 2.0에 따라 제공됩니다. 다음 페이지에서 라이선스를 읽고 동의해 주세요.","Synchronisez automatiquement les succès avec le portail partenaire Steamworks et ajoutez-les en masse grâce aux agents IA et à l'intégration MCP. Créez vos propres icônes de succès avec les outils graphiques intégrés, le tout dans une seule application.%n%nAchimeld n'est ni approuvé ni sponsorisé par Valve Corporation et n'y est pas affilié.%n%nCe produit est distribué sous licence Apache, version 2.0. Veuillez lire et accepter la licence à la page suivante.","Synchronisieren Sie Erfolge automatisch mit dem Steamworks-Partnerportal und fügen Sie sie mithilfe von KI-Agenten und MCP-Integration gesammelt hinzu. Erstellen Sie eigene Erfolgssymbole mit den integrierten Grafikwerkzeugen — alles in einer App.%n%nAchimeld wird nicht von Valve Corporation unterstützt oder gesponsert und ist nicht mit dem Unternehmen verbunden.%n%nDieses Produkt steht unter der Apache-Lizenz, Version 2.0. Bitte lesen und akzeptieren Sie die Lizenz auf der nächsten Seite.","Sincroniza automáticamente los logros con el portal de socios de Steamworks y añádelos en bloque con agentes de IA e integración MCP. Crea tus propios iconos de logros con las herramientas gráficas integradas, todo en una sola aplicación.%n%nAchimeld no está respaldado ni patrocinado por Valve Corporation, ni está afiliado a ella.%n%nEste producto se distribuye bajo la licencia Apache, versión 2.0. Lee y acepta la licencia en la página siguiente.","Sincronizza automaticamente gli obiettivi con il portale partner di Steamworks e aggiungili in blocco con agenti IA e integrazione MCP. Crea le tue icone degli obiettivi con gli strumenti grafici integrati, tutto in una sola app.%n%nAchimeld non è approvato né sponsorizzato da Valve Corporation e non è affiliato ad essa.%n%nQuesto prodotto è distribuito con licenza Apache, versione 2.0. Leggi e accetta la licenza nella pagina successiva.","Sincronize automaticamente as conquistas com o portal de parceiros Steamworks e adicione-as em lote com agentes de IA e integração MCP. Crie os seus próprios ícones de conquistas com as ferramentas gráficas integradas — tudo numa só aplicação.%n%nO Achimeld não é aprovado nem patrocinado pela Valve Corporation e não está associado a esta empresa.%n%nEste produto é disponibilizado sob a licença Apache, versão 2.0. Leia e aceite a licença na página seguinte.","Synchroniseer prestaties automatisch met het Steamworks-partnerportaal en voeg ze in bulk toe met AI-agenten en MCP-integratie. Maak je eigen prestatiepictogrammen met de ingebouwde grafische hulpmiddelen — alles in één app.%n%nAchimeld wordt niet goedgekeurd of gesponsord door Valve Corporation en is niet aan dit bedrijf verbonden.%n%nDit product valt onder de Apache-licentie, versie 2.0. Lees en accepteer de licentie op de volgende pagina.","Автоматически синхронизируйте достижения с партнёрским порталом Steamworks и добавляйте их массово с помощью ИИ-агентов и интеграции MCP. Создавайте собственные значки достижений встроенными графическими инструментами — всё в одном приложении.%n%nAchimeld не одобрен и не спонсируется Valve Corporation и не связан с этой компанией.%n%nПродукт распространяется по лицензии Apache версии 2.0. Прочитайте и примите лицензию на следующей странице.","Автоматично синхронізуйте досягнення з партнерським порталом Steamworks і додавайте їх масово за допомогою ШІ-агентів та інтеграції MCP. Створюйте власні значки досягнень вбудованими графічними інструментами — усе в одному застосунку.%n%nAchimeld не схвалений і не спонсорується Valve Corporation та не пов’язаний із цією компанією.%n%nПродукт поширюється за ліцензією Apache версії 2.0. Прочитайте та прийміть ліцензію на наступній сторінці."
+"InstallerFinishedLabel","InstallerMessage.FinishedLabel","Achimeld has been installed. Click Finish to close Setup. Select Launch Achimeld below to open the app.%n%nTo pin it to the Windows taskbar, find Achimeld in Start, right-click it and choose Pin to taskbar (under More on some Windows versions).","Achimeld został zainstalowany. Kliknij Zakończ, aby zamknąć instalator. Zaznacz poniżej Uruchom Achimeld, aby otworzyć aplikację.%n%nAby przypiąć aplikację do paska zadań, znajdź Achimeld w menu Start, kliknij prawym przyciskiem myszy i wybierz Przypnij do paska zadań (w niektórych wersjach Windows w menu Więcej).","Achimeld 已安装。点击“完成”关闭安装程序。勾选下方的“启动 Achimeld”即可打开应用。%n%n如需固定到 Windows 任务栏，请在“开始”菜单中找到 Achimeld，右键单击并选择“固定到任务栏”（某些 Windows 版本中位于“更多”菜单下）。","Achimeld 已安裝。按一下「完成」關閉安裝程式。勾選下方的「啟動 Achimeld」即可開啟應用程式。%n%n若要釘選到 Windows 工作列，請在「開始」功能表中找到 Achimeld，按滑鼠右鍵並選擇「釘選到工作列」（某些 Windows 版本中位於「更多」功能表下）。","Achimeld がインストールされました。「完了」をクリックしてセットアップを閉じてください。アプリを開くには、下の「Achimeld を起動」を選択してください。%n%nWindows のタスクバーにピン留めするには、スタートメニューで Achimeld を探して右クリックし、「タスクバーにピン留めする」を選びます（一部の Windows では「その他」の中にあります）。","Achimeld가 설치되었습니다. 마침을 클릭하여 설치 프로그램을 닫으세요. 앱을 열려면 아래에서 Achimeld 실행을 선택하세요.%n%nWindows 작업 표시줄에 고정하려면 시작 메뉴에서 Achimeld를 찾아 마우스 오른쪽 버튼으로 클릭한 다음 작업 표시줄에 고정을 선택하세요(일부 Windows 버전에서는 더 보기 아래에 있습니다).","Achimeld a été installé. Cliquez sur Terminer pour fermer l'installation. Sélectionnez Lancer Achimeld ci-dessous pour ouvrir l'application.%n%nPour l'épingler à la barre des tâches Windows, recherchez Achimeld dans Démarrer, faites un clic droit et choisissez Épingler à la barre des tâches (sous Plus dans certaines versions de Windows).","Achimeld wurde installiert. Klicken Sie auf Fertigstellen, um das Setup zu schließen. Wählen Sie unten Achimeld starten, um die App zu öffnen.%n%nZum Anheften an die Windows-Taskleiste suchen Sie Achimeld im Startmenü, klicken mit der rechten Maustaste darauf und wählen An Taskleiste anheften (bei manchen Windows-Versionen unter Mehr).","Achimeld se ha instalado. Haz clic en Finalizar para cerrar el instalador. Selecciona Iniciar Achimeld a continuación para abrir la aplicación.%n%nPara anclarla a la barra de tareas de Windows, busca Achimeld en Inicio, haz clic con el botón derecho y elige Anclar a la barra de tareas (en algunas versiones de Windows, dentro de Más).","Achimeld è stato installato. Fai clic su Fine per chiudere il programma di installazione. Seleziona Avvia Achimeld qui sotto per aprire l'app.%n%nPer aggiungerla alla barra delle applicazioni di Windows, cerca Achimeld in Start, fai clic con il pulsante destro e scegli Aggiungi alla barra delle applicazioni (in alcune versioni di Windows, sotto Altro).","O Achimeld foi instalado. Clique em Concluir para fechar o instalador. Selecione Iniciar Achimeld abaixo para abrir a aplicação.%n%nPara a fixar na barra de tarefas do Windows, procure Achimeld no menu Iniciar, clique com o botão direito e escolha Fixar na barra de tarefas (em algumas versões do Windows, em Mais).","Achimeld is geïnstalleerd. Klik op Voltooien om het installatieprogramma te sluiten. Selecteer hieronder Achimeld starten om de app te openen.%n%nOm de app aan de Windows-taakbalk vast te maken, zoek je Achimeld in Start, klik je er met de rechtermuisknop op en kies je Aan taakbalk vastmaken (in sommige Windows-versies onder Meer).","Achimeld установлен. Нажмите «Завершить», чтобы закрыть программу установки. Выберите ниже «Запустить Achimeld», чтобы открыть приложение.%n%nЧтобы закрепить приложение на панели задач Windows, найдите Achimeld в меню «Пуск», щёлкните правой кнопкой мыши и выберите «Закрепить на панели задач» (в некоторых версиях Windows — в разделе «Дополнительно»).","Achimeld установлено. Натисніть «Завершити», щоб закрити програму встановлення. Виберіть нижче «Запустити Achimeld», щоб відкрити застосунок.%n%nЩоб закріпити застосунок на панелі завдань Windows, знайдіть Achimeld у меню «Пуск», клацніть правою кнопкою миші та виберіть «Закріпити на панелі завдань» (у деяких версіях Windows — у розділі «Додатково»)."
+"InstallerLicenseTitle","InstallerMessage.WizardLicense","License agreement","Umowa licencyjna","许可协议","授權合約","使用許諾契約","사용권 계약","Contrat de licence","Lizenzvereinbarung","Acuerdo de licencia","Contratto di licenza","Contrato de licença","Licentieovereenkomst","Лицензионное соглашение","Ліцензійна угода"
+"InstallerLicenseLabel","InstallerMessage.LicenseLabel","Please read the license before continuing.","Przeczytaj licencję przed kontynuowaniem.","请先阅读许可协议。","請先閱讀授權合約。","続行する前に使用許諾契約をお読みください。","계속하기 전에 사용권 계약을 읽어 주세요.","Lisez la licence avant de continuer.","Lesen Sie die Lizenz, bevor Sie fortfahren.","Lea la licencia antes de continuar.","Leggi la licenza prima di continuare.","Leia a licença antes de continuar.","Lees de licentie voordat u verdergaat.","Прочитайте лицензию перед продолжением.","Прочитайте ліцензію, перш ніж продовжити."
+"InstallerLicenseBody","InstallerMessage.LicenseLabel3","You must accept the Apache 2.0 license to continue.","Aby kontynuować, zaakceptuj licencję Apache 2.0.","您必须接受 Apache 2.0 许可才能继续。","您必須接受 Apache 2.0 授權才能繼續。","続行するには Apache 2.0 ライセンスへの同意が必要です。","계속하려면 Apache 2.0 라이선스에 동의해야 합니다.","Vous devez accepter la licence Apache 2.0 pour continuer.","Sie müssen der Apache-2.0-Lizenz zustimmen, um fortzufahren.","Debe aceptar la licencia Apache 2.0 para continuar.","Devi accettare la licenza Apache 2.0 per continuare.","Tem de aceitar a licença Apache 2.0 para continuar.","U moet de Apache 2.0-licentie accepteren om verder te gaan.","Для продолжения необходимо принять лицензию Apache 2.0.","Для продовження необхідно прийняти ліцензію Apache 2.0."
+"InstallerLicenseYes","InstallerMessage.LicenseAccepted","I &accept the agreement","&Akceptuję umowę","我接受协议(&A)","我接受合約(&A)","同意する(&A)","동의합니다(&A)","J’&accepte le contrat","Ich &akzeptiere die Vereinbarung","&Acepto el acuerdo","&Accetto il contratto","&Aceito o contrato","Ik &accepteer de overeenkomst","Я &принимаю соглашение","Я &приймаю угоду"
+"InstallerLicenseNo","InstallerMessage.LicenseNotAccepted","I &do not accept the agreement","&Nie akceptuję umowy","我不接受协议(&D)","我不接受合約(&D)","同意しない(&D)","동의하지 않습니다(&D)","Je &n’accepte pas le contrat","Ich &lehne die Vereinbarung ab","&No acepto el acuerdo","&Non accetto il contratto","&Não aceito o contrato","Ik accepteer de overeenkomst &niet","Я &не принимаю соглашение","Я &не приймаю угоду"
+"InstallerInfoNext","InstallerMessage.InfoBeforeClickLabel","Click Next to continue.","Kliknij Dalej, aby kontynuować.","单击“下一步”继续。","按一下「下一步」繼續。","「次へ」をクリックして続行してください。","다음을 클릭하여 계속하세요.","Cliquez sur Suivant pour continuer.","Klicken Sie auf Weiter, um fortzufahren.","Haga clic en Siguiente para continuar.","Fai clic su Avanti per continuare.","Clique em Seguinte para continuar.","Klik op Volgende om verder te gaan.","Нажмите «Далее», чтобы продолжить.","Натисніть «Далі», щоб продовжити."
+"InstallerDirBrowseLabel","InstallerMessage.SelectDirBrowseLabel","Click Browse to choose another folder.","Kliknij Przeglądaj, aby wybrać inny folder.","单击“浏览”选择其他文件夹。","按一下「瀏覽」選擇其他資料夾。","別のフォルダーを選ぶには「参照」をクリックしてください。","다른 폴더를 선택하려면 찾아보기를 클릭하세요.","Cliquez sur Parcourir pour choisir un autre dossier.","Klicken Sie auf Durchsuchen, um einen anderen Ordner zu wählen.","Haga clic en Examinar para elegir otra carpeta.","Fai clic su Sfoglia per scegliere un’altra cartella.","Clique em Procurar para escolher outra pasta.","Klik op Bladeren om een andere map te kiezen.","Нажмите «Обзор», чтобы выбрать другую папку.","Натисніть «Огляд», щоб вибрати іншу папку."
+"InstallerFinishedTitle","InstallerMessage.FinishedHeadingLabel","Achimeld __VERSION__ is ready","Achimeld __VERSION__ jest gotowy","Achimeld __VERSION__ 已就绪","Achimeld __VERSION__ 已就緒","Achimeld __VERSION__ の準備ができました","Achimeld __VERSION__ 준비 완료","Achimeld __VERSION__ est prêt","Achimeld __VERSION__ ist bereit","Achimeld __VERSION__ está listo","Achimeld __VERSION__ è pronto","O Achimeld __VERSION__ está pronto","Achimeld __VERSION__ is gereed","Achimeld __VERSION__ готов","Achimeld __VERSION__ готовий"
+"InstallerWelcomeNext","InstallerMessage.ClickNext","Click Next to continue, or Cancel to exit Setup.","Kliknij Dalej, aby kontynuować, lub Anuluj, aby zamknąć instalator.","单击“下一步”继续，或单击“取消”退出安装程序。","按一下「下一步」繼續，或按一下「取消」結束安裝程式。","続行するには「次へ」、終了するには「キャンセル」をクリックしてください。","계속하려면 다음을, 설치를 종료하려면 취소를 클릭하세요.","Cliquez sur Suivant pour continuer ou sur Annuler pour quitter.","Klicken Sie auf Weiter, um fortzufahren, oder auf Abbrechen, um Setup zu schließen.","Haga clic en Siguiente para continuar o en Cancelar para salir.","Fai clic su Avanti per continuare o su Annulla per uscire.","Clique em Seguinte para continuar ou em Cancelar para sair.","Klik op Volgende om verder te gaan of op Annuleren om af te sluiten.","Нажмите «Далее», чтобы продолжить, или «Отмена», чтобы выйти.","Натисніть «Далі», щоб продовжити, або «Скасувати», щоб вийти."
+"InstallerFinishedExit","InstallerMessage.ClickFinish","Click Finish to close Setup.","Kliknij Zakończ, aby zamknąć instalator.","单击“完成”关闭安装程序。","按一下「完成」關閉安裝程式。","「完了」をクリックしてセットアップを終了してください。","마침을 클릭하여 설치 프로그램을 닫으세요.","Cliquez sur Terminer pour fermer l’installation.","Klicken Sie auf Fertigstellen, um Setup zu schließen.","Haga clic en Finalizar para cerrar el instalador.","Fai clic su Fine per chiudere l’installazione.","Clique em Concluir para fechar o instalador.","Klik op Voltooien om de installatie af te sluiten.","Нажмите «Готово», чтобы закрыть установщик.","Натисніть «Готово», щоб закрити інсталятор."
+"InstallerPreparingTitle","InstallerMessage.WizardPreparing","Preparing installation","Przygotowywanie instalacji","正在准备安装","正在準備安裝","インストールの準備","설치 준비 중","Préparation de l’installation","Installation wird vorbereitet","Preparando la instalación","Preparazione dell’installazione","A preparar a instalação","Installatie voorbereiden","Подготовка установки","Підготовка встановлення"
+"InstallerInstallingTitle","InstallerMessage.WizardInstalling","Installing","Instalowanie","正在安装","正在安裝","インストール中","설치 중","Installation","Installation läuft","Instalando","Installazione","A instalar","Installeren","Установка","Встановлення"
+"InstallerPowerShellDownload","Installer","Downloading the required Microsoft component.","Pobieranie wymaganego składnika firmy Microsoft.","正在下载所需的 Microsoft 组件。","正在下載所需的 Microsoft 元件。","必要な Microsoft コンポーネントをダウンロードしています。","필요한 Microsoft 구성 요소를 다운로드하고 있습니다.","Téléchargement du composant Microsoft requis.","Erforderliche Microsoft-Komponente wird heruntergeladen.","Descargando el componente necesario de Microsoft.","Download del componente Microsoft necessario.","A transferir o componente necessário da Microsoft.","Vereist Microsoft-onderdeel downloaden.","Загрузка необходимого компонента Microsoft.","Завантаження необхідного компонента Microsoft."
+"InstallerPowerShellInstall","Installer","Installing PowerShell 7","Instalowanie PowerShell 7","正在安装 PowerShell 7","正在安裝 PowerShell 7","PowerShell 7 をインストール中","PowerShell 7 설치 중","Installation de PowerShell 7","PowerShell 7 wird installiert","Instalando PowerShell 7","Installazione di PowerShell 7","A instalar o PowerShell 7","PowerShell 7 installeren","Установка PowerShell 7","Встановлення PowerShell 7"
+"InstallerPowerShellVerify","Installer","Installing the verified Microsoft prerequisite.","Instalowanie zweryfikowanego składnika firmy Microsoft.","正在安装已验证的 Microsoft 必备组件。","正在安裝已驗證的 Microsoft 必要元件。","検証済みの Microsoft コンポーネントをインストールしています。","검증된 Microsoft 필수 구성 요소를 설치하고 있습니다.","Installation du composant Microsoft vérifié.","Überprüfte Microsoft-Komponente wird installiert.","Instalando el componente verificado de Microsoft.","Installazione del componente Microsoft verificato.","A instalar o componente verificado da Microsoft.","Geverifieerd Microsoft-onderdeel installeren.","Установка проверенного компонента Microsoft.","Встановлення перевіреного компонента Microsoft."
+"InstallerUnpacking","Installer","Unpacking the installation package","Rozpakowywanie pakietu instalacyjnego","正在解压安装包","正在解壓縮安裝套件","インストールパッケージを展開中","설치 패키지 압축 해제 중","Décompression du paquet d’installation","Installationspaket wird entpackt","Descomprimiendo el paquete de instalación","Estrazione del pacchetto di installazione","A descompactar o pacote de instalação","Installatiepakket uitpakken","Распаковка установочного пакета","Розпакування інсталяційного пакета"
+"InstallerPreparingFiles","Installer","Preparing files for verification.","Przygotowywanie plików do weryfikacji.","正在准备验证文件。","正在準備驗證檔案。","検証用のファイルを準備しています。","검증할 파일을 준비하고 있습니다.","Préparation des fichiers pour vérification.","Dateien werden zur Überprüfung vorbereitet.","Preparando los archivos para verificarlos.","Preparazione dei file per la verifica.","A preparar os ficheiros para verificação.","Bestanden voorbereiden voor verificatie.","Подготовка файлов к проверке.","Підготовка файлів до перевірки."
+"InstallerWaitRestore","Installer","Please wait while files and network policy are restored.","Poczekaj na przywrócenie plików i zasad sieciowych.","正在恢复文件和网络策略，请稍候。","正在還原檔案與網路原則，請稍候。","ファイルとネットワークポリシーの復元が終わるまでお待ちください。","파일과 네트워크 정책이 복원될 때까지 기다려 주세요.","Patientez pendant la restauration des fichiers et des règles réseau.","Warten Sie, während Dateien und Netzwerkrichtlinie wiederhergestellt werden.","Espere mientras se restauran los archivos y la política de red.","Attendi il ripristino dei file e dei criteri di rete.","Aguarde o restauro dos ficheiros e da política de rede.","Wacht terwijl bestanden en netwerkbeleid worden hersteld.","Дождитесь восстановления файлов и сетевых правил.","Дочекайтеся відновлення файлів і мережевих правил."
+"InstallerPrepared","Installer","Application prepared","Aplikacja przygotowana","应用已准备就绪","應用程式已準備就緒","アプリケーションの準備完了","앱 준비 완료","Application préparée","Anwendung vorbereitet","Aplicación preparada","Applicazione preparata","Aplicação preparada","Toepassing voorbereid","Приложение подготовлено","Програму підготовлено"
+"InstallerRestored","Installer","Previous state restored","Przywrócono poprzedni stan","已恢复以前的状态","已還原先前狀態","以前の状態を復元しました","이전 상태 복원 완료","État précédent restauré","Vorheriger Zustand wiederhergestellt","Estado anterior restaurado","Stato precedente ripristinato","Estado anterior restaurado","Vorige toestand hersteld","Прежнее состояние восстановлено","Попередній стан відновлено"

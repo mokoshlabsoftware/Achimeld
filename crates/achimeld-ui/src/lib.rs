@@ -64,6 +64,7 @@ mod typography;
 mod vignette;
 mod window_layout;
 pub use desktop::Desktop;
+pub use theme::apply as apply_theme;
 pub use typography::{BOLD_FAMILY, configure_fonts};
 
 #[cfg(test)]

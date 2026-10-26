@@ -1,0 +1,16 @@
+{
+  "icons": [
+    {
+      "name": "log-folder",
+      "source": "../toolbar-originals/log-folder.png",
+      "prompt": "Open file folder, flat pure white stencil with transparent background, centered with generous transparent margins, medium-bold silhouette readable at 20px; no text, shadows, glow or frame."
+    },
+    {
+      "name": "log-view",
+      "source": "../toolbar-originals/log-view.png",
+      "prompt": "Document sheet with three horizontal log-entry lines and folded upper-right corner, flat pure white stencil with transparent negative-space lines, centered with generous margins; no text, shadows, glow or frame."
+    }
+  ],
+  "preparation": "Unchanged transparent source PNGs retained in toolbar-originals. Bicubic 64x64 resizing; white tintable RGBA8 with generated alpha preserved.",
+  "generator": "Built-in image_gen via imagegen skill"
+}

@@ -2213,6 +2213,17 @@ fn native_window(colors: bool, about: bool, floating: bool, app_style: bool, syn
         fixture.layout.position = Some([220.0, 180.0]);
     }
     let preferences_general = std::env::var_os("ACHIMELD_SCREENSHOT_PREFERENCES_GENERAL").is_some();
+    if preferences_general {
+        let directory =
+            std::path::PathBuf::from(r"C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics");
+        achimeld_application::diagnostics::set_persistence_status(
+            achimeld_application::diagnostics::PersistenceStatus {
+                file: Some(directory.join("log.txt")),
+                directory: Some(directory),
+                failure: None,
+            },
+        );
+    }
     if colors || app_style || preferences_general {
         desktop.open_preferences(&fixture);
         desktop.pref_category = if preferences_general {

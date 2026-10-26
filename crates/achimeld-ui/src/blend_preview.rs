@@ -32,7 +32,7 @@ impl Desktop {
         let valid = self.blend_hover.as_ref().is_some_and(|hover| {
             enabled
                 && self.layers_available()
-                && self.selection.first() == Some(&hover.request.achievement_id)
+                && self.layer_edit_target(port).as_ref() == Some(&hover.request.achievement_id)
                 && port.editor().revision() == hover.revision
                 && egui::Popup::is_id_open(ctx, hover.popup)
                 && ctx.input(|i| i.focused && !i.key_pressed(egui::Key::Escape))

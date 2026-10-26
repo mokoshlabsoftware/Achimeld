@@ -31,8 +31,32 @@ use four fixed fallback slots in the same diagnostic directory:
 `log-instance-1.txt` through `log-instance-4.txt`, each with its own lock and
 `_bak.txt` previous-session file. This supports five concurrent persisted sessions
 with at most 80 MiB of session text. Exhausted slots or other initialization errors
-produce a static error in application output. No arbitrary paths or worker file
-authority are introduced. Request rejection diagnostics distinguish unowned pages,
+produce a visible in-app warning and a bounded diagnostic status (stage, error kind,
+native Windows code when available). The independent desktop diagnostic monitor
+retries file initialization every ten seconds and replays retained in-memory output
+after recovery. The log callback is installed even when the initial file open fails.
+Preferences > General exposes this status, the fixed log directory and an explicit
+Open log folder action. Only that host-derived, reparse-checked directory is passed
+to the Windows shell; no arbitrary executable, path or worker operation is accepted.
+Terminal offers read-only startup snapshots of the ten fixed current/backup files,
+at most the last 128 KiB per file. Clear and Pause affect only the current UI output.
+
+Normal desktop sessions hold an exclusive `desktop-instance.lock` in this directory
+before constructing editor state. A concurrent desktop launch displays the themed
+Already running notice, then closes on acknowledgement without loading another
+editor or changing the first session. The OS releases ownership on process exit;
+a stale filename does not block relaunch. CLI/self-test entry points retain their
+existing behavior, and log slots remain available for these and rejected launches.
+This is a per-user convenience guard, not an authentication boundary.
+
+Operation breadcrumbs use static categories, monotonic operation numbers and elapsed
+times for editor transactions and quick/detail preview jobs. Effect additions record
+only the closed-list effect type. A separate thread records active UI work exceeding
+five seconds, including its static phase, and subsequent recovery. Idle windows are
+not hangs. This does not capture all event-loop, GPU, OS or logger-I/O stalls, nor does
+it reconstruct uninstrumented past sessions. Installed runtime qualification remains
+separate from source/fixture evidence. No arbitrary paths or worker file authority
+are introduced. Request rejection diagnostics distinguish unowned pages,
 ping/beacon, media, manifest, event stream and unavailable-frame cases through
 declared codes and owned-process exit statuses (201 and 212–216); older codes and
 wire envelopes remain accepted. These diagnostics do not authorize any new traffic

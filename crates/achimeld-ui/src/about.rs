@@ -55,7 +55,6 @@ impl Desktop {
                     icon
                 });
                 egui::Image::new((icon.id(), egui::Vec2::splat(24.0)))
-                    .tint(ui.visuals().text_color())
                     .paint_at(ui, egui::Rect::from_center_size(egui::pos2(header.left() + 36.0, header.center().y), egui::Vec2::splat(24.0)));
                 ui.painter().galley(header.center() - title.size() / 2.0, title, ui.visuals().text_color());
                 divider(ui);

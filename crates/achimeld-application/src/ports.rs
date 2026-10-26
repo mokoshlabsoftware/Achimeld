@@ -86,6 +86,8 @@ pub enum UiRequest {
         layer_id: Option<String>,
     },
     OpenPreferences,
+    /// Open only the host-owned diagnostic directory in Windows Explorer.
+    OpenLogFolder,
     LoadParticlePreset {
         achievement_id: String,
         layer_id: String,

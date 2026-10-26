@@ -1,5 +1,6 @@
 //! The supervised host owns the viewer's separate document, artwork and files.
 mod collections;
+pub(super) mod project;
 use super::*;
 use achimeld_application::{
     EntityKind,
@@ -35,6 +36,7 @@ pub(super) struct Viewer {
     render_generation: u64,
     unavailable_collections: Vec<PathBuf>,
     collection_assets: std::collections::BTreeSet<String>,
+    pub(super) blend: Option<achimeld_application::ports::LayerBlendPreview>,
 }
 struct Collection {
     summary: StyleViewerCollection,
@@ -51,6 +53,9 @@ struct LoadedSet {
     steam_sets: Vec<SteamAchievementSetLink>,
 }
 impl Viewer {
+    pub(super) fn invalidate_preview(&mut self) {
+        self.render_document = None;
+    }
     fn new(host: &Host) -> Result<Self, String> {
         let mut store = ProjectStore::new();
         let cup = store.retain_art(include_bytes!(
@@ -152,6 +157,7 @@ impl Viewer {
             render_generation: 0,
             unavailable_collections: Vec::new(),
             collection_assets: Default::default(),
+            blend: None,
         };
         viewer.collections.push(Collection {
             summary: StyleViewerCollection {
@@ -178,32 +184,8 @@ impl Viewer {
                 images: Vec::new(),
             });
         }
-        if !host.global_icon_styles().is_empty() {
-            viewer.collections.push(Collection {
-                summary: StyleViewerCollection {
-                    id: new_id(),
-                    name: "Saved app styles".into(),
-                    styles: host.global_icon_styles().to_vec(),
-                    dirty: false,
-                    read_only: true,
-                    steam_sets: Vec::new(),
-                },
-                store: ProjectStore::new(),
-                steam_sets: Vec::new(),
-                images: Vec::new(),
-            });
-        }
         for collection in &mut viewer.collections {
             collection.images = default_images.clone();
-        }
-        for path in &host.editor_state.state.style_collections {
-            if let Err(error) = viewer.load_collection(path) {
-                viewer.state.status = crate::desktop::logged_status(format!(
-                    "Collection {}: {error}",
-                    path.display()
-                ));
-                viewer.unavailable_collections.push(path.clone());
-            }
         }
         viewer.sync_collections();
         viewer.sync_images();
@@ -232,6 +214,22 @@ impl Viewer {
         );
         if self.source_context.as_ref() == Some(&context) {
             return Ok(());
+        }
+        let styles = document.icon_styles();
+        if self.state.styles != styles {
+            let mut project = self.editor.document().project().clone();
+            project["iconStyles"] = json!(styles);
+            self.editor = Editor::new(Document::from_parts(
+                project,
+                self.editor.document().catalog().clone(),
+            )?);
+            self.state.styles = styles;
+            self.library_revision = self.library_revision.wrapping_add(1);
+            if self.state.selected_style.as_ref().is_some_and(|id| {
+                !id.contains('/') && !self.state.styles.iter().any(|s| &s.id == id)
+            }) {
+                self.state.selected_style = None;
+            }
         }
         let preview = StyleViewerPreview::from_project(document.project());
         let base = base.unwrap_or_else(|| Path::new("C:\\Untitled.achv"));
@@ -318,6 +316,8 @@ impl Viewer {
         )
     }
     fn select(&mut self, id: &str) -> Result<(), String> {
+        self.render_document = None;
+        self.blend = None;
         if let Some((collection, style)) = id.split_once('/') {
             if !self.collections.iter().any(|item| {
                 item.summary.id == collection
@@ -677,6 +677,9 @@ impl Host {
         }
     }
     pub(super) fn viewer_action(&mut self, action: Action) {
+        if self.viewer_project_action(&action) {
+            return;
+        }
         if let Action::ImportStyle(id) = &action {
             let result = id
                 .split_once('/')
@@ -884,7 +887,12 @@ impl Host {
             }
             Action::SaveSet => self.save_viewer(false, None),
             Action::SaveSetAs => self.save_viewer(true, None),
-            Action::Open
+            Action::DuplicateStyle(_)
+            | Action::CloneBuiltins
+            | Action::DeleteProjectStyle { .. }
+            | Action::LoadJson
+            | Action::SaveJson
+            | Action::Open
             | Action::ImportStyle(_)
             | Action::SelectImage(_)
             | Action::SetImageSlot { .. }
@@ -1083,6 +1091,19 @@ impl Host {
         let edge = edge.clamp(64, 512).next_power_of_two();
         viewer.previews.preview(
             &format!("viewer-style:{edge}:{style}:{}", viewer.achievement),
+            viewer.render_generation,
+            &viewer.render_document.as_ref()?.2,
+            viewer.store.asset_base(),
+        )
+    }
+    pub(super) fn viewer_layer_preview(&mut self, style: &str, layer: &str) -> Option<Preview> {
+        let viewer = self.style_viewer.as_mut()?;
+        if viewer.state.selected_style.as_deref() != Some(style) {
+            return None;
+        }
+        viewer.prepare_render_document().ok()?;
+        viewer.previews.preview(
+            &format!("{}/{}", viewer.achievement, layer),
             viewer.render_generation,
             &viewer.render_document.as_ref()?.2,
             viewer.store.asset_base(),
@@ -1570,7 +1591,7 @@ mod tests {
                 .find(|s| s.id == style.id)
                 .unwrap()
                 .name,
-            "Live banner"
+            "Cave art"
         );
         let folder = crate::test_output::root().join(format!("viewer-project-{}", new_id()));
         std::fs::create_dir_all(&folder).unwrap();
@@ -1729,9 +1750,28 @@ mod tests {
             ui: achimeld_ui::Desktop,
             started: std::time::Instant,
             requested: bool,
+            scripted_input: usize,
             output: PathBuf,
         }
         impl eframe::App for Window {
+            fn raw_input_hook(&mut self, ctx: &egui::Context, input: &mut egui::RawInput) {
+                if std::env::var_os("ACHIMELD_STYLE_OPTIONS_CAPTURE").is_some()
+                    && self.started.elapsed().as_secs_f32() > 0.4
+                    && self.scripted_input < 2
+                    && let Some(response) =
+                        ctx.read_response(egui::Id::new("viewer-options-button"))
+                {
+                    let pos = response.rect.center();
+                    input.events.push(egui::Event::PointerMoved(pos));
+                    input.events.push(egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed: self.scripted_input == 0,
+                        modifiers: Default::default(),
+                    });
+                    self.scripted_input += 1;
+                }
+            }
             fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
                 self.host.poll_viewer();
                 self.host.previews.poll();
@@ -1768,7 +1808,13 @@ mod tests {
                 ui.ctx().request_repaint();
             }
         }
-        let output = crate::test_output::root().join("native-style-viewer.png");
+        let output = crate::test_output::root().join(
+            if std::env::var_os("ACHIMELD_STYLE_OPTIONS_CAPTURE").is_some() {
+                "native-style-options.png"
+            } else {
+                "native-style-viewer.png"
+            },
+        );
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_inner_size([1180.0, 900.0])
@@ -1838,6 +1884,7 @@ mod tests {
                     ui,
                     started: std::time::Instant::now(),
                     requested: false,
+                    scripted_input: 0,
                     output,
                 }))
             }),

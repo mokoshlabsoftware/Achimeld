@@ -299,9 +299,7 @@ impl Desktop {
                         )
                     });
                     if delete.on_hover_text("Delete project style").clicked() {
-                        if let Err(error) = port.delete_icon_style(&style.id) {
-                            self.error = Some(error);
-                        }
+                        self.open_style_delete(port, &style.id);
                         if self.layer_palette.active_style.as_ref() == Some(&style.id) {
                             self.layer_palette.active_style = None;
                         }

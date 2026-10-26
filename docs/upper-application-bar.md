@@ -10,7 +10,7 @@ The compact upper row has a 24-point panel height, with an 8-point left inset an
 
 From left to right it contains:
 
-1. The white, transparent 18-by-18-point Achimeld mark, with an Achimeld tooltip. The mark also acts as a window drag target.
+1. The white, transparent 18-by-18-point Achimeld mark, with an Achimeld tooltip. The mark also acts as a window drag target. This title-bar-only variant is retained in `crates/achimeld-ui/assets/achimeld-title-mark.png` and embedded as its 128-by-128 RGBA derivative; all other application identity surfaces retain the orange-on-brown icon.
 2. A vertical separator.
 3. Five adjacent text headings: **File**, **Edit**, **Tools**, **Windows**, **Help**. There are no horizontal gaps between heading bodies. Each heading has square corners, uses the shared Quiet button, and rests on exactly the panel background.
 4. Flexible empty space that acts as the main window drag target.
@@ -31,6 +31,12 @@ execution or additional filesystem authority.
 Selecting **Validate** records its diagnostics without opening Terminal or changing
 its visibility. Open **Tools > Terminal** explicitly to view validation output,
 including blocked requests and early startup failures.
+
+**Preferences > General** shows the host-provided log folder and current file-logging
+status, with gapless **Open log folder** and **View logs** actions. Terminal's session
+selector switches between current output and read-only snapshots of saved session
+logs from before this launch. Copy uses the displayed session; Clear and Pause are
+disabled for historical snapshots. Clearing current output never deletes log files.
 
 Terminal has a visible vertical scrollbar and wraps long lines. Scrolling upward
 retains the reading position as output arrives. **Clear** empties only the current
@@ -147,48 +153,21 @@ Preview shared states interactively under Preferences > App style. Application c
 
 ## Style Viewer
 
-**Style Viewer** is a main application mode immediately after Art Data Bank. Tools > Style Viewer… selects the same mode. It fills the central canvas; there is no floating viewer or close-window action. Its full-width file-action bar uses the shared navigation height, square button bodies, no gaps or outer vertical padding, Panel resting fill, and generated Load/Save artwork. Load style set…, Save style set, and Save style set as… remain available at the top.
+**Style Viewer** is a main canvas mode after Art Data Bank. Its list contains exactly two collapsible folders: **Project** (styles in the open project) and **Built-in** (read-only shipped recipes). No collection subheadings, saved app library, or remembered foreign project libraries appear. A compact name filter searches both folders without changing selection or fold state. The selected style name appears on its banner, not above the preview; rename is a right-click action. Project recipes refresh on every project revision, including creation, editing, undo, redo and switching projects. The built-in 3D object style is excluded; shipped names do not expose legacy product names.
 
-The left library is one vertical scroll containing project styles and user collections first, followed by a **Built in styles** divider and the built-in collections. **Banner height** adjusts the image area from 48 to 240 points. Banners follow the [Style banner standard](style-banners.md): centered artwork fills the background, the style name overlays it, and adjacent banners have zero spacing. Banner height defaults to 64 points and is capped relative to list width. The main preview retains the complete image. The center shows the selected style with independent **Resolution** (64-512 pixels) and **Display size** (48-512 points) controls, defaulting to 512 pixels at 256 points. Preview inputs and rectangular artwork tiles share the right sidebar. Narrow windows collapse the sidebar above the preview; every section remains reachable without horizontal canvas scrolling.
+Banners are gapless, wide, centered crops in full color. Only the name's tight envelope receives the shared button fill and animated text colors; artwork outside the envelope remains unmodified. The main preview shows the complete icon, supports drag-to-pan and pointer-anchored wheel zoom from 10% to 1600%, and has a compact **Center** action at its upper-left edge that recenters and resets zoom. Disabled or covered canvas areas do not take gestures. Camera changes are presentation state, separate from achievement canvas framing and document history.
 
-App presets are grouped under Built-in and Saved app styles. Named collections load additively, including collections containing the same style identities; their viewer identities are scoped to their collection. New collection creates an empty editable library. Right-click a banner or the main preview to copy a style to an editable collection, rename it through the standard in-app prompt, or remove it from its working set. App presets are read-only; saving them exports an editable collection. Click a collection heading to choose the target of Save collection and Save collection as. Loaded collection paths are remembered in host-owned editor settings, separately from project history. Unload uses Save/Discard/Cancel for unsaved changes. Closing offers to save all dirty libraries, and cancelled or failed saves preserve the pending work. There is no collection-count limit; each validated file retains its existing 128-style limit, and the open library data has a 128 MiB memory budget.
+The generated **Style options** action opens a movable, resizable window. It contains banner height (48–240 points, default 64), resolution (64/128/256/512 pixels, default 512), decimal unlock value (default 10), preview General image IDs 0–2, and a miniature Art Data Bank with All/General/Icons/Atlases filters. Clear affects only its chosen image ID. Preview inputs are saved in project metadata and support undo without changing achievement artwork. A very small **Clone all built-ins** button creates independent editable project copies in one undo step. It does not apply them to icons.
 
-Renaming retains the style identity, recipe, and Steam links and marks only the affected working library unsaved. Project/global style libraries are not renamed by these viewer actions. Every collection shares one bounded preview worker pool and decoded-asset cache.
+Layers is available alongside this canvas. The right sidebar is empty until a layer/effect is selected, then shows the shared layer/effect properties. Project recipe edits update using icons and explicitly linked style nodes in one validated project-history transaction. Built-ins are read-only; duplicate one to edit it. Context actions duplicate any displayed style into the project, rename project styles, or delete them. Deletion uses the standard in-app prompt: preserve current icon appearance and break the link, or adopt a chosen remaining project style. Cancel changes nothing; undo restores the style and affected icons together. Independent local helper cards are never inferred to be linked merely because their recipes match.
 
-The viewer owns a separate preview achievement, document, artwork store, render generation, and preview cache. Choosing or renaming styles, linking sets, and loading/saving style sets must not alter canvas achievements, selection, camera, or global style templates. Switching modes clears selection and pending canvas drags as other main modes do. Canvas edit shortcuts are suspended while Style Viewer is selected. The working set survives mode switches. Loading another set or exiting with unsaved style-set changes retains Save/Discard/Cancel.
+### Style JSON and preview ownership
 
-### Artwork and unlock preview inputs
+Style options provides **Load styles…** and **Save styles…**, using standard Windows `.json` pickers. The versioned JSON contains layer recipes, not project or image files. General image IDs make a recipe portable. Direct image/atlas identities require matching artwork in the receiving project's Art Data Bank; filesystem paths in recipes are rejected. Files are bounded to 16 MiB and 128 styles, validated completely before additive import, and receive fresh style/layer/effect identities. Import is undoable. Export uses an unused destination and never overwrites unrelated data. Cancelled pickers and invalid files preserve project state.
 
-App styles & collections includes the opt-in Mosaica and Waifus original recipes,
-Color studies, and Preview objects. Right-click a collection banner and choose
-**Import into project** to add an independent saved project style in one undo step;
-this does not apply it to achievements. New projects start without these styles.
-Empty preview recipes show an embedded transparent PNG rendered from Achimeld's
-editable `Artifact3d` Cup preset. Preview objects retains the native layer recipe.
-Explicit artwork slots override that fallback and cleared slots stay transparent.
-The fallback artwork belongs to the viewer's independent store.
+The supervised host owns the independent preview document, asset store, renderer and file access. Composition retains bounded asynchronous quick/detail passes, cancellation, shared decoding and linear mipmap filtering. Visible banners request previews; last successful textures remain during refinement. A missing image layer leaves other layers renderable. Blend-mode hover is temporary and never alters the saved recipe. The embedded cup artwork remains an ordinary PNG fallback, not a built-in editable 3D style.
 
-A miniature Art Data Bank sits beside the style canvas, with All, General, Icons, and Atlases filters and artwork search. All includes project images from every category and atlases. Selecting an image updates the preview directly. Selecting an atlas opens a clickable tile view using the project's tile dimensions, offsets, spacing, and traversal. The chosen tile has a visible selection marker. Narrow windows collapse the bank above the preview; bank tabs and file actions remain reachable through bounded scrolling.
-
-The input column contains three fixed image slots, **ID 0**, **ID 1**, and **ID 2**, plus the editable decimal **Unlock value**, which defaults to **10**. Select a slot and choose an image or atlas tile from the bank. Clear empties that exact ID without shifting the other slots. These three sources supply the matching General image IDs in every project/app/collection banner and the main preview. Preview achievement text uses an unlock-value token, so styles with linked title/description text reflect the value. Invalid numeric drafts do not replace the last valid input. The chosen identities and tiles plus the valid unlock value are saved in the project's styleViewerPreview metadata as an optional three-element slots array. The legacy image field remains readable and supplies all three slots until the first explicit slot edit. These input edits mark the project dirty and participate in grouped undo; they do not change any canvas achievement. Old projects without metadata use 10 and no artwork override.
-
-Every viewer style renders its actual recipe with these inputs, bypassing stored style thumbnails. Each explicit slot supplies only its matching General image layer index without rewriting the recipe; empty slots contribute transparent artwork. Previously saved custom General-image entries remain readable. Collection artwork identities are remapped on load to avoid collisions, and assets still used by other libraries are retained when unloading. Collection atlas assets retain their validated grid in the optional `styleViewerAtlasGrid` metadata; viewer rendering uses that grid for those identities while preview-slot atlas sources retain the project's grid. This metadata is local style-set data, with no worker/protocol extension. The supervised host resolves artwork references and retains ownership; the UI sends artwork identities, never paths.
-
-Composition uses the existing bounded asynchronous renderer, with an early preview before final quality, obsolete-generation cancellation, shared decoded images, bounded queues/caches, and linear mipmap filtering. Keep the last successful rendered image during refinement. Only visible banners request rendering. Input thumbnails and style previews use the same private render document and generation so they cannot cancel one another. Banner and main-preview textures are keyed by resolution. A missing image layer must leave the remaining layers renderable.
-
-### Style-set files
-
-Load style set…, Save style set, and Save style set as… use standard Windows pickers and the existing validated `.achv` storage container; a descriptive filename is `My styles.achv`. Each file contains a viewer marker, one synthetic preview achievement, its custom images, the style recipes, and the Steam set links. The existing paired localization CSV and sibling `<filename-without-extension>.art-data-bank` directory remain part of the saved set. Keep these together when moving a set. Artwork is content-addressed and project-relative after saving.
-
-Loading validates the entire candidate before adding it to the open collections. Ordinary projects are rejected by the viewer's loader. File > Open rejects viewer-marked sets and directs the user to the viewer, preserving the current canvas. Save updates only the selected collection; Save As requires an unused destination and preserves unrelated files. Cancelled pickers and failed loads/saves preserve all open libraries and do not run a pending continuation.
-
-### Steam Achievement Set links
-
-Valve's Achievement Sets feature is in beta as of the 2026-10-16 review. Sets are game-specific groupings configured in Steamworks. See [Valve's achievement guide](https://partner.steamgames.com/doc/features/achievements/ach_guide?l=english) and the repository's [Steamworks compatibility review](steamworks-migration.md#achievement-sets-compatibility-review).
-
-For the selected style, enter the Steam App ID and choose Base game or Custom set. A custom link includes the exact Steam set ID and a readable set name. Base game is represented explicitly; do not invent a numeric Steam ID for it. Link selected style saves the association in the working set; Unlink removes it. A style can have multiple links. A particular game/set can link to only one style within a style set; conflicting assignments require unlinking the previous one first. Game ID plus set identity is the key, so equal set IDs in different games remain distinct.
-
-This release stores manually entered local associations in the style-set file. It does not discover Steam sets, alter Steam membership, publish changes, apply styles to canvas achievements, or add browser/worker authority. The current Steam adapter lacks a verified Achievement Sets contract; live integration remains subject to the compatibility review's authenticated fixture and validation requirements. The UI states this limitation beside the controls.
+Legacy `.achv` collection authoring, exports and local Steam-set metadata remain supported by the explicit collection tools; they are not additional libraries in the viewer. Their existing validation and host storage ownership remain in force. This UI change adds no worker operation or Steam authority.
 
 ## Implementation and acceptance
 

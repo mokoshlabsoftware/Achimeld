@@ -1,7 +1,7 @@
 [
   {
     "id": "c13dc47a-5afd-4bf3-a2bb-e5456020a001",
-    "name": "Mosaica · Original",
+    "name": "Built-in",
     "styles": [
       {
         "id": "e01638cc-06e8-4242-b8e2-fdaf13945b6e",
@@ -397,11 +397,11 @@
   },
   {
     "id": "c13dc47a-5afd-4bf3-a2bb-e5456020a002",
-    "name": "Waifus · Originals",
+    "name": "Built-in",
     "styles": [
       {
         "id": "01cef83b-3ce9-b5a3-bb72-e8073dae8dc1",
-        "name": "Project style 1",
+        "name": "Luminous 1",
         "recipe": {
           "layers": [
             {
@@ -667,7 +667,7 @@
       },
       {
         "id": "18f52e1d-418f-c724-d41a-0508e5e69ad8",
-        "name": "Project style 2",
+        "name": "Luminous 2",
         "recipe": {
           "layers": [
             {
@@ -977,7 +977,7 @@
       },
       {
         "id": "33734802-9e84-2fe9-edf5-a3125960c1aa",
-        "name": "Project style 3",
+        "name": "Luminous 3",
         "recipe": {
           "layers": [
             {
@@ -1140,7 +1140,7 @@
       },
       {
         "id": "3657609f-b339-a38a-a66a-67ce87793859",
-        "name": "Project style 4",
+        "name": "Luminous 4",
         "recipe": {
           "layers": [
             {
@@ -1531,7 +1531,7 @@
       },
       {
         "id": "6d1ece2d-6508-0487-15e9-6458beed152e",
-        "name": "Project style 5",
+        "name": "Luminous 5",
         "recipe": {
           "layers": [
             {
@@ -1931,7 +1931,7 @@
       },
       {
         "id": "a49e9ed3-2fd6-39e7-ab73-ba13011c7230",
-        "name": "Project style 6",
+        "name": "Luminous 6",
         "recipe": {
           "layers": [
             {
@@ -2184,7 +2184,7 @@
       },
       {
         "id": "c9b343d5-ca05-deb7-7cb5-570ed8f3e16e",
-        "name": "Project style 7",
+        "name": "Luminous 7",
         "recipe": {
           "layers": [
             {

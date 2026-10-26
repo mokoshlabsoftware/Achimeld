@@ -10,6 +10,7 @@ pub(crate) struct Terminal {
     auto_opened: bool,
     was_syncing: bool,
     output: diagnostics::Snapshot,
+    previous: Option<usize>,
     #[cfg(test)]
     scroll: Option<(egui::Id, egui::Rect, f32)>,
 }
@@ -49,21 +50,42 @@ impl Terminal {
             .show(ctx, |ui| {
                 if !enabled { ui.disable(); }
                 buttons::bar(ui, 24.0, |ui| {
+                    crate::dropdowns::Dropdown::from_id_salt("log-session")
+                        .selected_text(self.previous.and_then(|i| diagnostics::previous_sessions().get(i))
+                            .map_or("Current session", |s| s.name.as_str()))
+                        .show_ui(ui, |ui| {
+                            if ui.add(buttons::Button::selectable(self.previous.is_none(), "Current session").bar()).clicked() {
+                                self.previous = None;
+                                ui.close();
+                            }
+                            for (index, session) in diagnostics::previous_sessions().iter().enumerate() {
+                                if ui.add(buttons::Button::selectable(self.previous == Some(index), &session.name).bar()).clicked() {
+                                    self.previous = Some(index);
+                                    ui.close();
+                                }
+                            }
+                        });
                     if ui.add(buttons::Button::new(text(ctx, "Copy all")).bar()).clicked() {
-                        ctx.copy_text(self.output.text.clone());
+                        ctx.copy_text(self.visible_text().into());
                     }
-                    if ui.add(buttons::Button::new(text(ctx, "Clear")).bar()).clicked() {
+                    if ui.add_enabled(self.previous.is_none(), buttons::Button::new(text(ctx, "Clear")).bar()).clicked() {
                         self.output = diagnostics::clear();
                     }
-                    if ui.add(buttons::Button::selectable(self.paused,
+                    if ui.add_enabled(self.previous.is_none(), buttons::Button::selectable(self.paused,
                         text(ctx, if self.paused { "Resume output" } else { "Pause output" })).bar()).clicked() {
                         self.paused = !self.paused;
                     }
                     ui.allocate_space(egui::vec2(ui.available_width(), 0.0));
                 });
                 egui::Frame::new().inner_margin(8).show(ui, |ui| {
+                    if let Some(failure) = diagnostics::persistence_status().failure {
+                        ui.label(failure);
+                    }
+                    if self.previous.is_some() {
+                        ui.weak("Saved log snapshot from before this launch. Open the log folder for complete files.");
+                    }
                     ui.weak(text(ctx, "Select any part of the output and press Ctrl+C to copy. Ctrl+A selects all. Times are UTC."));
-                    if self.output.discarded > 0 {
+                    if self.previous.is_none() && self.output.discarded > 0 {
                         ui.weak(format!("{} older log entries discarded (session limit: 1 MiB / 4,000 entries).", self.output.discarded));
                     }
                     let scroll = egui::ScrollArea::vertical()
@@ -71,8 +93,8 @@ impl Terminal {
                         .auto_shrink([false, false])
                         .max_height(ui.available_height().max(80.0))
                         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible)
-                        .stick_to_bottom(!self.paused)
-                        .show(ui, |ui| { output(ui, &self.output.text); });
+                        .stick_to_bottom(!self.paused && self.previous.is_none())
+                        .show(ui, |ui| { output(ui, self.visible_text()); });
                     #[cfg(test)]
                     { self.scroll = Some((scroll.id, scroll.inner_rect, scroll.state.offset.y)); }
                     #[cfg(not(test))]
@@ -83,6 +105,12 @@ impl Terminal {
         if !open {
             self.auto_opened = false;
         }
+    }
+
+    fn visible_text(&self) -> &str {
+        self.previous
+            .and_then(|i| diagnostics::previous_sessions().get(i))
+            .map_or(&self.output.text, |s| s.text.as_str())
     }
 }
 

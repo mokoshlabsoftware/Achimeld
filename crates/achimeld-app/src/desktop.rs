@@ -36,6 +36,15 @@ fn logged_status(message: String) -> String {
 pub fn run(mut session: Session) -> Result<(), Box<dyn std::error::Error>> {
     let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/achimeld.png"))?;
     session.require_healthy()?;
+    let instance = crate::diagnostics::desktop_instance()?;
+    if instance.is_none() {
+        achimeld_application::diagnostics::record(
+            "WARN",
+            "application",
+            "Desktop launch declined: another instance is already running",
+        );
+        return already_running_notice();
+    }
     let stopped = Arc::new(AtomicBool::new(false));
     let stop = stopped.clone();
     let (health_tx, health_rx) = mpsc::sync_channel(1);
@@ -60,14 +69,64 @@ pub fn run(mut session: Session) -> Result<(), Box<dyn std::error::Error>> {
     let result = eframe::run_native(
         "Achimeld",
         options,
-        Box::new(move |cc| Ok(Box::new(NativeApp::new(cc, health_rx)))),
+        Box::new(move |cc| {
+            let operation =
+                achimeld_application::diagnostics::Operation::begin("editor initialization");
+            let app = NativeApp::new(cc, health_rx);
+            operation.finish("completed");
+            Ok(Box::new(app))
+        }),
     );
     stopped.store(true, Ordering::Release);
     let _ = monitor.join();
     result.map_err(Into::into)
 }
 
+fn already_running_notice() -> Result<(), Box<dyn std::error::Error>> {
+    struct Notice {
+        dialog: AppDialog,
+    }
+    impl eframe::App for Notice {
+        fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
+            if self.dialog.show(ui.ctx()).is_some() {
+                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        }
+    }
+    let preferences = crate::settings_location::SettingsLocation::discover()
+        .ok()
+        .and_then(|location| load_preferences_at(&location.folder).ok())
+        .unwrap_or_default();
+    eframe::run_native(
+        "Achimeld is already running",
+        eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default()
+                .with_icon(eframe::icon_data::from_png_bytes(include_bytes!(
+                    "../assets/achimeld.png"
+                ))?)
+                .with_inner_size([540.0, 260.0])
+                .with_resizable(false)
+                .with_decorations(false),
+            ..Default::default()
+        },
+        Box::new(move |cc| {
+            crate::ui_fonts::configure(&cc.egui_ctx);
+            achimeld_ui::apply_theme(&cc.egui_ctx, &preferences);
+            Ok(Box::new(Notice {
+                dialog: AppDialog::new(
+                    Dialog::AlreadyRunning,
+                    PathBuf::new(),
+                    rfd::FileDialog::new(),
+                ),
+            }))
+        }),
+    )
+    .map_err(Into::into)
+}
+
 struct NativeApp {
+    diagnostics: crate::diagnostics::Monitor,
+    diagnostic_warning: Option<String>,
     automation: Option<automation::Server>,
     automation_state: automation::Engine,
     ui: achimeld_ui::Desktop,
@@ -102,6 +161,8 @@ impl NativeApp {
             ui.open_about();
         }
         Self {
+            diagnostics: crate::diagnostics::Monitor::new(),
+            diagnostic_warning: None,
             automation,
             automation_state: Default::default(),
             ui,
@@ -113,6 +174,15 @@ impl NativeApp {
 }
 impl eframe::App for NativeApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        let activity = self.diagnostics.frame();
+        let failure = achimeld_application::diagnostics::persistence_status().failure;
+        if self.host.dialog.is_none() && failure != self.diagnostic_warning {
+            if failure.is_some() {
+                self.host.start_dialog(Dialog::DiagnosticFailure(
+                    "Achimeld cannot save its session log. Messages remain in memory, and writing will retry automatically. Open Preferences > General to inspect the log folder. Copy the Terminal output before closing if logging does not recover.".into()));
+            }
+            self.diagnostic_warning = failure;
+        }
         self.ui
             .file_drop_position(image_drop::native_drop_position(ui.ctx(), frame));
         if matches!(
@@ -127,6 +197,7 @@ impl eframe::App for NativeApp {
             self.about_pending = false;
         }
         if !dialog_open {
+            activity.phase("poll host operations");
             self.host.poll_read();
             self.host.poll_synchronization();
             self.host.poll_export();
@@ -134,15 +205,19 @@ impl eframe::App for NativeApp {
             self.host.poll_art();
             self.host.poll_image_drop();
         }
+        activity.phase("publish previews");
         self.host.previews.poll();
         self.host.poll_viewer();
         if dialog_open {
             ui.disable();
         }
+        activity.phase("draw editor");
         self.ui.show(ui, &mut self.host);
+        activity.phase("draw prompts");
         self.host.show_dialog(ui.ctx());
         self.host.show_drop_picker(ui.ctx());
         if let Some(server) = &self.automation {
+            activity.phase("editor automation");
             self.automation_state
                 .poll(server, &mut self.host, &mut self.ui);
         }
@@ -421,6 +496,16 @@ impl Host {
             DialogResult::ParticleSave(settings, Some(path)) => {
                 let result = particles::save(&path, &settings);
                 self.report(result, "Particle effect saved");
+            }
+            DialogResult::StylesJsonLoad(Some(path)) => {
+                if let Err(error) = self.load_styles_json(&path) {
+                    self.status = logged_status(error);
+                }
+            }
+            DialogResult::StylesJsonSave(styles, Some(path)) => {
+                if let Err(error) = style_viewer::project::save_styles_json(styles, &path) {
+                    self.status = logged_status(error);
+                }
             }
             result @ (DialogResult::ViewerLoad(_)
             | DialogResult::ViewerSave { .. }
@@ -1474,10 +1559,18 @@ impl EditorPort for Host {
             .settings
             .as_ref()
             .map(|location| location.path("rust-preferences.json"));
-        self.editor
+        let operation = achimeld_application::diagnostics::Operation::begin("editor command");
+        let result = self
+            .editor
             .execute_with(label, command, group, |before, after| {
                 persist_preferences_at(before, after, preference_path.as_deref())
-            })?;
+            });
+        operation.finish(if result.is_ok() {
+            "committed"
+        } else {
+            "rejected"
+        });
+        result?;
         if self.editor.preview_revision() != revision {
             self.render_generation += 1;
         }
@@ -1826,6 +1919,11 @@ impl EditorPort for Host {
                 }
             }
             UiRequest::OpenPreferences => {}
+            UiRequest::OpenLogFolder => {
+                if let Err(error) = crate::diagnostics::open_folder() {
+                    self.status = logged_status(error);
+                }
+            }
             UiRequest::StyleViewer(action) => self.viewer_action(action),
             UiRequest::ChooseSettingsFolder => self.start_dialog(Dialog::SettingsFolder),
             UiRequest::AboutDismissed => {
@@ -1882,7 +1980,27 @@ impl EditorPort for Host {
         &mut self,
         preview: Option<achimeld_application::ports::LayerBlendPreview>,
     ) {
-        self.previews.set_blend_preview(preview);
+        let viewer_preview = preview
+            .as_ref()
+            .filter(|p| {
+                self.style_viewer.as_ref().is_some_and(|v| {
+                    v.state.selected_style.as_ref() == Some(&p.achievement_id)
+                        && v.state.styles.iter().any(|s| s.id == p.achievement_id)
+                })
+            })
+            .cloned();
+        if let Some(viewer) = &mut self.style_viewer
+            && viewer.blend != viewer_preview
+        {
+            viewer.blend = viewer_preview.clone();
+            viewer.invalidate_preview();
+        }
+        self.previews
+            .set_blend_preview(if viewer_preview.is_some() {
+                None
+            } else {
+                preview
+            });
     }
     fn icon_style_preview(
         &mut self,
@@ -1985,6 +2103,13 @@ impl EditorPort for Host {
         self.editor_state.import_gradients(gradients)
     }
     fn layer_preview(&mut self, entity_id: &str, layer_id: &str) -> Option<Preview> {
+        if self
+            .style_viewer
+            .as_ref()
+            .is_some_and(|v| v.state.selected_style.as_deref() == Some(entity_id))
+        {
+            return self.viewer_layer_preview(entity_id, layer_id);
+        }
         self.previews.preview(
             &format!("{entity_id}/{layer_id}"),
             self.render_generation,
@@ -2439,6 +2564,7 @@ mod dialog_tests {
         let picker = std::env::var_os("ACHIMELD_SCREENSHOT_PICKER").is_some();
         let unsaved = std::env::var_os("ACHIMELD_SCREENSHOT_UNSAVED").is_some();
         let validation = std::env::var_os("ACHIMELD_SCREENSHOT_VALIDATION").is_some();
+        let notice = std::env::var("ACHIMELD_SCREENSHOT_NOTICE").ok();
         let scale: f32 = std::env::var("ACHIMELD_SCREENSHOT_SCALE")
             .ok()
             .and_then(|value| value.parse().ok())
@@ -2479,7 +2605,11 @@ mod dialog_tests {
                         .unwrap();
                 }
                 host.file_dialog = rfd::FileDialog::new().set_parent(cc);
-                if validation {
+                if let Some(notice) = &notice {
+                    host.start_dialog(if notice == "running" { Dialog::AlreadyRunning } else {
+                        Dialog::DiagnosticFailure("File logging is unavailable. Your session output is retained in memory and will be written when logging recovers. Open Preferences > General to inspect the log folder.".into())
+                    });
+                } else if validation {
                     host.request(UiRequest::PrepareSynchronization);
                 } else {
                     host.start_dialog(if picker {

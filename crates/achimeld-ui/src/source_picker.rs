@@ -224,17 +224,13 @@ impl Desktop {
         layer_id: &str,
         mode: SourceKind,
     ) {
-        let Some(achievement) = self.selection.first().cloned() else {
+        let Some(achievement) = self.layer_edit_target(port) else {
             return;
         };
-        let Some(entity) = port
-            .editor()
-            .document()
-            .entity(EntityKind::Achievement, &achievement)
-        else {
+        let Some(entity) = self.layer_edit_entity(port, &achievement) else {
             return;
         };
-        let recipe = crate::layer_palette::effective_icon(entity);
+        let recipe = crate::layer_palette::effective_icon(&entity);
         let Some(layer) = recipe["layers"]
             .as_array()
             .and_then(|layers| layers.iter().find(|l| l["id"].as_str() == Some(layer_id)))
@@ -260,7 +256,7 @@ impl Desktop {
             .or_else(|| {
                 (mode == SourceKind::Image)
                     .then(|| {
-                        achimeld_application::art_images::layer_source(entity, layer)
+                        achimeld_application::art_images::layer_source(&entity, layer)
                             .map(|id| format!("art:{id}"))
                     })
                     .flatten()
@@ -344,7 +340,10 @@ impl Desktop {
             let footer_height =
                 crate::buttons::bar_height(ui, 0.0) + 3.0 * ui.spacing().item_spacing.y + 1.0;
             let mut valid = false;
-            if picker.mode == SourceKind::General {
+            if picker.mode == SourceKind::General && port.icon_styles().iter().any(|s| s.id == picker.achievement) {
+                crate::fields::row(ui,"Image ID",|ui| { ui.add(egui::DragValue::new(&mut picker.general).range(0..=20000)); });
+                valid = true;
+            } else if picker.mode == SourceKind::General {
                 if let Some(mut entity) = port
                     .editor()
                     .document()
@@ -643,12 +642,13 @@ impl Desktop {
         if port.editor().document().project()["projectId"].as_str() != Some(&picker.project) {
             return Err("The project changed while choosing the layer source".into());
         }
-        let live = port
-            .editor()
-            .document()
-            .entity(EntityKind::Achievement, &picker.achievement)
-            .cloned()
-            .ok_or("Achievement no longer exists")?;
+        let style = port
+            .icon_styles()
+            .into_iter()
+            .find(|s| s.id == picker.achievement);
+        let live = self
+            .layer_edit_entity(port, &picker.achievement)
+            .ok_or("Edited icon or style no longer exists")?;
         if self
             .entity_drafts
             .get(&picker.achievement)
@@ -748,6 +748,18 @@ impl Desktop {
         layer["tileIndex"] = json!(picker.tile);
         layer["generalImageIndex"] = json!(art_general.unwrap_or(picker.general));
         layer["linkAtlasToGeneral"] = json!(false);
+        if let Some(mut style) = style {
+            if art_general.is_some() {
+                return Err("Use a General image ID for project style artwork".into());
+            }
+            style.recipe = entity["icon"].clone();
+            let command =
+                achimeld_application::style_management::edit(port.editor().document(), style)?;
+            port.finish_group();
+            port.execute("Replace style layer source", command, None)?;
+            self.entity_drafts.remove(&picker.achievement);
+            return Ok(());
+        }
         port.finish_group();
         port.execute(
             if mask {

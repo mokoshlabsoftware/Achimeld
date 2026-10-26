@@ -417,6 +417,19 @@
       "qualification": "pure helper tests; privileged installation, ACL propagation and WFP setup require separate installed acceptance"
     },
     {
+      "id": "SEC-INSTALL-002",
+      "claim": "Installer replacement retains prior application files until commit, rejects running applications and unsafe destinations, and attempts cooperative rollback without deleting unrelated paths.",
+      "enforcement": [
+        { "file": "installer/Install-Transaction.ps1", "symbol": "Start-InstallTransaction" },
+        { "file": "installer/Install-Transaction.ps1", "symbol": "Restore-InstallTransaction" },
+        { "file": "installer/Install-Transaction.ps1", "symbol": "Complete-InstallTransaction" }
+      ],
+      "evidence": [
+        { "scope": "fixture", "file": "build/Test-InstallerTransaction.ps1", "symbol": "Committed transaction allowed rollback" }
+      ],
+      "qualification": "synthetic filesystem fixtures mock package execution and ACLs; Windows installer, MSI, WFP, power-loss and concurrency acceptance remains separate"
+    },
+    {
       "id": "SEC-DESKTOP-001",
       "claim": "Presentation receives read-only document state, validated commands and closed user intents; direct storage, browser and process authority belongs to the supervised host.",
       "enforcement": [

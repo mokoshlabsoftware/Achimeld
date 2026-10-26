@@ -9,7 +9,7 @@ static CATALOG: LazyLock<BTreeMap<String, Vec<String>>> = LazyLock::new(|| {
         .expect("validated embedded interface CSV");
     let mut result = BTreeMap::new();
     for row in records.into_iter().skip(1) {
-        if row.len() != 9 {
+        if row.len() != achimeld_core::INTERFACE_LANGUAGES.len() + 2 {
             continue;
         }
         result.insert(row[0].clone(), row.clone());
@@ -24,7 +24,7 @@ pub fn text(ctx: &egui::Context, source: &str) -> String {
     let language = ctx
         .data(|data| data.get_temp::<String>(egui::Id::new(LANGUAGE)))
         .unwrap_or_else(|| "English".into());
-    let index = achimeld_core::LANGUAGES
+    let index = achimeld_core::INTERFACE_LANGUAGES
         .iter()
         .position(|l| *l == language)
         .unwrap_or(0)
@@ -54,5 +54,32 @@ mod tests {
             text(&ctx, "A new untranslated label"),
             "A new untranslated label"
         );
+    }
+
+    #[test]
+    fn expanded_interface_catalog_preserves_language_columns_and_fallback() {
+        let records = achimeld_core::csv::records(include_str!("../assets/strings.csv")).unwrap();
+        assert_eq!(&records[0][2..], achimeld_core::INTERFACE_LANGUAGES);
+        assert!(records.iter().all(|row| row.len() == records[0].len()));
+        let ctx = egui::Context::default();
+        for (name, file) in [
+            ("German", "Datei"),
+            ("Spanish", "Archivo"),
+            ("Italian", "File"),
+            ("Portuguese", "Ficheiro"),
+            ("Dutch", "Bestand"),
+            ("Russian", "Файл"),
+            ("Ukrainian", "Файл"),
+        ] {
+            language(&ctx, name);
+            assert_eq!(text(&ctx, "FIMENU"), file);
+            assert_eq!(text(&ctx, "An unknown label"), "An unknown label");
+            let preferences = achimeld_application::Preferences {
+                language: name.into(),
+                ..Default::default()
+            };
+            assert!(preferences.validate().is_ok());
+        }
+        assert_eq!(achimeld_core::LANGUAGES.len(), 7);
     }
 }

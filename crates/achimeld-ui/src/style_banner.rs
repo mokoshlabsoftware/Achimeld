@@ -8,6 +8,27 @@ pub(crate) fn paint(
     texture: Option<(egui::TextureId, egui::Vec2)>,
     selected: bool,
 ) {
+    paint_impl(ui, response, name, texture, selected, false);
+}
+
+pub(crate) fn paint_viewer(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    name: &str,
+    texture: Option<(egui::TextureId, egui::Vec2)>,
+    selected: bool,
+) {
+    paint_impl(ui, response, name, texture, selected, true);
+}
+
+fn paint_impl(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    name: &str,
+    texture: Option<(egui::TextureId, egui::Vec2)>,
+    selected: bool,
+    envelope: bool,
+) {
     let (fill, ink) = buttons::colors(
         ui,
         response,
@@ -24,11 +45,13 @@ pub(crate) fn paint(
         let uv_size = rect.size() / (size * scale).max(egui::Vec2::splat(1.0));
         let uv = egui::Rect::from_center_size(egui::pos2(0.5, 0.5), uv_size);
         painter.image(texture, rect, uv, egui::Color32::WHITE);
-        painter.rect_filled(
-            rect,
-            0,
-            egui::Color32::from_rgba_unmultiplied(fill.r(), fill.g(), fill.b(), 190),
-        );
+        if !envelope {
+            painter.rect_filled(
+                rect,
+                0,
+                egui::Color32::from_rgba_unmultiplied(fill.r(), fill.g(), fill.b(), 190),
+            );
+        }
     }
     let mut job = egui::text::LayoutJob::simple(
         name.to_owned(),
@@ -38,6 +61,16 @@ pub(crate) fn paint(
     );
     job.wrap.max_rows = 1;
     let galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
+    if envelope {
+        let text = egui::Rect::from_min_size(
+            egui::pos2(
+                rect.left() + 4.0,
+                rect.center().y - galley.size().y * 0.5 - 4.0,
+            ),
+            galley.size() + egui::vec2(12.0, 8.0),
+        );
+        painter.rect_filled(text.intersect(rect), 3.0, fill);
+    }
     painter.add(
         egui::epaint::TextShape::new(
             egui::pos2(rect.left() + 8.0, rect.center().y - galley.size().y * 0.5),

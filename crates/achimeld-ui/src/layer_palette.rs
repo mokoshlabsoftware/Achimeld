@@ -543,6 +543,9 @@ impl Desktop {
         self.inspector_tab = InspectorTab::General;
     }
     pub(crate) fn layers_available(&self) -> bool {
+        if self.view == crate::desktop::View::Style {
+            return self.layer_palette.open;
+        }
         self.layer_palette.open
             && self.view.is_editor()
             && self.kind == EntityKind::Achievement
@@ -576,10 +579,13 @@ impl Desktop {
         enabled: bool,
     ) {
         self.load_layer_layout(port);
-        if self.inspector_tab == InspectorTab::Icon {
+        if self.inspector_tab == InspectorTab::Icon || self.view == crate::desktop::View::Style {
             self.layer_palette.open = true;
         }
-        if !self.layers_available() {
+        if !self.layers_available()
+            || (self.view == crate::desktop::View::Style
+                && port.style_viewer().and_then(|s| s.selected()).is_none())
+        {
             self.layer_palette.keyboard_active = false;
             self.layer_palette.panel_rect = None;
             self.layer_palette.header = None;
@@ -587,7 +593,8 @@ impl Desktop {
             self.layer_palette.properties_rect = None;
             return;
         }
-        let sidebar = port.preferences().layer_properties_in_sidebar;
+        let sidebar = self.view == crate::desktop::View::Style
+            || port.preferences().layer_properties_in_sidebar;
         let mode_changed = sidebar != self.layer_palette.sidebar_layout;
         self.layer_palette.sidebar_layout = sidebar;
         let id = layers_panel_id();
@@ -665,7 +672,9 @@ impl Desktop {
             self.layer_editor(ui, port);
         }) {
             let rect = response.response.rect;
-            if let Some(id) = self.selection.first().cloned() {
+            if self.view != crate::desktop::View::Style
+                && let Some(id) = self.selection.first().cloned()
+            {
                 let layer = egui::LayerId::new(egui::Order::Foreground, layers_panel_id());
                 self.image_drop.zones.push((
                     layer,
@@ -1239,8 +1248,29 @@ impl Desktop {
             port.finish_group();
         }
     }
+    pub(crate) fn layer_edit_target(&self, port: &dyn EditorPort) -> Option<String> {
+        if self.view == crate::desktop::View::Style {
+            port.style_viewer()?.selected_style.clone()
+        } else {
+            self.selection.first().cloned()
+        }
+    }
+    pub(crate) fn layer_edit_entity(&self, port: &dyn EditorPort, id: &str) -> Option<Value> {
+        port.editor()
+            .document()
+            .entity(EntityKind::Achievement, id)
+            .cloned()
+            .or_else(|| {
+                port.icon_styles()
+                    .into_iter()
+                    .find(|s| s.id == id)
+                    .map(|s| json!({"id":s.id,"icon":s.recipe}))
+            })
+    }
     pub(crate) fn layer_editor(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
-        let pane = if port.preferences().layer_properties_in_sidebar {
+        let pane = if self.view == crate::desktop::View::Style
+            || port.preferences().layer_properties_in_sidebar
+        {
             LayerPane::Stack
         } else {
             LayerPane::Combined
@@ -1255,17 +1285,48 @@ impl Desktop {
         self.layer_editor_pane(ui, port, LayerPane::Properties);
     }
     fn layer_editor_pane(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort, pane: LayerPane) {
-        let Some(id) = self.selection.first().cloned() else {
-            return;
+        let viewer_style = if self.view == crate::desktop::View::Style {
+            port.style_viewer()
+                .and_then(|state| state.selected())
+                .map(|style| {
+                    if style.id.contains('/') {
+                        style
+                    } else {
+                        port.icon_styles()
+                            .into_iter()
+                            .find(|s| s.id == style.id)
+                            .unwrap_or(style)
+                    }
+                })
+        } else {
+            None
         };
-        let Some(live) = port
-            .editor()
-            .document()
-            .entity(EntityKind::Achievement, &id)
-            .cloned()
-        else {
-            return;
+        let (id, live) = if self.view == crate::desktop::View::Style {
+            let Some(style) = &viewer_style else {
+                return;
+            };
+            (
+                style.id.clone(),
+                json!({"id":style.id,"icon":style.recipe,"unlockValue":port.style_viewer().and_then(|s| s.preview.unlock_number().ok()),"styleAchievement":true}),
+            )
+        } else {
+            let Some(id) = self.selection.first().cloned() else {
+                return;
+            };
+            let Some(live) = port
+                .editor()
+                .document()
+                .entity(EntityKind::Achievement, &id)
+                .cloned()
+            else {
+                return;
+            };
+            (id, live)
         };
+        let readonly = viewer_style.as_ref().is_some_and(|s| s.id.contains('/'));
+        if readonly {
+            ui.disable();
+        }
         if self.layer_palette.achievement.as_ref() != Some(&id) {
             self.layer_palette.achievement = Some(id.clone());
             self.layer_drag = None;
@@ -1275,6 +1336,9 @@ impl Desktop {
             self.layer_palette.pending = None;
             self.layer_palette.keyboard_active = false;
             self.layer_palette.active_style = None;
+            if viewer_style.is_some() {
+                self.selected_layer = None;
+            }
         }
         let mut entity = self
             .entity_drafts
@@ -1288,18 +1352,31 @@ impl Desktop {
         let mut icon = effective_icon(&entity);
         let initial = icon.clone();
         if pane != LayerPane::Properties {
-            self.palette_header(ui, port, &id, &mut icon);
+            if viewer_style.is_some() {
+                buttons::bar(ui, 24.0, |ui| {
+                    ui.label("Layers");
+                    if readonly {
+                        ui.weak("Built-in · duplicate to edit");
+                    }
+                });
+            } else {
+                self.palette_header(ui, port, &id, &mut icon);
+            }
         }
         if !icon["layers"].as_array().is_some_and(|layers| {
             layers
                 .iter()
                 .any(|l| l["id"].as_str() == self.selected_layer.as_deref())
         }) {
-            self.selected_layer = icon["layers"].as_array().and_then(|layers| {
-                stack(layers, &self.layer_palette.collapsed)
-                    .first()
-                    .map(|(id, _)| id.clone())
-            });
+            self.selected_layer = if viewer_style.is_some() {
+                None
+            } else {
+                icon["layers"].as_array().and_then(|layers| {
+                    stack(layers, &self.layer_palette.collapsed)
+                        .first()
+                        .map(|(id, _)| id.clone())
+                })
+            };
         }
         if pane != LayerPane::Stack
             && let Some(error) = port.preview_error(&id)
@@ -1423,7 +1500,9 @@ impl Desktop {
                     .max_rect(right.shrink(10.0)),
                 |ui| {
                     if self.selected_layer.is_none() {
-                        ui.weak("Select a layer to edit its properties.");
+                        if viewer_style.is_none() {
+                            ui.weak("Select a layer to edit its properties.");
+                        }
                     } else if self.layer_palette.selected_effect.is_some() {
                         self.effect_properties(ui, port, &mut icon);
                     } else if let Some(layers) = icon["layers"].as_array_mut() {
@@ -1453,7 +1532,33 @@ impl Desktop {
         if icon_changed {
             entity["icon"] = icon;
         }
-        if icon_changed && self.layer_palette.active_style.is_some() {
+        if let Some(mut style) = viewer_style {
+            if icon_changed && !readonly {
+                style.recipe = entity["icon"].clone();
+                style.preview_png = None;
+                let group = format!("viewer-style-{}", style.id);
+                match achimeld_application::style_management::edit(port.editor().document(), style)
+                    .and_then(|command| port.execute("Edit project style", command, Some(&group)))
+                {
+                    Ok(()) => {
+                        self.entity_drafts.remove(&id);
+                    }
+                    Err(error) => {
+                        self.entity_drafts.insert(
+                            id.clone(),
+                            crate::desktop::EntityDraft {
+                                base: live,
+                                value: entity,
+                                error,
+                            },
+                        );
+                    }
+                }
+                if !ui.ctx().egui_wants_keyboard_input() && !ui.input(|i| i.pointer.any_down()) {
+                    port.finish_group();
+                }
+            }
+        } else if icon_changed && self.layer_palette.active_style.is_some() {
             self.commit_style(ui, port, &id, live, entity);
         } else {
             self.commit_entity(ui, port, &id, live, before, entity);
@@ -2060,7 +2165,13 @@ impl Desktop {
                         }
                     }
                 });
-                if ui.app_button("Replace from disk…").clicked() {
+                if ui
+                    .add_enabled(
+                        self.view != crate::desktop::View::Style,
+                        buttons::Button::new("Replace from disk…"),
+                    )
+                    .clicked()
+                {
                     self.request(UiRequest::ImportLayerImage {
                         achievement_id: achievement.into(),
                         layer_id: Some(id.clone()),
@@ -2332,7 +2443,9 @@ impl Desktop {
                     self.layer_palette.pending = Some(action);
                 }
             }
-            if Action::Import.button(ui, size, true).clicked()
+            if Action::Import
+                .button(ui, size, self.view != crate::desktop::View::Style)
+                .clicked()
                 && let Some(achievement) = self.selection.first()
             {
                 self.request(UiRequest::ImportLayerImage {
@@ -2849,6 +2962,11 @@ pub(crate) fn effect_menu(ui: &mut egui::Ui, layer: &mut Value) -> Option<String
             )
             .clicked()
         {
+            achimeld_application::diagnostics::record(
+                "INFO",
+                "effects",
+                &format!("Add effect requested: {kind}"),
+            );
             if !layer["effects"].is_array() {
                 layer["effects"] = json!([]);
             }
@@ -2888,6 +3006,11 @@ pub(crate) fn effect_menu(ui: &mut egui::Ui, layer: &mut Value) -> Option<String
                 .as_array_mut()
                 .expect("effects initialized")
                 .push(effect);
+            achimeld_application::diagnostics::record(
+                "INFO",
+                "effects",
+                &format!("Effect added to layer draft: {kind}"),
+            );
             ui.close();
         }
     }

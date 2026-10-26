@@ -32,6 +32,14 @@ app because startup rotates them. Follow the current session with
 `Get-Content -LiteralPath 'C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics\log.txt' -Tail 100 -Wait`;
 reopen the reader after an application restart. Timestamps ending in `Z` are UTC.
 
+Normal desktop launches now hold `desktop-instance.lock` and reject a second editor
+with an in-app Already running notice. The fixed log slots remain a diagnostic
+fallback for rejected launches and test/CLI sessions. Preferences > General shows
+the live log status and provides Open log folder and View logs. Terminal can display
+bounded snapshots of previous sessions; complete retained files remain in this
+directory. File logging failures must be visible, retried, and retain bounded
+in-memory evidence for recovery; do not silently fall back to an invisible console.
+
 Route new application and safe worker failure diagnostics through the existing
 host diagnostic sink so they reach this directory automatically. Keep bounded
 storage and host ownership; never persist cookies, credentials, tokens, raw browser
@@ -64,11 +72,12 @@ Git, LFS, release assets, package registries, CI artifacts, Pages, or disguised
 archives. Source artwork, build recipes and automatic source-code archives are
 allowed. Text-only CI audit evidence is allowed; compiled build outputs are not.
 
-**No installer uploads are currently enabled.** Lemon Squeezy is the planned paid
-delivery destination, deferred for later setup. Do not upload there, enable sales,
-or add an upload to Publish.bat without the user's explicit instruction. Publishing
-source and preparing a local installer never imply permission to distribute it.
-Never use GitHub/GitLab as a free installer host or fallback download location.
+**Lemon Squeezy delivery is explicitly authorized.** Publish.bat delivers the
+verified promoted installer after successful source publication. The standalone
+private/Upload-LemonSqueezy.bat retries delivery without rebuilding. Target product,
+store and test/live mode are pinned in private/lemon-product.json; never activate
+sales or switch modes automatically. BuildOnly and quick builds do not upload.
+Never use GitHub/GitLab as an installer host or fallback download location.
 
 Generated installers, packages, build outputs and audit evidence belong under
 `C:\Projects\AchimeldBuild`, outside both repositories. Build from a clean selected

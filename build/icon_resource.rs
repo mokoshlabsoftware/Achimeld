@@ -8,7 +8,11 @@ pub fn link_icon(binary: &str) {
     if env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
-    let icon = include_bytes!("../crates/achimeld-app/assets/achimeld.ico");
+    // Read at build-script execution time: rerun-if-changed may rerun a cached
+    // build-script executable without refreshing bytes embedded by include_bytes!.
+    let icon_path = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap())
+        .join("../achimeld-app/assets/achimeld.ico");
+    let icon = fs::read(icon_path).expect("read application icon asset");
     assert_eq!(&icon[..4], &[0, 0, 1, 0], "expected an ICO asset");
     let count = u16::from_le_bytes(icon[4..6].try_into().unwrap());
     let mut resource = Vec::new();

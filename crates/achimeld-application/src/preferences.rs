@@ -84,7 +84,7 @@ impl Default for Preferences {
 }
 impl Preferences {
     pub fn validate(&self) -> Result<(), String> {
-        if !achimeld_core::LANGUAGES.contains(&self.language.as_str())
+        if !achimeld_core::INTERFACE_LANGUAGES.contains(&self.language.as_str())
             || self.control_radius > 24
             || !(10.0..=48.0).contains(&self.header_size)
             || !(9.0..=32.0).contains(&self.normal_size)

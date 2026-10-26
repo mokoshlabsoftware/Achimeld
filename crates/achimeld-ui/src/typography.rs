@@ -155,13 +155,17 @@ mod tests {
             }
             for (language, _) in SAMPLES {
                 ensure_fonts(&ctx, language);
-                let column = achimeld_core::LANGUAGES
+                let column = achimeld_core::INTERFACE_LANGUAGES
                     .iter()
                     .position(|entry| *entry == language)
                     .unwrap()
                     + 2;
                 let mut characters = std::collections::BTreeSet::new();
-                for row in records.iter().skip(1).filter(|row| row.len() == 9) {
+                for row in records
+                    .iter()
+                    .skip(1)
+                    .filter(|row| row.len() == achimeld_core::INTERFACE_LANGUAGES.len() + 2)
+                {
                     characters.extend(
                         row[column]
                             .chars()

@@ -1404,7 +1404,7 @@ mod tests {
             .as_array()
             .unwrap()
             .iter()
-            .find(|c| c["name"] == "Mosaica · Original")
+            .find(|c| c["id"] == "c13dc47a-5afd-4bf3-a2bb-e5456020a001")
             .unwrap();
         let source_id = source["id"].clone();
         let style_id = source["styles"][0]["id"].clone();
@@ -1527,20 +1527,23 @@ mod tests {
             )["result"]["collectionId"]
                 .clone();
             let names = [
-                "Mosaica · Mint shine",
-                "Waifus · Citrus prism",
-                "Waifus · Violet dusk",
-                "Waifus · Bronze focus",
-                "Waifus · Lagoon ribbon",
-                "Waifus · Citrus neon",
-                "Waifus · Azure shine",
-                "Waifus · Lime pulse",
+                "Mint shine",
+                "Citrus prism",
+                "Violet dusk",
+                "Bronze focus",
+                "Lagoon ribbon",
+                "Citrus neon",
+                "Azure shine",
+                "Lime pulse",
             ];
             let mut styles = Vec::new();
             for library in libraries["result"].as_array().unwrap().iter().filter(|c| {
                 matches!(
-                    c["name"].as_str(),
-                    Some("Mosaica · Original" | "Waifus · Originals")
+                    c["id"].as_str(),
+                    Some(
+                        "c13dc47a-5afd-4bf3-a2bb-e5456020a001"
+                            | "c13dc47a-5afd-4bf3-a2bb-e5456020a002"
+                    )
                 )
             }) {
                 for source in library["styles"].as_array().unwrap() {

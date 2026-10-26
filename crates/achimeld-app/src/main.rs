@@ -23,6 +23,11 @@ mod translations;
 mod ui_fonts;
 fn run(stage: &mut &'static str) -> Result<(), Box<dyn std::error::Error>> {
     let session = Session::connect()?;
+    achimeld_application::diagnostics::record(
+        "INFO",
+        "application",
+        "Supervised session connected",
+    );
     *stage = "console-control";
     cancellation::install_console_handler()?;
     let arguments: Vec<_> = std::env::args().skip(1).collect();
@@ -162,7 +167,25 @@ fn record_failure(
 }
 fn main() {
     diagnostics::initialize();
-    achimeld_application::diagnostics::record("INFO", "application", "Starting Achimeld");
+    let version = include_str!("../../../CHANGELOG.md")
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("## ")
+                .and_then(|line| line.split_whitespace().next())
+        })
+        .unwrap_or("unknown");
+    let started = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    achimeld_application::diagnostics::record(
+        "INFO",
+        "application",
+        &format!(
+            "Starting Achimeld; version={version}; pid={}; UTC unix time={started}",
+            std::process::id()
+        ),
+    );
     let mut stage = "supervised-startup";
     if let Err(error) = run(&mut stage) {
         achimeld_application::diagnostics::record(

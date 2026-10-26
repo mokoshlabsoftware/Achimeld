@@ -23,6 +23,8 @@ pub(crate) enum ViewerNext {
 pub(crate) enum Dialog {
     Discard(UiRequest),
     SavedProjectRequired,
+    DiagnosticFailure(String),
+    AlreadyRunning,
     Save(Option<UiRequest>),
     Open,
     ParticleLoad(achimeld_application::particles::PresetTarget),
@@ -49,6 +51,8 @@ pub(crate) enum Dialog {
     ExportTranslations,
     ImportTranslations,
     SettingsFolder,
+    StylesJsonLoad,
+    StylesJsonSave(Vec<achimeld_application::IconStyle>),
     ViewerLoad,
     ViewerSave {
         then: Option<ViewerNext>,
@@ -95,6 +99,8 @@ pub(crate) enum DialogResult {
     ExportTranslations(Option<PathBuf>),
     ImportTranslations(Option<PathBuf>),
     SettingsFolder(Option<PathBuf>),
+    StylesJsonLoad(Option<PathBuf>),
+    StylesJsonSave(Vec<achimeld_application::IconStyle>, Option<PathBuf>),
     ViewerLoad(Option<PathBuf>),
     ViewerSave {
         path: Option<PathBuf>,
@@ -109,6 +115,8 @@ impl Dialog {
         match self {
             Self::Discard(_) => "Unsaved changes",
             Self::SavedProjectRequired => "Saved project required",
+            Self::DiagnosticFailure(_) => "File logging unavailable",
+            Self::AlreadyRunning => "Achimeld is already running",
             Self::Save(_) => "Save project",
             Self::Open => "Open project",
             Self::ParticleLoad(_) => "Load particle effect",
@@ -123,6 +131,8 @@ impl Dialog {
             Self::ExportTranslations => "Export achievement translations",
             Self::ImportTranslations => "Import achievement translations",
             Self::SettingsFolder => "Choose Achimeld folder",
+            Self::StylesJsonLoad => "Load project styles from JSON",
+            Self::StylesJsonSave(_) => "Save project styles to JSON",
             Self::ViewerLoad => "Load style collection",
             Self::ViewerSave { .. } => "Save style collection",
             Self::ViewerImage => "Add Style Viewer image",
@@ -139,6 +149,9 @@ impl Dialog {
             Self::GradientImport | Self::GradientExport(_) => extension.eq_ignore_ascii_case("grd"),
             Self::EffectsImport(kind) | Self::EffectsExport(kind, _) => {
                 extension.eq_ignore_ascii_case(kind.extension())
+            }
+            Self::StylesJsonLoad | Self::StylesJsonSave(_) => {
+                extension.eq_ignore_ascii_case("json")
             }
             Self::ParticleLoad(_) | Self::ParticleSave(_) => {
                 extension.eq_ignore_ascii_case("achparticles")
@@ -162,6 +175,8 @@ impl Dialog {
         match self {
             Self::Discard(request) => DialogResult::Discard(request, choice),
             Self::SavedProjectRequired => DialogResult::Acknowledged,
+            Self::DiagnosticFailure(_) => DialogResult::Acknowledged,
+            Self::AlreadyRunning => DialogResult::Acknowledged,
             Self::Save(then) => DialogResult::Save(then, path),
             Self::Open => DialogResult::Open(path),
             Self::ParticleLoad(target) => DialogResult::ParticleLoad(target, path),
@@ -188,6 +203,8 @@ impl Dialog {
             Self::ExportTranslations => DialogResult::ExportTranslations(path),
             Self::ImportTranslations => DialogResult::ImportTranslations(path),
             Self::SettingsFolder => DialogResult::SettingsFolder(path),
+            Self::StylesJsonLoad => DialogResult::StylesJsonLoad(path),
+            Self::StylesJsonSave(styles) => DialogResult::StylesJsonSave(styles, path),
             Self::ViewerLoad => DialogResult::ViewerLoad(path),
             Self::ViewerSave { then, collection } => DialogResult::ViewerSave {
                 path,
@@ -243,6 +260,7 @@ impl AppDialog {
             Dialog::Save(_)
                 | Dialog::ExportTranslations
                 | Dialog::ViewerSave { .. }
+                | Dialog::StylesJsonSave(_)
                 | Dialog::ParticleSave(_)
                 | Dialog::GradientExport(_)
                 | Dialog::EffectsExport(..)
@@ -255,7 +273,7 @@ impl AppDialog {
             Dialog::GradientImport | Dialog::GradientExport(_) => {
                 picker.add_filter("Photoshop gradients", &["grd"])
             }
-            Dialog::ParticleLoad(_) | Dialog::ParticleSave(_) => {
+            Dialog::ParticleLoad(_) | Dialog::StylesJsonSave(_) | Dialog::ParticleSave(_) => {
                 picker.add_filter("Achimeld particle effects", &["achparticles"])
             }
             Dialog::Save(_) | Dialog::Open => picker.add_filter("Achimeld projects", &["achv"]),
@@ -279,6 +297,7 @@ impl AppDialog {
                 picker.set_file_name(format!("{}.{}", kind.layer_kind(), kind.extension()))
             }
             Dialog::GradientExport(_) => picker.set_file_name("Gradients.grd"),
+            Dialog::StylesJsonSave(_) => picker.set_file_name("Project styles.json"),
             Dialog::ParticleSave(_) => picker.set_file_name("Particle effect.achparticles"),
             Dialog::Save(_) => picker.set_file_name("Project.achv"),
             Dialog::ExportTranslations => picker.set_file_name("achievements.translations.csv"),
@@ -309,7 +328,11 @@ impl AppDialog {
         let kind = self.kind.take()?;
         if !matches!(
             kind,
-            Dialog::Discard(_) | Dialog::ViewerDiscard(_) | Dialog::SavedProjectRequired
+            Dialog::Discard(_)
+                | Dialog::ViewerDiscard(_)
+                | Dialog::SavedProjectRequired
+                | Dialog::DiagnosticFailure(_)
+                | Dialog::AlreadyRunning
         ) {
             if let Some(pending) = &self.pending {
                 match pending.try_recv() {
@@ -364,6 +387,13 @@ impl AppDialog {
                             self.error = None;
                         }
                     });
+                } else if matches!(kind, Dialog::AlreadyRunning) {
+                    choice = app_prompt(ui, kind.title(),
+                        "Another Achimeld window is already running. Return to that window to continue. This new launch will close.",
+                        None, &[("Close", PromptIcon::Cancel, SaveChoice::Cancel)]);
+                } else if let Dialog::DiagnosticFailure(message) = &kind {
+                    choice = app_prompt(ui, kind.title(), message, None,
+                        &[("Close", PromptIcon::Cancel, SaveChoice::Cancel)]);
                 } else if matches!(kind, Dialog::SavedProjectRequired) {
                     choice = app_prompt(
                         ui,
@@ -390,6 +420,7 @@ impl AppDialog {
 
 #[derive(Clone, Copy)]
 enum PromptIcon {
+    App,
     Save,
     Discard,
     Cancel,
@@ -397,6 +428,10 @@ enum PromptIcon {
 impl PromptIcon {
     fn image(self, ctx: &egui::Context, size: f32) -> egui::Image<'static> {
         let (name, bytes): (&str, &[u8]) = match self {
+            Self::App => (
+                "app",
+                include_bytes!("../../achimeld-ui/assets/achimeld-logo.rgba"),
+            ),
             Self::Save => ("save", include_bytes!("../assets/prompts/save.rgba")),
             Self::Discard => ("discard", include_bytes!("../assets/prompts/discard.rgba")),
             Self::Cancel => ("cancel", include_bytes!("../assets/prompts/cancel.rgba")),
@@ -407,7 +442,14 @@ impl PromptIcon {
             .unwrap_or_else(|| {
                 let texture = ctx.load_texture(
                     format!("prompt-{name}"),
-                    egui::ColorImage::from_rgba_unmultiplied([64, 64], bytes),
+                    egui::ColorImage::from_rgba_unmultiplied(
+                        if matches!(self, Self::App) {
+                            [128, 128]
+                        } else {
+                            [64, 64]
+                        },
+                        bytes,
+                    ),
                     egui::TextureOptions::LINEAR
                         .with_mipmap_mode(Some(egui::TextureFilter::Linear)),
                 );
@@ -485,6 +527,16 @@ fn app_prompt(
     ui.set_width(width);
     ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
 
+    let header_icon = if title == "Achimeld is already running" {
+        PromptIcon::App
+    } else {
+        PromptIcon::Save
+    };
+    let header_tint = if matches!(header_icon, PromptIcon::App) {
+        egui::Color32::WHITE
+    } else {
+        ui.visuals().text_color()
+    };
     let title = ui.painter().layout_no_wrap(
         title.into(),
         egui::TextStyle::Heading.resolve(ui.style()),
@@ -493,9 +545,9 @@ fn app_prompt(
     let header_height = title.size().y.max(24.0) + 24.0;
     let (header, _) =
         ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
-    PromptIcon::Save
+    header_icon
         .image(ui.ctx(), 24.0)
-        .tint(ui.visuals().text_color())
+        .tint(header_tint)
         .paint_at(
             ui,
             egui::Rect::from_center_size(
@@ -598,6 +650,9 @@ fn validate_target(kind: &Dialog, mut path: PathBuf) -> Result<PathBuf, String> 
     if matches!(kind, Dialog::ExportTranslations) && path.extension().is_none() {
         path.set_extension("csv");
     }
+    if matches!(kind, Dialog::StylesJsonSave(_)) && path.extension().is_none() {
+        path.set_extension("json");
+    }
     if matches!(kind, Dialog::ParticleSave(_)) && path.extension().is_none() {
         path.set_extension("achparticles");
     }
@@ -617,6 +672,7 @@ fn validate_target(kind: &Dialog, mut path: PathBuf) -> Result<PathBuf, String> 
         Dialog::Save(_)
             | Dialog::ExportTranslations
             | Dialog::ViewerSave { .. }
+            | Dialog::StylesJsonSave(_)
             | Dialog::ParticleSave(_)
             | Dialog::GradientExport(_)
             | Dialog::EffectsExport(..)
@@ -669,68 +725,76 @@ mod tests {
                 _ => None,
             }
         }
-        for scale in [1.0, 1.5] {
-            for escape in [false, true] {
-                let ctx = egui::Context::default();
-                ctx.set_zoom_factor(scale);
-                let mut dialog = AppDialog::new(
-                    Dialog::SavedProjectRequired,
-                    crate::test_output::root(),
-                    rfd::FileDialog::new(),
-                );
-                let mut result = None;
-                let mut frame = |events| {
-                    let mut output = ctx.run_ui(
-                        egui::RawInput {
-                            screen_rect: Some(egui::Rect::from_min_size(
-                                egui::Pos2::ZERO,
-                                egui::vec2(1100.0, 700.0),
-                            )),
-                            events,
-                            ..Default::default()
-                        },
-                        |ui| result = dialog.show(ui.ctx()),
-                    );
-                    output.textures_delta.clear();
-                    output
-                };
-                let _ = frame(vec![]);
-                let output = frame(vec![]);
-                assert!(
-                    output.shapes.iter().any(|shape| {
-                        text_rect(&shape.shape, "Saved project required").is_some()
-                    })
-                );
-                let close = output
-                    .shapes
-                    .iter()
-                    .find_map(|shape| text_rect(&shape.shape, "Close"))
-                    .unwrap();
-                assert!(ctx.content_rect().contains_rect(close));
-                if escape {
-                    let _ = frame(vec![egui::Event::Key {
-                        key: egui::Key::Escape,
-                        physical_key: None,
-                        pressed: true,
-                        repeat: false,
-                        modifiers: egui::Modifiers::NONE,
-                    }]);
-                } else {
-                    for pressed in [true, false] {
-                        let _ = frame(vec![
-                            egui::Event::PointerMoved(close.center()),
-                            egui::Event::PointerButton {
-                                pos: close.center(),
-                                button: egui::PointerButton::Primary,
-                                pressed,
-                                modifiers: egui::Modifiers::NONE,
+        for variant in ["saved", "logging", "running"] {
+            for scale in [1.0, 1.5] {
+                for escape in [false, true] {
+                    let ctx = egui::Context::default();
+                    ctx.set_zoom_factor(scale);
+                    let kind = match variant {
+                        "logging" => Dialog::DiagnosticFailure(
+                            "Logs cannot be written. Retained messages will be retried.".into(),
+                        ),
+                        "running" => Dialog::AlreadyRunning,
+                        _ => Dialog::SavedProjectRequired,
+                    };
+                    let title = kind.title();
+                    let mut dialog =
+                        AppDialog::new(kind, crate::test_output::root(), rfd::FileDialog::new());
+                    let mut result = None;
+                    let mut frame = |events| {
+                        let mut output = ctx.run_ui(
+                            egui::RawInput {
+                                screen_rect: Some(egui::Rect::from_min_size(
+                                    egui::Pos2::ZERO,
+                                    egui::vec2(1100.0, 700.0),
+                                )),
+                                events,
+                                ..Default::default()
                             },
-                        ]);
+                            |ui| result = dialog.show(ui.ctx()),
+                        );
+                        output.textures_delta.clear();
+                        output
+                    };
+                    let _ = frame(vec![]);
+                    let output = frame(vec![]);
+                    assert!(
+                        output
+                            .shapes
+                            .iter()
+                            .any(|shape| { text_rect(&shape.shape, title).is_some() })
+                    );
+                    let close = output
+                        .shapes
+                        .iter()
+                        .find_map(|shape| text_rect(&shape.shape, "Close"))
+                        .unwrap();
+                    assert!(ctx.content_rect().contains_rect(close));
+                    if escape {
+                        let _ = frame(vec![egui::Event::Key {
+                            key: egui::Key::Escape,
+                            physical_key: None,
+                            pressed: true,
+                            repeat: false,
+                            modifiers: egui::Modifiers::NONE,
+                        }]);
+                    } else {
+                        for pressed in [true, false] {
+                            let _ = frame(vec![
+                                egui::Event::PointerMoved(close.center()),
+                                egui::Event::PointerButton {
+                                    pos: close.center(),
+                                    button: egui::PointerButton::Primary,
+                                    pressed,
+                                    modifiers: egui::Modifiers::NONE,
+                                },
+                            ]);
+                        }
                     }
+                    assert!(matches!(result, Some(DialogResult::Acknowledged)));
+                    assert!(dialog.pending.is_none());
+                    assert!(dialog.kind.is_none());
                 }
-                assert!(matches!(result, Some(DialogResult::Acknowledged)));
-                assert!(dialog.pending.is_none());
-                assert!(dialog.kind.is_none());
             }
         }
     }

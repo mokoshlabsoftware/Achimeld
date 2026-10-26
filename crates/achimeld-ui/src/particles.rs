@@ -29,7 +29,7 @@ impl Desktop {
         layer: &mut Value,
         explorer: bool,
     ) {
-        let achievement = self.selection.first().cloned().unwrap_or_default();
+        let achievement = self.layer_edit_target(port).unwrap_or_default();
         if explorer {
             action_bar(ui, port, layer, &achievement, true, None);
         }

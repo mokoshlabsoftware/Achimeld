@@ -13,6 +13,11 @@
     {
       "name": "style-set-save",
       "prompt": "Use case: logo-brand. Asset type: a single desktop toolbar action icon for Save style set and Save as. Subject: a simple bold floppy disk save symbol with a small prehistoric open-palm handprint cutout in its lower label area, keep it simple and readable at 20 pixels. Style: flat monochrome desktop toolbar glyph, strong weight matching trophy and stacked-image icons. Composition: isolated centered symbol, square canvas with transparent padding, no text. Pure white foreground with genuine alpha transparency, no shadows, no border, no gradients, no decorative details."
+    },
+    {
+      "name": "style-options",
+      "prompt": "Create one small desktop toolbar icon for 'Style options'. Transparent background. White monochrome solid silhouette, crisp simplified UI artwork with consistent medium visual weight, a small framed landscape artwork with three adjustment sliders overlaid. Centered isolated symbol, square canvas, generous transparent margins, legible at 20x20 pixels. No letters, no words, no surrounding button, no shadows, no gradients, no color. Match classic white Achimeld toolbar artwork.",
+      "preparation": "Preserved original PNG; cropped to significant alpha coverage, resized within 56px and centered on transparent 64px canvas. Built-in image_gen tool."
     }
   ]
 }

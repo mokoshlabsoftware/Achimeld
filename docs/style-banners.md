@@ -14,12 +14,14 @@ implementation terminology, not a caption for users.
 - Overlay the name on the art, left-aligned and vertically centered.
   Use a translucent application-palette fill behind the foreground text to keep
   it readable, preserving the shared hover, focus and selected-state colors.
+  In Style Viewer, keep the artwork at full color and restrict the protective
+  fill to a tight envelope behind the text, including hover and selection.
   Do not create a separate name band below the image.
 - Stack style banners in a single vertical list with **zero spacing**:
   adjacent bodies touch, with square corners and no padding between rows.
-  Collection headings and the explicitly requested built-in divider remain
+  Style Viewer uses only the collapsible Project and Built-in folder rows as
   structural boundaries, not blank spacers between styles.
-- Style Viewer retains its banner-height control. The default is 64 logical
+- Style Viewer keeps banner height inside its movable Style options window. The default is 64 logical
   points; height is capped relative to list width so banners remain wide.
   Changing height changes how much background artwork is visible.
 - The main selected-style preview shows the complete image. The artwork picker

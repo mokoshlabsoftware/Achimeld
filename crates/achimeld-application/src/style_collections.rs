@@ -20,10 +20,6 @@ pub fn builtins() -> Result<Vec<StyleCollection>, String> {
         serde_json::from_str(include_str!("../assets/styles/variants.json"))
             .map_err(|e| e.to_string())?;
     collections.extend(variants);
-    let objects: Vec<StyleCollection> =
-        serde_json::from_str(include_str!("../assets/styles/preview-objects.json"))
-            .map_err(|e| e.to_string())?;
-    collections.extend(objects);
     for collection in &collections {
         if !crate::document::valid_id(&collection.id) || collection.styles.len() > 128 {
             return Err("Invalid built-in style collection".into());

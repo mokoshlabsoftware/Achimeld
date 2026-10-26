@@ -41,7 +41,7 @@ impl Desktop {
                     opacity(ui, layer);
                     crate::blend_preview::property_row(ui, |ui| {
                         let selected = layer["blendMode"].as_str().unwrap_or("Normal").to_owned();
-                        let achievement = self.selection.first().cloned().unwrap_or_default();
+                        let achievement = self.layer_edit_target(port).unwrap_or_default();
                         self.layer_blend_menu(
                             ui,
                             port,
@@ -167,7 +167,7 @@ impl Desktop {
                 gradient_presets(ui, port, &mut layer["gradient"]);
             }
             if layer["kind"] == "Particle" {
-                let achievement = self.selection.first().cloned().unwrap_or_default();
+                let achievement = self.layer_edit_target(port).unwrap_or_default();
                 crate::particles::action_bar(ui, port, layer, &achievement, false, None);
             } else if layer["kind"] == "Explosion" {
                 crate::explosion::action_bar(ui, port, layer, None);
@@ -335,13 +335,20 @@ impl Desktop {
                     reference_choice(ui, "Atlas", layer, "atlasId", &atlases, "Default atlas");
                     integer(ui, "Tile index", layer, "tileIndex", 0..=20000);
                 }
-                "AchievementImage" => self.general_explorer(ui, port, achievement, Some(layer)),
+                "AchievementImage" => {
+                    if self.view == crate::desktop::View::Style {
+                        integer(ui, "Image ID", layer, "generalImageIndex", 0..=20000);
+                        ui.weak("Set preview artwork in Style options. Each using icon supplies its own General images.");
+                    } else {
+                        self.general_explorer(ui, port, achievement, Some(layer));
+                    }
+                }
                 "SdfVignette" => {
                     crate::vignette::properties(ui, port, &mut layer["sdfVignette"]);
                 }
                 "Particle" => self.particle_properties(ui, port, layer),
                 "Explosion" => {
-                    let instance = self.selection.first().cloned().unwrap_or_default();
+                    let instance = self.layer_edit_target(port).unwrap_or_default();
                     crate::explosion::body_properties(ui, port, layer, &instance);
                 }
                 "Curves" => {
@@ -349,7 +356,7 @@ impl Desktop {
                         layer["curves"] = json!({"points":[{"input":0.0,"output":0.0},{"input":1.0,"output":1.0}]});
                     }
                     if let Some(points) = layer["curves"]["points"].as_array_mut() {
-                        let achievement = self.selection.first().cloned().unwrap_or_default();
+                        let achievement = self.layer_edit_target(port).unwrap_or_default();
                         let preview = port.layer_preview(&achievement, id);
                         crate::curves::editor(
                             ui,

@@ -144,6 +144,12 @@ impl PreviewWorker {
                                 .as_ref()
                                 .is_some_and(|c| c.load(Ordering::Acquire))
                     };
+                    let operation =
+                        achimeld_application::diagnostics::Operation::begin(match job.pass {
+                            Pass::Quick => "quick preview render",
+                            Pass::Detail => "detail preview render",
+                            Pass::Single => "single preview render",
+                        });
                     let result = render_job(
                         &document,
                         &job,
@@ -151,6 +157,13 @@ impl PreviewWorker {
                         &mut SharedAssets(assets),
                         &is_cancelled,
                     );
+                    operation.finish(if is_cancelled() {
+                        "cancelled"
+                    } else if result.is_ok() {
+                        "completed"
+                    } else {
+                        "failed"
+                    });
                     // Publish before releasing the quick-pass barrier. Refinement is
                     // admitted only by poll(), so an initial result reaches the UI first.
                     let mut completed = Completed {

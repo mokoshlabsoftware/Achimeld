@@ -10,19 +10,30 @@ impl Host {
     fn particle_target_current(&self, target: &PresetTarget) -> bool {
         self.editor.document().project()["projectId"].as_str() == Some(&target.project_id)
             && self.editor.revision() == target.revision
-            && self
-                .editor
-                .document()
-                .entity(
-                    achimeld_application::EntityKind::Achievement,
-                    &target.achievement_id,
-                )
-                .and_then(|e| e["icon"]["layers"].as_array())
-                .is_some_and(|layers| {
-                    layers
-                        .iter()
-                        .any(|layer| layer["id"] == target.layer_id && layer["kind"] == "Particle")
-                })
+            && {
+                let style = self
+                    .editor
+                    .document()
+                    .icon_styles()
+                    .into_iter()
+                    .find(|s| s.id == target.achievement_id);
+                let recipe = self
+                    .editor
+                    .document()
+                    .entity(
+                        achimeld_application::EntityKind::Achievement,
+                        &target.achievement_id,
+                    )
+                    .map(|e| &e["icon"])
+                    .or_else(|| style.as_ref().map(|s| &s.recipe));
+                recipe
+                    .and_then(|r| r["layers"].as_array())
+                    .is_some_and(|layers| {
+                        layers.iter().any(|layer| {
+                            layer["id"] == target.layer_id && layer["kind"] == "Particle"
+                        })
+                    })
+            }
     }
     pub(super) fn load_particle_preset(
         &mut self,

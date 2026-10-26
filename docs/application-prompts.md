@@ -42,4 +42,11 @@ Selecting **Validate** for a project without a saved file shows **Saved project 
 
 ## Review
 
+File logging failure uses this same prompt layout and explains in-memory retention,
+automatic retry, and Preferences > General access. The status remains visible in
+Preferences and Terminal after dismissal. A duplicate desktop launch shows
+**Achimeld is already running**, asks the user to return to the existing window,
+and offers **Close**. Close or Escape exits only the new launch; the existing
+editor and its unsaved work remain untouched.
+
 Check the rendered prompt at ordinary and increased display scales: black header and body, a left-aligned header icon with an independently centered title, a centered wrapped message, a gray action row with no gaps, and legible hover/focus/disabled states. Verify cancellation and the existing action paths after changing behavior. The existing native prompt screenshot fixture is `desktop::dialog_tests::native_app_prompt_screenshot`; set `ACHIMELD_SCREENSHOT_VALIDATION` to preview the saved-project error. Generated screenshots belong in the external build output tree.

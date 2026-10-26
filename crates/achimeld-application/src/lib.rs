@@ -27,6 +27,7 @@ pub mod sorting;
 mod spatial_effects_tests;
 pub mod style_achievements;
 pub mod style_collections;
+pub mod style_management;
 pub mod style_viewer;
 #[cfg(test)]
 mod synchronization_tests;

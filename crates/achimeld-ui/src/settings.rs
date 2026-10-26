@@ -299,13 +299,67 @@ impl Desktop {
                 }
                 ui.label("Shared preferences, gradients and icon styles are kept here. Project localization CSVs are saved beside the .achv file.");
                 ui.separator();
+                let logging = achimeld_application::diagnostics::persistence_status();
+                crate::fields::row(ui, "Log folder", |ui| {
+                    ui.add(
+                        egui::Label::new(
+                            logging
+                                .directory
+                                .as_ref()
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_else(|| "Unavailable".into()),
+                        )
+                        .wrap(),
+                    );
+                });
+                if let Some(failure) = &logging.failure {
+                    ui.label(failure);
+                } else if let Some(file) = &logging.file {
+                    ui.label(format!(
+                        "Writing live logs to {}",
+                        file.file_name().unwrap_or_default().to_string_lossy()
+                    ));
+                }
+                crate::buttons::bar(ui, 20.0, |ui| {
+                    if ui
+                        .add_enabled(
+                            logging.directory.is_some(),
+                            crate::buttons::Button::new((
+                                log_action_icon(ui.ctx(), false),
+                                "Open log folder",
+                            ))
+                            .bar()
+                            .icon_spacing(8.0)
+                            .image_tint_follows_text_color(true),
+                        )
+                        .clicked()
+                    {
+                        self.request(achimeld_application::UiRequest::OpenLogFolder);
+                    }
+                    if ui
+                        .add(
+                            crate::buttons::Button::new((
+                                log_action_icon(ui.ctx(), true),
+                                "View logs",
+                            ))
+                            .bar()
+                            .icon_spacing(8.0)
+                            .image_tint_follows_text_color(true),
+                        )
+                        .clicked()
+                    {
+                        self.open_terminal();
+                    }
+                });
+                ui.weak("Logs are written as events happen. Previous sessions remain in the _bak.txt files and in Terminal's saved-session view.");
+                ui.separator();
                 crate::fields::row(ui, "Language", |ui| {
                     crate::dropdowns::Dropdown::from_id_salt("language")
                         .width(ui.available_width().min(180.0))
                         .truncate()
                         .selected_text(&preferences.language)
                         .show_ui(ui, |ui| {
-                            for language in achimeld_core::LANGUAGES {
+                            for language in achimeld_core::INTERFACE_LANGUAGES {
                                 if ui
                                     .add(
                                         crate::buttons::Button::selectable(
@@ -493,6 +547,27 @@ fn field_label_preferences(ui: &mut egui::Ui, preferences: &mut achimeld_applica
         .unwrap_or(45.0);
     crate::sliders::value_slider(ui, "Bottom height", &mut preview, 0.0..=100.0, "%", 0);
     ui.data_mut(|data| data.insert_temp(preview_id, preview));
+}
+
+fn log_action_icon(ctx: &egui::Context, view: bool) -> egui::Image<'static> {
+    let id = egui::Id::new(("log-action-icon", view));
+    let texture = ctx
+        .data(|data| data.get_temp::<egui::TextureHandle>(id))
+        .unwrap_or_else(|| {
+            let bytes: &[u8] = if view {
+                include_bytes!("../assets/toolbar/log-view.rgba")
+            } else {
+                include_bytes!("../assets/toolbar/log-folder.rgba")
+            };
+            let texture = ctx.load_texture(
+                if view { "log-view" } else { "log-folder" },
+                egui::ColorImage::from_rgba_unmultiplied([64, 64], bytes),
+                egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
+            );
+            ctx.data_mut(|data| data.insert_temp(id, texture.clone()));
+            texture
+        });
+    egui::Image::new((texture.id(), egui::Vec2::splat(20.0)))
 }
 
 fn preference_action(ui: &mut egui::Ui, label: &str) -> egui::Response {

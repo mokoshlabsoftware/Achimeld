@@ -1,20 +1,21 @@
 use egui::{CursorIcon, PointerButton, Rect, ResizeDirection, Sense, Stroke, ViewportCommand};
 
 pub(crate) fn brand_image() -> egui::ColorImage {
-    let mut image = egui::ColorImage::from_rgba_unmultiplied(
+    egui::ColorImage::from_rgba_unmultiplied(
         [128, 128],
         include_bytes!("../assets/achimeld-logo.rgba"),
-    );
-    for pixel in &mut image.pixels {
-        let [r, g, b, a] = pixel.to_srgba_unmultiplied();
-        // Remove near-white compression noise from the original background,
-        // retaining the A's antialiased outline as white alpha coverage.
-        let darkness = 255 - (u16::from(r) + u16::from(g) + u16::from(b)) / 3;
-        let coverage =
-            ((darkness.saturating_sub(8) * 255 / 239).min(255) * u16::from(a) / 255) as u8;
-        *pixel = egui::Color32::from_white_alpha(coverage);
-    }
-    image
+    )
+}
+
+// Only the title bar uses the white mark; other surfaces retain the app colors.
+pub(crate) fn title_brand_image() -> egui::ColorImage {
+    egui::ColorImage::new(
+        [128, 128],
+        include_bytes!("../assets/achimeld-title-mark.rgba")
+            .chunks_exact(4)
+            .map(|pixel| egui::Color32::from_white_alpha(pixel[3]))
+            .collect(),
+    )
 }
 
 pub(crate) fn title_menu(

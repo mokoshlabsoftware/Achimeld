@@ -2,6 +2,62 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.10.10 (2026-10-26)
+
+- Restore the white transparent Achimeld symbol in the title bar while keeping the orange application icon elsewhere.
+
+## 0.2.10.9 (2026-10-26)
+
+- Add matching folder and document icons to the Open log folder and View logs buttons in Preferences.
+
+## 0.2.10.8 (2026-10-26)
+
+- Replace the installer welcome artwork with the supplied logo-free image, preserving its dimensions.
+
+## 0.2.10.7 (2026-10-26)
+
+- Use the supplied orange Achimeld icon for the application, dialogs, installer, Windows shortcuts and installed-app listing.
+
+## 0.2.10.6 (2026-10-26)
+
+- Show an Already running notice and close duplicate desktop launches while preserving the existing session.
+
+## 0.2.10.5 (2026-10-26)
+
+- Expose live and previous-session logs in Preferences and Terminal, retry logging failures, and record effect rendering and stalled interface work.
+
+## 0.2.10.4 (2026-10-26)
+
+- Fixed Windows installed-app and shortcut icon paths for default and custom installation folders.
+
+## 0.2.10.3 (2026-10-26)
+
+- Reworked Style Viewer with current-project folders, name filtering, editable project layers, protected built-ins, style options, JSON exchange and zoomable previews.
+
+## 0.2.10.2 (2026-10-26)
+
+- Enlarged the installer header logo while preserving its proportions and spacing beside page text.
+
+## 0.2.10.1 (2026-10-26)
+
+- Updated the installer welcome screen with a bold Steam achievements heading and clearer feature description.
+
+## 0.2.10.0 (2026-10-25)
+
+- Separate manual publishing sign-in from browser automation
+
+## 0.2.9.1 (2026-10-25)
+
+- Use a normal Edge window for manual Google sign-in before installer uploads
+
+## 0.2.9.0 (2026-10-25)
+
+- Add versioned Lemon Squeezy installer delivery and standalone upload
+
+## 0.2.8.1 (2026-10-25)
+
+- Automate verified Lemon Squeezy installer delivery with versioned filenames and an upload-only launcher
+
 ## 0.2.8.0 (2026-10-25)
 
 - Automate safe GitLab source synchronization during publishing

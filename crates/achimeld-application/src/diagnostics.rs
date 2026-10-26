@@ -51,6 +51,96 @@ fn buffer() -> &'static Mutex<Buffer> {
 
 static SINK: OnceLock<fn(&str)> = OnceLock::new();
 
+/// Host-supplied status. Presentation reads it without acquiring filesystem authority.
+#[derive(Clone, Default)]
+pub struct PersistenceStatus {
+    pub directory: Option<std::path::PathBuf>,
+    pub file: Option<std::path::PathBuf>,
+    pub failure: Option<String>,
+}
+
+fn persistence() -> &'static Mutex<PersistenceStatus> {
+    static STATUS: OnceLock<Mutex<PersistenceStatus>> = OnceLock::new();
+    STATUS.get_or_init(Mutex::default)
+}
+
+pub fn set_persistence_status(status: PersistenceStatus) {
+    *persistence().lock().unwrap_or_else(|e| e.into_inner()) = status;
+}
+
+pub fn persistence_status() -> PersistenceStatus {
+    persistence()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
+
+/// Bounded snapshots of fixed diagnostic files loaded by the host at startup.
+pub struct PreviousSession {
+    pub name: String,
+    pub text: String,
+}
+static PREVIOUS: OnceLock<Vec<PreviousSession>> = OnceLock::new();
+
+pub fn install_previous_sessions(sessions: Vec<PreviousSession>) {
+    let _ = PREVIOUS.set(sessions.into_iter().take(10).collect());
+}
+
+pub fn previous_sessions() -> &'static [PreviousSession] {
+    PREVIOUS.get().map_or(&[], Vec::as_slice)
+}
+
+/// Safe operation breadcrumbs: only static names/outcomes, no document payloads.
+pub struct Operation {
+    id: u64,
+    name: &'static str,
+    started: std::time::Instant,
+    finished: bool,
+}
+impl Operation {
+    pub fn begin(name: &'static str) -> Self {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        let id = NEXT.fetch_add(1, Ordering::Relaxed);
+        record("INFO", "operation", &format!("#{id} {name}: started"));
+        Self {
+            id,
+            name,
+            started: std::time::Instant::now(),
+            finished: false,
+        }
+    }
+    pub fn finish(mut self, outcome: &'static str) {
+        self.finished = true;
+        record(
+            "INFO",
+            "operation",
+            &format!(
+                "#{} {}: {outcome}; elapsed={} ms",
+                self.id,
+                self.name,
+                self.started.elapsed().as_millis()
+            ),
+        );
+    }
+}
+impl Drop for Operation {
+    fn drop(&mut self) {
+        if !self.finished {
+            record(
+                "ERROR",
+                "operation",
+                &format!(
+                    "#{} {}: interrupted; elapsed={} ms",
+                    self.id,
+                    self.name,
+                    self.started.elapsed().as_millis()
+                ),
+            );
+        }
+    }
+}
+
 /// The supervised host may retain already bounded diagnostic lines.
 pub fn install_sink(sink: fn(&str)) {
     let _ = SINK.set(sink);

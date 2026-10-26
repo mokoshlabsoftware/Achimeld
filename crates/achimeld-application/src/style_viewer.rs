@@ -3,6 +3,14 @@ use crate::IconStyle;
 
 pub enum StyleViewerAction {
     Open,
+    DuplicateStyle(String),
+    CloneBuiltins,
+    DeleteProjectStyle {
+        id: String,
+        replacement: Option<String>,
+    },
+    LoadJson,
+    SaveJson,
     SelectStyle(String),
     ImportStyle(String),
     SelectImage(StyleViewerSource),
@@ -281,4 +289,24 @@ pub struct StyleViewerState {
     pub status: String,
     pub steam_sets: Vec<SteamAchievementSetLink>,
     pub preview: StyleViewerPreview,
+}
+
+impl StyleViewerState {
+    pub fn selected(&self) -> Option<IconStyle> {
+        let id = self.selected_style.as_ref()?;
+        if let Some(style) = self.styles.iter().find(|s| &s.id == id) {
+            return Some(style.clone());
+        }
+        let (collection, local) = id.split_once('/')?;
+        let mut style = self
+            .collections
+            .iter()
+            .find(|c| c.id == collection && c.read_only && c.name == "Built-in")?
+            .styles
+            .iter()
+            .find(|s| s.id == local)?
+            .clone();
+        style.id = id.clone();
+        Some(style)
+    }
 }

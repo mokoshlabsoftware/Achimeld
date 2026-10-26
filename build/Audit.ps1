@@ -55,7 +55,7 @@ function Run-Check([string]$Id, [string]$Scope, [string[]]$Arguments, [scriptblo
         artifact = [IO.Path]::GetFileName($log); artifactSha256 = (Get-FileHash -LiteralPath $log -Algorithm SHA256).Hash.ToLowerInvariant() })
     Write-Output "$Id : $state"
     if ($FailFast -and $state -eq 'test-failed') {
-        $planned = @('format','lint','rust-tests','read-policy','browser-policy','audit-contracts','build-storage','working-version','desktop-boundaries','installer-contracts','dependency-inventory','bridge-fixtures','read-worker-build','playwright-runtime','migration-contracts','browser-request-fixtures','dependency-advisories','installed-enforcement','live-steam')
+        $planned = @('format','lint','rust-tests','read-policy','browser-policy','audit-contracts','build-storage','working-version','desktop-boundaries','installer-contracts','installer-transaction','dependency-inventory','bridge-fixtures','read-worker-build','playwright-runtime','migration-contracts','browser-request-fixtures','dependency-advisories','installed-enforcement','live-steam')
         foreach ($pending in $planned) {
             if ($pending -notin $checks.id) {
                 $pendingScope = switch ($pending) {
@@ -89,6 +89,7 @@ try {
     Run-Check 'build-storage' 'source' @('Test-BuildStorage.ps1') { & (Join-Path $PSScriptRoot 'Test-BuildStorage.ps1') }
     Run-Check 'working-version' 'source' @('Test-Versioning.ps1') { & (Join-Path $PSScriptRoot 'Test-Versioning.ps1') }
     Run-Check 'installer-contracts' 'source' @('Test-InstallerContracts.ps1') { & (Join-Path $PSScriptRoot 'Test-InstallerContracts.ps1') }
+    Run-Check 'installer-transaction' 'fixture' @('Test-InstallerTransaction.ps1') { & (Join-Path $PSScriptRoot 'Test-InstallerTransaction.ps1') }
     $lint = @('clippy','--workspace','--all-targets') + $locked + @('--','-D','warnings')
     Run-Check 'lint' 'source' $lint { & $rust -CargoArguments $lint }
     $tests = @('test','--workspace') + $locked

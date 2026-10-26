@@ -5,7 +5,6 @@ impl Desktop {
     pub(crate) fn style_viewer_view(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
         let Some(state) = port.style_viewer().cloned() else {
             ui.spinner();
-            ui.label("Opening Style Viewer…");
             port.request(UiRequest::StyleViewer(Action::Open));
             return;
         };
@@ -15,118 +14,39 @@ impl Desktop {
             viewer.saved_unlock = state.preview.unlock_value.clone();
         }
         let mut actions = Vec::new();
-        buttons::bar_panel(ui, "style-viewer-toolbar", 24.0).show(ui, |ui| {
-            egui::ScrollArea::horizontal()
-                .id_salt("style-viewer-toolbar-scroll")
-                .auto_shrink([false, false])
-                .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
-                .show(ui, |ui| {
-                    buttons::bar(ui, 24.0, |ui| {
-                        for (label, action, name, bytes) in [
-                            (
-                                "Load collection…",
-                                Action::LoadSet,
-                                "style-set-load",
-                                include_bytes!("../../assets/toolbar/style-set-load.rgba")
-                                    .as_slice(),
-                            ),
-                            (
-                                "Save collection",
-                                Action::SaveSet,
-                                "style-set-save",
-                                include_bytes!("../../assets/toolbar/style-set-save.rgba")
-                                    .as_slice(),
-                            ),
-                            (
-                                "Save collection as…",
-                                Action::SaveSetAs,
-                                "style-set-save-as",
-                                include_bytes!("../../assets/toolbar/style-set-save.rgba")
-                                    .as_slice(),
-                            ),
-                            (
-                                "New collection",
-                                Action::NewCollection,
-                                "style-collection-new",
-                                include_bytes!("../../assets/toolbar/tab-art-bank.rgba").as_slice(),
-                            ),
-                        ] {
-                            if ui
-                                .add_enabled(
-                                    !state.busy,
-                                    buttons::Button::new((glyph(ui.ctx(), name, bytes), label))
-                                        .id(egui::Id::new(("viewer-file", name)))
-                                        .bar()
-                                        .icon_spacing(5.0)
-                                        .image_tint_follows_text_color(true)
-                                        .wrap_mode(egui::TextWrapMode::Extend),
-                                )
-                                .clicked()
-                            {
-                                actions.push(action);
-                            }
-                        }
-                        ui.add_space(12.0);
-                        let collection = state
-                            .collections
-                            .iter()
-                            .find(|item| Some(&item.id) == state.active_collection.as_ref());
-                        ui.weak(collection.map_or("Project styles", |item| item.name.as_str()));
-                        if state.dirty || state.collections.iter().any(|item| item.dirty) {
-                            ui.weak(" · Unsaved changes");
-                        }
-                    });
-                });
-        });
-        let wide = ui.available_width() >= 1040.0;
-        let library_side = ui.available_width() >= 760.0;
-        if library_side {
-            egui::Panel::left("style-viewer-library")
-                .default_size(300.0)
-                .min_size(220.0)
-                .max_size(380.0)
-                .resizable(true)
-                .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
-                .show(ui, |ui| {
-                    self.viewer_libraries(ui, port, &state, &mut viewer, &mut actions);
-                });
-        }
-        if wide {
-            egui::Panel::right("style-viewer-bank")
-                .default_size(300.0)
-                .min_size(220.0)
-                .max_size(380.0)
-                .resizable(true)
-                .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
-                .show(ui, |ui| {
-                    self.viewer_sidebar(ui, port, &state, &mut viewer, &mut actions);
-                });
-        }
+        egui::Panel::left("style-viewer-library")
+            .default_size(280.0)
+            .min_size(180.0)
+            .max_size(380.0)
+            .resizable(true)
+            .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
+            .show(ui, |ui| {
+                self.viewer_libraries(ui, port, &state, &mut viewer, &mut actions);
+            });
+        egui::Panel::right("style-viewer-properties")
+            .default_size(300.0)
+            .min_size(220.0)
+            .max_size(480.0)
+            .resizable(true)
+            .frame(egui::Frame::new().fill(ui.visuals().panel_fill))
+            .show(ui, |ui| {
+                self.sidebar_layer_properties(ui, port);
+            });
         egui::CentralPanel::default()
             .frame(egui::Frame::new())
             .show(ui, |ui| {
-                if !library_side {
-                    egui::CollapsingHeader::new("Project and app styles")
-                        .default_open(true)
-                        .show(ui, |ui| {
-                            ui.allocate_ui(egui::vec2(ui.available_width(), 260.0), |ui| {
-                                self.viewer_libraries(ui, port, &state, &mut viewer, &mut actions)
-                            });
-                        });
-                }
-                if !wide {
-                    egui::CollapsingHeader::new("Preview artwork · Art Data Bank")
-                        .default_open(true)
-                        .show(ui, |ui| {
-                            ui.allocate_ui(egui::vec2(ui.available_width(), 240.0), |ui| {
-                                self.viewer_sidebar(ui, port, &state, &mut viewer, &mut actions)
-                            });
-                        });
-                }
-                egui::Frame::new().inner_margin(12).show(ui, |ui| {
-                    self.viewer_main_preview(ui, port, &state, &mut viewer, &mut actions);
-                });
+                self.viewer_main_preview(ui, port, &state, &mut viewer, &mut actions);
             });
+        self.viewer_options(
+            ui.ctx(),
+            port,
+            &state,
+            &mut viewer,
+            &mut actions,
+            ui.is_enabled(),
+        );
+        // Context menus can open a deletion prompt while the presentation state is borrowed.
+        viewer.deletion = self.style_viewer_ui.deletion.take().or(viewer.deletion);
         self.style_viewer_ui = viewer;
         for action in actions {
             port.request(UiRequest::StyleViewer(action));
@@ -141,115 +61,168 @@ impl Desktop {
         viewer: &mut ViewerUi,
         actions: &mut Vec<Action>,
     ) {
-        let mut height = f64::from(viewer.banner_height);
-        if crate::sliders::value_slider(ui, "Banner height", &mut height, 48.0..=240.0, " pt", 0) {
-            viewer.banner_height = height as f32;
-        }
-        egui::ScrollArea::vertical()
-            .id_salt("viewer-libraries-scroll")
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                buttons::bar(ui, 24.0, |ui| {
-                    if ui
-                        .add(
-                            buttons::Button::selectable(
-                                state.active_collection.is_none(),
-                                "Project styles",
-                            )
-                            .bar(),
-                        )
-                        .clicked()
-                    {
-                        actions.push(Action::SelectCollection(None));
-                    }
-                });
-                for style in &state.styles {
-                    self.viewer_banner(ui, port, state, style, viewer.banner_height, actions);
+        buttons::bar(ui, 24.0, |ui| {
+            let icon = glyph(
+                ui.ctx(),
+                "style-options",
+                include_bytes!("../../assets/toolbar/style-options.rgba"),
+            );
+            let response = ui.add(
+                buttons::Button::new((icon, "Style options"))
+                    .id(egui::Id::new("viewer-options-button"))
+                    .bar()
+                    .image_tint_follows_text_color(true),
+            );
+            if clicked_once(&response) {
+                viewer.options_open = !viewer.options_open;
+                if viewer.options_open {
+                    ui.ctx().move_to_top(egui::LayerId::new(
+                        egui::Order::Foreground,
+                        egui::Id::new("style-options-window"),
+                    ));
                 }
-                let builtin =
-                    |item: &&achimeld_application::style_viewer::StyleViewerCollection| {
-                        item.read_only && item.name != "Saved app styles"
-                    };
-                let mut divided = false;
-                for collection in state
-                    .collections
-                    .iter()
-                    .filter(|item| !builtin(item))
-                    .chain(state.collections.iter().filter(builtin))
-                {
-                    if collection.read_only && collection.name != "Saved app styles" && !divided {
-                        ui.separator();
-                        ui.strong("Built in styles");
-                        divided = true;
+            }
+        });
+        buttons::bar(ui, 24.0, |ui| {
+            ui.add_space(8.0);
+            ui.add(
+                egui::TextEdit::singleline(&mut viewer.name_filter)
+                    .id(egui::Id::new("viewer-name-filter"))
+                    .hint_text("Filter styles by name")
+                    .desired_width((ui.available_width() - 8.0).max(1.0)),
+            );
+        });
+        let search = viewer.name_filter.trim().to_lowercase();
+        egui::ScrollArea::vertical().id_salt("viewer-libraries-scroll").auto_shrink([false, false]).show(ui, |ui| {
+            ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+            for builtin in [false, true] {
+                let open = if builtin { &mut viewer.builtins_open } else { &mut viewer.project_open };
+                let label = if builtin { "Built-in" } else { "Project" };
+                buttons::bar(ui, 24.0, |ui| {
+                    let response = ui.add_sized([ui.available_width(), ui.spacing().interact_size.y],
+                        buttons::Button::new("").id(egui::Id::new(("viewer-folder",builtin))).bar());
+                    let (_,ink) = buttons::colors(ui,&response,buttons::ButtonStyle::Quiet);
+                    let center = response.rect.left_center();
+                    icons::paint(ui.painter(),egui::Rect::from_center_size(center+egui::vec2(12.0,0.0),egui::Vec2::splat(12.0)),icons::Icon::Chevron(!*open),ink);
+                    icons::paint(ui.painter(),egui::Rect::from_center_size(center+egui::vec2(32.0,0.0),egui::Vec2::splat(18.0)),icons::Icon::Folder,ink);
+                    ui.painter().text(center+egui::vec2(48.0,0.0),egui::Align2::LEFT_CENTER,label,egui::TextStyle::Button.resolve(ui.style()),ink);
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button,response.enabled(),label));
+                    if clicked_once(&response) { *open = !*open; }
+                });
+                if !*open { continue; }
+                if builtin {
+                    for collection in state.collections.iter().filter(|c| c.read_only && c.name == "Built-in") {
+                        for style in collection.styles.iter().filter(|s| s.name.to_lowercase().contains(&search)) {
+                            let mut style = style.clone();
+                            style.id = format!("{}/{}", collection.id, style.id);
+                            self.viewer_banner(ui, port, state, &style, viewer.banner_height, actions);
+                        }
                     }
-                    buttons::bar(ui, 24.0, |ui| {
-                        let label = format!(
-                            "{}{} · {}",
-                            collection.name,
-                            if collection.dirty { " *" } else { "" },
-                            collection.styles.len()
-                        );
-                        let unload_width = ui
-                            .painter()
-                            .layout_no_wrap(
-                                "Unload".into(),
-                                egui::TextStyle::Button.resolve(ui.style()),
-                                ui.visuals().text_color(),
-                            )
-                            .size()
-                            .x
-                            + ui.spacing().button_padding.x * 2.0;
-                        let width = (ui.available_width()
-                            - if collection.read_only {
-                                0.0
-                            } else {
-                                unload_width
-                            })
-                        .max(1.0);
+                } else {
+                    for style in state.styles.iter().filter(|s| s.name.to_lowercase().contains(&search)) { self.viewer_banner(ui, port, state, style, viewer.banner_height, actions); }
+                    if state.styles.is_empty() { ui.weak("No project styles yet. Duplicate a built-in style or load styles in Style options."); }
+                }
+            }
+        });
+    }
+
+    fn viewer_options(
+        &mut self,
+        ctx: &egui::Context,
+        port: &mut dyn EditorPort,
+        state: &StyleViewerState,
+        viewer: &mut ViewerUi,
+        actions: &mut Vec<Action>,
+        enabled: bool,
+    ) {
+        let mut open = viewer.options_open;
+        egui::Window::new("Style options")
+            .id(egui::Id::new("style-options-window"))
+            .order(egui::Order::Foreground)
+            .open(&mut open)
+            .enabled(enabled)
+            .default_width(430.0)
+            .default_height(600.0)
+            .min_width(330.0)
+            .resizable(true)
+            .collapsible(false)
+            .show(ctx, |ui| {
+                buttons::bar(ui, 24.0, |ui| {
+                    for (label, action, name, bytes) in [
+                        (
+                            "Load styles…",
+                            Action::LoadJson,
+                            "style-json-load",
+                            include_bytes!("../../assets/toolbar/style-set-load.rgba").as_slice(),
+                        ),
+                        (
+                            "Save styles…",
+                            Action::SaveJson,
+                            "style-json-save",
+                            include_bytes!("../../assets/toolbar/style-set-save.rgba").as_slice(),
+                        ),
+                    ] {
                         if ui
-                            .add_sized(
-                                [width, ui.spacing().interact_size.y],
-                                buttons::Button::selectable(
-                                    state.active_collection.as_ref() == Some(&collection.id),
-                                    label,
-                                )
-                                .bar()
-                                .wrap_mode(egui::TextWrapMode::Truncate),
+                            .add_enabled(
+                                !state.busy,
+                                buttons::Button::new((glyph(ui.ctx(), name, bytes), label))
+                                    .id(egui::Id::new(("viewer-file", name)))
+                                    .bar()
+                                    .image_tint_follows_text_color(true),
                             )
                             .clicked()
                         {
-                            actions.push(Action::SelectCollection(Some(collection.id.clone())));
+                            actions.push(action);
                         }
-                        if !collection.read_only
-                            && ui
-                                .add_enabled(!state.busy, buttons::Button::new("Unload").bar())
-                                .on_hover_text("Unload this collection from the app library.")
-                                .clicked()
-                        {
-                            actions.push(Action::UnloadCollection(collection.id.clone()));
-                        }
-                    });
-                    if collection.styles.is_empty() {
-                        ui.weak("Right-click a style to copy it into this collection.");
                     }
-                    ui.scope(|ui| {
-                        ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                        for style in &collection.styles {
-                            let mut style = style.clone();
-                            style.id = format!("{}/{}", collection.id, style.id);
-                            self.viewer_banner(
-                                ui,
-                                port,
-                                state,
-                                &style,
-                                viewer.banner_height,
-                                actions,
-                            );
-                        }
-                    });
+                });
+                ui.scope(|ui| {
+                    let small = egui::TextStyle::Small.resolve(ui.style());
+                    ui.style_mut()
+                        .text_styles
+                        .insert(egui::TextStyle::Button, small);
+                    ui.spacing_mut().interact_size.y = 20.0;
+                    ui.spacing_mut().button_padding = egui::vec2(5.0, 2.0);
+                    if ui
+                        .add_enabled(
+                            !state.busy,
+                            buttons::Button::new("Clone all built-ins")
+                                .id(egui::Id::new("viewer-clone-builtins"))
+                                .bar(),
+                        )
+                        .on_hover_text(
+                            "Create editable copies of every built-in style in the current project",
+                        )
+                        .clicked()
+                    {
+                        actions.push(Action::CloneBuiltins);
+                    }
+                });
+                let mut height = f64::from(viewer.banner_height);
+                if crate::sliders::value_slider(
+                    ui,
+                    "Banner height",
+                    &mut height,
+                    48.0..=240.0,
+                    " pt",
+                    0,
+                ) {
+                    viewer.banner_height = height as f32;
                 }
+                let mut resolution = viewer.resolution_power - 6;
+                if crate::sliders::discrete_slider(
+                    ui,
+                    "Resolution",
+                    &mut resolution,
+                    &[64, 128, 256, 512],
+                    " px",
+                ) {
+                    viewer.resolution_power = resolution + 6;
+                }
+                ui.weak("JSON stores layer recipes. Image and atlas references use the current project’s Art Data Bank.");
+                self.viewer_sidebar(ui, port, state, viewer, actions);
             });
+        viewer.options_open = open;
     }
 
     fn viewer_banner(
@@ -277,7 +250,7 @@ impl Desktop {
         } else {
             None
         };
-        crate::style_banner::paint(ui, &response, &style.name, texture, selected);
+        crate::style_banner::paint_viewer(ui, &response, &style.name, texture, selected);
         response.widget_info(|| {
             egui::WidgetInfo::selected(
                 egui::WidgetType::Button,
@@ -384,115 +357,113 @@ impl Desktop {
         viewer: &mut ViewerUi,
         actions: &mut Vec<Action>,
     ) {
-        egui::ScrollArea::vertical()
-            .id_salt("style-viewer-canvas")
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                let style = state
-                    .styles
-                    .iter()
-                    .find(|style| Some(&style.id) == state.selected_style.as_ref())
-                    .cloned()
-                    .or_else(|| {
-                        let (collection, id) = state.selected_style.as_ref()?.split_once('/')?;
-                        let mut style = state
-                            .collections
-                            .iter()
-                            .find(|item| item.id == collection)?
-                            .styles
-                            .iter()
-                            .find(|style| style.id == id)?
-                            .clone();
-                        style.id = format!("{collection}/{id}");
-                        Some(style)
-                    });
-                if let Some(style) = style {
-                    ui.vertical_centered(|ui| {
-                        ui.heading(&style.name);
-                        let mut resolution = viewer.resolution_power - 6;
-                        if crate::sliders::discrete_slider(
-                            ui,
-                            "Resolution",
-                            &mut resolution,
-                            &[64, 128, 256, 512],
-                            " px",
-                        ) {
-                            viewer.resolution_power = resolution + 6;
-                        }
-                        let mut size = f64::from(viewer.display_size);
-                        if crate::sliders::value_slider(
-                            ui,
-                            "Display size",
-                            &mut size,
-                            48.0..=512.0,
-                            " pt",
-                            0,
-                        ) {
-                            viewer.display_size = size as f32;
-                        }
-                        let edge = viewer.display_size.min(ui.available_width());
-                        let (rect, response) =
-                            ui.allocate_exact_size(egui::Vec2::splat(edge), egui::Sense::click());
-                        ui.ctx().data_mut(|data| {
-                            data.insert_temp(egui::Id::new("viewer-main-preview-rect"), rect)
-                        });
-                        if let Some((texture, size)) = self.viewer_texture(
-                            ui,
-                            port,
-                            &style.id,
-                            1usize << viewer.resolution_power,
-                        ) {
-                            ui.painter().image(
-                                texture,
-                                fit(size, rect),
-                                egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(1.0, 1.0)),
-                                egui::Color32::WHITE,
-                            );
-                        } else {
-                            ui.painter().text(
-                                rect.center(),
-                                egui::Align2::CENTER_CENTER,
-                                "Rendering preview…",
-                                egui::TextStyle::Body.resolve(ui.style()),
-                                ui.visuals().weak_text_color(),
-                            );
-                        }
-                        self.viewer_style_menu(&response, port, &style, state, state.busy, actions);
-                    });
-                } else {
-                    ui.weak("Choose a style from the library on the left.");
-                }
-                ui.add_space(12.0);
-                let collection = state
-                    .selected_style
-                    .as_deref()
-                    .and_then(|id| id.split_once('/'))
-                    .and_then(|(id, _)| state.collections.iter().find(|item| item.id == id));
-                if state.selected_style.is_some() && collection.is_none_or(|item| !item.read_only) {
-                    egui::CollapsingHeader::new("Steam Achievement Set links").show(ui, |ui| {
-                        let mut links = state.clone();
-                        if let Some(collection) = collection {
-                            links.steam_sets = collection
-                                .steam_sets
-                                .iter()
-                                .cloned()
-                                .map(|mut link| {
-                                    link.style_id = format!("{}/{}", collection.id, link.style_id);
-                                    link
-                                })
-                                .collect();
-                        }
-                        self.style_viewer_link.show(
-                            ui,
-                            &links,
-                            port.editor().document().app_id(),
-                            actions,
-                        )
-                    });
-                }
-                if !state.status.is_empty() {
-                    ui.label(&state.status);
-                }
+        let style = state.selected();
+        buttons::bar(ui, 20.0, |ui| {
+            if ui
+                .add(
+                    buttons::Button::new("Center")
+                        .id(egui::Id::new("viewer-center"))
+                        .bar(),
+                )
+                .on_hover_text("Center the icon and reset zoom")
+                .clicked()
+            {
+                viewer.pan = egui::Vec2::ZERO;
+                viewer.zoom = 1.0;
+            }
+        });
+        let (rect, response) = ui.allocate_exact_size(
+            ui.available_size().max(egui::Vec2::splat(1.0)),
+            egui::Sense::click_and_drag(),
+        );
+        ui.ctx()
+            .data_mut(|data| data.insert_temp(egui::Id::new("viewer-main-preview-rect"), rect));
+        if response.dragged() && ui.is_enabled() {
+            viewer.pan += ui.input(|i| i.pointer.delta());
+        }
+        if response.hovered()
+            && ui.is_enabled()
+            && let Some(pointer) = response.hover_pos()
+        {
+            let scroll = ui.input_mut(|i| {
+                let scroll = i.smooth_scroll_delta.y;
+                i.smooth_scroll_delta = egui::Vec2::ZERO;
+                scroll
             });
+            if scroll != 0.0 {
+                viewer.zoom_at(rect, pointer, (scroll * 0.002).exp());
+            }
+        }
+        let painter = ui.painter().with_clip_rect(rect.intersect(ui.clip_rect()));
+        if let Some(style) = style {
+            let edge = rect.width().min(rect.height()).min(512.0) * 0.75 * viewer.zoom;
+            let image_rect =
+                egui::Rect::from_center_size(rect.center() + viewer.pan, egui::Vec2::splat(edge));
+            if let Some((texture, size)) =
+                self.viewer_texture(ui, port, &style.id, 1usize << viewer.resolution_power)
+            {
+                painter.image(
+                    texture,
+                    fit(size, image_rect),
+                    egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(1.0, 1.0)),
+                    egui::Color32::WHITE,
+                );
+            } else {
+                painter.text(
+                    image_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    "Rendering preview…",
+                    egui::TextStyle::Body.resolve(ui.style()),
+                    ui.visuals().weak_text_color(),
+                );
+            }
+            self.viewer_style_menu(&response, port, &style, state, state.busy, actions);
+        } else {
+            painter.text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "Choose a style",
+                egui::TextStyle::Body.resolve(ui.style()),
+                ui.visuals().weak_text_color(),
+            );
+        }
+        if !state.status.is_empty() {
+            painter.text(
+                rect.left_bottom() - egui::vec2(-8.0, 8.0),
+                egui::Align2::LEFT_BOTTOM,
+                &state.status,
+                egui::TextStyle::Small.resolve(ui.style()),
+                ui.visuals().weak_text_color(),
+            );
+        }
+    }
+}
+
+impl ViewerUi {
+    pub(crate) fn zoom_at(&mut self, rect: egui::Rect, pointer: egui::Pos2, factor: f32) {
+        let previous = self.zoom;
+        self.zoom = (previous * factor).clamp(0.1, 16.0);
+        let anchor = pointer - rect.center();
+        self.pan = anchor - (anchor - self.pan) * (self.zoom / previous);
+    }
+}
+
+#[cfg(test)]
+mod camera_tests {
+    use super::*;
+    #[test]
+    fn wheel_anchor_survives_offset_panning_smoothing_and_limits() {
+        let rect = egui::Rect::from_min_size(egui::pos2(280.0, 110.0), egui::vec2(750.0, 650.0));
+        let pointer = rect.min + egui::vec2(183.0, 223.0);
+        let mut viewer = ViewerUi {
+            pan: egui::vec2(-173.0, 86.0),
+            ..Default::default()
+        };
+        let world = (pointer - rect.center() - viewer.pan) / viewer.zoom;
+        for factor in [1.1, 1.04, 1.02, 0.83, 0.97, 1000.0, 2.0, 0.00001, 0.5] {
+            viewer.zoom_at(rect, pointer, factor);
+            let current = rect.center() + viewer.pan + world * viewer.zoom;
+            assert!(current.distance(pointer) < 0.003, "{current:?} {pointer:?}");
+        }
     }
 }

@@ -134,7 +134,6 @@ pub struct Desktop {
     pub(crate) gradient_map_collection: crate::gradient_map_collection::Collection,
     pub(crate) effect_explorer: crate::effect_explorer::Explorer,
     pub(crate) style_viewer_ui: crate::style_viewer::ViewerUi,
-    pub(crate) style_viewer_link: crate::style_viewer::LinkDraft,
     pub(crate) preferences: Option<Preferences>,
     pub(crate) preference_base: Option<Preferences>,
     pub(crate) pref_category: usize,
@@ -207,7 +206,6 @@ impl Default for Desktop {
             gradient_map_collection: Default::default(),
             effect_explorer: Default::default(),
             style_viewer_ui: Default::default(),
-            style_viewer_link: Default::default(),
             preferences: None,
             preference_base: None,
             pref_category: 1,
@@ -435,9 +433,9 @@ impl Desktop {
         root.set_style(ctx.global_style());
         let brand_icon = self.brand_icon.get_or_insert_with(|| {
             ctx.load_texture(
-                "achimeld-brand-icon",
-                crate::chrome::brand_image(),
-                egui::TextureOptions::LINEAR,
+                "achimeld-title-brand-icon",
+                crate::chrome::title_brand_image(),
+                egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
             )
         });
         let brand_image = (brand_icon.id(), egui::vec2(18.0, 18.0));
@@ -1016,6 +1014,7 @@ impl Desktop {
         }
         self.image_drop_dialog(&ctx, port);
         self.style_rename_window(&ctx, port);
+        self.style_delete_window(&ctx, port);
         self.sync_blend_preview(&ctx, port, root.is_enabled());
         if let Some((minimum, ratio)) = crate::fields::take_change(&ctx) {
             if let Some(draft) = &mut self.preferences {
@@ -1145,7 +1144,8 @@ impl Desktop {
             || self.sort_open
             || self.preferences.is_some()
             || self.source_picker.is_some()
-            || self.style_rename.is_some();
+            || self.style_rename.is_some()
+            || self.style_viewer_ui.deletion.is_some();
         let editing_text = ctx.egui_wants_keyboard_input();
         let actions = ctx.input_mut(|i| {
             let mut actions = Vec::new();
@@ -1160,7 +1160,9 @@ impl Desktop {
                 (egui::Key::D, false, 6),
             ] {
                 if dialog_open
-                    || (self.view == View::Style && action >= 4)
+                    || (self.view == View::Style
+                        && action == 6
+                        && !self.layer_palette.keyboard_active)
                     || (action == 6 && editing_text)
                 {
                     continue;
