@@ -7,15 +7,9 @@ pub(crate) fn brand_image() -> egui::ColorImage {
     )
 }
 
-// Only the title bar uses the white mark; other surfaces retain the app colors.
+// All in-app identity surfaces share the supplied white transparent glyph.
 pub(crate) fn title_brand_image() -> egui::ColorImage {
-    egui::ColorImage::new(
-        [128, 128],
-        include_bytes!("../assets/achimeld-title-mark.rgba")
-            .chunks_exact(4)
-            .map(|pixel| egui::Color32::from_white_alpha(pixel[3]))
-            .collect(),
-    )
+    brand_image()
 }
 
 pub(crate) fn title_menu(

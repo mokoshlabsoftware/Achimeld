@@ -1,6 +1,37 @@
 use crate::renderer::{composite, rgba};
+use achimeld_application::diagnostics::{Operation, effect_kind};
 use image::{Rgba, RgbaImage};
 use serde_json::Value;
+
+fn traced<T>(
+    effect: &Value,
+    width: u32,
+    height: u32,
+    cancelled: &dyn Fn() -> bool,
+    render: impl FnOnce(&Operation) -> Result<T, String>,
+) -> Result<T, String> {
+    let operation = Operation::begin("render effect");
+    operation.checkpoint(&format!(
+        "kind={}; canvas={}x{}; width={}; blur={}; opacity={}; affect_outline={}; thread={:?}",
+        effect_kind(effect["kind"].as_str().unwrap_or("")),
+        width,
+        height,
+        num(effect, "width", 2.0),
+        num(effect, "blur", 2.0),
+        num(effect, "opacity", 1.0),
+        effect["affectOutline"] == true,
+        std::thread::current().id(),
+    ));
+    let result = render(&operation);
+    operation.finish(if result.is_ok() {
+        "completed"
+    } else if cancelled() {
+        "cancelled"
+    } else {
+        "failed"
+    });
+    result
+}
 fn num(value: &Value, key: &str, default: f64) -> f64 {
     value[key]
         .as_f64()
@@ -8,12 +39,51 @@ fn num(value: &Value, key: &str, default: f64) -> f64 {
         .unwrap_or(default)
 }
 pub(crate) fn apply(
+    image: RgbaImage,
+    layer: &Value,
+    width: u32,
+    height: u32,
+    cancelled: &dyn Fn() -> bool,
+    text_outline: Option<&OutlineRenderer<'_>>,
+) -> Result<RgbaImage, String> {
+    let count = layer["effects"].as_array().map_or(0, Vec::len)
+        + usize::from(layer["kind"] == "Text" && layer["text"]["outlineEnabled"] == true);
+    let operation = (count > 0).then(|| {
+        let operation = Operation::begin("render layer effects");
+        operation.checkpoint(&format!(
+            "canvas={width}x{height}; effect_count={count}; initialize alpha masks"
+        ));
+        operation
+    });
+    let result = apply_inner(
+        image,
+        layer,
+        width,
+        height,
+        cancelled,
+        text_outline,
+        operation.as_ref(),
+    );
+    if let Some(operation) = operation {
+        operation.finish(if result.is_ok() {
+            "completed"
+        } else if cancelled() {
+            "cancelled"
+        } else {
+            "failed"
+        });
+    }
+    result
+}
+
+fn apply_inner(
     mut image: RgbaImage,
     layer: &Value,
     width: u32,
     height: u32,
     cancelled: &dyn Fn() -> bool,
     text_outline: Option<&OutlineRenderer<'_>>,
+    operation: Option<&Operation>,
 ) -> Result<RgbaImage, String> {
     let mut original_alpha: Vec<_> = image.pixels().map(|p| p[3]).collect();
     let mut vector_outline_valid = true;
@@ -24,9 +94,10 @@ pub(crate) fn apply(
         "width":text["outlineWidth"],"placement":text["outlinePlacement"]});
     let legacy =
         (layer["kind"] == "Text" && text["outlineEnabled"] == true).then_some(&legacy_outline);
-    for effect in legacy
+    for (index, effect) in legacy
         .into_iter()
         .chain(layer["effects"].as_array().into_iter().flatten())
+        .enumerate()
     {
         if cancelled() {
             return Err("Icon rendering cancelled".into());
@@ -34,12 +105,20 @@ pub(crate) fn apply(
         if effect["visible"] == false {
             continue;
         }
+        if let Some(operation) = operation {
+            operation.checkpoint(&format!(
+                "effect_index={index}; kind={}",
+                effect_kind(effect["kind"].as_str().unwrap_or(""))
+            ));
+        }
         if crate::spatial_effects::supports(effect) {
             if crate::spatial_effects::is_identity(effect, height) {
                 continue;
             }
             // Keep every coverage plane in the same coordinates for later outlines/inner light.
-            image = crate::spatial_effects::apply(image, effect, cancelled)?;
+            image = traced(effect, width, height, cancelled, |_| {
+                crate::spatial_effects::apply(image, effect, cancelled)
+            })?;
             let warp_alpha = |alpha: &[u8]| -> Result<Vec<u8>, String> {
                 let mask = RgbaImage::from_fn(width, height, |x, y| {
                     Rgba([255, 255, 255, alpha[(y * width + x) as usize]])
@@ -60,18 +139,26 @@ pub(crate) fn apply(
             continue;
         }
         if effect["kind"] == "Outline" {
-            artwork.get_or_insert_with(|| image.clone());
-            let vector = if vector_outline_valid
-                && image
-                    .pixels()
-                    .map(|p| p[3])
-                    .eq(original_alpha.iter().copied())
-            {
-                text_outline.map(|render| render(effect)).transpose()?
-            } else {
-                None
-            };
-            let (outlined, coverage) = outline(image, effect, height, vector, cancelled)?;
+            let (outlined, coverage) = traced(effect, width, height, cancelled, |operation| {
+                operation.checkpoint("retain artwork and inspect vector eligibility");
+                artwork.get_or_insert_with(|| image.clone());
+                let vector = if vector_outline_valid
+                    && image
+                        .pixels()
+                        .map(|p| p[3])
+                        .eq(original_alpha.iter().copied())
+                {
+                    text_outline
+                        .map(|render| {
+                            operation.checkpoint("vector outline rasterization");
+                            render(effect)
+                        })
+                        .transpose()?
+                } else {
+                    None
+                };
+                outline(image, effect, height, vector, cancelled, operation)
+            })?;
             image = outlined;
             if let Some(previous) = &mut outline_coverage {
                 for (old, new) in previous.iter_mut().zip(coverage) {
@@ -123,12 +210,39 @@ pub(crate) fn apply(
 pub(crate) type OutlineRenderer<'a> = dyn Fn(&Value) -> Result<RgbaImage, String> + 'a;
 
 fn single(
-    mut image: RgbaImage,
+    image: RgbaImage,
     effect: &Value,
     original_alpha: &[u8],
     reference_height: u32,
     cancelled: &dyn Fn() -> bool,
 ) -> Result<RgbaImage, String> {
+    traced(
+        effect,
+        image.width(),
+        image.height(),
+        cancelled,
+        |operation| {
+            single_inner(
+                image,
+                effect,
+                original_alpha,
+                reference_height,
+                cancelled,
+                operation,
+            )
+        },
+    )
+}
+
+fn single_inner(
+    mut image: RgbaImage,
+    effect: &Value,
+    original_alpha: &[u8],
+    reference_height: u32,
+    cancelled: &dyn Fn() -> bool,
+    operation: &Operation,
+) -> Result<RgbaImage, String> {
+    operation.checkpoint("validate effect color and blend mode");
     let (width, height) = image.dimensions();
     let opacity = num(effect, "opacity", 1.0).clamp(0.0, 1.0);
     let color = rgba(effect["colorHex"].as_str().unwrap_or("#FF000000"))?;
@@ -187,6 +301,11 @@ fn single(
             let spread = (num(effect, "width", 2.0) * scale).clamp(0.0, 64.0).round() as u32;
             let radius = (num(effect, "blur", 2.0) * scale).clamp(0.0, 128.0).round() as u32;
             let padding = spread + radius;
+            operation.checkpoint(&format!(
+                "outer glow padded mask; spread={spread}; radius={radius}; padded={}x{}",
+                width + 2 * padding,
+                height + 2 * padding
+            ));
             // Transparent padding makes the result independent of canvas-edge clamping.
             // Sliding maxima and separable blur keep work linear in the padded plane.
             let alpha = RgbaImage::from_fn(width + 2 * padding, height + 2 * padding, |x, y| {
@@ -201,6 +320,7 @@ fn single(
                 };
                 Rgba([0, 0, 0, a])
             });
+            operation.checkpoint("outer glow expand alpha");
             let expanded = max_alpha(&alpha, spread);
             if cancelled() {
                 return Err("Icon rendering cancelled".into());
@@ -208,10 +328,12 @@ fn single(
             let spread_mask = RgbaImage::from_fn(alpha.width(), alpha.height(), |x, y| {
                 Rgba([0, 0, 0, expanded[(y * alpha.width() + x) as usize]])
             });
+            operation.checkpoint("outer glow blur");
             let blurred = box_blur(&spread_mask, radius);
             if cancelled() {
                 return Err("Icon rendering cancelled".into());
             }
+            operation.checkpoint("outer glow composite");
             let glow = RgbaImage::from_fn(width, height, |x, y| {
                 let mut pixel = color;
                 let coverage = blurred.get_pixel(x + padding, y + padding)[3]
@@ -337,11 +459,14 @@ fn outline(
     height: u32,
     vector: Option<RgbaImage>,
     cancelled: &dyn Fn() -> bool,
+    operation: &Operation,
 ) -> Result<(RgbaImage, Vec<u8>), String> {
+    operation.checkpoint("validate outline color and blend mode");
     let opacity = num(effect, "opacity", 1.0).clamp(0.0, 1.0);
     let color = rgba(effect["colorHex"].as_str().unwrap_or("#FF000000"))?;
     crate::renderer::check_blend_mode(effect["blendMode"].as_str().unwrap_or("Normal"))?;
     if let Some(stroke) = vector {
+        operation.checkpoint("vector outline composite");
         let coverage = stroke
             .pixels()
             .map(|p| (f64::from(p[3]) * opacity).round() as u8)
@@ -369,8 +494,13 @@ fn outline(
         radius
     };
     let round = effect["outlineShape"] == "Round" || effect["outlineShape"] == 1;
+    operation.checkpoint(&format!(
+        "outline expand mask; outside={outside}; inside={inside}; round={round}"
+    ));
     let expanded = morph(&image, outside, false, round, cancelled)?;
+    operation.checkpoint("outline erode mask");
     let eroded = morph(&image, inside, true, round, cancelled)?;
+    operation.checkpoint("outline composite");
     let mut outer = RgbaImage::new(image.width(), image.height());
     let mut inner = Vec::with_capacity(expanded.len());
     let mut coverage = Vec::with_capacity(expanded.len());

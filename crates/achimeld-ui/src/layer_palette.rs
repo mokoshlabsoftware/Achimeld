@@ -1764,6 +1764,9 @@ impl Desktop {
                                                             if has_effects { 0.15 } else { 0.0 },
                                                         );
                                                         if effects.clicked() {
+                                                            achimeld_application::diagnostics::record(
+                                                                "INFO", "effects", "Layer FX control activated",
+                                                            );
                                                             self.selected_layer = Some(id.clone());
                                                             self.layer_palette.selected_effect =
                                                                 None;
@@ -1778,6 +1781,7 @@ impl Desktop {
                                                             }
                                                         }
                                                         if !has_effects && !expanded {
+                                                            let operation = effects.clicked().then(|| achimeld_application::diagnostics::Operation::begin("draw effect menu"));
                                                             crate::buttons::menu_popup(
                                                                 ui,
                                                                 &effects,
@@ -1796,6 +1800,7 @@ impl Desktop {
                                                                     }
                                                                 },
                                                             );
+                                                            if let Some(operation) = operation { operation.finish("completed"); }
                                                         }
                                                         effects_origin =
                                                             effects.rect.center_bottom();
@@ -2706,6 +2711,7 @@ impl Desktop {
             self.layer_palette.selected_effect = None;
             return;
         };
+        let operation = crate::effect_diagnostics::opening(ui, "open effect properties", effect);
         let stored_effect = effect;
         let mut effective = stored_effect.clone();
         let grayscale = crate::color_picker::grayscale_scope(ui);
@@ -2742,6 +2748,7 @@ impl Desktop {
             }
             *stored_effect = effect.clone();
         }
+        crate::effect_diagnostics::completed(operation);
     }
 }
 fn layer_summary(layer: &Value) -> String {
@@ -2937,6 +2944,7 @@ pub(crate) fn layer_type_menu(ui: &mut egui::Ui) -> Option<&'static str> {
 }
 
 pub(crate) fn effect_menu(ui: &mut egui::Ui, layer: &mut Value) -> Option<String> {
+    let operation = crate::effect_diagnostics::opening(ui, "open effect menu", layer);
     let mut added = None;
     for kind in [
         "GradientOverlay",
@@ -3014,6 +3022,7 @@ pub(crate) fn effect_menu(ui: &mut egui::Ui, layer: &mut Value) -> Option<String
             ui.close();
         }
     }
+    crate::effect_diagnostics::completed(operation);
     added
 }
 pub(crate) fn new_layer(kind: &str) -> Value {

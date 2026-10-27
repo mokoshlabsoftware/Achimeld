@@ -24,7 +24,49 @@ Local icon style nodes (`styleAchievement`) and art images (`artImage`) remain h
 | Broker | Loopback only; process-table attribution and Job/role checks; CONNECT only, approved DNS names, :443, 8 KiB header, 64 active clients; checked address connected directly. | Invalid client/request rejected; listener failure stops session. Tunnel lifecycle and total deadlines are reviewed separately from hostname parsing. |
 | Diagnostics | Static failure messages/stages, bounded supervisor records and broker diagnostics; process-table destinations are metadata, not payloads. | No arbitrary worker/portal errors included in persisted failure/report data. Local compiler/test logs are separate source evidence. |
 
-The desktop host persists bounded application diagnostic lines immediately under `%LOCALAPPDATA%\Achimeld\RustDiagnostics\log.txt`; startup rotates the previous session to `log_bak.txt`. A Windows exclusive lock prevents concurrent sessions from rotating an active log. Each session file is capped at 8 MiB (older current-session records are discarded at the cap). The application library only supplies a host-installed line callback and gains no filesystem authority. Panic records retain source locations, never arbitrary panic payloads. Reparse checks cover the storage directory and fixed filenames; hostile same-user filesystem races and power-loss durability remain unqualified. Abrupt native termination cannot produce a Rust panic record, but already written lines remain available. Clearing the UI output does not delete persisted diagnostics.
+The desktop host persists bounded application diagnostic lines immediately under `%LOCALAPPDATA%\Achimeld\RustDiagnostics\log.txt`; startup rotates the previous session to `log_bak.txt`. This applies to development, quick and installed builds. A Windows exclusive lock prevents concurrent sessions from rotating an active log. Each session file is capped at 8 MiB (older current-session records are discarded at the cap). The application library only supplies a host-installed line callback and gains no filesystem authority. Panic records retain source locations, never arbitrary panic payloads. Reparse checks cover the storage directory and fixed filenames; hostile same-user filesystem races and power-loss durability remain unqualified. Clearing the UI output does not delete persisted diagnostics. Startup records identify the executable, compiled version and PID; independent ten-second runtime heartbeats and FX menu breadcrumbs give evidence without opening Terminal.
+
+Effect diagnostics use the same bounded host sink. Opening effect menus, rows and
+properties records paired operations on entry or selection changes, not every
+repaint. First-use effect-icon loading and each effect-render operation include
+correlated operation IDs and thread IDs. Outline vector rasterization, mask
+expansion/erosion and composition, and outer-glow padding, expansion, blur and
+composition emit checkpoints before work. Numeric dimensions/settings and static
+effect names are allowed; arbitrary kind names become `Unknown`. Document text,
+asset paths, recipe JSON and raw render errors are not recorded. Completion,
+failure, cancellation and unwinding are distinguished; abrupt termination can
+leave only a start/checkpoint. This helps locate unfinished work but does not by
+itself establish the cause of a crash. Controlled subprocess fixtures render both
+effects and check live and post-failure log evidence for panic, native exception
+and active UI hang; installed reproduction remains a separate qualification.
+
+The editor initializes a dedicated crash-capture thread before supervision/UI work.
+Production diagnostic paths use Windows' current-user Local AppData known folder;
+only test builds honor a fixture environment override. Before log rotation, a
+supervised session is copied into the corresponding fixed `last-runtime-log*.txt`
+file (five slots, 8 MiB each). Startup-only failures cannot replace this evidence.
+Rust panics and unhandled native exceptions request synchronous capture; the UI
+monitor requests at most one hang dump per session after five seconds of unfinished
+active UI work. Capture targets only the current Rust editor process, adds no child
+process or worker operation, and serializes DbgHelp calls. Native exception storage
+stays live while its thread waits; a 15-second timeout terminates only the failing
+process rather than allowing dangling exception pointers. No browser, worker, full
+memory, handle or token-data dump is requested. `MiniDumpFilterMemory`,
+`MiniDumpWithoutOptionalData` and `MiniDumpWithThreadInfo` retain filtered stacks
+and thread information. Filtering is not a guarantee that a dump contains no
+private data: dumps are sensitive local files, never automatic uploads or public
+audit artifacts.
+
+`RustDiagnostics\CrashDumps` holds at most eight generated capture pairs (`.dmp`
+and `.json`); a custom DbgHelp I/O callback rejects writes beyond 32 MiB per dump.
+A fixed exclusive capture lock serializes retention across editors. Only validated
+generated filenames are pruned, never unrelated files. Partial failed dumps are
+removed and safe capture status is retained in JSON when storage permits. Failures
+surface in the host warning and runtime log. Forced process termination, fail-fast
+paths that bypass exception filters, exhausted resources, corrupted process state
+and power loss can prevent capture. This is not a guarantee for all native crashes.
+Controlled subprocess panic, native-exception, active-hang, retention and size-limit
+fixtures are separate from exact-package runtime qualification.
 
 Concurrent desktop instances that encounter a sharing violation on the main log
 use four fixed fallback slots in the same diagnostic directory:

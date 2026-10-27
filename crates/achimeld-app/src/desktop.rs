@@ -59,6 +59,7 @@ pub fn run(mut session: Session) -> Result<(), Box<dyn std::error::Error>> {
     });
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_title(achimeld_ui::window_title())
             .with_icon(icon)
             .with_decorations(false)
             .with_maximized(true)
@@ -175,11 +176,11 @@ impl NativeApp {
 impl eframe::App for NativeApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let activity = self.diagnostics.frame();
-        let failure = achimeld_application::diagnostics::persistence_status().failure;
+        let failure = crate::diagnostics::failure();
         if self.host.dialog.is_none() && failure != self.diagnostic_warning {
             if failure.is_some() {
                 self.host.start_dialog(Dialog::DiagnosticFailure(
-                    "Achimeld cannot save its session log. Messages remain in memory, and writing will retry automatically. Open Preferences > General to inspect the log folder. Copy the Terminal output before closing if logging does not recover.".into()));
+                    "Achimeld could not write runtime diagnostics. Open Tools > Terminal for the failure status and Preferences > General for the log folder. Session log writes retry automatically; copy the Terminal output before closing if logging does not recover.".into()));
             }
             self.diagnostic_warning = failure;
         }

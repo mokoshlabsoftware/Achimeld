@@ -2,6 +2,178 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.22.6 (2026-10-27)
+
+- Show the specific installation failure reason on the Setup error page, including when Achimeld is still running.
+
+## 0.2.22.5 (2026-10-27)
+
+- Prevent a second Achimeld installer from running while another setup is active.
+
+## 0.2.22.4 (2026-10-27)
+
+- Bring installer language selection and uninstall progress above other windows when they open.
+
+## 0.2.22.3 (2026-10-27)
+
+- Show the Achimeld logo and installer version in the opening language window.
+
+## 0.2.22.2 (2026-10-27)
+
+- Keep the installer taskbar icon visible by loading its embedded logo and preserving icons when loading fails.
+
+## 0.2.22.1 (2026-10-27)
+
+- Add persistent diagnostics for opening effects and rendering outlines and outer glows.
+
+## 0.2.22.0 (2026-10-27)
+
+- Include the animated startup loading bar in the diagnostic build.
+
+## 0.2.21.0 (2026-10-27)
+
+- Add visible build identity and persistent runtime crash diagnostics.
+
+## 0.2.20.3 (2026-10-27)
+
+- Keep live runtime logs in Windows AppData, retain prior runtime evidence and capture local crash and hang dumps.
+
+## 0.2.20.2 (2026-10-27)
+
+- Show the working version in the top bar and native window title.
+
+## 0.2.20.1 (2026-10-27)
+
+- Show an animated loading bar at the bottom of the startup screen.
+
+## 0.2.20.0 (2026-10-27)
+
+- Make installer completion and recovery consistently use the install folder.
+
+## 0.2.19.6 (2026-10-27)
+
+- Show the final installer destination and centralize verified installer handoff and temporary-copy cleanup.
+
+## 0.2.19.5 (2026-10-27)
+
+- Fix installer Back navigation to reopen language selection and report handoff failures.
+
+## 0.2.19.4 (2026-10-27)
+
+- Fix updates from registered installation folders and make setup failure logs accessible.
+
+## 0.2.19.3 (2026-10-27)
+
+- Show startup loading progress after language selection and restore installer icons and foreground visibility.
+
+## 0.2.19.2 (2026-10-27)
+
+- Center installer maintenance content, enlarge action buttons with icons above labels, and raise the loading display.
+
+## 0.2.19.1 (2026-10-27)
+
+- Center installer loading labels and progress bar in the available space.
+
+## 0.2.19.0 (2026-10-27)
+
+- Fix installer progress rendering and preparation navigation
+
+## 0.2.18.1 (2026-10-27)
+
+- Restore visible orange installer progress, keep navigation out of preparation, and place cancellation in the footer.
+
+## 0.2.18.0 (2026-10-27)
+
+- Update transparent application icons and center installer radio indicators
+
+## 0.2.17.2 (2026-10-27)
+
+- Keep installer radio-button rings and selected centers aligned at every display scale.
+
+## 0.2.17.1 (2026-10-27)
+
+- Use transparent orange application icons and the supplied white glyph throughout the app.
+
+## 0.2.17.0 (2026-10-27)
+
+- Replace opaque installer branding with the transparent orange glyph
+
+## 0.2.16.1 (2026-10-27)
+
+- Use the supplied transparent orange glyph for the installer logo and Windows icon.
+
+## 0.2.16.0 (2026-10-27)
+
+- Finish installer maintenance controls and automatic close after removal
+
+## 0.2.15.1 (2026-10-27)
+
+- Close Setup after uninstall, add Repair/Update/Uninstall icons, join navigation buttons, and use orange progress bars.
+
+## 0.2.15.0 (2026-10-27)
+
+- Use the native Windows installation record for maintenance and removal checks
+
+## 0.2.14.1 (2026-10-27)
+
+- Detect installed folders from the Windows uninstall record and verify complete policy removal.
+
+## 0.2.14.0 (2026-10-26)
+
+- Make installer license selection clear in dark mode.
+
+## 0.2.13.1 (2026-10-26)
+
+- Show a centered solid selection dot in the installer license radio buttons while preserving keyboard selection.
+
+## 0.2.13.0 (2026-10-26)
+
+- Preserve readable installer agreement text in dark mode.
+
+## 0.2.12.1 (2026-10-26)
+
+- Keep the centered installer agreement readable in dark mode by preserving themed text rendering.
+
+## 0.2.12.0 (2026-10-26)
+
+- Fix installer document layout and guard uninstall records, with installed removal acceptance checks.
+
+## 0.2.11.3 (2026-10-26)
+
+- Center installer agreement text and restore visible scrollbars and wrapping on document pages.
+
+## 0.2.11.2 (2026-10-26)
+
+- Reject broken legacy uninstall records and add real installed removal checks for files, shortcuts and network policy.
+
+## 0.2.11.1 (2026-10-26)
+
+- Bring the installer wizard to the foreground when it first opens after language selection.
+
+## 0.2.11.0 (2026-10-26)
+
+- Unify installer output and reuse fresh builds before compilation.
+
+## 0.2.10.15 (2026-10-26)
+
+- Keep one versioned installer in the install folder, reuse unchanged builds, and replace the previous installer only after success.
+
+## 0.2.10.14 (2026-10-26)
+
+- Add named Achimeld uninstall shortcuts, preserve the installation on cancellation or cleanup failure, and validate maintenance uninstall paths.
+
+## 0.2.10.13 (2026-10-26)
+
+- Fix the installer welcome Back button caption in every language and use Powrót in Polish.
+
+## 0.2.10.12 (2026-10-26)
+
+- Remove the redundant existing-folder confirmation when installing, updating or repairing Achimeld.
+
+## 0.2.10.11 (2026-10-26)
+
+- Replace long dashes throughout app and installer translations and explicitly prohibit them in user-facing text.
+
 ## 0.2.10.10 (2026-10-26)
 
 - Restore the white transparent Achimeld symbol in the title bar while keeping the orange application icon elsewhere.

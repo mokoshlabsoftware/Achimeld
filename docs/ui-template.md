@@ -115,6 +115,11 @@ Achimeld saves some camera and preview-input data in the project. Docking the in
 
 Use the Panel color across the compact title strip. Place the small transparent application mark, a separator, adjacent menu headings, flexible drag space, a saved/dirty indicator, a separator and window controls in that order.
 
+Show the application name and compiled working version beside the mark at the top
+of every main window. Use the same identity in the native Windows title so a
+Not Responding window still identifies its build. Derive it from the same embedded
+version/history source as About; never hard-code a second version.
+
 The mark is displayed at 18 by 18 and has the application's name as a tooltip. The mark and unused title area are window drag targets. Menu headings, fields and window controls retain their own input.
 
 - Primary press on a drag target starts normal window movement.
@@ -805,6 +810,30 @@ The synchronization and remote-snapshot views provide a transferable pattern for
 These are optional integration UI patterns, not a requirement to add remote access to a local-only app. Achimeld's particular validation also reconciles remote records into its project and has its own Steam draft/publish semantics; define such effects explicitly for the new app. UI confirmation is only one part of the operation's contract and does not replace host-side validation.
 
 ### Status and diagnostics
+
+Every runnable build must create real-time runtime logs in the current user's
+AppData from process entry, before supervision and UI initialization. This includes
+development, quick and installed builds. For Achimeld use
+`%LOCALAPPDATA%\Achimeld\RustDiagnostics`; compiler/build/test evidence remains
+separate. Flush each record, retain bounded previous sessions, and keep writing
+independent of whether the Terminal is open. Include compiled version, process and
+session identity, safe operation breadcrumbs and responsiveness status. Expose the
+actual file location and logging failures in Preferences, retry failed writes and
+retain bounded in-memory evidence.
+
+Resolve the runtime location through Windows' current-user Local AppData known
+folder, independently of a launcher's redirected environment. Preserve the last
+supervised runtime log separately before rotation so repeated startup failures
+cannot replace the only useful session evidence.
+
+Provide local crash dumps and safe metadata for Rust panics, unhandled native
+exceptions and prolonged active UI hangs. Use a dedicated capture thread or process
+and minimal filtered dumps with bounded retention; never dump browser/worker
+processes or full memory. Treat dumps as sensitive local artifacts, not sanitized
+text, and never upload them automatically. Forced termination and power loss can
+prevent capture; preserve flushed logs and report missing evidence honestly.
+Verify the exact built executable creates live files and useful artifacts after
+controlled failures. A passing logger unit test alone is not runtime qualification.
 
 Keep a compact status bar with operation status, relevant counts and camera controls. Long-running operations expose cancellation where supported and disable conflicting actions, while ordinary input/painting continues.
 

@@ -1,6 +1,7 @@
 //! Host adapter for safe application and worker diagnostics.
 use achimeld_application::diagnostics::{self as output, PersistenceStatus};
 use std::path::{Path, PathBuf};
+mod crash;
 mod monitor;
 pub use monitor::Monitor;
 
@@ -25,6 +26,17 @@ impl log::Log for Logger {
 pub fn initialize() {
     output::install_sink(persist);
     initialize_persistence();
+    crash::initialize();
+    if let Some(file) = output::persistence_status().file {
+        output::record(
+            "INFO",
+            "diagnostics",
+            &format!(
+                "Live runtime log: {}; records are flushed immediately",
+                file.display()
+            ),
+        );
+    }
     static LOGGER: Logger = Logger;
     if log::set_logger(&LOGGER).is_ok() {
         log::set_max_level(log::LevelFilter::Info);
@@ -35,6 +47,7 @@ struct PersistentLog {
     file: std::fs::File,
     path: PathBuf,
     bytes: usize,
+    runtime_seen: bool,
     // Excludes concurrent instances from rotating an active session.
     _lock: std::fs::File,
 }
@@ -80,6 +93,7 @@ impl PersistentLog {
             .share_mode(0)
             .open(lock)?;
         if current.exists() {
+            preserve_runtime_session(directory, &stem, &current)?;
             if backup.exists() {
                 std::fs::remove_file(&backup)?;
             }
@@ -94,12 +108,14 @@ impl PersistentLog {
             file,
             path: current,
             bytes: 0,
+            runtime_seen: false,
             _lock: lock,
         })
     }
 
     fn write(&mut self, line: &str) -> std::io::Result<()> {
         use std::io::{Seek, Write};
+        self.runtime_seen |= line.contains("[application] Supervised session connected");
         // Bound disk use while retaining the latest records, including panics.
         if self.bytes + line.len() > 8 * 1024 * 1024 {
             self.file.set_len(0)?;
@@ -107,12 +123,42 @@ impl PersistentLog {
             let marker = b"Earlier records discarded at the 8 MiB session limit.\n";
             self.file.write_all(marker)?;
             self.bytes = marker.len();
+            if self.runtime_seen {
+                let runtime =
+                    b"INFO [application] Supervised session connected (continued session)\n";
+                self.file.write_all(runtime)?;
+                self.bytes += runtime.len();
+            }
         }
         self.file.write_all(line.as_bytes())?;
         self.file.flush()?;
         self.bytes += line.len();
         Ok(())
     }
+}
+
+fn preserve_runtime_session(directory: &Path, stem: &str, current: &Path) -> std::io::Result<()> {
+    use std::io::{Read, Write};
+    use std::os::windows::fs::OpenOptionsExt;
+    let mut bytes = Vec::new();
+    std::fs::File::open(current)?
+        .take(8 * 1024 * 1024)
+        .read_to_end(&mut bytes)?;
+    if !String::from_utf8_lossy(&bytes).contains("[application] Supervised session connected") {
+        return Ok(());
+    }
+    // One fixed archive per log slot. Failed/rejected launches cannot erase the
+    // last useful runtime session by repeatedly rotating the startup-only files.
+    let archive = directory.join(format!("last-runtime-{stem}.txt"));
+    validate_file(&archive)?;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .share_mode(1)
+        .open(archive)?;
+    file.write_all(&bytes)?;
+    file.sync_all()
 }
 
 fn persistent() -> &'static std::sync::Mutex<Option<PersistentLog>> {
@@ -146,6 +192,8 @@ fn initialize_persistence() {
     }
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
+        // Capture independently before attempting locks that the failing thread may own.
+        crash::capture(crash::PANIC);
         // Panic payloads may contain document data or browser errors. Retain only
         // source location and a static reason; the previous stderr hook still runs.
         let message = info.location().map_or_else(
@@ -165,7 +213,63 @@ fn initialize_persistence() {
 }
 
 fn diagnostic_directory() -> Option<PathBuf> {
-    std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Achimeld/RustDiagnostics"))
+    diagnostic_root().map(|p| p.join("Achimeld/RustDiagnostics"))
+}
+
+fn diagnostic_root() -> Option<PathBuf> {
+    // Test executables isolate their fixtures; shipped binaries always ask Windows.
+    #[cfg(test)]
+    {
+        std::env::var_os("LOCALAPPDATA").map(PathBuf::from)
+    }
+    #[cfg(not(test))]
+    {
+        windows_local_app_data().ok()
+    }
+}
+
+fn windows_local_app_data() -> std::io::Result<PathBuf> {
+    use std::os::windows::ffi::OsStringExt;
+    use windows_sys::Win32::{
+        System::Com::CoTaskMemFree,
+        UI::Shell::{FOLDERID_LocalAppData, SHGetKnownFolderPath},
+    };
+    let mut raw = std::ptr::null_mut();
+    // SAFETY: Windows returns an allocated terminated UTF-16 path for the current user.
+    // It is read only on success, bounded by Windows' maximum path length and freed once.
+    unsafe {
+        let result =
+            SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, std::ptr::null_mut(), &mut raw);
+        if result < 0 || raw.is_null() {
+            if !raw.is_null() {
+                CoTaskMemFree(raw.cast());
+            }
+            return Err(std::io::Error::from_raw_os_error(result));
+        }
+        let mut length = 0;
+        while length < 32768 && *raw.add(length) != 0 {
+            length += 1;
+        }
+        let path = if length < 32768 {
+            Some(PathBuf::from(std::ffi::OsString::from_wide(
+                std::slice::from_raw_parts(raw, length),
+            )))
+        } else {
+            None
+        };
+        CoTaskMemFree(raw.cast());
+        path.filter(|p| p.is_absolute())
+            .ok_or_else(|| std::io::Error::other("Local AppData path unavailable"))
+    }
+}
+
+pub(crate) fn directory() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let root = diagnostic_root().ok_or("Local AppData path unavailable")?;
+    crate::storage_directory_in(&root, "RustDiagnostics")
+}
+
+pub fn failure() -> Option<String> {
+    output::persistence_status().failure.or_else(crash::failure)
 }
 
 // Check the already-validated directory's direct children without erasing the
@@ -206,7 +310,7 @@ fn retry_persistence() {
         return;
     }
     let directory = diagnostic_directory();
-    let prepared = match crate::storage_directory("RustDiagnostics") {
+    let prepared = match self::directory() {
         Ok(path) => path,
         Err(error) => {
             let error = error
@@ -294,8 +398,7 @@ fn read_previous(directory: &Path) -> Vec<output::PreviousSession> {
 
 pub fn open_folder() -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;
-    let directory =
-        crate::storage_directory("RustDiagnostics").map_err(|_| "Log folder unavailable")?;
+    let directory = self::directory().map_err(|_| "Log folder unavailable")?;
     let path: Vec<u16> = directory.as_os_str().encode_wide().chain(Some(0)).collect();
     let verb: Vec<u16> = "open".encode_utf16().chain(Some(0)).collect();
     // SAFETY: Both terminated strings remain live; the shell is asked to open
@@ -320,8 +423,7 @@ pub fn open_folder() -> Result<(), String> {
 /// Per-user, cross-package desktop ownership. The OS releases it on crash/exit;
 /// a leftover filename never means an instance is still running.
 pub fn desktop_instance() -> Result<Option<std::fs::File>, String> {
-    let directory = crate::storage_directory("RustDiagnostics")
-        .map_err(|_| "Cannot access the desktop instance lock")?;
+    let directory = self::directory().map_err(|_| "Cannot access the desktop instance lock")?;
     lock_desktop(&directory).map_err(|_| "Cannot establish desktop instance ownership".into())
 }
 
@@ -348,6 +450,27 @@ fn lock_desktop(directory: &Path) -> std::io::Result<Option<std::fs::File>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failed_startups_do_not_erase_the_last_real_runtime_session() {
+        let directory = crate::test_output::root().join(format!(
+            "runtime-history-{}",
+            achimeld_application::new_id()
+        ));
+        std::fs::create_dir_all(&directory).unwrap();
+        let mut runtime = PersistentLog::available(&directory).unwrap();
+        runtime.write("INFO [application] Supervised session connected\nINFO [effects] Layer FX control activated\n").unwrap();
+        drop(runtime);
+        for _ in 0..4 {
+            let mut startup = PersistentLog::available(&directory).unwrap();
+            startup
+                .write("ERROR [application] Application stopped during supervised-startup\n")
+                .unwrap();
+        }
+        let saved = std::fs::read_to_string(directory.join("last-runtime-log.txt")).unwrap();
+        assert!(saved.contains("Layer FX control activated"));
+        assert!(!saved.contains("supervised-startup"));
+    }
 
     #[test]
     fn desktop_ownership_rejects_a_second_launch_and_releases_on_exit() {

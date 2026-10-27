@@ -1622,34 +1622,75 @@ fn sdf_vignette_controls_preserve_legacy_defaults_and_both_fills_at_narrow_width
 #[test]
 #[ignore = "Native screenshot of the in-app Layers panel; dedicated external output path"]
 fn native_layers_properties_screenshot() {
-    layers_window_fixture(false, false);
+    layers_window_fixture(false, false, false);
 }
 
 #[test]
 #[ignore = "Native screenshot of SDF vignette controls; dedicated external output path"]
 fn native_sdf_vignette_screenshot() {
-    layers_window_fixture(true, false);
+    layers_window_fixture(true, false, false);
 }
 
 #[test]
 #[ignore = "Native screenshot of the restored gradient editor; dedicated external output path"]
 fn native_gradient_editor_screenshot() {
-    layers_window_fixture(false, true);
+    layers_window_fixture(false, true, false);
 }
 
-fn layers_window_fixture(vignette: bool, gradient_edit: bool) {
+#[test]
+#[ignore = "Native first-click Text FX screenshot; dedicated external output path"]
+fn native_text_fx_screenshot() {
+    layers_window_fixture(false, false, true);
+}
+
+fn layers_window_fixture(vignette: bool, gradient_edit: bool, text_fx: bool) {
     use winit::platform::windows::EventLoopBuilderExtWindows;
     struct Window {
         desktop: Desktop,
         fixture: Fixture,
         frames: usize,
         output: std::path::PathBuf,
+        text_fx: Option<(String, String)>,
     }
     impl eframe::App for Window {
+        fn raw_input_hook(&mut self, ctx: &egui::Context, input: &mut egui::RawInput) {
+            if let Some((achievement, layer)) = &self.text_fx {
+                input.focused = true;
+                if [2, 3].contains(&self.frames) {
+                    let pos = ctx
+                        .read_response(layer_palette::layer_control_id(achievement, layer, "fx"))
+                        .expect("Text FX control")
+                        .rect
+                        .center();
+                    input.events.extend([
+                        egui::Event::PointerMoved(pos),
+                        egui::Event::PointerButton {
+                            pos,
+                            button: egui::PointerButton::Primary,
+                            pressed: self.frames == 2,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ]);
+                }
+            }
+        }
         fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
             self.desktop.show(ui, &mut self.fixture);
             self.frames += 1;
             if self.frames == 8 {
+                if let Some((achievement, layer)) = &self.text_fx {
+                    let response = ui
+                        .ctx()
+                        .read_response(layer_palette::layer_control_id(achievement, layer, "fx"))
+                        .unwrap();
+                    assert!(
+                        egui::Popup::is_id_open(
+                            ui.ctx(),
+                            egui::Popup::default_response_id(&response)
+                        ),
+                        "Text FX must remain responsive with its menu open"
+                    );
+                }
                 ui.ctx().send_viewport_cmd_to(
                     egui::ViewportId::ROOT,
                     egui::ViewportCommand::Screenshot(egui::UserData::default()),
@@ -1717,6 +1758,12 @@ fn layers_window_fixture(vignette: bool, gradient_edit: bool) {
                     {"offset":0.0,"colorHex":"#FF36D1DC"},{"offset":0.5,"colorHex":"#FF7C4DFF"},{"offset":1.0,"colorHex":"#FFFF4FA3"}]}}
         }));
     }
+    if text_fx {
+        entity["icon"]["layers"] = json!([{
+            "id":shape,"displayName":"Text","kind":"Text","visible":true,"opacity":1.0,
+            "text":{"content":"Text","fontFamily":"Segoe UI","fontSize":36.0},"effects":[]
+        }]);
+    }
     fixture
         .execute(
             "Icon",
@@ -1749,7 +1796,7 @@ fn layers_window_fixture(vignette: bool, gradient_edit: bool) {
         );
     }
     let mut desktop = Desktop::default();
-    desktop.selection = vec![achievement];
+    desktop.selection = vec![achievement.clone()];
     desktop.selected_layer = Some(if vignette {
         vignette_id
     } else if gradient_edit {
@@ -1757,11 +1804,11 @@ fn layers_window_fixture(vignette: bool, gradient_edit: bool) {
     } else {
         shape.clone()
     });
-    if !vignette {
+    if !vignette && !text_fx {
         desktop
             .layer_palette
             .expanded_effects
-            .extend([folder, shape]);
+            .extend([folder, shape.clone()]);
     }
     desktop.open_layers();
     let output = std::path::absolute(std::path::PathBuf::from(
@@ -1775,6 +1822,7 @@ fn layers_window_fixture(vignette: bool, gradient_edit: bool) {
         eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_decorations(false)
+                .with_title(crate::window_title())
                 .with_inner_size([1440.0, 920.0]),
             event_loop_builder: Some(Box::new(|builder| {
                 builder.with_any_thread(true);
@@ -1791,6 +1839,7 @@ fn layers_window_fixture(vignette: bool, gradient_edit: bool) {
                 fixture,
                 frames: 0,
                 output,
+                text_fx: text_fx.then_some((achievement, shape)),
             }))
         }),
     )

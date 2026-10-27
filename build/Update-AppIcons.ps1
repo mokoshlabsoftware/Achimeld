@@ -4,13 +4,19 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $root = Split-Path -Parent $PSScriptRoot
 $assets = Join-Path $root 'crates/achimeld-app/assets'
-# achimeld.png is the unchanged supplied artwork. Only format/size conversion
-# belongs here: do not recolor, remove its background, or redraw the mark.
+# The orange transparent derivative is for Windows; the supplied white alpha
+# glyph is for all in-app surfaces. Keep these inputs in the public source tree.
+# Only size/format conversion belongs here; preserve both marks and their alpha.
 $source = [Drawing.Image]::FromFile((Join-Path $assets 'achimeld.png'))
+$whiteSource = [Drawing.Image]::FromFile((Join-Path $assets 'achimeld-glyph-source.png'))
 $frames = [Collections.Generic.List[byte[]]]::new()
 $sizes = @(16, 24, 32, 48, 64, 128, 256)
 try {
     if ($source.Width -ne 256 -or $source.Height -ne 256) { throw 'Expected the supplied 256-by-256 application icon.' }
+    if ($whiteSource.Width -ne $whiteSource.Height) { throw 'Expected a square white alpha glyph.' }
+    if ($source.GetPixel(0, 0).A -ne 0 -or $whiteSource.GetPixel(0, 0).A -ne 0) {
+        throw 'Application glyphs must retain their transparent backgrounds.'
+    }
     foreach ($size in $sizes) {
         $bitmap = [Drawing.Bitmap]::new($size, $size, [Drawing.Imaging.PixelFormat]::Format32bppArgb)
         $graphics = [Drawing.Graphics]::FromImage($bitmap)
@@ -28,6 +34,14 @@ try {
             } else {
                 $bitmap.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
                 $frames.Add($stream.ToArray())
+            }
+            if ($size -in @(128, 256)) {
+                $graphics.Clear([Drawing.Color]::Transparent)
+                $graphics.DrawImage($whiteSource, [Drawing.Rectangle]::new(0, 0, $size, $size), 0, 0,
+                    $whiteSource.Width, $whiteSource.Height, [Drawing.GraphicsUnit]::Pixel, $attributes)
+            }
+            if ($size -eq 256) {
+                $bitmap.Save((Join-Path $root 'crates/achimeld-ui/assets/achimeld-logo.png'), [Drawing.Imaging.ImageFormat]::Png)
             }
             if ($size -eq 128) {
                 $rgba = [byte[]]::new($size * $size * 4)
@@ -62,5 +76,5 @@ try {
         $writer.Flush()
         [IO.File]::WriteAllBytes((Join-Path $assets 'achimeld.ico'), $output.ToArray())
     } finally { $writer.Dispose(); $output.Dispose() }
-} finally { $source.Dispose() }
-Write-Output 'Converted the application artwork to a seven-size Windows ICO and the title/About RGBA asset.'
+} finally { $source.Dispose(); $whiteSource.Dispose() }
+Write-Output 'Created the orange Windows ICO (16-256 pixels) and white transparent in-app PNG/RGBA assets.'

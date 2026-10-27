@@ -28,3 +28,4 @@ foreach ($readable in @($false, $true)) {
     if ([bool]$users.Count -ne $readable) { throw 'Unverified staging is readable by normal users.' }
 }
 Write-Output 'Installer verifier pin, stream reset and administrator-only staging ACL checks passed. No installation or policy change performed.'
+& (Join-Path $PSScriptRoot 'Test-SetupLogs.ps1')

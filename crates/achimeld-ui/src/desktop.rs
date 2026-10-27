@@ -527,6 +527,11 @@ impl Desktop {
                         )
                         .on_hover_text("Achimeld");
                     crate::chrome::drag_window(&brand);
+                    let identity = ui.add(
+                        egui::Label::new(crate::window_title())
+                            .sense(egui::Sense::click_and_drag()),
+                    );
+                    crate::chrome::drag_window(&identity);
                     ui.separator();
                     ui.spacing_mut().item_spacing.x = 0.0;
                     let help = crate::localization::text(ui.ctx(), "Help");

@@ -10,8 +10,8 @@ The compact upper row has a 24-point panel height, with an 8-point left inset an
 
 From left to right it contains:
 
-1. The white, transparent 18-by-18-point Achimeld mark, with an Achimeld tooltip. The mark also acts as a window drag target. This title-bar-only variant is retained in `crates/achimeld-ui/assets/achimeld-title-mark.png` and embedded as its 128-by-128 RGBA derivative; all other application identity surfaces retain the orange-on-brown icon.
-2. A vertical separator.
+1. The white, transparent 18-by-18-point Achimeld mark, with an Achimeld tooltip. The mark also acts as a window drag target. All in-app identity surfaces, including About and prompts, share `crates/achimeld-ui/assets/achimeld-logo.rgba`, a 128-by-128 derivative of the supplied alpha glyph. The display PNG is capped at 256-by-256. Windows application and shortcut icons use the transparent orange glyph instead.
+2. The application name and compiled four-part working version, then a vertical separator. This identity is a drag target and must remain visible. The native Windows title uses the same identity, including when Windows shows a Not Responding title.
 3. Five adjacent text headings: **File**, **Edit**, **Tools**, **Windows**, **Help**. There are no horizontal gaps between heading bodies. Each heading has square corners, uses the shared Quiet button, and rests on exactly the panel background.
 4. Flexible empty space that acts as the main window drag target.
 5. The **Saved** or **Unsaved changes** indicator, a separator, then **Minimize**, **Maximize/Restore**, and **Close** at the right edge. The controls are allocated from right to left, producing that visual order. Each has a 28-by-24-point body and a centered glyph, with no gaps between bodies. Maximize changes to Restore while maximized or fullscreen.

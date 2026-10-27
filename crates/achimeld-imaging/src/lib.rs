@@ -3,6 +3,8 @@
 mod artifact3d;
 #[cfg(test)]
 mod artifact3d_tests;
+#[cfg(test)]
+mod effect_diagnostics_tests;
 mod effects;
 mod explosion;
 #[cfg(test)]

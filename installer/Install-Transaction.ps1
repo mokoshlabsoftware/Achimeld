@@ -26,7 +26,8 @@ function Assert-AchimeldStopped {
 function Get-RegisteredInstallRoot {
     $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Achimeld-Development_is1'
     $value = Get-ItemProperty -LiteralPath $key -ErrorAction SilentlyContinue
-    if ($value -and $value.AchimeldInstallRoot) { return [string]$value.AchimeldInstallRoot }
+    if ($value -and ![string]::IsNullOrWhiteSpace($value.InstallLocation)) { return [string]$value.InstallLocation }
+    if ($value -and ![string]::IsNullOrWhiteSpace($value.AchimeldInstallRoot)) { return [string]$value.AchimeldInstallRoot }
     return Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'Mokosh Labs\Achimeld'
 }
 

@@ -124,7 +124,13 @@ fn storage_directory(name: &str) -> Result<std::path::PathBuf, Box<dyn std::erro
     let local = std::path::PathBuf::from(
         std::env::var_os("LOCALAPPDATA").ok_or("Local application storage unavailable")?,
     );
-    achimeld_security::windows::reject_reparse(&local)?;
+    storage_directory_in(&local, name)
+}
+fn storage_directory_in(
+    local: &std::path::Path,
+    name: &str,
+) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    achimeld_security::windows::reject_reparse(local)?;
     let product = local.join("Achimeld");
     if product.exists() {
         achimeld_security::windows::reject_reparse(&product)?;
@@ -151,7 +157,7 @@ fn record_failure(
         .downcast_ref::<achimeld_security::SecurityError>()
         .map(|error| error.0)
         .unwrap_or("Application operation failed");
-    let directory = storage_directory("RustDiagnostics")?;
+    let directory = diagnostics::directory()?;
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_nanos();
@@ -186,6 +192,13 @@ fn main() {
             std::process::id()
         ),
     );
+    if let Ok(executable) = std::env::current_exe() {
+        achimeld_application::diagnostics::record(
+            "INFO",
+            "application",
+            &format!("Running executable: {}", executable.display()),
+        );
+    }
     let mut stage = "supervised-startup";
     if let Err(error) = run(&mut stage) {
         achimeld_application::diagnostics::record(
@@ -194,8 +207,12 @@ fn main() {
             &format!("Application stopped during {stage}"),
         );
         eprintln!("Achimeld cannot start: {error}");
-        if stage != "supervised-startup" {
-            let _ = record_failure(stage, error.as_ref());
+        if record_failure(stage, error.as_ref()).is_err() {
+            achimeld_application::diagnostics::record(
+                "ERROR",
+                "diagnostics",
+                "Could not persist startup failure metadata",
+            );
         }
         std::process::exit(1);
     }

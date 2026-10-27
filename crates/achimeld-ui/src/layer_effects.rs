@@ -27,6 +27,7 @@ impl Desktop {
         indent: f32,
         origin: Pos2,
     ) {
+        let operation = crate::effect_diagnostics::opening(ui, "open layer effects", layer);
         let owner = layer["id"].as_str().unwrap_or("").to_owned();
         let inset = (indent + 58.0).min((ui.available_width() - 96.0).max(0.0));
         // Center the add action on the FX spine, halfway to the first junction.
@@ -80,9 +81,11 @@ impl Desktop {
             });
         });
         let Some(effects) = layer.get_mut("effects").and_then(Value::as_array_mut) else {
+            crate::effect_diagnostics::completed(operation);
             return;
         };
         if effects.is_empty() {
+            crate::effect_diagnostics::completed(operation);
             return;
         }
         let ids: Vec<_> = effects
@@ -264,6 +267,7 @@ impl Desktop {
                 }
             });
         });
+        crate::effect_diagnostics::completed(operation);
         if let Some(index) = remove {
             effects.remove(index);
             self.layer_palette.effect_drag = None;

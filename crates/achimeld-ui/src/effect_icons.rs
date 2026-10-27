@@ -55,12 +55,15 @@ pub(crate) fn image(ctx: &egui::Context, kind: &str, size: f32) -> egui::Image<'
     let texture = ctx
         .data(|data| data.get_temp::<egui::TextureHandle>(id))
         .unwrap_or_else(|| {
+            let operation = achimeld_application::diagnostics::Operation::begin("load effect icon");
+            operation.checkpoint(name);
             let texture = ctx.load_texture(
                 format!("effect-{name}"),
                 egui::ColorImage::from_rgba_unmultiplied([64, 64], bytes),
                 egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
             );
             ctx.data_mut(|data| data.insert_temp(id, texture.clone()));
+            operation.finish("completed");
             texture
         });
     egui::Image::new((texture.id(), egui::Vec2::splat(size)))

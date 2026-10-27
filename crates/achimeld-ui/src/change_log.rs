@@ -36,6 +36,12 @@ pub(crate) fn current_version() -> &'static str {
     ENTRIES.first().expect("current working version").version
 }
 
+/// The same compiled identity is used by the visible chrome and native window.
+pub fn window_title() -> &'static str {
+    static TITLE: LazyLock<String> = LazyLock::new(|| format!("Achimeld {}", current_version()));
+    &TITLE
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

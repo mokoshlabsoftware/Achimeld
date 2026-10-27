@@ -126,6 +126,52 @@ fn button(pos: egui::Pos2, pressed: bool) -> egui::Event {
 }
 
 #[test]
+fn text_layer_fx_opens_cold_menu_without_blocking_or_mutating_the_document() {
+    // Keep a deadlock in native-style first-use icon/menu setup from hanging the suite.
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let mut rows = LayerRows::new(1100.0, 2);
+        let mut entity = rows.entity().clone();
+        entity["icon"]["layers"][0]["kind"] = json!("Text");
+        entity["icon"]["layers"][0]["text"] = json!("Text");
+        entity["icon"]["layers"][0]["effects"] = json!([]);
+        rows.fixture
+            .execute(
+                "Text recipe",
+                Command::ReplaceEntity {
+                    kind: EntityKind::Achievement,
+                    id: rows.achievement.clone(),
+                    value: entity,
+                },
+                None,
+            )
+            .unwrap();
+        rows.frame(vec![]);
+        rows.frame(vec![]);
+        let before = rows.fixture.editor.document().clone();
+        let fx = rows
+            .ctx
+            .read_response(layer_palette::layer_control_id(
+                &rows.achievement,
+                &rows.ids[0],
+                "fx",
+            ))
+            .unwrap()
+            .rect
+            .center();
+        rows.press(fx);
+        rows.frame(vec![button(fx, false)]);
+        let output = rows.frame(vec![]);
+        assert!(output.shapes.iter().any(|shape| matches!(&shape.shape,
+            egui::Shape::Text(text) if text.galley.text() == "Outline")));
+        assert_eq!(rows.fixture.editor.document(), &before);
+        tx.send(()).unwrap();
+    });
+    rx.recv_timeout(std::time::Duration::from_secs(60))
+        .expect("Text FX menu must complete without deadlocking");
+}
+
+#[test]
 fn eye_click_toggles_once_with_repeated_layout_and_undo() {
     for passes in [1, 2] {
         for same_frame in [false, true] {

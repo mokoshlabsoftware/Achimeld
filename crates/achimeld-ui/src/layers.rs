@@ -685,8 +685,10 @@ pub(crate) fn effects_ui(ui: &mut egui::Ui, layer: &mut Value) {
     });
 }
 pub(crate) fn effect_properties(ui: &mut egui::Ui, effect: &mut Value) {
+    let operation = crate::effect_diagnostics::opening(ui, "open effect properties", effect);
     effect_blending(ui, effect);
     effect_property_fields(ui, effect);
+    crate::effect_diagnostics::completed(operation);
 }
 fn spatial_effect(effect: &Value) -> bool {
     matches!(

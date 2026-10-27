@@ -1,6 +1,6 @@
 //! A bootstrapper-owned startup window. It has no package, process or browser authority.
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     ptr,
     sync::{
         Arc,
@@ -8,14 +8,15 @@ use std::{
         mpsc,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
     Graphics::Gdi::{
-        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BLACKNESS, BeginPaint, DIB_RGB_COLORS, DT_CENTER,
-        DT_VCENTER, DT_WORDBREAK, DrawTextW, EndPaint, InvalidateRect, PAINTSTRUCT, PatBlt,
-        SRCCOPY, SetBkMode, SetTextColor, StretchDIBits, TRANSPARENT, UpdateWindow,
+        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BLACKNESS, BeginPaint, DC_BRUSH, DIB_RGB_COLORS,
+        DT_CENTER, DT_VCENTER, DT_WORDBREAK, DrawTextW, EndPaint, FillRect, GetStockObject,
+        InvalidateRect, PAINTSTRUCT, PatBlt, SRCCOPY, SetBkMode, SetDCBrushColor, SetTextColor,
+        StretchDIBits, TRANSPARENT, UpdateWindow,
     },
     System::LibraryLoader::GetModuleHandleW,
     UI::WindowsAndMessaging::{
@@ -32,11 +33,19 @@ const IMAGE_HEIGHT: u32 = 515;
 const WIDTH: i32 = 393;
 const HEIGHT: i32 = 258;
 const FAILURE_HEIGHT: i32 = 48;
+const LOADING_TRACK: RECT = RECT {
+    left: 12,
+    top: HEIGHT - 18,
+    right: WIDTH - 12,
+    bottom: HEIGHT - 12,
+};
+const LOADING_SEGMENT_WIDTH: i32 = 80;
 
 struct Pixels(Vec<u8>);
 thread_local! {
     static PIXELS: RefCell<Option<Pixels>> = const { RefCell::new(None) };
     static FAILED: RefCell<bool> = const { RefCell::new(false) };
+    static LOADING_OFFSET: Cell<i32> = const { Cell::new(0) };
 }
 
 struct Shared {
@@ -163,6 +172,7 @@ fn show(shared: Arc<Shared>, ready: mpsc::SyncSender<()>) {
     }
     let _ = ready.send(());
     let mut displayed_failure = false;
+    let animation_started = Instant::now();
     loop {
         let mut message = MSG::default();
         // SAFETY: This thread owns the window and message storage is initialized.
@@ -195,6 +205,15 @@ fn show(shared: Arc<Shared>, ready: mpsc::SyncSender<()>) {
                 unsafe { DestroyWindow(window) };
                 return;
             }
+            // Startup has no measured percentage. Keep a smoothly moving indicator
+            // alive during verification and editor initialization, without implying completion.
+            let phase = animation_started.elapsed().as_secs_f64() * std::f64::consts::TAU / 2.4;
+            let travel = LOADING_TRACK.right - LOADING_TRACK.left - LOADING_SEGMENT_WIDTH;
+            let offset = ((1.0 - phase.cos()) * 0.5 * f64::from(travel)).round() as i32;
+            LOADING_OFFSET.with(|slot| slot.set(offset));
+            // SAFETY: The window belongs to this thread and the fixed rectangle is live
+            // for the call. Only the loading strip is invalidated, without background erase.
+            unsafe { InvalidateRect(window, &LOADING_TRACK, 0) };
         }
         thread::sleep(Duration::from_millis(30));
     }
@@ -289,6 +308,23 @@ unsafe extern "system" fn window_proc(
                             &mut client,
                             DT_CENTER | DT_VCENTER | DT_WORDBREAK,
                         );
+                    }
+                } else {
+                    let left = LOADING_TRACK.left + LOADING_OFFSET.with(Cell::get);
+                    let segment = RECT {
+                        left,
+                        right: left + LOADING_SEGMENT_WIDTH,
+                        ..LOADING_TRACK
+                    };
+                    // SAFETY: BeginPaint owns this live DC. The stock DC brush is borrowed
+                    // from Windows (never deleted); both rectangles live through the draws.
+                    unsafe {
+                        let brush = GetStockObject(DC_BRUSH);
+                        // COLORREF uses BGR: dark burnt orange track and warm gold activity.
+                        SetDCBrushColor(dc, 0x0018_3068);
+                        FillRect(dc, &LOADING_TRACK, brush);
+                        SetDCBrushColor(dc, 0x0096_D8FF);
+                        FillRect(dc, &segment, brush);
                     }
                 }
             });

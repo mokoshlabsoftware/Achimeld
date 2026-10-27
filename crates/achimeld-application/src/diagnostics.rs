@@ -102,7 +102,14 @@ impl Operation {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let id = NEXT.fetch_add(1, Ordering::Relaxed);
-        record("INFO", "operation", &format!("#{id} {name}: started"));
+        record(
+            "INFO",
+            "operation",
+            &format!(
+                "#{id} {name}: started; thread={:?}",
+                std::thread::current().id()
+            ),
+        );
         Self {
             id,
             name,
@@ -113,7 +120,7 @@ impl Operation {
     pub fn finish(mut self, outcome: &'static str) {
         self.finished = true;
         record(
-            "INFO",
+            if outcome == "failed" { "ERROR" } else { "INFO" },
             "operation",
             &format!(
                 "#{} {}: {outcome}; elapsed={} ms",
@@ -122,6 +129,38 @@ impl Operation {
                 self.started.elapsed().as_millis()
             ),
         );
+    }
+    /// Only static stages or explicitly selected numeric/allowlisted context.
+    /// Never pass document text, paths, serialized recipes or raw error messages.
+    pub fn checkpoint(&self, context: &str) {
+        record(
+            "INFO",
+            "operation",
+            &format!(
+                "#{} {}: {context}; elapsed={} ms",
+                self.id,
+                self.name,
+                self.started.elapsed().as_millis()
+            ),
+        );
+    }
+}
+
+/// Return a static label even when a malformed recipe supplies arbitrary text.
+pub fn effect_kind(kind: &str) -> &'static str {
+    match kind {
+        "Outline" => "Outline",
+        "OuterLight" => "OuterLight",
+        "InnerLight" => "InnerLight",
+        "Shadow" => "Shadow",
+        "BoxBlur" => "BoxBlur",
+        "GradientOverlay" => "GradientOverlay",
+        "ColorOverlay" => "ColorOverlay",
+        "Skew" => "Skew",
+        "Perspective" => "Perspective",
+        "Pinch" => "Pinch",
+        "LensBlur" => "LensBlur",
+        _ => "Unknown",
     }
 }
 impl Drop for Operation {

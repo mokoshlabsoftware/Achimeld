@@ -43,6 +43,9 @@ impl Monitor {
             .spawn(move || {
                 let mut next_retry = Instant::now();
                 let mut last_failure = None;
+                let mut next_heartbeat = Instant::now();
+                let mut hang_captured = false;
+                let mut last_capture_failure = None;
                 while !stopped.load(Ordering::Acquire) {
                     let now = Instant::now();
                     let warning = observed
@@ -50,7 +53,27 @@ impl Monitor {
                         .unwrap_or_else(|e| e.into_inner())
                         .warning(now);
                     if let Some(warning) = warning {
+                        if !hang_captured {
+                            super::crash::capture(super::crash::HANG);
+                            hang_captured = true;
+                        }
                         output::record("ERROR", "responsiveness", &warning);
+                    }
+                    if now >= next_heartbeat {
+                        let phase = observed.lock().unwrap_or_else(|e| e.into_inner()).phase;
+                        output::record(
+                            "INFO",
+                            "runtime",
+                            &format!("Session alive; last UI phase={phase}"),
+                        );
+                        let failure = super::crash::failure();
+                        if failure != last_capture_failure
+                            && let Some(message) = &failure
+                        {
+                            output::record("ERROR", "crash-capture", message);
+                        }
+                        last_capture_failure = failure;
+                        next_heartbeat = now + Duration::from_secs(10);
                     }
                     if now >= next_retry {
                         let failure = output::persistence_status().failure;

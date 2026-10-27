@@ -14,10 +14,25 @@ Keep changes to policy, protocol shapes, process recipes, and ownership explicit
 
 The original improvement plan is `docs/security-auditability.md`; current contracts and results live under `docs/security`.
 
-# Installed application logs
+# Runtime logs and crash dumps for every build
+
+Every runnable build, including Build and Run, quick builds and installed builds,
+must create real-time runtime logs in AppData from process entry, before supervision
+or UI initialization. This is a delivery requirement, not something satisfied by
+logging code or build/test output alone. Verify files from the exact launched build
+while it runs and after a controlled failure. Missing runtime evidence is a bug.
+Keep crash dumps and safe crash metadata in this same AppData diagnostic area,
+with bounded retention, visible capture failures and no automatic upload. Capture
+Rust panics, unhandled native exceptions and prolonged active UI hangs; document
+limits such as forced process termination and power loss. Dumps are local sensitive
+diagnostic artifacts, not redacted log text; use minimal filtered dumps, never full
+memory or browser/worker dumps, and never commit or publish them.
 
 The canonical installed-app diagnostic directory is `%LOCALAPPDATA%\Achimeld\RustDiagnostics`
 (on this workstation: `C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics`).
+Production resolves Local AppData through Windows' current-user known-folder API,
+not a launcher-provided environment override. Test executables alone redirect
+diagnostics into isolated fixture storage. This applies to builds run without installation too.
 Inspect it directly when investigating a reported bug; do not ask the user to paste
 logs that are accessible locally. Sandboxed tools may redirect `LOCALAPPDATA` to
 their own sandbox: use the explicit workstation path above for the installed app.
@@ -31,6 +46,12 @@ advancing. Up to five simultaneous instances can persist logs. Read session logs
 app because startup rotates them. Follow the current session with
 `Get-Content -LiteralPath 'C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics\log.txt' -Tail 100 -Wait`;
 reopen the reader after an application restart. Timestamps ending in `Z` are UTC.
+
+Before rotating a supervised runtime session, retain its bounded contents in
+`last-runtime-log.txt` (or `last-runtime-log-instance-N.txt`). Startup-only failures
+must not overwrite these files. Check them when current/backup logs only show
+failed launches. `CrashDumps` contains up to eight local `.dmp`/`.json` capture pairs,
+with a 32 MiB limit per dump. Keep these sensitive artifacts out of source and releases.
 
 Normal desktop launches now hold `desktop-instance.lock` and reject a second editor
 with an in-app Already running notice. The fixed log slots remain a diagnostic
@@ -85,15 +106,20 @@ GitLab commit and record that exact source commit and installer SHA-256 in local
 metadata. Public source provenance may record these identities, but includes no
 installer bytes. The public snapshot has its own commit identity.
 
-The authoritative latest verified local installer is
-**`C:\Projects\AchimeldBuild\install\Achimeld-Setup.exe`**. Other agents must
-retrieve the installer from this fixed location. Read adjacent `RELEASE-SOURCE.json`
-for its working version, exact GitLab source commit and installer SHA-256, and
-verify against `SHA256SUMS.txt`. `build/BuildPaths.ps1` owns this location through
-`(Get-AchimeldBuildPaths).Installer`. Promote the complete directory only after
-successful build verification and source publication; keep previous copies in the
-dated archive. Local promotion does not upload or sell the installer. Never use
-unfinished setup files in random staging folders or binaries in source checkouts.
+Every completed installer goes directly into **`C:\Projects\AchimeldBuild\install`**,
+named `Achimeld-<four_underscore_separated_version_parts>-Setup.exe`; quick builds
+add `-Quick-Test` before `-Setup`. Keep exactly one current installer. Check this
+folder before building: reuse a valid completed installer for the exact source
+and required checks, otherwise build a replacement. Delete the previous installer
+only after the replacement is complete and verified; failures retain it.
+Other agents must retrieve installers from this folder. Read `RELEASE-SOURCE.json`
+(audited builds) or `QUICK-BUILD.json` (quick builds), and verify `SHA256SUMS.txt`.
+Quick reuse checks all captured source contents, including uncommitted changes.
+`build/BuildPaths.ps1` owns the location through `(Get-AchimeldBuildPaths).Installer`.
+Local completion does not publish source or upload an installer. `PUBLICATION.json`
+records successful source publication for the matching installer; delivery requires
+it. Build staging and audit evidence stay under `current`, but finished setup files
+must not remain there. Never use unfinished setup files or binaries in source checkouts.
 
 The operating guide is `private/PUBLISHING.md`. Keep it current when changing
 publishing, authentication, export policy, storage, delivery, or failure recovery.
@@ -103,6 +129,12 @@ command to the GitHub publisher. Check existing remote downloads separately when
 repairing a distribution mistake, while preserving source and provenance records.
 
 # Working versions and change history
+
+The main window must always show the compiled four-part working version at the
+top, alongside the application name. Use the same identity in the native Windows
+title so screenshots, task switching and Not Responding windows identify the build.
+Read it from the embedded root CHANGELOG.md, like About and Change log; never use
+the Cargo/package version or a hard-coded duplicate.
 
 Use four-part application working versions: `major.minor.commit.change` (for example `0.1.0.1`). The newest entry in root `CHANGELOG.md` is the single source of truth; Help > About and Help > Change log embed it at compile time. Rebuild to show a changed version. Cargo/package versions and authenticated installer identities are separate contracts; do not change them merely to advance the working version.
 
@@ -128,6 +160,8 @@ Imported project artwork belongs to the Art Data Bank. Retain an owned copy when
 Our prerogative is to update the user with all graphical changes as soon as possible. Show a quick partial-resolution result first when necessary, then refine it asynchronously; do not hold visible updates behind full-resolution rendering. Prioritize visible previews, retain the last successful image during refinement, and cancel obsolete work. Use GPU textures with linear mipmap filtering for smooth scaling, and bounded background multithreading for image decoding and composition. Share decoded assets and bound queues and caches so responsiveness does not come at the cost of unbounded resource use. Measure time to the first visible result separately from time to final quality.
 
 # Application style and prompts
+
+Long dashes are explicitly prohibited in all application and installer user-facing text and localization entries, in every language. Do not use en dashes (U+2013), em dashes (U+2014), horizontal bars (U+2015), or repeated long dashes. Use ordinary ASCII hyphens (U+002D) for ranges and separators, or rewrite sentences with commas, colons, parentheses, or full stops. Apply this rule to the shared translation catalog, source fallback text, labels, tooltips, prompts, and installer messages. Preserve translation keys, placeholders, and language-specific letters; do not replace Japanese prolonged sound marks or other linguistic characters. Check new and edited text for these prohibited characters before completing a change.
 
 The upper title/menu bar, navigation/action bar, menu interaction, and Style Viewer contract are defined in [Upper application bars and Style Viewer](docs/upper-application-bar.md). Follow that specification when changing these controls.
 

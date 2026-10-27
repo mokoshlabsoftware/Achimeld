@@ -364,6 +364,21 @@
       "qualification": "declared report shape tested; broader diagnostic review remains part of each audit"
     },
     {
+      "id": "SEC-DIAGNOSTICS-002",
+      "claim": "Editor runtime diagnostics use current-user AppData with bounded flushed logs and retained runtime evidence. Filtered local editor-only minidumps use one capture thread, bounded writes and fixed retention; they are sensitive artifacts and never automatic uploads.",
+      "enforcement": [
+        { "file": "crates/achimeld-app/src/diagnostics.rs", "symbol": "windows_local_app_data" },
+        { "file": "crates/achimeld-app/src/diagnostics.rs", "symbol": "preserve_runtime_session" },
+        { "file": "crates/achimeld-app/src/diagnostics/crash.rs", "symbol": "write_callback" }
+      ],
+      "evidence": [
+        { "scope": "fixture", "file": "crates/achimeld-app/src/diagnostics/crash.rs", "symbol": "real_process_failures_leave_live_logs_and_valid_bounded_minidumps" },
+        { "scope": "source", "file": "crates/achimeld-app/src/diagnostics/crash.rs", "symbol": "retention_preserves_unrelated_files_and_callback_refuses_oversized_dump" },
+        { "scope": "source", "file": "crates/achimeld-app/src/diagnostics.rs", "symbol": "failed_startups_do_not_erase_the_last_real_runtime_session" }
+      ],
+      "qualification": "Controlled Windows subprocess fixtures; forced termination, resource exhaustion, corrupted process state, hostile same-user filesystem races and exact installed-package acceptance remain separate. Filtered dumps may retain private data."
+    },
+    {
       "id": "SEC-BUILD-001",
       "claim": "Package evidence binds locally built application libraries and pinned third-party runtimes to exact archived build inputs.",
       "enforcement": [
