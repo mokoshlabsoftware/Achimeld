@@ -125,3 +125,44 @@ fn help_pages_show_compiled_version_and_switch_without_editing() {
         assert_eq!(fixture.editor.revision(), revision);
     }
 }
+
+#[test]
+fn connect_mcp_instructions_fit_without_scrolling() {
+    for (width, height, scale) in [(1440.0, 900.0, 1.0), (1280.0, 800.0, 1.5)] {
+        let ctx = egui::Context::default();
+        ctx.set_pixels_per_point(scale);
+        let mut desktop = Desktop::default();
+        let mut fixture = Fixture::new();
+        desktop.open_connect_mcp();
+        let mut shown = Vec::new();
+        for _ in 0..4 {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(width, height),
+                    )),
+                    ..Default::default()
+                },
+                |ui| desktop.show(ui, &mut fixture),
+            );
+            output.textures_delta.clear();
+            shown.clear();
+            for shape in &output.shapes {
+                labels(&shape.shape, &mut shown);
+            }
+        }
+        let last = "If no editor appears, check that Achimeld is open and both processes use the same Windows account. Reconnect after changing the configuration.";
+        let instructions = shown.iter().find(|(text, _)| text == last).unwrap().1;
+        let close = shown.iter().find(|(text, _)| text == "Close").unwrap().1;
+        assert!(
+            instructions.bottom() <= close.top() && close.top() - instructions.bottom() < 80.0,
+            "Connect MCP instructions scroll at {width}x{height} scale {scale}: instructions {instructions:?}, close {close:?}"
+        );
+        assert!(instructions.left() >= 0.0 && instructions.right() <= width);
+        assert!(
+            instructions.width() > 460.0,
+            "Connect MCP should be wider than the About dialog at {width}x{height}: {instructions:?}"
+        );
+    }
+}

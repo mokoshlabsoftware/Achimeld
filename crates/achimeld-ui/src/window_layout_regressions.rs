@@ -272,3 +272,195 @@ fn windows_menu_resets_visible_and_closed_windows_without_editing() {
         }
     }
 }
+
+fn toolbar_texts(shape: &egui::Shape, output: &mut Vec<(String, egui::Rect)>) {
+    match shape {
+        egui::Shape::Text(text) => output.push((
+            text.galley.text().to_owned(),
+            egui::Rect::from_min_size(text.pos, text.galley.size()),
+        )),
+        egui::Shape::Vec(shapes) => {
+            for shape in shapes {
+                toolbar_texts(shape, output);
+            }
+        }
+        _ => {}
+    }
+}
+
+struct ToolbarSnap {
+    filter: egui::Rect,
+    sync: egui::Rect,
+    project: Option<egui::Rect>,
+    tab_labels: bool,
+}
+
+fn toolbar_snap(width: f32, scale: f32, name: &str) -> ToolbarSnap {
+    let ctx = egui::Context::default();
+    ctx.set_pixels_per_point(scale);
+    configure_test_fonts(&ctx);
+    let mut fixture = Fixture::new();
+    if name != "Untitled project" {
+        fixture
+            .execute(
+                "Rename",
+                Command::ProjectSettings {
+                    name: name.into(),
+                    app_id: 480,
+                    atlas: None,
+                    assets: None,
+                },
+                None,
+            )
+            .unwrap();
+    }
+    let mut desktop = Desktop::default();
+    let frame = |desktop: &mut Desktop, fixture: &mut Fixture| {
+        ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(width, 800.0),
+                )),
+                ..Default::default()
+            },
+            |ui| desktop.show(ui, fixture),
+        )
+    };
+    // egui keeps the previous pass's widget rects. Three frames let the
+    // settled toolbar positions replace the first pass.
+    let mut output = frame(&mut desktop, &mut fixture);
+    output.textures_delta.clear();
+    output = frame(&mut desktop, &mut fixture);
+    output.textures_delta.clear();
+    output = frame(&mut desktop, &mut fixture);
+    let mut texts = Vec::new();
+    for shape in &output.shapes {
+        toolbar_texts(&shape.shape, &mut texts);
+    }
+    output.textures_delta.clear();
+    let filter = ctx
+        .read_response(egui::Id::new("toolbar-filter"))
+        .unwrap_or_else(|| panic!("Missing filter at width {width}, scale {scale}"))
+        .rect;
+    let sync = ctx
+        .read_response(egui::Id::new("toolbar-sync"))
+        .unwrap()
+        .rect;
+    // A truncated project name no longer matches the full string. Any toolbar
+    // text sitting between the filter and the action is that name.
+    let project = texts.iter().find_map(|(_, rect)| {
+        (rect.center().y < 90.0 * scale
+            && rect.left() >= filter.right() - 1.0
+            && rect.right() <= sync.left() + 1.0)
+            .then_some(*rect)
+    });
+    let tab_labels = [
+        "Achievements",
+        "Stats",
+        "Sync",
+        "Steam",
+        "Art Data Bank",
+        "Style Viewer",
+    ]
+    .iter()
+    .all(|label| {
+        texts
+            .iter()
+            .any(|(text, rect)| text == label && rect.center().y < 80.0)
+    });
+    ToolbarSnap {
+        filter,
+        sync,
+        project,
+        tab_labels,
+    }
+}
+
+fn assert_filter_clear(snap: &ToolbarSnap, width: f32) {
+    assert!(
+        snap.filter.right() <= snap.sync.left() + 0.5,
+        "width {width}: filter {:?} overlaps sync {:?}",
+        snap.filter,
+        snap.sync
+    );
+    if let Some(project) = snap.project {
+        assert!(
+            snap.filter.right() <= project.left() + 0.5,
+            "width {width}: filter {:?} overlaps project {project:?}",
+            snap.filter
+        );
+        assert!(
+            project.right() <= snap.sync.left() + 0.5,
+            "width {width}: project {project:?} overlaps sync {:?}",
+            snap.sync
+        );
+    }
+    assert!(
+        snap.filter.width() <= 210.5,
+        "width {width}: filter grew past 210 ({})",
+        snap.filter.width()
+    );
+    assert!(
+        snap.filter.left() >= -0.5
+            && snap.filter.right() <= width + 1.0
+            && snap.sync.right() <= width + 1.0,
+        "width {width}: filter {:?} sync {:?}",
+        snap.filter,
+        snap.sync
+    );
+}
+
+#[test]
+fn narrow_toolbar_shrinks_the_filter_and_drops_labels_without_overlap() {
+    let wide = toolbar_snap(1680.0, 1.0, "Untitled project");
+    assert!(wide.tab_labels, "A wide window keeps the toolbar labels");
+    assert!(
+        (wide.filter.width() - 210.0).abs() < 1.5,
+        "Preferred filter width, got {}",
+        wide.filter.width()
+    );
+    assert_filter_clear(&wide, 1680.0);
+
+    let mut saw_shrunk_labels = false;
+    for width in [
+        1500.0, 1400.0, 1300.0, 1200.0, 1100.0, 1000.0, 900.0, 800.0, 720.0,
+    ] {
+        let snap = toolbar_snap(width, 1.0, "Untitled project");
+        assert_filter_clear(&snap, width);
+        if snap.tab_labels && snap.filter.width() < 200.0 {
+            saw_shrunk_labels = true;
+        }
+        if !snap.tab_labels {
+            assert!(
+                snap.filter.width() + 0.5 >= 96.0,
+                "width {width}: icon mode still needs a usable filter, got {}",
+                snap.filter.width()
+            );
+        }
+    }
+    assert!(
+        saw_shrunk_labels,
+        "The filter must shrink while the labels are still visible"
+    );
+    let narrow = toolbar_snap(720.0, 1.0, "Untitled project");
+    assert!(
+        !narrow.tab_labels,
+        "The minimum window keeps icons and hides toolbar labels"
+    );
+    assert!(narrow.filter.width() + 0.5 >= 96.0);
+    assert!(
+        narrow.sync.width() + 8.0 < wide.sync.width(),
+        "The staged action drops its label when the window is narrow"
+    );
+
+    let long = "A very long project name that must stay beside the filter";
+    for (width, scale) in [(860.0, 1.0), (900.0, 1.5), (720.0, 1.25)] {
+        let snap = toolbar_snap(width, scale, long);
+        assert_filter_clear(&snap, width);
+        assert!(
+            snap.project.is_some(),
+            "width {width} scale {scale}: the project name must remain visible"
+        );
+    }
+}

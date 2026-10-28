@@ -1,5 +1,6 @@
 //! Achimeld's stdio MCP facade. No browser, process launch, or remote mutation tools.
 #![forbid(unsafe_code)]
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::io::{BufRead, Write};
@@ -31,7 +32,13 @@ pub fn tools() -> Vec<Value> {
     for (name, description, required, fields) in [
         (
             "list_instances",
-            "List running Achimeld windows; choose processId for subsequent calls.",
+            "List running Achimeld windows. Each window states uptime, the open project name, achievement count, how many achievements sync with Steam, and the stat count.",
+            "",
+            "",
+        ),
+        (
+            "status",
+            "Read one editor's uptime, open project name, achievement count, how many achievements sync with Steam, and stat count.",
             "",
             "",
         ),
@@ -126,6 +133,12 @@ pub fn tools() -> Vec<Value> {
             "apiName:s displayName:s type:s column:i row:i",
         ),
         (
+            "create_stats",
+            "Create 1-1000 stats in one undo step. stats is a JSON array or text. Array entries are API names, or objects with apiName, optional displayName, type (Int, Float, AverageRate; default Int), column and row together, and optional numeric settings. Text uses newlines, commas, or semicolons between API names, or API name | Display name | Type on each line. Omitted positions pack onto the stat canvas. Omitted settings keep new-stat defaults. The last stat is selected.",
+            "stats",
+            "stats:a",
+        ),
+        (
             "update_node",
             "Patch API name or English text; preserve omitted values and translations.",
             "nodeId",
@@ -184,6 +197,7 @@ pub fn tools() -> Vec<Value> {
         let read = matches!(
             name,
             "list_instances"
+                | "status"
                 | "get_scene"
                 | "get_node"
                 | "list_icon_styles"
@@ -219,6 +233,35 @@ pub fn tools() -> Vec<Value> {
             }
             if key == "nodes" {
                 schema = json!({"type":"array","minItems":1,"maxItems":1000,"items":{"type":"object","additionalProperties":false,"required":["nodeId","column","row"],"properties":{"nodeId":{"type":"string"},"column":{"type":"integer"},"row":{"type":"integer"}}}});
+            }
+            if key == "stats" {
+                schema = json!({
+                    "type": ["array", "string"],
+                    "minItems": 1,
+                    "maxItems": 1000,
+                    "maxLength": 2_000_000,
+                    "items": {
+                        "type": ["string", "object"],
+                        "maxLength": 128,
+                        "additionalProperties": false,
+                        "required": ["apiName"],
+                        "properties": {
+                            "apiName": {"type": "string", "maxLength": 128},
+                            "displayName": {"type": "string", "maxLength": 1024},
+                            "type": {"type": "string", "enum": ["Int", "Float", "AverageRate"]},
+                            "column": {"type": "integer"},
+                            "row": {"type": "integer"},
+                            "minimum": {"type": ["number", "null"]},
+                            "maximum": {"type": ["number", "null"]},
+                            "defaultValue": {"type": ["number", "null"]},
+                            "incrementOnly": {"type": "boolean"},
+                            "setBy": {"type": "string", "enum": ["GameClient", "GameServer", "OfficialGameServer"]},
+                            "maximumChange": {"type": ["number", "null"]},
+                            "aggregated": {"type": "boolean"},
+                            "averageRateWindowSeconds": {"type": ["number", "null"]}
+                        }
+                    }
+                });
             }
             if key == "edits" {
                 schema = json!({"type":"array","maxItems":128,"items":{"type":"object","additionalProperties":false,"required":["path","value"],"properties":{"path":{"type":"string","maxLength":512},"value":{"type":["string","number","boolean","null"]}}}});
@@ -340,6 +383,208 @@ fn validate_schema(schema: &Value, value: &Value) -> Result<(), String> {
     Ok(())
 }
 
+const APPLICATION_ICON_PNG: &[u8] = include_bytes!("../../achimeld-app/assets/achimeld.png");
+
+fn server_info() -> Value {
+    json!({
+        "name": "achimeld",
+        "version": env!("CARGO_PKG_VERSION"),
+        "icons": [{
+            "src": application_icon_data_uri(),
+            "mimeType": "image/png",
+            "sizes": ["256x256"]
+        }]
+    })
+}
+
+const HANDSHAKE: &str = "Controls an already open supervised Achimeld editor. This connection states each editor's uptime, open project name, achievement count, how many achievements sync with Steam, and stat count. Call list_instances then get_scene. Local edits share undo history. No project save/open or Steam writes are exposed.";
+
+fn handshake_instructions(instances: Result<Value, String>) -> String {
+    let Ok(instances) = instances else {
+        return HANDSHAKE.to_owned();
+    };
+    let Some(list) = instances.as_array() else {
+        return HANDSHAKE.to_owned();
+    };
+    if list.is_empty() {
+        return format!("{HANDSHAKE}\n\nNo Achimeld editor is open.");
+    }
+    let lines: Vec<_> = list
+        .iter()
+        .filter_map(|instance| {
+            instance["summary"].as_str().map(str::to_owned).or_else(|| {
+                instance["processId"].as_u64().map(|pid| {
+                    format!(
+                        "Editor {pid} is running. Uptime and the open project were not returned."
+                    )
+                })
+            })
+        })
+        .collect();
+    if lines.is_empty() {
+        HANDSHAKE.to_owned()
+    } else {
+        format!("{HANDSHAKE}\n\n{}", lines.join("\n"))
+    }
+}
+
+fn format_uptime(duration: std::time::Duration) -> String {
+    let mut remaining = duration.as_secs();
+    let days = remaining / 86_400;
+    remaining %= 86_400;
+    let hours = remaining / 3_600;
+    remaining %= 3_600;
+    let minutes = remaining / 60;
+    let seconds = remaining % 60;
+    let mut parts = Vec::new();
+    push_uptime(&mut parts, days, "day");
+    push_uptime(&mut parts, hours, "hour");
+    push_uptime(&mut parts, minutes, "minute");
+    push_uptime(&mut parts, seconds, "second");
+    if parts.is_empty() {
+        "0 seconds".to_owned()
+    } else {
+        parts.into_iter().take(2).collect::<Vec<_>>().join(" ")
+    }
+}
+
+fn push_uptime(parts: &mut Vec<String>, value: u64, unit: &str) {
+    if value == 0 {
+        return;
+    }
+    if value == 1 {
+        parts.push(format!("1 {unit}"));
+    } else {
+        parts.push(format!("{value} {unit}s"));
+    }
+}
+
+fn count_phrase(count: u64, singular: &str, plural: &str) -> String {
+    if count == 1 {
+        format!("1 {singular}")
+    } else {
+        format!("{count} {plural}")
+    }
+}
+
+fn steam_phrase(count: u64) -> String {
+    if count == 1 {
+        "1 node that syncs with Steam".to_owned()
+    } else {
+        format!("{count} nodes that sync with Steam")
+    }
+}
+
+struct ProjectFacts {
+    name: String,
+    path: Option<String>,
+    achievements: u64,
+    steam: u64,
+    stats: u64,
+}
+
+fn project_facts(data: &Value) -> Option<ProjectFacts> {
+    let name = clean_label(data["projectName"].as_str()?, 200);
+    let name = if name.is_empty() {
+        "Untitled project".to_owned()
+    } else {
+        name
+    };
+    Some(ProjectFacts {
+        name,
+        path: data["projectPath"].as_str().and_then(|path| {
+            let path = clean_label(path, 1024);
+            if path.is_empty() { None } else { Some(path) }
+        }),
+        achievements: data["achievementCount"].as_u64()?,
+        steam: data["steamSyncCount"].as_u64()?,
+        stats: data["statCount"].as_u64()?,
+    })
+}
+
+fn clean_label(value: &str, limit: usize) -> String {
+    let mut cleaned = String::new();
+    for ch in value.chars() {
+        if ch.is_control() {
+            cleaned.push(' ');
+        } else if ch == '"' {
+            cleaned.push('\'');
+        } else {
+            cleaned.push(ch);
+        }
+    }
+    let collapsed = cleaned.split_whitespace().collect::<Vec<_>>().join(" ");
+    if collapsed.chars().count() <= limit {
+        collapsed
+    } else {
+        let mut short: String = collapsed.chars().take(limit).collect();
+        short.push_str("...");
+        short
+    }
+}
+
+fn project_sentence(project: &ProjectFacts) -> String {
+    let opened = if let Some(path) = &project.path {
+        format!("Open project \"{}\" at {path}.", project.name)
+    } else {
+        format!("Open project \"{}\".", project.name)
+    };
+    format!(
+        "{opened} {}, {}, {}.",
+        count_phrase(
+            project.achievements,
+            "achievement node",
+            "achievement nodes"
+        ),
+        steam_phrase(project.steam),
+        count_phrase(project.stats, "stat", "stats"),
+    )
+}
+
+fn status_value(pid: u32, uptime: Option<&str>, facts: Option<&Value>) -> Value {
+    let project = facts.and_then(project_facts);
+    let summary = match (uptime, project.as_ref()) {
+        (Some(uptime), Some(project)) => {
+            format!(
+                "Editor {pid} has been up for {uptime}. {}",
+                project_sentence(project)
+            )
+        }
+        (None, Some(project)) => format!("Editor {pid} is running. {}", project_sentence(project)),
+        (Some(uptime), None) => {
+            format!("Editor {pid} has been up for {uptime}. The open project was not returned.")
+        }
+        (None, None) => {
+            format!("Editor {pid} is running. Uptime and the open project were not returned.")
+        }
+    };
+    let mut value = json!({"processId": pid, "title": "Achimeld", "summary": summary});
+    if let Some(uptime) = uptime {
+        value["uptime"] = json!(uptime);
+    }
+    if let Some(project) = project {
+        value["projectName"] = json!(project.name);
+        value["achievementCount"] = json!(project.achievements);
+        value["steamSyncCount"] = json!(project.steam);
+        value["statCount"] = json!(project.stats);
+        if let Some(path) = project.path {
+            value["projectPath"] = json!(path);
+        }
+    }
+    value
+}
+
+fn application_icon_data_uri() -> &'static str {
+    static URI: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    URI.get_or_init(|| {
+        format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(APPLICATION_ICON_PNG)
+        )
+    })
+    .as_str()
+}
+
 #[derive(Default)]
 pub struct Protocol {
     initialized: bool,
@@ -382,7 +627,12 @@ impl Protocol {
                     "2025-11-25"
                 };
                 self.initialized = true;
-                json!({"protocolVersion":version,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"achimeld","version":env!("CARGO_PKG_VERSION")},"instructions":"Controls an already open supervised Achimeld editor. Call list_instances then get_scene. Local edits share undo history. No project save/open or Steam writes are exposed."})
+                json!({
+                    "protocolVersion": version,
+                    "capabilities": {"tools": {"listChanged": false}},
+                    "serverInfo": server_info(),
+                    "instructions": handshake_instructions(call("list_instances", &json!({})))
+                })
             }
             "ping" => json!({}),
             _ if !self.ready => return Some(error(-32000, "Initialize the MCP connection first")),
@@ -502,13 +752,15 @@ pub fn call_editor_cancellable(
     args: &Value,
     cancelled: &std::sync::atomic::AtomicBool,
 ) -> Result<Value, String> {
-    use achimeld_security::editor_transport::{self, Pipe};
     use std::time::Duration;
     validate_arguments(operation, args)?;
     if operation == "list_instances" {
-        return editor_transport::instances().map_err(|e| e.to_string());
+        return instances_with_status(cancelled);
     }
     let pid = args["processId"].as_u64().ok_or("Invalid processId")? as u32;
+    if operation == "status" {
+        return known_editor(pid).map(|_| editor_snapshot(pid, cancelled));
+    }
     let mut arguments = args.clone();
     let object = arguments.as_object_mut().ok_or("Invalid arguments")?;
     for key in ["processId", "projectId", "expectedRevision", "requestId"] {
@@ -526,6 +778,76 @@ pub fn call_editor_cancellable(
     } else {
         20
     });
+    exchange(pid, &request, timeout, cancelled)
+}
+
+fn instances_with_status(cancelled: &std::sync::atomic::AtomicBool) -> Result<Value, String> {
+    use achimeld_security::editor_transport;
+    let instances = editor_transport::instances().map_err(|e| e.to_string())?;
+    let Some(list) = instances.as_array() else {
+        return Ok(instances);
+    };
+    Ok(json!(
+        list.iter()
+            .filter_map(|instance| {
+                instance["processId"]
+                    .as_u64()
+                    .and_then(|pid| u32::try_from(pid).ok())
+            })
+            .map(|pid| editor_snapshot(pid, cancelled))
+            .collect::<Vec<_>>()
+    ))
+}
+
+fn known_editor(pid: u32) -> Result<(), String> {
+    use achimeld_security::editor_transport;
+    let instances = editor_transport::instances().map_err(|e| e.to_string())?;
+    if instances.as_array().is_some_and(|list| {
+        list.iter()
+            .any(|instance| instance["processId"].as_u64() == Some(u64::from(pid)))
+    }) {
+        Ok(())
+    } else {
+        Err("Unknown editor; call list_instances again".into())
+    }
+}
+
+fn editor_snapshot(pid: u32, cancelled: &std::sync::atomic::AtomicBool) -> Value {
+    use achimeld_security::editor_transport;
+    let uptime = editor_transport::process_uptime(pid).map(format_uptime);
+    let facts = query_status(pid, cancelled).ok();
+    status_value(pid, uptime.as_deref(), facts.as_ref())
+}
+
+fn query_status(pid: u32, cancelled: &std::sync::atomic::AtomicBool) -> Result<Value, String> {
+    let data = exchange(
+        pid,
+        &Request {
+            operation: "status".into(),
+            arguments: json!({}),
+            project_id: None,
+            expected_revision: None,
+            request_id: None,
+        },
+        std::time::Duration::from_secs(2),
+        cancelled,
+    )?;
+    let facts = data.get("result").cloned().unwrap_or(Value::Null);
+    if project_facts(&facts).is_some() {
+        Ok(facts)
+    } else {
+        Err("Editor status did not include the open project".into())
+    }
+}
+
+fn exchange(
+    pid: u32,
+    request: &Request,
+    timeout: std::time::Duration,
+    cancelled: &std::sync::atomic::AtomicBool,
+) -> Result<Value, String> {
+    use achimeld_security::editor_transport::Pipe;
+    use std::time::Duration;
     let mut check = || {
         if cancelled.load(std::sync::atomic::Ordering::Acquire) {
             Err(achimeld_security::SecurityError("MCP request cancelled"))
@@ -535,9 +857,9 @@ pub fn call_editor_cancellable(
     };
     check().map_err(|e| e.to_string())?;
     let mut pipe = Pipe::connect(pid).map_err(|e| e.to_string())?;
-    pipe.write(&request, timeout, &mut check)
+    pipe.write(request, timeout, &mut check)
         .map_err(|e| e.to_string())?;
-    let response: Value = pipe.read(timeout,&mut check).map_err(|_| "Editor disconnected, cancelled or timed out. Reuse the identical requestId and arguments; read the scene to resolve uncertain completion.")?;
+    let response: Value = pipe.read(timeout, &mut check).map_err(|_| "Editor disconnected, cancelled or timed out. Reuse the identical requestId and arguments; read the scene to resolve uncertain completion.")?;
     let _ = pipe.write(&"ACK", Duration::from_secs(2), &mut || Ok(()));
     if response["success"] == true {
         Ok(response["data"].clone())
@@ -698,7 +1020,10 @@ mod tests {
                     current: std::io::Cursor::new(Vec::new()),
                 }),
                 &mut output,
-                |_, _, cancelled| {
+                |operation, _, cancelled| {
+                    if operation == "list_instances" {
+                        return Ok(json!([{"processId":1,"summary":"Editor 1 has been up for 1 minute. Open project \"Fixture\". 1 achievement node, 1 node that syncs with Steam, 1 stat."}]));
+                    }
                     started_tx.send(()).unwrap();
                     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
                     while !cancelled.load(Ordering::Acquire) {
@@ -763,6 +1088,9 @@ mod tests {
             &mut std::io::Cursor::new(input),
             &mut output,
             |operation, args| {
+                if operation == "list_instances" {
+                    return Ok(json!([]));
+                }
                 assert_eq!(operation, "get_scene");
                 assert_eq!(args["processId"], 123);
                 calls += 1;
@@ -781,7 +1109,7 @@ mod tests {
         assert_eq!(responses[1]["result"]["protocolVersion"], "2025-11-25");
         assert_eq!(
             responses[2]["result"]["tools"].as_array().unwrap().len(),
-            26
+            28
         );
         assert_eq!(responses[3]["result"]["isError"], false);
     }
@@ -805,6 +1133,28 @@ mod tests {
         args["statId"] = json!("s");
         args["setBy"] = json!("Arbitrary");
         assert!(validate_arguments("configure_stat", &args).is_err());
+    }
+    #[test]
+    fn stat_batches_accept_names_objects_and_a_text_list() {
+        assert!(tools().iter().any(|tool| tool["name"] == "create_stats"));
+        let mut args = json!({"processId":1,"projectId":"p","requestId":"r","expectedRevision":0});
+        args["stats"] = json!([
+            "KILLS",
+            {"apiName":"DEATHS","displayName":"Deaths","type":"Float","minimum":0}
+        ]);
+        assert!(validate_arguments("create_stats", &args).is_ok());
+        args["stats"] = json!("KILLS\nDEATHS | Deaths | Float\nWINS, SCORE");
+        assert!(validate_arguments("create_stats", &args).is_ok());
+        args["stats"] = json!([]);
+        assert!(validate_arguments("create_stats", &args).is_err());
+        args["stats"] = json!(["A".repeat(129)]);
+        assert!(validate_arguments("create_stats", &args).is_err());
+        args["stats"] = json!([{"apiName":"KILLS","executable":"a.exe"}]);
+        assert!(validate_arguments("create_stats", &args).is_err());
+        args["stats"] = json!([{"apiName":"KILLS","type":"String"}]);
+        assert!(validate_arguments("create_stats", &args).is_err());
+        args["stats"] = json!(100);
+        assert!(validate_arguments("create_stats", &args).is_err());
     }
     #[test]
     fn translation_tools_require_one_bounded_input_and_mutation_pins() {
@@ -855,6 +1205,107 @@ mod tests {
         assert!(validate_arguments("export_style_preview", &export).is_err());
         export["width"] = json!(512);
         assert!(validate_arguments("export_style_preview", &export).is_ok());
+    }
+    #[test]
+    fn handshake_states_uptime_project_and_counts() {
+        assert_eq!(
+            format_uptime(std::time::Duration::from_secs(0)),
+            "0 seconds"
+        );
+        assert_eq!(format_uptime(std::time::Duration::from_secs(1)), "1 second");
+        assert_eq!(
+            format_uptime(std::time::Duration::from_secs(61)),
+            "1 minute 1 second"
+        );
+        assert_eq!(
+            format_uptime(std::time::Duration::from_secs(20 * 60)),
+            "20 minutes"
+        );
+        assert_eq!(
+            format_uptime(std::time::Duration::from_secs(
+                86_400 + 2 * 3_600 + 3 * 60 + 4
+            )),
+            "1 day 2 hours"
+        );
+        let facts = json!({
+            "projectName": "Mosaica\n2",
+            "projectPath": "C:\\Games\\Mosaica.achimeld",
+            "achievementCount": 42,
+            "steamSyncCount": 1,
+            "statCount": 0
+        });
+        let status = status_value(4836, Some("20 minutes"), Some(&facts));
+        assert_eq!(status["projectName"], "Mosaica 2");
+        assert_eq!(status["achievementCount"], 42);
+        assert_eq!(status["steamSyncCount"], 1);
+        assert_eq!(status["statCount"], 0);
+        assert_eq!(
+            status["summary"],
+            "Editor 4836 has been up for 20 minutes. Open project \"Mosaica 2\" at C:\\Games\\Mosaica.achimeld. 42 achievement nodes, 1 node that syncs with Steam, 0 stats."
+        );
+        let unreachable = status_value(4836, Some("20 minutes"), None);
+        assert_eq!(
+            unreachable["summary"],
+            "Editor 4836 has been up for 20 minutes. The open project was not returned."
+        );
+        assert!(unreachable.get("projectName").is_none());
+        let instructions = handshake_instructions(Ok(json!([status, unreachable])));
+        assert!(instructions.starts_with(HANDSHAKE));
+        assert!(instructions.contains("Open project \"Mosaica 2\""));
+        assert!(instructions.contains("The open project was not returned."));
+        assert_eq!(
+            handshake_instructions(Ok(json!([]))),
+            format!("{HANDSHAKE}\n\nNo Achimeld editor is open.")
+        );
+        assert_eq!(
+            handshake_instructions(Err("discovery failed".into())),
+            HANDSHAKE
+        );
+        let mut protocol = Protocol::default();
+        let response = protocol
+            .respond(
+                json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}),
+                &mut |operation, _| {
+                    assert_eq!(operation, "list_instances");
+                    Ok(json!([{"summary":"Editor 9 has been up for 4 minutes. Open project \"Cup\". 2 achievement nodes, 2 nodes that sync with Steam, 1 stat."}]))
+                },
+            )
+            .unwrap();
+        let instructions = response["result"]["instructions"].as_str().unwrap();
+        assert!(instructions.contains("Editor 9 has been up for 4 minutes."));
+        assert!(instructions.contains("Open project \"Cup\"."));
+        assert!(
+            instructions.contains("2 achievement nodes, 2 nodes that sync with Steam, 1 stat.")
+        );
+        assert!(validate_arguments("status", &json!({"processId":1})).is_ok());
+    }
+    #[test]
+    fn initialize_advertises_the_embedded_application_icon() {
+        use base64::Engine;
+        let prefix = "data:image/png;base64,";
+        for version in ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"] {
+            let mut protocol = Protocol::default();
+            let mut call = |_: &str, _: &Value| Ok(Value::Null);
+            let response = protocol
+                .respond(
+                    json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":version}}),
+                    &mut call,
+                )
+                .unwrap();
+            let info = &response["result"]["serverInfo"];
+            assert_eq!(info["name"], "achimeld");
+            assert_eq!(info["icons"].as_array().unwrap().len(), 1);
+            let icon = &info["icons"][0];
+            assert_eq!(icon["mimeType"], "image/png");
+            assert_eq!(icon["sizes"], json!(["256x256"]));
+            let src = icon["src"].as_str().unwrap();
+            assert!(src.starts_with(prefix));
+            assert!(!src.contains("http"));
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(&src[prefix.len()..])
+                .unwrap();
+            assert_eq!(bytes, super::APPLICATION_ICON_PNG);
+        }
     }
     #[test]
     fn initialization_and_tool_errors_are_distinct_from_protocol_errors() {

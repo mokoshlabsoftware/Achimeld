@@ -215,6 +215,7 @@ name = "achimeld-mcp"
 version = "0.1.0"
 dependencies = [
  "achimeld-security",
+ "base64",
  "serde",
  "serde_json",
 ]

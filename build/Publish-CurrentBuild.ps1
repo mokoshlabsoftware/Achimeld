@@ -16,6 +16,10 @@ Copy-Item -LiteralPath $package -Destination $archive -Recurse
 & (Join-Path $archive 'Achimeld.exe') --verify | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'Archived package verification failed; current build was not replaced.' }
 $destination = Join-Path $current 'package'
+. (Join-Path $PSScriptRoot 'DevelopmentProcesses.ps1')
+# Installer builds bypass Build-And-Run. Release idle connectors here too,
+# immediately before replacing the package they may still have loaded.
+Stop-AchimeldIdleDevelopmentMcp -PackagePath $destination
 $previous = Join-Path $current ('previous-' + [Guid]::NewGuid().ToString('N'))
 if (Test-Path -LiteralPath $destination) { Move-Item -LiteralPath $destination -Destination $previous }
 try { Move-Item -LiteralPath $package -Destination $destination }

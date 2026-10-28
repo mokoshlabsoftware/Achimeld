@@ -65,7 +65,7 @@ mod typography;
 mod vignette;
 mod window_layout;
 pub use change_log::window_title;
-pub use desktop::Desktop;
+pub use desktop::{Desktop, MIN_WINDOW_INNER_SIZE};
 pub use theme::apply as apply_theme;
 pub use typography::{BOLD_FAMILY, configure_fonts};
 

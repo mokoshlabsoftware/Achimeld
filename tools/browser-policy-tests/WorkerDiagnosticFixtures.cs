@@ -6,6 +6,13 @@ internal static class WorkerDiagnosticFixtures
     internal static int Run()
     {
         const string secret = "https://secret.invalid/?token=private password=hidden";
+        var detail = WorkerFailure.Details("operation", new InvalidDataException(secret), 12,
+            BrowserRequestDiagnostic.Describe("POST", "https://api.steampowered.com/IAuthenticationService/BeginAuthSessionViaQR/v1?secret=hidden", false, "fetch"));
+        var requestDetail = detail.GetProperty("request");
+        if (requestDetail.GetProperty("host").GetString() != "api" || requestDetail.GetProperty("path").GetString() != "authentication-api" ||
+            requestDetail.GetProperty("method").GetString() != "POST" || detail.GetProperty("elapsedMs").GetInt64() != 12 ||
+            detail.GetRawText().Contains("hidden", StringComparison.Ordinal))
+            throw new Exception("Production failure details lost wire casing or exposed request data.");
         (Exception Error, string Code)[] cases = [
             (new OperationCanceledException(secret), "security.operation.interrupted"),
             (new System.TimeoutException(secret), "steam.operation.timeout"),

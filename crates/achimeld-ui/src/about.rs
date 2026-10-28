@@ -37,7 +37,11 @@ impl Desktop {
                     .corner_radius(0),
             )
             .show(ctx, |ui| {
-                let width = 468.0_f32.min((ctx.content_rect().width() - 32.0).max(0.0));
+                let connect_mcp = self.help_page == HelpPage::ConnectMcp;
+                // The setup steps and executable path need more than the shared
+                // prompt width, or the last instructions fall below the fold.
+                let width = if connect_mcp { 680.0_f32 } else { 468.0 };
+                let width = width.min((ctx.content_rect().width() - 32.0).max(0.0));
                 ui.set_width(width);
                 ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
                 let title = text(ctx, match self.help_page { HelpPage::About => "About", HelpPage::Changes => "Change log", HelpPage::ConnectMcp => "Connect MCP" });
@@ -59,7 +63,12 @@ impl Desktop {
                 ui.painter().galley(header.center() - title.size() / 2.0, title, ui.visuals().text_color());
                 divider(ui);
                 let action_height = crate::buttons::bar_height(ui, 24.0);
-                let body_height = (ctx.content_rect().height() - header_height - action_height - 76.0).clamp(40.0, 400.0);
+                let available_body = (ctx.content_rect().height() - header_height - action_height - 76.0).max(40.0);
+                let body_height = if connect_mcp {
+                    available_body
+                } else {
+                    available_body.min(400.0)
+                };
                 egui::Frame::new().inner_margin(egui::Margin::symmetric(24, 20)).show(ui, |ui| {
                     ui.set_width((width - 48.0).max(0.0));
                     ui.spacing_mut().item_spacing.y = 8.0;

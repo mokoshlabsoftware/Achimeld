@@ -12,7 +12,11 @@ use std::{
     time::{Duration, Instant},
 };
 use windows_sys::Win32::{
-    Foundation::*, Security::SECURITY_ATTRIBUTES, Storage::FileSystem::*, System::Pipes::*,
+    Foundation::*,
+    Security::SECURITY_ATTRIBUTES,
+    Storage::FileSystem::*,
+    System::Pipes::*,
+    System::Threading::{GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION},
 };
 
 pub fn name(pid: u32) -> Result<String, SecurityError> {
@@ -199,4 +203,51 @@ pub fn instances() -> Result<serde_json::Value, SecurityError> {
         }
     }
     Ok(serde_json::json!(result))
+}
+
+/// Creation time of a process this account can inspect. Used for editor uptime only.
+pub fn process_uptime(pid: u32) -> Option<Duration> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    if pid == 0 {
+        return None;
+    }
+    // SAFETY: Opens a query-only handle for one discovered editor PID. The handle is closed
+    // on every path below, including when that process has already exited.
+    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if handle.is_null() {
+        return None;
+    }
+    let mut created = FILETIME {
+        dwLowDateTime: 0,
+        dwHighDateTime: 0,
+    };
+    let mut exited = created;
+    let mut kernel = created;
+    let mut user = created;
+    // SAFETY: `handle` is a live process handle, and the four FILETIME outputs stay live for the call.
+    let ok = unsafe { GetProcessTimes(handle, &mut created, &mut exited, &mut kernel, &mut user) };
+    // SAFETY: The query handle is closed exactly once.
+    unsafe {
+        CloseHandle(handle);
+    }
+    if ok == 0 {
+        return None;
+    }
+    let ticks = (u64::from(created.dwHighDateTime) << 32) | u64::from(created.dwLowDateTime);
+    // FILETIME counts 100 ns ticks since 1601-01-01. Unix epoch is 11,644,473,600 seconds later.
+    const WINDOWS_TO_UNIX_100NS: u64 = 11_644_473_600 * 10_000_000;
+    let unix_ticks = ticks.checked_sub(WINDOWS_TO_UNIX_100NS)?;
+    let started = UNIX_EPOCH + Duration::from_secs(unix_ticks / 10_000_000);
+    SystemTime::now().duration_since(started).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn process_uptime_matches_this_process() {
+        let uptime = process_uptime(std::process::id()).expect("current process uptime");
+        assert!(uptime.as_secs() < 7 * 24 * 60 * 60);
+    }
 }

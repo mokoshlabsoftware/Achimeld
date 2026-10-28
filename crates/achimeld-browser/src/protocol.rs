@@ -117,6 +117,20 @@ impl WorkerResponse {
             stage: String,
             kind: String,
             elapsed_ms: u64,
+            #[serde(default)]
+            request: Option<RequestDetails>,
+        }
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
+        struct RequestDetails {
+            method: String,
+            host: String,
+            path: String,
+            extension: String,
+            query: bool,
+            navigation: bool,
+            resource: String,
+            failure: String,
         }
         let details: Details = serde_json::from_value(self.data.clone()).ok()?;
         if !matches!(
@@ -129,6 +143,7 @@ impl WorkerResponse {
                 | "navigation.page"
                 | "navigation.dom-content-loaded"
                 | "navigation.final-popup-check"
+                | "navigation.login-prompt"
                 | "navigation.complete"
         ) || !matches!(
             details.kind.as_str(),
@@ -146,10 +161,78 @@ impl WorkerResponse {
         {
             return None;
         }
-        Some(format!(
+        let mut message = format!(
             "Worker rejection details · stage={} · category={} · worker elapsed={} ms",
             details.stage, details.kind, details.elapsed_ms
-        ))
+        );
+        if let Some(request) = details.request {
+            if !matches!(
+                request.method.as_str(),
+                "GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "other"
+            ) || !matches!(
+                request.host.as_str(),
+                "partner" | "login" | "api" | "store" | "community" | "content" | "other"
+            ) || !matches!(
+                request.path.as_str(),
+                "public" | "apps" | "login" | "authentication-api" | "csp-report" | "other"
+            ) || !matches!(
+                request.resource.as_str(),
+                "document"
+                    | "media"
+                    | "script"
+                    | "stylesheet"
+                    | "image"
+                    | "font"
+                    | "xhr"
+                    | "fetch"
+                    | "ping"
+                    | "manifest"
+                    | "eventsource"
+                    | "cspreport"
+                    | "other"
+            ) || !matches!(
+                request.failure.as_str(),
+                "policy"
+                    | "tunnel"
+                    | "proxy"
+                    | "dns"
+                    | "timeout"
+                    | "reset"
+                    | "refused"
+                    | "closed"
+                    | "disconnected"
+                    | "changed"
+                    | "aborted"
+                    | "blocked"
+                    | "failed"
+                    | "certificate"
+                    | "other"
+            ) || !matches!(
+                request.extension.as_str(),
+                ".mp3"
+                    | ".ogg"
+                    | ".wav"
+                    | ".m4a"
+                    | ".aac"
+                    | ".mp4"
+                    | ".webm"
+                    | ".ogv"
+                    | ".js"
+                    | ".css"
+                    | ".png"
+                    | ".jpg"
+                    | ".woff"
+                    | ".woff2"
+                    | "other"
+            ) {
+                return None;
+            }
+            message.push_str(&format!(
+                " · method={} · host-category={} · path-category={} · extension={} · query-present={} · navigation={} · resource={} · request-failure={}",
+                request.method, request.host, request.path, request.extension, request.query, request.navigation, request.resource, request.failure
+            ));
+        }
+        Some(message)
     }
     pub fn accept(self, request_id: &str) -> Result<Value, &'static str> {
         if self.request_id != request_id {
@@ -400,6 +483,35 @@ mod tests {
                 .arguments,
             "https://partner.steamgames.com/apps/achievements/480"
         );
+    }
+
+    #[test]
+    fn request_diagnostics_reject_arbitrary_worker_text() {
+        let details = serde_json::json!({
+            "stage": "navigation.complete", "kind": "invalid-data", "elapsedMs": 20,
+            "request": {"method":"GET", "host":"content", "path":"public", "extension":".mp3",
+                "query":true, "navigation":false, "resource":"media", "failure":"policy"}
+        });
+        let mut response = WorkerResponse {
+            request_id: "request".into(),
+            success: false,
+            data: details.clone(),
+            error_code: Some("steam.request.media".into()),
+        };
+        assert!(
+            response
+                .failure_details("request")
+                .unwrap()
+                .contains("extension=.mp3")
+        );
+        for field in ["method", "host", "path", "extension", "resource", "failure"] {
+            response.data = details.clone();
+            response.data["request"][field] = serde_json::json!("secret-marker");
+            assert!(response.failure_details("request").is_none());
+        }
+        response.data = details;
+        response.data["request"]["url"] = serde_json::json!("secret-marker");
+        assert!(response.failure_details("request").is_none());
     }
 
     #[test]

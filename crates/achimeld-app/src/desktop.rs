@@ -22,6 +22,7 @@ use std::sync::{
 };
 use std::time::Duration;
 mod automation;
+mod browser_profile;
 mod effects;
 mod gradients;
 mod image_drop;
@@ -64,7 +65,7 @@ pub fn run(mut session: Session) -> Result<(), Box<dyn std::error::Error>> {
             .with_decorations(false)
             .with_maximized(true)
             .with_inner_size([1440.0, 920.0])
-            .with_min_inner_size([1000.0, 650.0]),
+            .with_min_inner_size(achimeld_ui::MIN_WINDOW_INNER_SIZE),
         ..Default::default()
     };
     let result = eframe::run_native(
@@ -201,6 +202,7 @@ impl eframe::App for NativeApp {
             activity.phase("poll host operations");
             self.host.poll_read();
             self.host.poll_synchronization();
+            self.host.poll_browser_profile();
             self.host.poll_export();
             self.host.poll_translations();
             self.host.poll_art();
@@ -251,6 +253,7 @@ struct Host {
     status: String,
     ctx: egui::Context,
     read: Option<PendingRead>,
+    browser_profile: Option<mpsc::Receiver<Result<(), String>>>,
     synchronization: Option<crate::synchronization::Pending>,
     verified_sync: Option<(String, u64)>,
     sync_error: Option<(String, u32, String)>,
@@ -333,6 +336,7 @@ impl Host {
             ),
             ctx,
             read: None,
+            browser_profile: None,
             synchronization: None,
             verified_sync: None,
             sync_error: None,
@@ -512,6 +516,18 @@ impl Host {
             | DialogResult::ViewerSave { .. }
             | DialogResult::ViewerImage(_)
             | DialogResult::ViewerDiscard(_, _)) => self.viewer_dialog(result),
+            DialogResult::DeleteBrowserProfile(true) => {
+                if let Err(error) = self.delete_browser_profile() {
+                    self.status = logged_status(error);
+                }
+            }
+            DialogResult::ForgetSteamValidation(true) => {
+                let result = self.forget_steam_validation();
+                self.report(
+                    result,
+                    "Steam validation forgotten. Save the project to keep this change.",
+                );
+            }
             DialogResult::Discard(request, SaveChoice::Save) => {
                 self.save(false, Some(request));
             }
@@ -747,7 +763,7 @@ impl Host {
         Ok(())
     }
     fn start_read(&mut self) -> Result<(), String> {
-        if self.read.is_some() || self.synchronization.is_some() {
+        if self.read.is_some() || self.synchronization.is_some() || self.browser_profile.is_some() {
             return Err("A Steam read is already running".into());
         }
         let app_id = SteamAppId::new(self.editor.document().app_id()).map_err(|e| e.to_string())?;
@@ -792,6 +808,7 @@ impl Host {
     }
     fn start_synchronization(&mut self) -> Result<(), String> {
         if self.synchronization.is_some()
+            || self.browser_profile.is_some()
             || self.image_drop.is_some()
             || self.read.is_some()
             || self.art.is_some()
@@ -801,6 +818,7 @@ impl Host {
             return Err("Finish or cancel the current background operation first".into());
         }
         let (path, document) = self.synchronization_input()?;
+        let handshake_only = !self.synchronization_verified();
         self.verified_sync = None;
         self.sync_error = None;
         let mut assets = Files::new();
@@ -811,8 +829,16 @@ impl Host {
             self.editor.revision(),
             assets,
             self.ctx.clone(),
+            handshake_only,
         ));
-        self.status = crate::desktop::logged_status("Preparing synchronization…".into());
+        self.status = crate::desktop::logged_status(
+            if handshake_only {
+                "Checking the Steam connection…"
+            } else {
+                "Preparing synchronization…"
+            }
+            .into(),
+        );
         Ok(())
     }
     fn synchronization_input(&self) -> Result<(PathBuf, Document), String> {
@@ -938,6 +964,10 @@ impl Host {
                             .into(),
                     );
                 }
+                if pending.handshake_only {
+                    pending.cancel.check().map_err(|e| e.to_string())?;
+                    return Ok(());
+                }
                 // Refresh storage identities after the background transaction. The
                 // command retains one undo entry for local changes; Steam is external.
                 let document = self.store.adopt_saved_result(&pending.path, &document)?;
@@ -962,7 +992,11 @@ impl Host {
             } else {
                 self.sync_error = None;
             }
-            self.report(result, "Synchronization completed and saved · Steam draft verified · publish manually in Steamworks");
+            self.report(result, if pending.handshake_only {
+                "Steam connection validated. Choose Synchronize to prepare a review."
+            } else {
+                "Synchronization completed and saved · Steam draft verified · publish manually in Steamworks"
+            });
         }
     }
     fn poll_read(&mut self) {
@@ -1925,6 +1959,26 @@ impl EditorPort for Host {
                     self.status = logged_status(error);
                 }
             }
+            UiRequest::OpenBrowserProfile => {
+                if let Err(error) = self
+                    .require_browser_idle()
+                    .and_then(|()| browser_profile::open_folder())
+                {
+                    self.status = logged_status(error);
+                }
+            }
+            UiRequest::DeleteBrowserProfile | UiRequest::ForgetSteamValidation => {
+                match self.require_browser_idle() {
+                    Ok(()) => {
+                        self.start_dialog(if matches!(request, UiRequest::DeleteBrowserProfile) {
+                            Dialog::DeleteBrowserProfile
+                        } else {
+                            Dialog::ForgetSteamValidation
+                        })
+                    }
+                    Err(error) => self.status = logged_status(error),
+                }
+            }
             UiRequest::StyleViewer(action) => self.viewer_action(action),
             UiRequest::ChooseSettingsFolder => self.start_dialog(Dialog::SettingsFolder),
             UiRequest::AboutDismissed => {
@@ -2185,6 +2239,9 @@ impl EditorPort for Host {
     }
     fn reading(&self) -> bool {
         self.read.is_some()
+    }
+    fn browser_profile_busy(&self) -> bool {
+        self.browser_profile.is_some()
     }
     fn synchronization_review(&self) -> Option<&Value> {
         self.synchronization
@@ -2768,6 +2825,7 @@ mod dialog_tests {
         let (_sender, events) = mpsc::sync_channel(1);
         let (approval, receiver) = mpsc::sync_channel(1);
         host.synchronization = Some(crate::synchronization::Pending {
+            handshake_only: false,
             cancel: Cancellation::default(),
             events,
             approval,
@@ -2831,6 +2889,7 @@ mod dialog_tests {
             let (approval, _receiver) = mpsc::sync_channel(1);
             let revision = host.editor.revision();
             host.synchronization = Some(crate::synchronization::Pending {
+                handshake_only: false,
                 cancel: Cancellation::default(),
                 events,
                 approval,
@@ -2884,6 +2943,47 @@ mod dialog_tests {
             drop(host);
             drop(background);
             std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn handshake_completion_preserves_project_and_rejects_stale_or_cancelled_results() {
+        for (stale, cancelled) in [(false, false), (true, false), (false, true)] {
+            let mut host = dirty_host();
+            let (sender, events) = mpsc::sync_channel(1);
+            let (approval, _receiver) = mpsc::sync_channel(1);
+            let revision = host.editor.revision();
+            let cancel = Cancellation::default();
+            if cancelled {
+                cancel.cancel();
+            }
+            host.synchronization = Some(crate::synchronization::Pending {
+                handshake_only: true,
+                cancel,
+                events,
+                approval,
+                review: None,
+                revision,
+                // Handshake completion must never load/save a synchronization result.
+                path: crate::test_output::root().join("nonexistent-handshake.achv"),
+                thread: None,
+                previews: Default::default(),
+            });
+            if stale {
+                host.editor
+                    .execute("Intervening edit", Command::Add(EntityKind::Stat), None)
+                    .unwrap();
+            }
+            let before = host.editor.document().clone();
+            let before_revision = host.editor.revision();
+            sender
+                .send(crate::synchronization::Event::Complete(Ok(before.clone())))
+                .unwrap();
+            host.poll_synchronization();
+            assert_eq!(host.editor.document(), &before);
+            assert_eq!(host.editor.revision(), before_revision);
+            assert!(host.editor.is_dirty());
+            assert_eq!(host.synchronization_verified(), !stale && !cancelled);
         }
     }
 

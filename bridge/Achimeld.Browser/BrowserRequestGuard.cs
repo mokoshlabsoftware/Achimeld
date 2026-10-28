@@ -13,12 +13,22 @@ public static class BrowserRequestGuard
         {
             bool allowed = false;
             BrowserRequestRejection rejection = BrowserRequestRejection.Other;
+            BrowserRequestDiagnostic? details = null;
             try
             {
                 IRequest request = route.Request;
-                allowed = ReferenceEquals(request.Frame.Page, ownedPage()) &&
-                    Uri.TryCreate(request.Url, UriKind.Absolute, out Uri? uri) &&
-                    policy.Allows(request.Method, uri, request.ResourceType, request.IsNavigationRequest);
+                details = BrowserRequestDiagnostic.Describe(request.Method, request.Url, request.IsNavigationRequest, request.ResourceType);
+                bool owned = ReferenceEquals(request.Frame.Page, ownedPage());
+                bool validUri = Uri.TryCreate(request.Url, UriKind.Absolute, out Uri? uri);
+                request.Headers.TryGetValue("content-type", out string? contentType);
+                if (owned && validUri && policy.DiscardsCspReport(request.Method, uri!, request.ResourceType, request.IsNavigationRequest, contentType))
+                {
+                    // A local empty acknowledgement: never inspect or forward the
+                    // report body, and never disable the page's CSP enforcement.
+                    await route.FulfillAsync(new RouteFulfillOptions { Status = 204, Body = "" }).ConfigureAwait(false);
+                    return;
+                }
+                allowed = owned && validUri && policy.Allows(request.Method, uri!, request.ResourceType, request.IsNavigationRequest);
                 if (!allowed) rejection = ReferenceEquals(request.Frame.Page, ownedPage())
                     ? DescribeRejection(request) : BrowserRequestRejection.OtherPage;
             }
@@ -26,7 +36,7 @@ public static class BrowserRequestGuard
             catch (UriFormatException) { }
             if (!allowed)
             {
-                policy.Reject(rejection);
+                policy.Reject(rejection, details);
                 await route.AbortAsync("blockedbyclient").ConfigureAwait(false);
                 return;
             }

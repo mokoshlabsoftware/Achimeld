@@ -7,7 +7,7 @@ achievements or enter project undo history.
 
 ## A short working loop
 
-1. `list_instances`, then `get_scene` to choose the editor and get its identity.
+1. `list_instances`, then `get_scene` to choose the editor and get its identity. The connection handshake and `list_instances` already state uptime, the project name, achievement and Steam-sync counts, and stats.
 2. `list_style_collections` to discover collection/style IDs and required General
    Image indices. Built-in collections are read-only. IDs are scoped to a collection;
    use both IDs, even when names or source style IDs coincide.

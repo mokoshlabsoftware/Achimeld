@@ -72,6 +72,7 @@ fn frame(
             ui.set_width(380.0);
             let styles = fixture.icon_styles();
             desktop.project_style_rows(ui, fixture, icon, &styles);
+            desktop.style_edit_prompt_window(ui.ctx(), fixture);
             desktop.style_rename_window(ui.ctx(), fixture);
         },
     );
@@ -85,6 +86,11 @@ fn click(
     icon: &mut Value,
     id: egui::Id,
 ) {
+    // Modal areas size themselves before accepting input, especially after a
+    // scale change or a handoff from the naming prompt.
+    for _ in 0..4 {
+        frame(ctx, desktop, fixture, icon, vec![]);
+    }
     let pos = ctx
         .read_response(id)
         .expect("Rendered control")
@@ -141,8 +147,139 @@ fn save_style_prompt_requires_a_name_and_keeps_cancel_and_undo() {
     assert_eq!(saved.name, "Saved icon");
     assert_eq!(saved.recipe, icon);
     assert_ne!(saved.id, styles[0].id);
+    assert_eq!(
+        fixture.editor.document().entities(EntityKind::Achievement)[0]["icon"],
+        icon
+    );
+    assert!(desktop.style_edit_prompt.is_some());
+    assert!(desktop.layer_palette.active_style.is_none());
+    assert_eq!(
+        desktop
+            .matching_icon_style(&fixture, &icon, &fixture.icon_styles())
+            .unwrap()
+            .id,
+        saved.id
+    );
     fixture.undo();
     assert_eq!(fixture.editor.document(), &before);
+    frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+    assert!(desktop.style_edit_prompt.is_none());
+    fixture.redo();
+    assert_eq!(
+        desktop
+            .matching_icon_style(&fixture, &icon, &fixture.icon_styles())
+            .unwrap()
+            .id,
+        saved.id
+    );
+}
+
+#[test]
+fn created_style_choice_preserves_the_layer_and_switches_only_on_request() {
+    for (choice, scale) in [(0, 1.0), (1, 1.5), (2, 2.0)] {
+        let (mut fixture, mut desktop, styles) = setup();
+        let ctx = egui::Context::default();
+        configure_test_fonts(&ctx);
+        ctx.set_pixels_per_point(scale);
+        let mut icon = styles[0].recipe.clone();
+        desktop.selected_layer = icon["layers"][1]["id"].as_str().map(str::to_owned);
+        let layer = desktop.selected_layer.clone();
+        desktop.open_style_save(&fixture, &icon);
+        desktop.style_rename.as_mut().unwrap().name = "New style".into();
+        frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+        frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+        click(
+            &ctx,
+            &mut desktop,
+            &mut fixture,
+            &mut icon,
+            egui::Id::new(("rename-style-action", 0)),
+        );
+        let saved = fixture.icon_styles().pop().unwrap();
+        assert_eq!(saved.name, "New style", "scale {scale}");
+        let document = fixture.editor.document().clone();
+        let revision = fixture.editor.revision();
+        assert!(desktop.style_edit_prompt.is_some());
+        for _ in 0..4 {
+            frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+        }
+        let stay = ctx
+            .read_response(egui::Id::new(("created-style-edit-mode", "action", 0usize)))
+            .unwrap()
+            .rect;
+        let edit = ctx
+            .read_response(egui::Id::new(("created-style-edit-mode", "action", 1usize)))
+            .unwrap()
+            .rect;
+        assert_eq!(stay.y_range(), edit.y_range());
+        assert!((stay.right() - edit.left()).abs() < 0.1);
+        let response = ctx
+            .read_response(egui::Id::new(("created-style-edit-mode", "action", 0usize)))
+            .unwrap();
+        assert!(response.enabled());
+        assert_eq!(
+            ctx.layer_id_at(response.rect.center()),
+            Some(response.layer_id)
+        );
+        if choice < 2 {
+            click(
+                &ctx,
+                &mut desktop,
+                &mut fixture,
+                &mut icon,
+                egui::Id::new(("created-style-edit-mode", "action", choice as usize)),
+            );
+        } else {
+            frame(
+                &ctx,
+                &mut desktop,
+                &mut fixture,
+                &mut icon,
+                vec![egui::Event::Key {
+                    key: egui::Key::Escape,
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                }],
+            );
+        }
+        assert!(
+            desktop.style_edit_prompt.is_none(),
+            "choice {choice}, scale {scale}"
+        );
+        assert_eq!(
+            desktop.layer_palette.active_style,
+            (choice == 1).then_some(saved.id)
+        );
+        assert_eq!(desktop.selected_layer, layer);
+        assert_eq!(fixture.editor.document(), &document);
+        assert_eq!(fixture.editor.revision(), revision);
+    }
+}
+
+#[test]
+fn failed_style_creation_never_assigns_or_offers_an_edit_mode() {
+    let (mut fixture, mut desktop, styles) = setup();
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut icon = styles[0].recipe.clone();
+    icon["layers"][0]["opacity"] = json!(-1.0);
+    let before = fixture.editor.document().clone();
+    desktop.open_style_save(&fixture, &icon);
+    desktop.style_rename.as_mut().unwrap().name = "Invalid style".into();
+    frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+    click(
+        &ctx,
+        &mut desktop,
+        &mut fixture,
+        &mut icon,
+        egui::Id::new(("rename-style-action", 0)),
+    );
+    assert_eq!(fixture.editor.document(), &before);
+    assert!(desktop.style_rename.is_some());
+    assert!(desktop.style_edit_prompt.is_none());
+    assert!(desktop.icon_style_choices.is_empty());
 }
 
 #[test]
@@ -322,7 +459,7 @@ fn native_style_picker_screenshot() {
             let banner = self
                 .desktop
                 .icon_style_banner(ui, &mut self.fixture, &mut self.icon);
-            if !self.rename && self.frames == 1 {
+            if !self.rename && self.frames == 1 && self.desktop.style_edit_prompt.is_none() {
                 egui::Popup::open_id(ui.ctx(), egui::Popup::default_response_id(&banner));
             }
             if self.rename && self.frames == 1 {
@@ -333,6 +470,8 @@ fn native_style_picker_screenshot() {
                     self.desktop.open_style_rename(&self.fixture, &styles[0]);
                 }
             }
+            self.desktop
+                .style_edit_prompt_window(ui.ctx(), &mut self.fixture);
             self.desktop
                 .style_rename_window(ui.ctx(), &mut self.fixture);
             self.frames += 1;
@@ -370,7 +509,25 @@ fn native_style_picker_screenshot() {
             ui.ctx().request_repaint();
         }
     }
-    let (fixture, desktop, styles) = setup();
+    let (mut fixture, mut desktop, styles) = setup();
+    if std::env::var_os("ACHIMELD_SCREENSHOT_CREATED_STYLE").is_some() {
+        let ctx = egui::Context::default();
+        configure_test_fonts(&ctx);
+        let mut icon = styles[0].recipe.clone();
+        desktop.open_style_save(&fixture, &icon);
+        desktop.style_rename.as_mut().unwrap().name = "Moonlit silver copy".into();
+        frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+        frame(&ctx, &mut desktop, &mut fixture, &mut icon, vec![]);
+        click(
+            &ctx,
+            &mut desktop,
+            &mut fixture,
+            &mut icon,
+            egui::Id::new(("rename-style-action", 0)),
+        );
+        assert!(desktop.style_edit_prompt.is_some());
+        desktop.textures.clear();
+    }
     let output = std::path::PathBuf::from(
         std::env::var_os("ACHIMELD_SCREENSHOT_TO").expect("Set external output path"),
     );

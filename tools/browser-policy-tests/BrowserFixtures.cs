@@ -97,7 +97,7 @@ internal static class BrowserFixtures
                 Args = BrowserStartup.LaunchArguments,
             });
             int reached = 0;
-            async Task<(IBrowserContext Context, IPage Page, SteamBrowserRequestPolicy Policy)> Session(string? configuration = null, bool redirectConfiguration = false)
+            async Task<(IBrowserContext Context, IPage Page, SteamBrowserRequestPolicy Policy)> Session(string? configuration = null, bool redirectConfiguration = false, bool authenticate = false, bool cspReport = false)
             {
                 IBrowserContext context = await browser.NewContextAsync(new BrowserNewContextOptions { Offline = true, ServiceWorkers = ServiceWorkerPolicy.Block, AcceptDownloads = false });
                 context.SetDefaultTimeout(10000);
@@ -114,13 +114,14 @@ internal static class BrowserFixtures
                         await route.FulfillAsync(new RouteFulfillOptions { Status = 200, ContentType = "application/json", Body = configuration });
                         return;
                     }
-                    await route.FulfillAsync(new RouteFulfillOptions { Status = 200, ContentType = "text/html", Body = "<html><body>synthetic Steamworks</body></html>" });
+                    await route.FulfillAsync(new RouteFulfillOptions { Status = 200, ContentType = "text/html", Body = "<html><body>synthetic Steamworks</body></html>",
+                        Headers = cspReport ? new Dictionary<string, string> { ["Content-Security-Policy"] = "img-src 'none'; report-uri /actions/CSPReport" } : null });
                 });
                 IPage page = await context.NewPageAsync();
                 SteamBrowserRequestPolicy policy = new();
                 await BrowserRequestGuard.InstallAsync(context, policy, () => page);
                 policy.PinApp(480);
-                policy.EnterRead();
+                if (!authenticate) policy.EnterRead();
                 await context.SetOfflineAsync(false);
                 await page.GotoAsync("https://partner.steamgames.com/apps/achievements/480");
                 return (context, page, policy);
@@ -135,6 +136,78 @@ internal static class BrowserFixtures
                 try { session.Policy.RequireHealthy(); } catch (InvalidDataException) { return; }
                 throw new Exception("Forbidden browser traffic did not terminate policy authority.");
             }
+            var login = await Session(authenticate: true);
+            await using (IBrowserContext context = login.Context)
+            {
+                await login.Page.GotoAsync("https://partner.steamgames.com/");
+                await login.Page.SetContentAsync("<button id='login_btn_signin'>Sign in</button><script>window.g_ShowLoginDialog = destination => { window.loginDestination = destination; };</script>");
+                await SteamLoginPrompt.OpenIfNeededAsync(login.Page, new Uri("https://partner.steamgames.com/apps/achievements/480"));
+                if (await login.Page.EvaluateAsync<string>("() => window.loginDestination") != "https://partner.steamgames.com/apps/achievements/480")
+                    throw new Exception("Login prompt did not retain the pinned game return destination.");
+                bool invalidDestination = false;
+                try { await SteamLoginPrompt.OpenIfNeededAsync(login.Page, new Uri("https://partner.steamgames.com/dashboard")); }
+                catch (InvalidDataException) { invalidDestination = true; }
+                if (!invalidDestination) throw new Exception("Login prompt accepted an unrelated return destination.");
+                await login.Page.GotoAsync("https://partner.steamgames.com/apps/achievements/480");
+                await login.Page.SetContentAsync("<button id='login_btn_signin'>Sign in</button><script>window.g_ShowLoginDialog = () => { throw new Error('must not open'); };</script>");
+                await SteamLoginPrompt.OpenIfNeededAsync(login.Page, new Uri("https://partner.steamgames.com/apps/achievements/480"));
+                int before = reached;
+                await login.Page.EvaluateAsync("() => fetch('https://api.steampowered.com/IAuthenticationService/BeginAuthSessionViaQR/v1', {method:'POST'}).catch(() => {})");
+                if (reached != before + 1) throw new Exception("Login RPC did not reach synthetic upstream.");
+                await login.Page.EvaluateAsync("() => fetch('/um/Authentication/BeginAuthSessionViaQR/', {method:'POST', headers:{'Content-Type':'application/octet-stream'}, body:new Uint8Array([0])}).catch(() => {})");
+                if (reached != before + 2) throw new Exception("Steamworks browser login RPC did not reach synthetic upstream.");
+                login.Policy.RequireHealthy();
+                login.Policy.EnterRead();
+                before = reached;
+                await login.Page.EvaluateAsync("() => fetch('/um/Authentication/BeginAuthSessionViaQR/', {method:'POST'}).catch(() => {})");
+                if (reached != before || login.Policy.Rejection != BrowserRequestRejection.Dynamic) throw new Exception("Read phase regained login RPC authority.");
+            }
+            var transition = await Session(authenticate: true);
+            await using (IBrowserContext context = transition.Context)
+            {
+                for (int attempt = 0; attempt < 12; attempt++)
+                {
+                    Task navigation = transition.Page.GotoAsync(attempt % 2 == 0
+                        ? "https://partner.steamgames.com/" : "https://partner.steamgames.com/apps/achievements/480");
+                    await SteamAuthenticationProbe.ReadAsync(transition.Page);
+                    await navigation;
+                }
+                await transition.Page.SetContentAsync("<input type='password' value='fixture-secret'>");
+                if (await SteamAuthenticationProbe.ReadAsync(transition.Page) != PortalAccessState.SignedOut)
+                    throw new Exception("Login probe lost its signed-out indicator.");
+                transition.Policy.RequireHealthy();
+                await transition.Page.CloseAsync();
+                bool closedRejected = false;
+                try { await SteamAuthenticationProbe.ReadAsync(transition.Page); }
+                catch (PlaywrightException) { closedRejected = true; }
+                if (!closedRejected) throw new Exception("Closed browser was treated as a navigation transition.");
+                Console.WriteLine("PASS: authentication polling survives document transitions and still rejects a closed browser.");
+            }
+            if (!SteamAuthenticationProbe.IsNavigationTransition(new PlaywrightException("Execution context was destroyed, most likely because of a navigation.")) ||
+                SteamAuthenticationProbe.IsNavigationTransition(new PlaywrightException("Target page, context or browser has been closed")) ||
+                SteamAuthenticationProbe.IsNavigationTransition(new PlaywrightException("net::ERR_CONNECTION_RESET")))
+                throw new Exception("Authentication retry escaped its document-transition boundary.");
+            var reports = await Session(cspReport: true);
+            await using (IBrowserContext context = reports.Context)
+            {
+                TaskCompletionSource<bool> reported = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                int reportRequests = 0, reportFailures = 0;
+                bool IsReport(IRequest request) => request.Url == "https://partner.steamgames.com/actions/CSPReport";
+                context.Request += (_, request) => { if (IsReport(request)) Interlocked.Increment(ref reportRequests); };
+                context.RequestFailed += (_, request) => { if (IsReport(request)) Interlocked.Increment(ref reportFailures); };
+                context.RequestFinished += (_, request) => { if (IsReport(request)) reported.TrySetResult(true); };
+                int before = reached;
+                await reports.Page.EvaluateAsync("() => { const image = new Image(); image.src = '/public/images/csp-blocked.png'; document.body.append(image); }");
+                try { await reported.Task.WaitAsync(TimeSpan.FromSeconds(15)); }
+                catch (TimeoutException)
+                {
+                    throw new Exception($"CSP fixture report did not finish: requests={reportRequests}; failed={reportFailures}; rejection={reports.Policy.Rejection}; details={reports.Policy.RejectionDetails}; upstream delta={reached - before}.");
+                }
+                reports.Policy.RequireHealthy();
+                if (reached != before) throw new Exception("CSP-blocked resource or its report reached the synthetic upstream.");
+                Console.WriteLine("PASS: Chromium enforces CSP; its optional report is completed locally without terminating the session.");
+            }
+            await Denied(page => page.EvaluateAsync("() => fetch('/actions/CSPReport', {method:'POST',headers:{'Content-Type':'application/csp-report'},body:'fixture'}).catch(() => {})"));
             var allowed = await Session();
             await using (IBrowserContext context = allowed.Context)
             {
@@ -143,6 +216,19 @@ internal static class BrowserFixtures
                 allowed.Policy.RequireHealthy();
             }
             var bounded = await Session("{\"ok\":true}");
+            var media = await Session();
+            await using (IBrowserContext context = media.Context)
+            {
+                foreach (string url in new[] { "https://cdn.steamstatic.com/public/audio/notification.mp3?v=1", "https://partner.steamgames.com/public/video/intro.webm" })
+                {
+                    int beforeMedia = reached;
+                    // The synthetic body is intentionally not playable: verify routing, not decoding.
+                    await media.Page.EvaluateAsync("url => new Promise(resolve => { const item = document.createElement('video'); item.preload = 'auto'; item.onerror = () => resolve(true); item.onloadeddata = () => resolve(true); item.src = url; document.body.append(item); item.load(); })", url).WaitAsync(TimeSpan.FromSeconds(15));
+                    if (reached <= beforeMedia) throw new Exception("Approved static media did not reach synthetic upstream.");
+                    media.Policy.RequireHealthy();
+                }
+            }
+            await Denied(page => page.EvaluateAsync("() => new Promise(resolve => { const item = new Audio('https://unapproved.invalid/audio.mp3'); item.onerror = () => resolve(true); item.load(); })"));
             await using (IBrowserContext context = bounded.Context)
             {
                 string json = await bounded.Page.EvaluateAsync<string>(FixedReadScripts.Configuration,

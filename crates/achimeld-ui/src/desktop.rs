@@ -5,7 +5,7 @@ use achimeld_application::{
 };
 use egui::Vec2;
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) fn mipmap_bytes([mut width, mut height]: [usize; 2]) -> usize {
     let mut bytes = 0;
@@ -19,6 +19,13 @@ pub(crate) fn mipmap_bytes([mut width, mut height]: [usize; 2]) -> usize {
     }
 }
 
+pub const MIN_WINDOW_INNER_SIZE: [f32; 2] = [720.0, 650.0];
+const TOOLBAR_FILTER_PREFERRED: f32 = 210.0;
+const TOOLBAR_FILTER_FLOOR: f32 = 96.0;
+/// egui's default separator spacing. The toolbar zeroes item spacing, and the
+/// separator still reserves this width.
+const TOOLBAR_SEPARATOR: f32 = 6.0;
+
 pub(crate) fn toolbar_tab<T: PartialEq>(
     ui: &mut egui::Ui,
     value: &mut T,
@@ -26,7 +33,7 @@ pub(crate) fn toolbar_tab<T: PartialEq>(
     label: &str,
     image: (egui::TextureId, Vec2),
 ) -> egui::Response {
-    toolbar_tab_attention(ui, value, choice, label, image, false)
+    toolbar_tab_attention(ui, value, choice, label, image, false, true)
 }
 
 fn toolbar_tab_attention<T: PartialEq>(
@@ -36,21 +43,192 @@ fn toolbar_tab_attention<T: PartialEq>(
     label: &str,
     image: (egui::TextureId, Vec2),
     wants_click: bool,
+    show_label: bool,
 ) -> egui::Response {
+    let selected = *value == choice;
+    let button = if show_label {
+        crate::buttons::Button::selectable(selected, (egui::Image::new(image), label))
+    } else {
+        crate::buttons::Button::selectable(selected, egui::Image::new(image).alt_text(label))
+    };
     // Padding is identical in all states; animation never changes the layout.
     let mut response = ui.add(
-        crate::buttons::Button::selectable(*value == choice, (egui::Image::new(image), label))
+        button
             .bar()
             .wants_click(wants_click)
             .icon_spacing(5.0)
             .image_tint_follows_text_color(true)
             .wrap_mode(egui::TextWrapMode::Extend),
     );
-    if response.clicked() && *value != choice {
+    if !show_label {
+        response = response.on_hover_text(label);
+        response.widget_info(|| {
+            egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), selected, label)
+        });
+    }
+    if response.clicked() && !selected {
         *value = choice;
         response.mark_changed();
     }
     response
+}
+
+fn toolbar_text_width(ui: &egui::Ui, text: &str, style: egui::TextStyle) -> f32 {
+    if text.is_empty() {
+        return 0.0;
+    }
+    let font = style.resolve(ui.style());
+    ui.fonts_mut(|fonts| {
+        fonts
+            .layout_no_wrap(text.to_owned(), font, egui::Color32::PLACEHOLDER)
+            .rect
+            .width()
+    })
+}
+
+fn toolbar_button_width(ui: &egui::Ui, icon: f32, label: Option<&str>) -> f32 {
+    let text = label.map_or(0.0, |label| {
+        5.0 + toolbar_text_width(ui, label, egui::TextStyle::Button)
+    });
+    ui.spacing().button_padding.x * 2.0 + icon + text
+}
+
+fn toolbar_text_button_width(ui: &egui::Ui, label: &str) -> f32 {
+    ui.spacing().button_padding.x * 2.0 + toolbar_text_width(ui, label, egui::TextStyle::Button)
+}
+
+fn filter_leading_space(ui: &egui::Ui) -> f32 {
+    let margin = egui::Margin::symmetric(4, 2);
+    let pixels_per_point = ui.ctx().pixels_per_point();
+    let text_height =
+        (ui.text_style_height(&egui::TextStyle::Body) * pixels_per_point).ceil() / pixels_per_point;
+    let filter_height = text_height + ui.spacing().extra_text_line_spacing + margin.sum().y;
+    let inset = (ui.spacing().interact_size.y - filter_height) * 0.5;
+    (inset - TOOLBAR_SEPARATOR * 0.5).max(0.0)
+}
+
+struct ToolbarPlan {
+    icons_only: bool,
+    filter_width: f32,
+    project_width: f32,
+    right_width: f32,
+}
+
+#[derive(Clone, Copy)]
+struct ToolbarContents<'a> {
+    show_filter: bool,
+    show_sort: bool,
+    sync_label: &'a str,
+    sync_icon: f32,
+    show_stop: bool,
+    project: &'a str,
+}
+
+/// Shrink the filter before hiding labels. Hide labels before letting the
+/// project name or the staged action cover the field.
+fn plan_toolbar(ui: &egui::Ui, available: f32, request: ToolbarContents<'_>) -> ToolbarPlan {
+    let ToolbarContents {
+        show_filter,
+        show_sort,
+        sync_label,
+        sync_icon,
+        show_stop,
+        project,
+    } = request;
+    let tabs = |icons_only: bool| {
+        [
+            "Achievements",
+            "Stats",
+            "Sync",
+            "Steam",
+            "Art Data Bank",
+            "Style Viewer",
+        ]
+        .into_iter()
+        .map(|label| toolbar_button_width(ui, 20.0, (!icons_only).then_some(label)))
+        .sum::<f32>()
+    };
+    let history = toolbar_button_width(ui, 24.0, None) * 2.0
+        + if show_sort {
+            toolbar_button_width(ui, 24.0, None)
+        } else {
+            0.0
+        };
+    let separators = TOOLBAR_SEPARATOR * (1.0 + f32::from(show_sort) + f32::from(show_filter));
+    let filter_lead = if show_filter {
+        filter_leading_space(ui)
+    } else {
+        0.0
+    };
+    let project_full = toolbar_text_width(ui, project, egui::TextStyle::Body);
+    let stop = if show_stop {
+        toolbar_text_button_width(ui, "Stop") + 1.0
+    } else {
+        0.0
+    };
+    let sync = |icons_only: bool| {
+        toolbar_button_width(ui, sync_icon, (!icons_only).then_some(sync_label)) + 1.0
+    };
+    // One extra point absorbs font and pixel rounding so the next column cannot cross the filter.
+    let chrome = |icons_only: bool, filter: f32, project_width: f32| {
+        let gap = if project_width > 0.5 { 12.0 } else { 0.0 };
+        tabs(icons_only)
+            + history
+            + separators
+            + filter_lead
+            + filter
+            + 1.0
+            + gap
+            + project_width
+            + stop
+            + sync(icons_only)
+    };
+    let fit = |icons_only: bool| -> (f32, f32) {
+        if !show_filter {
+            if chrome(icons_only, 0.0, project_full) <= available {
+                return (0.0, project_full);
+            }
+            let project_width = (available - chrome(icons_only, 0.0, 0.0)).clamp(0.0, project_full);
+            return (0.0, project_width);
+        }
+        if chrome(icons_only, TOOLBAR_FILTER_PREFERRED, project_full) <= available {
+            return (TOOLBAR_FILTER_PREFERRED, project_full);
+        }
+        let room = (available - chrome(icons_only, 0.0, 0.0)).max(0.0);
+        if room >= TOOLBAR_FILTER_FLOOR + project_full {
+            let filter =
+                (room - project_full).clamp(TOOLBAR_FILTER_FLOOR, TOOLBAR_FILTER_PREFERRED);
+            (filter, project_full)
+        } else if room >= TOOLBAR_FILTER_FLOOR {
+            (
+                TOOLBAR_FILTER_FLOOR,
+                (room - TOOLBAR_FILTER_FLOOR).min(project_full),
+            )
+        } else {
+            (room, 0.0)
+        }
+    };
+    let (filter, project_width, icons_only) = if show_filter {
+        let (filter, project_width) = fit(false);
+        if filter + 0.01 >= TOOLBAR_FILTER_FLOOR && project_width + 0.5 >= project_full {
+            (filter, project_width, false)
+        } else {
+            let (filter, project_width) = fit(true);
+            (filter, project_width, true)
+        }
+    } else if chrome(false, 0.0, project_full) <= available + 0.1 {
+        (0.0, project_full, false)
+    } else {
+        let (_, project_width) = fit(true);
+        (0.0, project_width, true)
+    };
+    let gap = if project_width > 0.5 { 12.0 } else { 0.0 };
+    ToolbarPlan {
+        icons_only,
+        filter_width: filter,
+        project_width,
+        right_width: (gap + project_width + stop + sync(icons_only)).min(available.max(0.0)),
+    }
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -97,6 +275,11 @@ pub struct Desktop {
     pub(crate) sync_filter: String,
     pub(crate) sync_page: usize,
     pub(crate) sync_confirmation: Option<(String, u32, u64)>,
+    pub(crate) sync_plan_token: Option<String>,
+    pub(crate) sync_plan_fresh: bool,
+    pub(crate) steam_marks: BTreeSet<(EntityKind, String)>,
+    pub(crate) steam_delete_review: bool,
+    pub(crate) steam_delete_fresh: bool,
     pub(crate) sync_app_id_edit: Option<crate::synchronization_target::AppIdEdit>,
     brand_icon: Option<egui::TextureHandle>,
     pub(crate) preference_icons: Option<[egui::TextureHandle; 5]>,
@@ -152,6 +335,8 @@ pub struct Desktop {
     pub(crate) layer_palette: crate::layer_palette::LayerPalette,
     pub(crate) source_picker: Option<crate::source_picker::SourcePicker>,
     pub(crate) style_rename: Option<crate::style_picker::StyleRename>,
+    pub(crate) style_edit_prompt: Option<crate::style_picker::StyleEditPrompt>,
+    pub(crate) icon_style_choices: BTreeMap<String, String>,
     project_id: Option<String>,
     pub(crate) focused_control: Option<egui::Id>,
     pub(crate) art_bank: crate::art_bank::ArtBank,
@@ -169,6 +354,11 @@ impl Default for Desktop {
             sync_filter: String::new(),
             sync_page: 0,
             sync_confirmation: None,
+            sync_plan_token: None,
+            sync_plan_fresh: false,
+            steam_marks: BTreeSet::new(),
+            steam_delete_review: false,
+            steam_delete_fresh: false,
             sync_app_id_edit: None,
             brand_icon: None,
             preference_icons: None,
@@ -224,6 +414,8 @@ impl Default for Desktop {
             layer_palette: Default::default(),
             source_picker: None,
             style_rename: None,
+            style_edit_prompt: None,
+            icon_style_choices: BTreeMap::new(),
             project_id: None,
             focused_control: None,
             art_bank: Default::default(),
@@ -256,10 +448,16 @@ impl Desktop {
                         "Window size in logical pixels",
                     ));
                     crate::fields::row(ui, &crate::localization::text(ctx, "Width"), |ui| {
-                        ui.add(egui::DragValue::new(&mut draft.width).range(1000..=8192));
+                        ui.add(
+                            egui::DragValue::new(&mut draft.width)
+                                .range(MIN_WINDOW_INNER_SIZE[0] as u32..=8192),
+                        );
                     });
                     crate::fields::row(ui, &crate::localization::text(ctx, "Height"), |ui| {
-                        ui.add(egui::DragValue::new(&mut draft.height).range(650..=8192));
+                        ui.add(
+                            egui::DragValue::new(&mut draft.height)
+                                .range(MIN_WINDOW_INNER_SIZE[1] as u32..=8192),
+                        );
                     });
                 });
                 crate::buttons::bar(ui, 0.0, |ui| {
@@ -307,6 +505,8 @@ impl Desktop {
     }
     pub fn automation_busy(&self) -> bool {
         self.about
+            || self.style_rename.is_some()
+            || self.style_edit_prompt.is_some()
             || self.view == View::Style
             || self.image_drop.pending()
             || self.art_bank.pending()
@@ -527,12 +727,6 @@ impl Desktop {
                         )
                         .on_hover_text("Achimeld");
                     crate::chrome::drag_window(&brand);
-                    let identity = ui.add(
-                        egui::Label::new(crate::window_title())
-                            .sense(egui::Sense::click_and_drag()),
-                    );
-                    crate::chrome::drag_window(&identity);
-                    ui.separator();
                     ui.spacing_mut().item_spacing.x = 0.0;
                     let help = crate::localization::text(ui.ctx(), "Help");
                     let windows = crate::localization::text(ui.ctx(), "Windows");
@@ -717,8 +911,16 @@ impl Desktop {
                                         input.viewport().inner_rect.unwrap_or(fallback).size()
                                     });
                                     self.window_size = Some(WindowSizeDraft {
-                                        width: size.x.round().clamp(1000.0, 8192.0) as u32,
-                                        height: size.y.round().clamp(650.0, 8192.0) as u32,
+                                        width: size
+                                            .x
+                                            .round()
+                                            .clamp(MIN_WINDOW_INNER_SIZE[0], 8192.0)
+                                            as u32,
+                                        height: size
+                                            .y
+                                            .round()
+                                            .clamp(MIN_WINDOW_INNER_SIZE[1], 8192.0)
+                                            as u32,
                                     });
                                     ui.close();
                                 }
@@ -762,11 +964,9 @@ impl Desktop {
                             self.request(UiRequest::Exit);
                         }
                         ui.separator();
-                        ui.label(if port.editor().is_dirty() {
-                            "Unsaved changes"
-                        } else {
-                            "Saved"
-                        });
+                        // Save state stays hidden. The working identity uses this right-aligned slot.
+                        let identity = crate::chrome::title_identity(ui);
+                        crate::chrome::drag_window(&identity);
                         let (drag_rect, _) =
                             ui.allocate_exact_size(ui.available_size(), egui::Sense::hover());
                         let drag = ui.interact(
@@ -781,147 +981,209 @@ impl Desktop {
         crate::buttons::bar_panel(root, "toolbar", 24.0).show(root, |ui| {
             crate::buttons::bar(ui, 24.0, |ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
-                ui.scope(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    for ((view, label), image) in [
-                        (View::Achievements, "Achievements"),
-                        (View::Stats, "Stats"),
-                        (View::Sync, "Sync"),
-                        (View::Steam, "Steam"),
-                        (View::Art, "Art Data Bank"),
-                        (View::Style, "Style Viewer"),
-                    ]
-                    .into_iter()
-                    .zip(tab_images)
-                    {
-                        let wants_click = view == View::Sync && self.sync_wants_click(port);
-                        if toolbar_tab_attention(
-                            ui,
-                            &mut self.view,
-                            view,
-                            label,
-                            image,
-                            wants_click,
-                        )
-                        .changed()
-                        {
-                            self.selection.clear();
-                            self.node_drag = None;
-                            self.selection_drag = None;
-                            self.canvas_menu = None;
-                            self.layer_palette.keyboard_active = false;
-                            if view == View::Style {
-                                self.open_style_viewer();
+                let width = ui.available_width();
+                let height = ui.available_height();
+                let project_name = port.editor().document().project()["displayName"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_owned();
+                let sync_label = self.sync_action_label(port);
+                let validate_icon = port.synchronization_review().is_none()
+                    && achimeld_core::SteamAppId::new(port.editor().document().app_id()).is_ok();
+                let plan = plan_toolbar(
+                    ui,
+                    width,
+                    ToolbarContents {
+                        show_filter: self.view.is_editor() || self.view == View::Steam,
+                        show_sort: self.view.is_editor(),
+                        sync_label,
+                        sync_icon: if validate_icon { 24.0 } else { 20.0 },
+                        show_stop: port.reading(),
+                        project: &project_name,
+                    },
+                );
+                let right = plan.right_width.min(width);
+                let left = (width - right).max(0.0);
+                ui.allocate_ui_with_layout(
+                    egui::vec2(left, height),
+                    egui::Layout::left_to_right(egui::Align::Center),
+                    |ui| {
+                        ui.set_clip_rect(ui.max_rect());
+                        ui.spacing_mut().item_spacing.x = 0.0;
+                        ui.scope(|ui| {
+                            ui.spacing_mut().item_spacing.x = 0.0;
+                            for ((view, label), image) in [
+                                (View::Achievements, "Achievements"),
+                                (View::Stats, "Stats"),
+                                (View::Sync, "Sync"),
+                                (View::Steam, "Steam"),
+                                (View::Art, "Art Data Bank"),
+                                (View::Style, "Style Viewer"),
+                            ]
+                            .into_iter()
+                            .zip(tab_images)
+                            {
+                                let wants_click = view == View::Sync && self.sync_wants_click(port);
+                                if toolbar_tab_attention(
+                                    ui,
+                                    &mut self.view,
+                                    view,
+                                    label,
+                                    image,
+                                    wants_click,
+                                    !plan.icons_only,
+                                )
+                                .changed()
+                                {
+                                    self.selection.clear();
+                                    self.node_drag = None;
+                                    self.selection_drag = None;
+                                    self.canvas_menu = None;
+                                    self.layer_palette.keyboard_active = false;
+                                    if view == View::Style {
+                                        self.open_style_viewer();
+                                    }
+                                    if view.is_editor() {
+                                        self.kind = if view == View::Stats {
+                                            EntityKind::Stat
+                                        } else {
+                                            EntityKind::Achievement
+                                        };
+                                    }
+                                }
                             }
-                            if view.is_editor() {
-                                self.kind = if view == View::Stats {
-                                    EntityKind::Stat
-                                } else {
-                                    EntityKind::Achievement
-                                };
-                            }
-                        }
-                    }
-                });
-                ui.separator();
-                let undo_label = port
-                    .editor()
-                    .undo_label()
-                    .map(|label| format!("Undo {label} (Ctrl+Z)"))
-                    .unwrap_or_else(|| "Undo (Ctrl+Z)".into());
-                if ui
-                    .add_enabled(
-                        port.editor().undo_label().is_some()
-                            || !self.entity_drafts.is_empty()
-                            || !self.localization_drafts.is_empty(),
-                        crate::buttons::Button::new(
-                            egui::Image::new(history_images[0]).alt_text("Undo"),
-                        )
-                        .bar()
-                        .image_tint_follows_text_color(true),
-                    )
-                    .on_hover_text(undo_label)
-                    .clicked()
-                {
-                    self.undo(port);
-                }
-                let redo_label = port
-                    .editor()
-                    .redo_label()
-                    .map(|label| format!("Redo {label} (Ctrl+Y)"))
-                    .unwrap_or_else(|| "Redo (Ctrl+Y)".into());
-                if ui
-                    .add_enabled(
-                        port.editor().redo_label().is_some()
-                            && self.entity_drafts.is_empty()
-                            && self.localization_drafts.is_empty(),
-                        crate::buttons::Button::new(
-                            egui::Image::new(history_images[1]).alt_text("Redo"),
-                        )
-                        .bar()
-                        .image_tint_follows_text_color(true),
-                    )
-                    .on_hover_text(redo_label)
-                    .clicked()
-                {
-                    port.redo();
-                }
-                if self.view.is_editor() {
-                    ui.separator();
-                    self.sort_button(ui, port);
-                }
-                if self.view.is_editor() || self.view == View::Steam {
-                    let separator = ui.separator();
-                    let margin = egui::Margin::symmetric(4, 2);
-                    let pixels_per_point = ui.ctx().pixels_per_point();
-                    let text_height =
-                        (ui.text_style_height(&egui::TextStyle::Body) * pixels_per_point).ceil()
-                            / pixels_per_point;
-                    let filter_height =
-                        text_height + ui.spacing().extra_text_line_spacing + margin.sum().y;
-                    let inset = (ui.spacing().interact_size.y - filter_height) * 0.5;
-                    // The separator already reserves half its width on this side.
-                    ui.add_space((inset - separator.rect.width() * 0.5).max(0.0));
-                    ui.add(
-                        egui::TextEdit::singleline(&mut self.filter)
-                            .hint_text("Filter by name or API name")
-                            .margin(margin)
-                            .desired_width(210.0),
-                    );
-                }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let sync_image = if port.synchronization_review().is_none()
-                        && achimeld_core::SteamAppId::new(port.editor().document().app_id()).is_ok()
-                    {
-                        crate::style_picker::Glyph::Validate.image(ui.ctx(), 24.0)
-                    } else {
-                        egui::Image::new(tab_images[2])
-                    };
-                    if ui
-                        .add_enabled(
-                            self.sync_action_enabled(port),
-                            crate::buttons::Button::new((sync_image, self.sync_action_label(port)))
-                                .icon_spacing(5.0)
+                        });
+                        ui.separator();
+                        let undo_label = port
+                            .editor()
+                            .undo_label()
+                            .map(|label| format!("Undo {label} (Ctrl+Z)"))
+                            .unwrap_or_else(|| "Undo (Ctrl+Z)".into());
+                        if ui
+                            .add_enabled(
+                                port.editor().undo_label().is_some()
+                                    || !self.entity_drafts.is_empty()
+                                    || !self.localization_drafts.is_empty(),
+                                crate::buttons::Button::new(
+                                    egui::Image::new(history_images[0]).alt_text("Undo"),
+                                )
                                 .bar()
                                 .image_tint_follows_text_color(true),
-                        )
-                        .clicked()
-                    {
-                        self.view = View::Sync;
-                        self.selection.clear();
-                        self.run_sync_action(port);
-                    }
-                    if port.reading() && ui.add(crate::buttons::Button::new("Stop").bar()).clicked()
-                    {
-                        self.request(UiRequest::CancelRead);
-                    }
-                    ui.add_space(12.0);
-                    ui.label(
-                        port.editor().document().project()["displayName"]
-                            .as_str()
-                            .unwrap_or(""),
-                    );
-                });
+                            )
+                            .on_hover_text(undo_label)
+                            .clicked()
+                        {
+                            self.undo(port);
+                        }
+                        let redo_label = port
+                            .editor()
+                            .redo_label()
+                            .map(|label| format!("Redo {label} (Ctrl+Y)"))
+                            .unwrap_or_else(|| "Redo (Ctrl+Y)".into());
+                        if ui
+                            .add_enabled(
+                                port.editor().redo_label().is_some()
+                                    && self.entity_drafts.is_empty()
+                                    && self.localization_drafts.is_empty(),
+                                crate::buttons::Button::new(
+                                    egui::Image::new(history_images[1]).alt_text("Redo"),
+                                )
+                                .bar()
+                                .image_tint_follows_text_color(true),
+                            )
+                            .on_hover_text(redo_label)
+                            .clicked()
+                        {
+                            port.redo();
+                        }
+                        if self.view.is_editor() {
+                            ui.separator();
+                            self.sort_button(ui, port);
+                        }
+                        if self.view.is_editor() || self.view == View::Steam {
+                            let separator = ui.separator();
+                            let margin = egui::Margin::symmetric(4, 2);
+                            // The separator already reserves half its width on this side.
+                            ui.add_space(
+                                (filter_leading_space(ui) + TOOLBAR_SEPARATOR * 0.5
+                                    - separator.rect.width() * 0.5)
+                                    .max(0.0),
+                            );
+                            let filter_width = plan.filter_width.min(ui.available_width());
+                            if filter_width >= 1.0 {
+                                ui.add(
+                                    egui::TextEdit::singleline(&mut self.filter)
+                                        .id(egui::Id::new("toolbar-filter"))
+                                        .hint_text("Filter by name or API name")
+                                        .margin(margin)
+                                        .desired_width(filter_width),
+                                );
+                            }
+                        }
+                    },
+                );
+                ui.allocate_ui_with_layout(
+                    egui::vec2(right, height),
+                    egui::Layout::right_to_left(egui::Align::Center),
+                    |ui| {
+                        ui.set_clip_rect(ui.max_rect());
+                        ui.spacing_mut().item_spacing.x = 0.0;
+                        let sync_image = if validate_icon {
+                            crate::style_picker::Glyph::Validate.image(ui.ctx(), 24.0)
+                        } else {
+                            egui::Image::new(tab_images[2])
+                        };
+                        let button = if plan.icons_only {
+                            crate::buttons::Button::new(sync_image.alt_text(sync_label))
+                        } else {
+                            crate::buttons::Button::new((sync_image, sync_label))
+                        };
+                        let mut response = ui.add_enabled(
+                            self.sync_action_enabled(port),
+                            button
+                                .id(egui::Id::new("toolbar-sync"))
+                                .icon_spacing(5.0)
+                                .bar()
+                                .image_tint_follows_text_color(true)
+                                .wrap_mode(egui::TextWrapMode::Extend),
+                        );
+                        if plan.icons_only {
+                            response = response.on_hover_text(sync_label);
+                            response.widget_info(|| {
+                                egui::WidgetInfo::labeled(
+                                    egui::WidgetType::Button,
+                                    response.enabled(),
+                                    sync_label,
+                                )
+                            });
+                        }
+                        if response.clicked() {
+                            self.view = View::Sync;
+                            self.selection.clear();
+                            self.run_sync_action(port);
+                        }
+                        if port.reading()
+                            && ui.add(crate::buttons::Button::new("Stop").bar()).clicked()
+                        {
+                            self.request(UiRequest::CancelRead);
+                        }
+                        if plan.project_width > 0.5 && !project_name.is_empty() {
+                            ui.add_space(12.0);
+                            let full = toolbar_text_width(ui, &project_name, egui::TextStyle::Body);
+                            let mut label =
+                                egui::Label::new(project_name.as_str()).selectable(false);
+                            let truncated = plan.project_width + 0.5 < full;
+                            if truncated {
+                                label = label.truncate();
+                            }
+                            let response =
+                                ui.add_sized([plan.project_width, ui.available_height()], label);
+                            if truncated {
+                                response.on_hover_text(project_name.as_str());
+                            }
+                        }
+                    },
+                );
             });
         });
         if self.view.is_editor() {
@@ -1011,6 +1273,8 @@ impl Desktop {
         self.source_picker_window(&ctx, port);
         self.settings_window(&ctx, port);
         self.sync_app_id_window(&ctx, port);
+        self.sync_plan_window(&ctx, port);
+        self.steam_delete_window(&ctx, port);
         self.sort_window(&ctx, port);
         self.preferences_window(&ctx, port);
         self.about_window(&ctx);
@@ -1018,6 +1282,7 @@ impl Desktop {
             self.dropped_art(&ctx, port);
         }
         self.image_drop_dialog(&ctx, port);
+        self.style_edit_prompt_window(&ctx, port);
         self.style_rename_window(&ctx, port);
         self.style_delete_window(&ctx, port);
         self.sync_blend_preview(&ctx, port, root.is_enabled());
@@ -1150,6 +1415,7 @@ impl Desktop {
             || self.preferences.is_some()
             || self.source_picker.is_some()
             || self.style_rename.is_some()
+            || self.style_edit_prompt.is_some()
             || self.style_viewer_ui.deletion.is_some();
         let editing_text = ctx.egui_wants_keyboard_input();
         let actions = ctx.input_mut(|i| {

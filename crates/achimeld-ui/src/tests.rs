@@ -180,6 +180,147 @@ fn steam_sections_share_scroll_and_only_show_remote_values_without_editing() {
     assert_eq!(fixture.requests, 0);
 }
 
+#[test]
+fn steam_tiles_mark_for_deletion_and_read_steam_clears_the_marks() {
+    let mut fixture = Fixture::new();
+    let mut project = fixture.editor.document().project().clone();
+    project["lastRemoteSnapshot"] = steam_snapshot();
+    let before = {
+        fixture.editor = Editor::new(
+            achimeld_application::Document::from_parts(
+                project,
+                fixture.editor.document().catalog().clone(),
+            )
+            .unwrap(),
+        );
+        fixture.editor.document().clone()
+    };
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    let frame = |desktop: &mut Desktop, fixture: &mut Fixture, events| {
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(760.0, 900.0),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ui| {
+                desktop.steam_view(ui, fixture);
+                desktop.steam_delete_window(ui.ctx(), fixture);
+            },
+        );
+        output.textures_delta.clear();
+        let mut labels = Vec::new();
+        fn collect(shape: &egui::Shape, labels: &mut Vec<(String, egui::Rect)>) {
+            match shape {
+                egui::Shape::Text(text) => labels.push((
+                    text.galley.text().to_owned(),
+                    egui::Rect::from_min_size(text.pos, text.galley.size()),
+                )),
+                egui::Shape::Vec(shapes) => {
+                    for shape in shapes {
+                        collect(shape, labels);
+                    }
+                }
+                _ => {}
+            }
+        }
+        for shape in output.shapes {
+            collect(&shape.shape, &mut labels);
+        }
+        labels
+    };
+    let click = |desktop: &mut Desktop, fixture: &mut Fixture, position: egui::Pos2| {
+        for pressed in [true, false] {
+            frame(
+                desktop,
+                fixture,
+                vec![
+                    egui::Event::PointerMoved(position),
+                    egui::Event::PointerButton {
+                        pos: position,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+            );
+        }
+    };
+    let center = |labels: &[(String, egui::Rect)], label: &str| {
+        labels
+            .iter()
+            .find(|(text, _)| text == label)
+            .unwrap_or_else(|| panic!("Missing {label}"))
+            .1
+            .center()
+    };
+    let labels = frame(&mut desktop, &mut fixture, vec![]);
+    assert!(labels.iter().any(|(text, _)| text == "Read Steam"));
+    assert!(!labels.iter().any(|(text, _)| text == "Delete on Steam"));
+    click(
+        &mut desktop,
+        &mut fixture,
+        center(&labels, "First steps on Steam"),
+    );
+    let labels = frame(&mut desktop, &mut fixture, vec![]);
+    assert!(
+        desktop
+            .steam_marks
+            .contains(&(EntityKind::Achievement, "STEAM_FIRST".into()))
+    );
+    click(
+        &mut desktop,
+        &mut fixture,
+        center(&labels, "Distance on Steam"),
+    );
+    let labels = frame(&mut desktop, &mut fixture, vec![]);
+    assert!(labels.iter().any(|(text, _)| text == "Delete on Steam"));
+    click(
+        &mut desktop,
+        &mut fixture,
+        center(&labels, "Delete on Steam"),
+    );
+    let labels = frame(&mut desktop, &mut fixture, vec![]);
+    assert!(
+        labels
+            .iter()
+            .any(|(text, _)| text == "2 entries are marked for deletion.")
+    );
+    assert!(
+        labels
+            .iter()
+            .any(|(text, _)| text == "First steps on Steam · STEAM_FIRST")
+    );
+    assert!(
+        labels
+            .iter()
+            .any(|(text, _)| text == "Distance on Steam · STEAM_DISTANCE")
+    );
+    assert!(labels.iter().any(|(text, _)| text == "Achievements (1)"));
+    assert!(labels.iter().any(|(text, _)| text == "Stats (1)"));
+    click(&mut desktop, &mut fixture, center(&labels, "Close"));
+    let labels = frame(&mut desktop, &mut fixture, vec![]);
+    assert!(!desktop.steam_delete_review);
+    assert_eq!(desktop.steam_marks.len(), 2);
+    assert!(
+        !labels
+            .iter()
+            .any(|(text, _)| text == "2 entries are marked for deletion.")
+    );
+    click(&mut desktop, &mut fixture, center(&labels, "Read Steam"));
+    assert!(desktop.steam_marks.is_empty());
+    assert!(matches!(
+        desktop.requests.as_slice(),
+        [UiRequest::ReadSteam]
+    ));
+    assert_eq!(fixture.editor.document(), &before);
+}
+
 pub(crate) fn configure_test_fonts(ctx: &egui::Context) {
     let faces = std::env::var_os("SystemRoot").and_then(|root| {
         let fonts = std::path::PathBuf::from(root).join("Fonts");
@@ -1409,6 +1550,30 @@ fn title_bar_controls_preserve_close_checks_and_emit_window_actions() {
         };
     frame(&mut desktop, &mut fixture, vec![], (false, false));
     frame(&mut desktop, &mut fixture, vec![], (false, false));
+    let identity = ctx
+        .read_response(egui::Id::new("title-identity"))
+        .unwrap()
+        .rect;
+    let minimize = ctx
+        .read_response(egui::Id::new("window-minimize"))
+        .unwrap()
+        .rect;
+    let drag = ctx
+        .read_response(egui::Id::new("window-drag"))
+        .unwrap()
+        .rect;
+    assert!(
+        identity.right() <= minimize.left() + 1.0,
+        "name and version sit left of the window controls: {identity:?} {minimize:?}"
+    );
+    assert!(
+        drag.right() <= identity.left() + 1.0,
+        "the drag gap stays left of the name and version"
+    );
+    assert!(
+        identity.left() > 800.0 && identity.width() < 280.0,
+        "the name and version stay a short right-aligned label: {identity:?}"
+    );
     for (id, state, expected) in [
         (
             "window-minimize",

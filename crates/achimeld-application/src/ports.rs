@@ -44,6 +44,9 @@ pub enum UiRequest {
     PrepareSynchronization,
     ApplySynchronization(Vec<(String, String)>),
     CancelSynchronization,
+    OpenBrowserProfile,
+    DeleteBrowserProfile,
+    ForgetSteamValidation,
     PreviewSynchronizationIcons(String),
     CancelExport,
     ExportIcons,
@@ -368,6 +371,9 @@ pub trait EditorPort {
         &[]
     }
     fn reading(&self) -> bool {
+        false
+    }
+    fn browser_profile_busy(&self) -> bool {
         false
     }
     fn synchronization_review(&self) -> Option<&serde_json::Value> {

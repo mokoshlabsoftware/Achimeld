@@ -3,7 +3,7 @@ namespace Achimeld.Security;
 public static class SteamNetworkPolicy
 {
     private static readonly string[] ExactHosts = ["partner.steamgames.com", "store.steampowered.com",
-        "login.steampowered.com", "steamcommunity.com"];
+        "login.steampowered.com", "steamcommunity.com", "api.steampowered.com"];
     private static readonly string[] ContentDomains = ["steamstatic.com", "steamcontent.com"];
 
     public static bool IsAllowedHost(string host) =>

@@ -56,6 +56,249 @@ fn text(document: &mut Document, entity: &Value, key: &str, value: &str) -> Resu
         0,
     )
 }
+
+struct StatDraft {
+    api_name: String,
+    display_name: String,
+    kind: String,
+    position: Option<[i32; 2]>,
+    settings: Option<Value>,
+}
+
+fn stat_drafts(args: &Value) -> Result<Vec<StatDraft>, String> {
+    let mut drafts = Vec::new();
+    match &args["stats"] {
+        Value::String(text) => parse_stat_text(text, &mut drafts)?,
+        Value::Array(entries) => {
+            for entry in entries {
+                drafts.push(stat_draft(entry)?);
+            }
+        }
+        _ => return Err("Missing stats".into()),
+    }
+    if !(1..=1000).contains(&drafts.len()) {
+        return Err("Create 1-1000 stats".into());
+    }
+    Ok(drafts)
+}
+
+fn parse_stat_text(text: &str, drafts: &mut Vec<StatDraft>) -> Result<(), String> {
+    for raw in text.lines() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if line.contains('|') {
+            drafts.push(stat_pipe(line)?);
+            continue;
+        }
+        for part in line.split([',', ';']) {
+            let name = part.trim();
+            if name.is_empty() {
+                return Err(format!("Invalid stat list entry: {line}"));
+            }
+            drafts.push(named_stat(name, name, "Int", None)?);
+        }
+    }
+    Ok(())
+}
+
+fn stat_pipe(line: &str) -> Result<StatDraft, String> {
+    let parts: Vec<&str> = line.split('|').map(str::trim).collect();
+    if !(1..=3).contains(&parts.len()) || parts[0].is_empty() {
+        return Err(format!("Invalid stat list entry: {line}"));
+    }
+    let display = parts
+        .get(1)
+        .copied()
+        .filter(|part| !part.is_empty())
+        .unwrap_or(parts[0]);
+    let kind = parts
+        .get(2)
+        .copied()
+        .filter(|part| !part.is_empty())
+        .unwrap_or("Int");
+    named_stat(parts[0], display, kind, None)
+}
+
+fn named_stat(
+    api: &str,
+    display: &str,
+    kind: &str,
+    settings: Option<Value>,
+) -> Result<StatDraft, String> {
+    achimeld_core::SteamApiName::new(api).map_err(|error| error.to_string())?;
+    if api.trim() != api {
+        return Err("Duplicate or noncanonical API name".into());
+    }
+    if display.trim().is_empty()
+        || display.chars().count() > 1024
+        || display.chars().any(char::is_control)
+    {
+        return Err(format!("Invalid display name for {api}"));
+    }
+    if !matches!(kind, "Int" | "Float" | "AverageRate") {
+        return Err(format!("Invalid stat type for {api}"));
+    }
+    Ok(StatDraft {
+        api_name: api.to_owned(),
+        display_name: display.to_owned(),
+        kind: kind.to_owned(),
+        position: None,
+        settings,
+    })
+}
+
+fn stat_draft(entry: &Value) -> Result<StatDraft, String> {
+    if let Some(name) = entry.as_str() {
+        let name = name.trim();
+        return named_stat(name, name, "Int", None);
+    }
+    let Some(object) = entry.as_object() else {
+        return Err("Invalid stat entry".into());
+    };
+    for key in object.keys() {
+        if !matches!(
+            key.as_str(),
+            "apiName"
+                | "displayName"
+                | "type"
+                | "column"
+                | "row"
+                | "minimum"
+                | "maximum"
+                | "defaultValue"
+                | "maximumChange"
+                | "averageRateWindowSeconds"
+                | "incrementOnly"
+                | "aggregated"
+                | "setBy"
+        ) {
+            return Err(format!("Unknown stat field: {key}"));
+        }
+    }
+    let api = entry["apiName"].as_str().ok_or("Missing apiName")?;
+    let display = match entry.get("displayName") {
+        None => api,
+        Some(Value::String(name)) => name.as_str(),
+        _ => return Err(format!("Invalid display name for {api}")),
+    };
+    let kind = match entry.get("type") {
+        None => "Int",
+        Some(Value::String(kind)) => kind.as_str(),
+        _ => return Err(format!("Invalid stat type for {api}")),
+    };
+    let mut draft = named_stat(api, display, kind, Some(entry.clone()))?;
+    let column = optional_i32(entry, "column")?;
+    let row = optional_i32(entry, "row")?;
+    draft.position = match (column, row) {
+        (None, None) => None,
+        (Some(column), Some(row)) => Some([column, row]),
+        _ => return Err("Supply both column and row, or omit both".into()),
+    };
+    Ok(draft)
+}
+
+fn optional_i32(entry: &Value, key: &str) -> Result<Option<i32>, String> {
+    match entry.get(key) {
+        None => Ok(None),
+        Some(value) => value
+            .as_i64()
+            .and_then(|number| i32::try_from(number).ok())
+            .map(Some)
+            .ok_or_else(|| format!("Invalid {key}")),
+    }
+}
+
+fn apply_stat_settings(entity: &mut Value, entry: &Value, api: &str) -> Result<(), String> {
+    for key in [
+        "minimum",
+        "maximum",
+        "defaultValue",
+        "maximumChange",
+        "averageRateWindowSeconds",
+    ] {
+        if let Some(value) = entry.get(key) {
+            if !value.is_null() && !value.is_number() {
+                return Err(format!("Invalid {key} for {api}"));
+            }
+            entity[key] = value.clone();
+        }
+    }
+    for key in ["incrementOnly", "aggregated"] {
+        if let Some(value) = entry.get(key) {
+            entity[key] = json!(
+                value
+                    .as_bool()
+                    .ok_or_else(|| format!("Invalid {key} for {api}"))?
+            );
+        }
+    }
+    if let Some(value) = entry.get("setBy") {
+        let set_by = value
+            .as_str()
+            .ok_or_else(|| format!("Invalid setBy for {api}"))?;
+        if !matches!(set_by, "GameClient" | "GameServer" | "OfficialGameServer") {
+            return Err(format!("Invalid setBy for {api}"));
+        }
+        entity["setBy"] = json!(set_by);
+    }
+    Ok(())
+}
+
+fn add_stat(document: &mut Document, draft: &StatDraft) -> Result<Value, String> {
+    let requested = draft.position.unwrap_or_else(|| {
+        crate::canvas::auto_position(EntityKind::Stat, document.entities(EntityKind::Stat).len())
+    });
+    if requested
+        .iter()
+        .any(|number| !(-100_000..=100_000).contains(number))
+    {
+        return Err("Invalid canvas position".into());
+    }
+    let position = crate::canvas::vacant_position(
+        EntityKind::Stat,
+        document.entities(EntityKind::Stat),
+        requested,
+    );
+    document.apply(
+        &Command::AddAt {
+            kind: EntityKind::Stat,
+            position,
+        },
+        0,
+    )?;
+    let mut entity = document
+        .entities(EntityKind::Stat)
+        .last()
+        .ok_or("Creation failed")?
+        .clone();
+    entity["apiName"] = json!(draft.api_name);
+    entity["internalName"] = json!(draft.display_name);
+    entity["type"] = json!(draft.kind);
+    if let Some(settings) = &draft.settings {
+        apply_stat_settings(&mut entity, settings, &draft.api_name)?;
+    }
+    text(
+        document,
+        &entity,
+        "displayNameLocalizationId",
+        &draft.display_name,
+    )?;
+    let id = string(&entity, "id")?.to_owned();
+    let column = entity["canvasColumn"].clone();
+    let row = entity["canvasRow"].clone();
+    replace(document, EntityKind::Stat, entity)?;
+    Ok(json!({
+        "nodeId": id,
+        "apiName": draft.api_name,
+        "displayName": draft.display_name,
+        "type": draft.kind,
+        "column": column,
+        "row": row
+    }))
+}
+
 pub struct Prepared {
     pub document: Document,
     pub result: Value,
@@ -105,6 +348,30 @@ pub fn prepare(original: &Document, operation: &str, args: &Value) -> Result<Pre
             replace(&mut document, kind, entity)?;
             selection = Some((kind, id.clone()));
             json!({"nodeId":id})
+        }
+        "create_stats" => {
+            let drafts = stat_drafts(args)?;
+            if document.entities(EntityKind::Stat).len() + drafts.len() > 20_000 {
+                return Err("Too many project entities".into());
+            }
+            let mut created = Vec::with_capacity(drafts.len());
+            for draft in &drafts {
+                if document.entities(EntityKind::Stat).iter().any(|entity| {
+                    entity["apiName"]
+                        .as_str()
+                        .is_some_and(|name| name.eq_ignore_ascii_case(&draft.api_name))
+                }) {
+                    return Err(format!("Duplicate API name: {}", draft.api_name));
+                }
+                created.push(add_stat(&mut document, draft)?);
+            }
+            let id = created
+                .last()
+                .and_then(|entry| entry["nodeId"].as_str())
+                .ok_or("Creation failed")?
+                .to_owned();
+            selection = Some((EntityKind::Stat, id));
+            json!({"createdCount": created.len(), "stats": created})
         }
         "update_node" => {
             let id = string(args, "nodeId")?;
@@ -571,5 +838,136 @@ mod tests {
         assert_ne!(a[1]["effects"][0]["id"], b[1]["effects"][0]["id"]);
         assert_eq!(a[0]["maskLayerId"], a[1]["id"]);
         assert_ne!(a[1]["id"], layer);
+    }
+    #[test]
+    fn bulk_stat_creation_is_one_undo_step() {
+        let mut editor = Editor::default();
+        let existing = apply(
+            &mut editor,
+            "create_stat",
+            json!({"apiName":"EXISTING","displayName":"Existing","type":"Int","column":0,"row":0}),
+        )["nodeId"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let before = editor.document().clone();
+        assert!(
+            prepare(
+                editor.document(),
+                "create_stats",
+                &json!({"stats":"EXISTING"})
+            )
+            .is_err()
+        );
+        assert_eq!(*editor.document(), before);
+        let batch = json!({"stats":[
+            "KILLS",
+            {"apiName":"DISTANCE","displayName":"Distance","type":"Float","minimum":0,"maximum":10.5,"defaultValue":1,"incrementOnly":true,"setBy":"GameServer"},
+            {"apiName":"SPEED","displayName":"Speed","type":"AverageRate","averageRateWindowSeconds":30,"aggregated":true,"column":40,"row":20}
+        ]});
+        let prepared = prepare(editor.document(), "create_stats", &batch).unwrap();
+        let last = prepared.result["stats"].as_array().unwrap().last().unwrap()["nodeId"]
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            prepared.selection,
+            Some((EntityKind::Stat, last.to_owned()))
+        );
+        assert_eq!(prepared.result["createdCount"], 3);
+        editor
+            .execute(
+                "create_stats",
+                Command::ApplyAutomation(Box::new(prepared.document)),
+                None,
+            )
+            .unwrap();
+        {
+            let stat = |name: &str| {
+                editor
+                    .document()
+                    .entities(EntityKind::Stat)
+                    .iter()
+                    .find(|entity| entity["apiName"] == name)
+                    .unwrap()
+                    .clone()
+            };
+            let kills = stat("KILLS");
+            let distance = stat("DISTANCE");
+            let speed = stat("SPEED");
+            assert_eq!(editor.document().display_name(&kills, "English"), "KILLS");
+            assert_eq!(kills["type"], "Int");
+            assert!(kills["minimum"].is_null());
+            let packed = crate::canvas::auto_position(EntityKind::Stat, 1);
+            assert_eq!(kills["canvasColumn"], packed[0]);
+            assert_eq!(kills["canvasRow"], packed[1]);
+            assert_eq!(
+                editor.document().display_name(&distance, "English"),
+                "Distance"
+            );
+            assert_eq!(distance["type"], "Float");
+            assert_eq!(distance["minimum"], 0);
+            assert_eq!(distance["maximum"], 10.5);
+            assert_eq!(distance["defaultValue"], 1);
+            assert_eq!(distance["incrementOnly"], true);
+            assert_eq!(distance["setBy"], "GameServer");
+            assert_eq!(speed["type"], "AverageRate");
+            assert_eq!(speed["averageRateWindowSeconds"], 30);
+            assert_eq!(speed["aggregated"], true);
+            assert_eq!(speed["canvasColumn"], 40);
+            assert_eq!(speed["canvasRow"], 20);
+        }
+        assert!(editor.undo());
+        assert_eq!(editor.document().entities(EntityKind::Stat).len(), 1);
+        assert!(
+            editor
+                .document()
+                .entity(EntityKind::Stat, &existing)
+                .is_some()
+        );
+        let text = apply(
+            &mut editor,
+            "create_stats",
+            json!({"stats":"# comment\nKILLS\nDEATHS | Deaths | Float\nWINS, SCORE"}),
+        );
+        assert_eq!(text["createdCount"], 4);
+        {
+            let stat = |name: &str| {
+                editor
+                    .document()
+                    .entities(EntityKind::Stat)
+                    .iter()
+                    .find(|entity| entity["apiName"] == name)
+                    .unwrap()
+                    .clone()
+            };
+            assert_eq!(stat("DEATHS")["type"], "Float");
+            assert_eq!(
+                editor.document().display_name(&stat("DEATHS"), "English"),
+                "Deaths"
+            );
+            assert_eq!(stat("WINS")["type"], "Int");
+            assert_eq!(stat("SCORE")["type"], "Int");
+            assert_eq!(
+                stat("KILLS")["canvasColumn"],
+                crate::canvas::auto_position(EntityKind::Stat, 1)[0]
+            );
+        }
+        assert!(editor.undo());
+        assert_eq!(editor.document().entities(EntityKind::Stat).len(), 1);
+        let unchanged = editor.document().clone();
+        for stats in [
+            json!({"stats":[{"apiName":"FRACTION","minimum":0.5}]}),
+            json!({"stats":[{"apiName":"PARTIAL","column":1}]}),
+            json!({"stats":"\n# only\n"}),
+            json!({"stats":["KILLS","kills"]}),
+            json!({"stats":"BAD | Bad | String"}),
+            json!({"stats":[{"apiName":"EXTRA","path":"C:\\x"}]}),
+        ] {
+            assert!(prepare(editor.document(), "create_stats", &stats).is_err());
+            assert_eq!(*editor.document(), unchanged);
+        }
+        let many: Vec<_> = (0..1001).map(|index| format!("S{index}")).collect();
+        assert!(prepare(editor.document(), "create_stats", &json!({"stats": many})).is_err());
+        assert_eq!(*editor.document(), unchanged);
     }
 }

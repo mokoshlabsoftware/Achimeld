@@ -1,6 +1,6 @@
 //! Saved-style previews and an undoable, explicitly approved name edit.
 use crate::{Desktop, buttons, icons, layer_palette, localization};
-use achimeld_application::{EditorPort, IconStyle};
+use achimeld_application::{Command, EditorPort, EntityKind, IconStyle, style_signature};
 use egui::{Align2, Color32, Pos2, Rect, Sense, Vec2};
 use serde_json::{Value, json};
 
@@ -15,6 +15,12 @@ pub(crate) struct StyleRename {
     recipe: Option<Value>,
 }
 
+pub(crate) struct StyleEditPrompt {
+    project: String,
+    achievement: String,
+    style: String,
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Glyph {
     Rename,
@@ -23,6 +29,7 @@ pub(crate) enum Glyph {
     Import,
     Save,
     Validate,
+    Delete,
 }
 impl Glyph {
     pub(crate) fn image(self, ctx: &egui::Context, size: f32) -> egui::Image<'static> {
@@ -44,6 +51,10 @@ impl Glyph {
                 include_bytes!("../assets/toolbar/style-import.rgba"),
             ),
             Self::Save => ("save", include_bytes!("../assets/toolbar/style-save.rgba")),
+            Self::Delete => (
+                "delete",
+                include_bytes!("../assets/toolbar/steam-delete.rgba"),
+            ),
             Self::Validate => (
                 "validate",
                 include_bytes!("../assets/toolbar/sync-validate.rgba"),
@@ -103,6 +114,102 @@ pub(crate) fn steam_set_caption(port: &dyn EditorPort, style: Option<&str>) -> S
 }
 
 impl Desktop {
+    // Regular icons use recipe matching. Keep the explicitly chosen identity
+    // while recipes match, including when a newly saved style duplicates another.
+    pub(crate) fn matching_icon_style<'a>(
+        &self,
+        port: &dyn EditorPort,
+        icon: &Value,
+        styles: &'a [IconStyle],
+    ) -> Option<&'a IconStyle> {
+        let linked = self.linked_icon_style(port);
+        let chosen = self
+            .selection
+            .first()
+            .and_then(|id| self.icon_style_choices.get(id));
+        let signature = style_signature(icon);
+        styles
+            .iter()
+            .find(|style| Some(&style.id) == linked.as_ref())
+            .or_else(|| {
+                styles.iter().find(|style| {
+                    Some(&style.id) == chosen && style_signature(&style.recipe) == signature
+                })
+            })
+            .or_else(|| {
+                styles
+                    .iter()
+                    .find(|style| style_signature(&style.recipe) == signature)
+            })
+    }
+
+    pub(crate) fn set_style_edit_mode(&mut self, port: &mut dyn EditorPort, style: Option<String>) {
+        port.finish_group();
+        self.layer_palette.active_style = style;
+    }
+
+    fn remember_icon_style(&mut self, port: &dyn EditorPort, achievement: &str, style: &str) {
+        self.icon_style_choices.retain(|id, _| {
+            port.editor()
+                .document()
+                .entity(EntityKind::Achievement, id)
+                .is_some()
+        });
+        self.icon_style_choices
+            .insert(achievement.into(), style.into());
+    }
+
+    pub(crate) fn style_edit_prompt_window(
+        &mut self,
+        ctx: &egui::Context,
+        port: &mut dyn EditorPort,
+    ) {
+        use crate::steam::{ReviewAction, ReviewChoice, review_prompt};
+        let Some(prompt) = self.style_edit_prompt.take() else {
+            return;
+        };
+        if port.editor().document().project()["projectId"].as_str() != Some(&prompt.project)
+            || self.selection.first() != Some(&prompt.achievement)
+            || !port
+                .icon_styles()
+                .iter()
+                .any(|style| style.id == prompt.style)
+            || port
+                .editor()
+                .document()
+                .entity(EntityKind::Achievement, &prompt.achievement)
+                .is_none()
+        {
+            return;
+        }
+        let choice = review_prompt(
+            ctx,
+            "created-style-edit-mode",
+            &localization::text(ctx, "Style created"),
+            Glyph::Save.image(ctx, 24.0),
+            &[
+                ReviewAction {
+                    label: "Stay in icon edit mode",
+                    icon: Glyph::Cancel.image(ctx, 20.0),
+                },
+                ReviewAction {
+                    label: "Edit style",
+                    icon: Glyph::Rename.image(ctx, 20.0),
+                },
+            ],
+            |ui| {
+                ui.add(egui::Label::new(localization::text(ctx,
+                    "The new style is assigned to this icon. Stay in icon edit mode, or edit the style and every icon using it?"))
+                    .wrap().halign(egui::Align::Center));
+            },
+        );
+        match choice {
+            ReviewChoice::Action(1) => self.set_style_edit_mode(port, Some(prompt.style)),
+            ReviewChoice::Idle => self.style_edit_prompt = Some(prompt),
+            _ => self.set_style_edit_mode(port, None),
+        }
+    }
+
     pub(crate) fn linked_icon_style(&self, port: &dyn EditorPort) -> Option<String> {
         self.selection
             .first()
@@ -202,12 +309,8 @@ impl Desktop {
             .iter()
             .map(|style| row_id(&style.id, "apply"))
             .collect();
-        let selected = styles
-            .iter()
-            .find(|style| {
-                achimeld_application::style_signature(&style.recipe)
-                    == achimeld_application::style_signature(icon)
-            })
+        let selected = self
+            .matching_icon_style(port, icon, styles)
             .map(|style| row_id(&style.id, "apply"));
         let scroll_to = crate::dropdown_navigation::virtual_rows(ui, &ids, selected);
         let mut scroll = egui::ScrollArea::vertical()
@@ -222,13 +325,7 @@ impl Desktop {
                 ui.horizontal(|ui| {
                     let action_width = 32.0_f32.max(ui.text_style_height(&egui::TextStyle::Button));
                     let width = (ui.available_width() - 2.0 * action_width).max(1.0);
-                    let selected = self.linked_icon_style(port).map_or_else(
-                        || {
-                            achimeld_application::style_signature(&style.recipe)
-                                == achimeld_application::style_signature(icon)
-                        },
-                        |id| id == style.id,
-                    );
+                    let selected = selected == Some(row_id(&style.id, "apply"));
                     let response = ui.add_sized(
                         [width, height],
                         buttons::Button::selectable(selected, "")
@@ -253,6 +350,7 @@ impl Desktop {
                         *icon = style.recipe.clone();
                         icon["layers"] = json!(layers);
                         self.layer_palette.active_style = None;
+                        self.remember_icon_style(port, &achievement, &style.id);
                         self.layer_palette.edit_label = Some("Apply icon style");
                         ui.close();
                     }
@@ -570,8 +668,59 @@ impl Desktop {
                     recipe,
                     preview_png: None,
                 };
-                match port.save_icon_style(style) {
-                    Ok(()) => return,
+                let result = port
+                    .editor()
+                    .document()
+                    .entity(EntityKind::Achievement, &edit.achievement)
+                    .cloned()
+                    .ok_or_else(|| "This icon no longer exists.".to_owned())
+                    .and_then(|mut entity| {
+                        entity["icon"] = style.recipe.clone();
+                        if achimeld_application::style_achievements::is_style_achievement(&entity) {
+                            entity["iconStyleId"] = json!(style.id);
+                        }
+                        port.finish_group();
+                        port.execute(
+                            "Save project icon style",
+                            Command::Batch(vec![
+                                Command::SaveIconStyle(style),
+                                Command::ReplaceEntity {
+                                    kind: EntityKind::Achievement,
+                                    id: edit.achievement.clone(),
+                                    value: entity,
+                                },
+                            ]),
+                            None,
+                        )
+                    });
+                match result {
+                    Ok(()) => {
+                        self.remember_icon_style(port, &edit.achievement, &edit.style);
+                        self.entity_drafts.remove(&edit.achievement);
+                        if port
+                            .editor()
+                            .document()
+                            .entity(EntityKind::Achievement, &edit.achievement)
+                            .is_some_and(|entity| {
+                                !achimeld_application::style_achievements::is_local_icon(entity)
+                            })
+                        {
+                            let was_editing_style = self.layer_palette.active_style.is_some();
+                            self.set_style_edit_mode(
+                                port,
+                                was_editing_style.then(|| edit.style.clone()),
+                            );
+                            if !was_editing_style {
+                                self.style_edit_prompt = Some(StyleEditPrompt {
+                                    project: edit.project,
+                                    achievement: edit.achievement,
+                                    style: edit.style,
+                                });
+                                ctx.request_repaint();
+                            }
+                        }
+                        return;
+                    }
                     Err(error) => edit.error = Some(error),
                 }
                 self.style_rename = Some(edit);

@@ -7,6 +7,11 @@ namespace Achimeld.ReadWorker;
 // Playwright call logs, URLs, portal contents and credentials never cross it.
 internal static class WorkerFailure
 {
+    internal static System.Text.Json.JsonElement Details(string stage, Exception exception, long elapsed,
+        BrowserRequestDiagnostic? request) => System.Text.Json.JsonSerializer.SerializeToElement(new {
+            stage, kind = Kind(exception), elapsedMs = Math.Clamp(elapsed, 0, 300000), request,
+        }, Achimeld.Security.SecurityWire.Json);
+
     internal static string Kind(Exception exception) => exception switch {
         OperationCanceledException => "cancelled", System.TimeoutException => "timeout",
         Microsoft.Playwright.PlaywrightException => "playwright", PortalSafetyException => "portal-policy",

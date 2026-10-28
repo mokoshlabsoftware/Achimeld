@@ -167,6 +167,8 @@ The trailing text unlock-value toggle uses the generated chain links in
 are retained in `text-unlock-link.json`; the centered 64 x 64 white tintable
 glyph preserves the generated alpha and follows the shared button ink.
 
+Read Steam and Delete on Steam use generated `steam-read` and `steam-delete` glyphs. The original black-background JPEG sources are retained unchanged. Exact built-in imagegen prompts and the white 64 x 64 RGBA preparation are recorded in `steam-actions.json`. Luminance becomes alpha, visible bounds are centered, and the icons follow shared button ink with linear mipmap filtering. Delete on Steam uses an orange-red body mixed from the Warning and Error palette colors.
+
 Toolbar PNGs are limited to 128 x 128 by `build/Resize-ToolbarIcons.ps1`,
 invoked by `build/Rust.ps1` before build/run/check/test/clippy. It preserves
 aspect ratio and transparency using high-quality bicubic interpolation and

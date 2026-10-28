@@ -24,6 +24,12 @@ public static class BrowserReadPolicy
 
     internal static bool IsImagePath(string path) => HasExtension(path, [".png", ".jpg", ".jpeg", ".webp", ".gif", ".ico"]);
 
+    internal static bool IsMediaPath(string path) => HasExtension(path, [".mp3", ".ogg", ".wav", ".m4a", ".aac", ".mp4", ".webm", ".ogv"]);
+
+    internal static bool IsMediaQuery(string query) => query.Length == 0 ||
+        (query.Length <= 24 && (query.StartsWith("?v=", StringComparison.Ordinal) || query.StartsWith("?t=", StringComparison.Ordinal)) &&
+         query.Length > 3 && query[3..].All(char.IsAsciiDigit));
+
     internal static bool IsStaticPath(string path) => HasExtension(path, [".js", ".css", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".ico", ".svg", ".woff", ".woff2", ".ttf"]);
 
     private static bool HasExtension(string path, string[] extensions) =>

@@ -68,6 +68,10 @@ foreach ($file in $before) {
     }
     New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $source $file.path) -Destination $target -Force
+    # Cargo and MSBuild share external caches across snapshots. Preserved source
+    # timestamps can predate a previous build of different bytes, causing stale
+    # binaries (including the embedded working version) to be reused.
+    [IO.File]::SetLastWriteTimeUtc($target, [DateTime]::UtcNow)
     if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant() -cne $file.sha256) {
         throw 'Source changed during snapshot capture. Retry after the current edit finishes.'
     }

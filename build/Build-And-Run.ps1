@@ -64,5 +64,10 @@ $launchArguments = @{}
 $bootstrapper = Join-Path $launchRoot 'Achimeld.exe'
 if ((Get-FileHash -LiteralPath $bootstrapper -Algorithm SHA256).Hash.ToLowerInvariant() -cne $built.VerifierSha256) { throw 'Bootstrapper differs from this verified build.' }
 Write-Host ('Starting the local test build without installation: ' + $bootstrapper)
-$application = Start-Process -FilePath $bootstrapper -WorkingDirectory $launchRoot -NoNewWindow -Wait -PassThru @launchArguments
+try {
+    $application = Start-Process -FilePath $bootstrapper -WorkingDirectory $launchRoot -NoNewWindow -Wait -PassThru @launchArguments
+} finally {
+    . (Join-Path $PSScriptRoot 'DevelopmentProcesses.ps1')
+    Stop-AchimeldIdleDevelopmentMcp -PackagePath $launchRoot
+}
 if ($application.ExitCode -ne 0) { throw 'Achimeld stopped. Check the startup or security diagnostics.' }

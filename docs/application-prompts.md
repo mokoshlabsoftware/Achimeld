@@ -42,6 +42,25 @@ Selecting **Validate** for a project without a saved file shows **Saved project 
 
 ## Review
 
+**Delete browser profile** is available from both Sync and Steam. Its Yes/No prompt
+explains that only Achimeld's Chromium profile and saved sign-in are deleted, while
+the Steam account and project remain. **Forget validation** in Sync has a separate
+Yes/No prompt explaining removal of the saved validation, remote snapshot and game
+banner. Used artwork and authored entries remain; saving persists this undoable edit.
+No, Escape and outside dismissal cancel both prompts. Active Steam operations block
+these actions; deletion runs in the supervised host without freezing the interface.
+
+Saving a new project style while editing an ordinary icon assigns and selects the
+new style without replacing its layer identities. After a successful save, show
+**Style created** with **Stay in icon edit mode** and **Edit style**. The latter
+enables the same **Affect style** mode as the star button, targeting the new style.
+Escape or clicking outside keeps icon editing and retains the saved style.
+Creation and assignment form one undo step; choosing an editing mode adds none.
+The existing recipe-based relationships between ordinary icons remain unchanged.
+When identical recipes exist, the current session remembers the explicitly chosen
+style for the banner, picker and star button. Linked style nodes retain their
+explicit link and local helper cards do not offer shared-style editing.
+
 File logging failure uses this same prompt layout and explains in-memory retention,
 automatic retry, and Preferences > General access. The status remains visible in
 Preferences and Terminal after dismissal. A duplicate desktop launch shows

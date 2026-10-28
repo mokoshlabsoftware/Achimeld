@@ -2,6 +2,126 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.26.0 (2026-10-28)
+
+- Fix the Steam delete action lint error blocking publication.
+
+## 0.2.25.17 (2026-10-28)
+
+- Fix the Steam delete action lint error blocking publication.
+
+## 0.2.25.16 (2026-10-28)
+
+- Arrange Steam achievements and stats in responsive columns with wider margins and scrollbar clearance.
+
+## 0.2.25.15 (2026-10-28)
+
+- Align Steam and Sync action bars with Art Data Bank and distinguish primary actions with a thin square outline.
+
+## 0.2.25.14 (2026-10-28)
+
+- Add confirmed, undoable forgetting of Steam validation, cached snapshots and unused game banners.
+
+## 0.2.25.13 (2026-10-28)
+
+- Add browser profile folder access and confirmed profile deletion to Sync and Steam.
+
+## 0.2.25.12 (2026-10-28)
+
+- Keep Steam sign-in active while its page redirects after authentication.
+
+## 0.2.25.11 (2026-10-28)
+
+- Allow Steam sign-in requests, open the login form for the selected game, and retain safe failure details.
+
+## 0.2.25.10 (2026-10-28)
+
+- Prevent development packages from reusing stale compiled files after source snapshot changes.
+
+## 0.2.25.9 (2026-10-28)
+
+- Make Steam validation a lightweight sign-in handshake before preparing synchronization artwork.
+
+## 0.2.25.8 (2026-10-28)
+
+- Remove the publisher identity sentence from the installer information page.
+
+## 0.2.25.7 (2026-10-28)
+
+- Restore filled installer maintenance buttons with centered artwork while retaining selection, Next and double-click actions.
+
+## 0.2.25.6 (2026-10-28)
+
+- Close idle development connectors after Build and Run and before installer package replacement
+
+## 0.2.25.5 (2026-10-28)
+
+- Allow bounded Steam audio and video requests and report safe browser request failure details.
+
+## 0.2.25.4 (2026-10-28)
+
+- Assign newly saved icon styles immediately and offer to continue editing the icon or its shared style.
+
+## 0.2.25.3 (2026-10-28)
+
+- Keep the installer unpacking animation moving and allow cancellation during decompression.
+
+## 0.2.25.2 (2026-10-28)
+
+- Select an installer maintenance option with one click and continue with Next or a double click.
+
+## 0.2.25.1 (2026-10-28)
+
+- Close Setup completely after a language handoff so hidden installer processes do not remain.
+
+## 0.2.25.0 (2026-10-28)
+
+- Require re-validation after a previous Steam session, and name the installation an update removes.
+
+## 0.2.24.2 (2026-10-28)
+
+- Show a previous Steam session as its own access state, with a half-grey partner banner and re-validation before synchronization.
+
+## 0.2.24.1 (2026-10-28)
+
+- On update, the installation folder page names the previous installation and says it will be removed while its settings remain.
+
+## 0.2.24.0 (2026-10-27)
+
+- Shrink the filter and hide toolbar labels so a narrower window does not cover the field.
+
+## 0.2.23.1 (2026-10-27)
+
+- Shrink the filter and hide toolbar labels so a narrower window does not cover the field.
+
+## 0.2.23.0 (2026-10-27)
+
+- Review Steam deletion marks and the synchronization plan before changes are applied.
+
+## 0.2.22.12 (2026-10-27)
+
+- Steam achievements and stats can be marked for deletion, and synchronization lists the planned actions before it runs.
+
+## 0.2.22.11 (2026-10-27)
+
+- Add stats in bulk from a JSON list or a plain name list through MCP.
+
+## 0.2.22.10 (2026-10-27)
+
+- State editor uptime, the open project, achievement nodes, Steam-synced nodes, and stats in the MCP handshake.
+
+## 0.2.22.9 (2026-10-27)
+
+- Show the Achimeld mark on the left of the title bar and the name and version on the right, and hide the save status.
+
+## 0.2.22.8 (2026-10-27)
+
+- Advertise the orange Achimeld logo as the MCP server icon.
+
+## 0.2.22.7 (2026-10-27)
+
+- Make the Connect MCP window larger so the setup instructions fit without scrolling.
+
 ## 0.2.22.6 (2026-10-27)
 
 - Show the specific installation failure reason on the Setup error page, including when Achimeld is still running.

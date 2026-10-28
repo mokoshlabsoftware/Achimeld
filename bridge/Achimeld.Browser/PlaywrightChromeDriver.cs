@@ -25,6 +25,9 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
     private bool _started;
     private SteamBrowserRequestPolicy _requestPolicy = new();
     public BrowserRequestRejection RequestRejection => _requestPolicy.Rejection;
+    private BrowserRequestDiagnostic? _lastRequestFailure;
+    public BrowserRequestDiagnostic? RequestRejectionDetails => _requestPolicy.RejectionDetails ?? Volatile.Read(ref _lastRequestFailure);
+    public void BeginDiagnosticOperation() => Volatile.Write(ref _lastRequestFailure, null);
     public string DiagnosticStage { get; private set; } = "idle";
 
 
@@ -71,6 +74,13 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
                 }).ConfigureAwait(false);
             _context.SetDefaultTimeout((float)settings.OperationTimeout.TotalMilliseconds);
             _context.SetDefaultNavigationTimeout((float)settings.OperationTimeout.TotalMilliseconds);
+            _context.RequestFailed += (_, request) => {
+                try {
+                    if (ReferenceEquals(request.Frame.Page, _page))
+                        Volatile.Write(ref _lastRequestFailure, BrowserRequestDiagnostic.Describe(request.Method,
+                            request.Url, request.IsNavigationRequest, request.ResourceType, request.Failure ?? "unknown"));
+                } catch (PlaywrightException) { }
+            };
 
             // Never enable networking for restored pages from the persistent profile.
             _page = await BrowserStartup.CreateOwnedPageAsync(_context, _requestPolicy, () => _page).ConfigureAwait(false);
@@ -89,14 +99,10 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
     {
         await RequireHealthyAsync().ConfigureAwait(false);
         IPage page = await EnsurePageAsync().ConfigureAwait(false);
-        // Inspect only authentication indicators, never password values or login HTML.
-        string indicators = await page.EvaluateAsync<string>("""
-            () => {
-                if (document.querySelector('input[type="password"], #login_form')) return 'login_form';
-                return (document.body?.innerText || '').slice(0, 4096);
-            }
-            """).ConfigureAwait(false);
-        return _classifier.ClassifyAuthentication(new ManagedPageDocument(new Uri(page.Url), "", indicators));
+        PortalAccessState state = await SteamAuthenticationProbe.ReadAsync(page).ConfigureAwait(false);
+        await RequireHealthyAsync().ConfigureAwait(false);
+        await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
+        return state;
     }
 
     public async Task NavigateForAuthenticationAsync()
@@ -141,6 +147,9 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
             new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
         DiagnosticStage = "navigation.final-popup-check";
         await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
+        DiagnosticStage = "navigation.login-prompt";
+        if (uri.AbsoluteUri == $"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}")
+            await SteamLoginPrompt.OpenIfNeededAsync(page, uri).ConfigureAwait(false);
         DiagnosticStage = "navigation.complete";
     }
 

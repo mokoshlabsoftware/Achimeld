@@ -15,6 +15,8 @@ public sealed class SteamBrowserRequestPolicy
     private uint? appId;
     private bool rejected;
     private BrowserRequestRejection rejection;
+    private BrowserRequestDiagnostic? rejectionDetails;
+    public BrowserRequestDiagnostic? RejectionDetails { get { lock (gate) return rejectionDetails; } }
     public BrowserRequestRejection Rejection { get { lock (gate) return rejection; } }
     private PortalEntityKind? draftKind;
     private string? armedPost;
@@ -51,8 +53,21 @@ public sealed class SteamBrowserRequestPolicy
         }
     }
 
-    public void Reject(BrowserRequestRejection reason = BrowserRequestRejection.Other) { lock (gate) { if (!rejected) rejection = reason; rejected = true; } }
+    public void Reject(BrowserRequestRejection reason = BrowserRequestRejection.Other, BrowserRequestDiagnostic? details = null)
+    {
+        lock (gate) { if (!rejected) { rejection = reason; rejectionDetails = details; } rejected = true; }
+    }
     public void RequireHealthy() { lock (gate) if (rejected) throw new InvalidDataException("Browser request policy rejected traffic."); }
+
+    // Chromium has already enforced CSP before reporting its violation. Do not
+    // send report bodies upstream or treat this optional report as a page action.
+    public bool DiscardsCspReport(string method, Uri uri, string resourceType, bool navigation, string? contentType)
+    {
+        lock (gate)
+            return !rejected && phase != Phase.Dormant && method == "POST" && !navigation &&
+                resourceType is "cspreport" or "other" && contentType == "application/csp-report" &&
+                uri.AbsoluteUri == "https://partner.steamgames.com/actions/CSPReport";
+    }
 
     public Uri ConfigurationUri(uint selected, string endpoint)
     {
@@ -160,7 +175,17 @@ public sealed class SteamBrowserRequestPolicy
             if (!string.IsNullOrEmpty(uri.Fragment) || method is not ("GET" or "POST")) return false;
             string host = uri.IdnHost.ToLowerInvariant(), path = uri.AbsolutePath;
             bool partner = host == "partner.steamgames.com";
+            // Media has no API/login authority, even when a request uses an allowed endpoint.
+            if (resourceType == "media") return method == "GET" && !navigation &&
+                BrowserReadPolicy.IsMediaPath(path) && BrowserReadPolicy.IsMediaQuery(uri.Query) &&
+                (BrowserReadPolicy.IsContentHost(host) || partner && path.StartsWith("/public/", StringComparison.Ordinal));
             string? pinned = appId?.ToString(CultureInfo.InvariantCulture);
+            if (host == "api.steampowered.com")
+                return phase == Phase.Authentication && !navigation && resourceType is "xhr" or "fetch" &&
+                    IsAuthenticationApi(method, path);
+            if (partner && path.StartsWith("/um/", StringComparison.Ordinal))
+                return phase == Phase.Authentication && !navigation && resourceType is "xhr" or "fetch" &&
+                    IsAuthenticationApi(method, path, browserApi: true);
             if (phase == Phase.Authentication && IsLoginPath(host, path)) return true;
             if (phase == Phase.ReviewedDraft && partner && string.IsNullOrEmpty(uri.Query))
             {
@@ -194,6 +219,23 @@ public sealed class SteamBrowserRequestPolicy
     }
     private static bool RecordPart(string text) => text.Length is > 0 and <= 10 &&
         uint.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out uint id) && text == id.ToString(CultureInfo.InvariantCulture);
+
+    // Steam's public login component uses these anonymous authentication RPCs.
+    // No account-management, token-administration or generic API authority.
+    private static bool IsAuthenticationApi(string method, string path, bool browserApi = false)
+    {
+        string prefix = browserApi ? "/um/Authentication/" : "/IAuthenticationService/";
+        string suffix = browserApi ? "/" : "/v1";
+        if (!path.StartsWith(prefix, StringComparison.Ordinal) || !path.EndsWith(suffix, StringComparison.Ordinal) ||
+            path.Length <= prefix.Length + suffix.Length) return false;
+        string rpc = path[prefix.Length..^suffix.Length];
+        return method switch {
+            "GET" => rpc == "GetPasswordRSAPublicKey",
+            "POST" => rpc is "BeginAuthSessionViaQR" or "BeginAuthSessionViaCredentials" or
+                "PollAuthSessionStatus" or "UpdateAuthSessionWithSteamGuardCode",
+            _ => false,
+        };
+    }
 
     private static bool IsLoginPath(string host, string path) =>
         (host is "partner.steamgames.com" or "store.steampowered.com" or "steamcommunity.com" or "login.steampowered.com") &&

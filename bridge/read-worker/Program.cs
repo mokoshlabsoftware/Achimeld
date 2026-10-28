@@ -43,6 +43,7 @@ try
                 requests.Count >= 9000 || !requests.Add(request.RequestId)) throw new InvalidDataException("Invalid or replayed worker request.");
             SteamWorkerResponse response;
             Stopwatch operationTimer = Stopwatch.StartNew();
+            driver.BeginDiagnosticOperation();
             try
             {
                 // The authenticated supervisor supplies mode. Caller environment cannot enable probes.
@@ -72,14 +73,20 @@ try
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 string code = WorkerFailure.Code(request.Operation, exception, driver.RequestRejection);
-                response = new(request.RequestId, false, JsonSerializer.SerializeToElement(new {
-                    stage = request.Operation == "navigate" ? driver.DiagnosticStage : "operation",
-                    kind = WorkerFailure.Kind(exception),
-                    elapsedMs = Math.Min(operationTimer.ElapsedMilliseconds, 300000),
-                }), code);
+                response = new(request.RequestId, false, WorkerFailure.Details(
+                    request.Operation == "navigate" ? driver.DiagnosticStage : "operation",
+                    exception, operationTimer.ElapsedMilliseconds, driver.RequestRejectionDetails), code);
             }
             await SecurityWire.WriteAsync(pipe, response, shutdown.Token);
-            if (!response.Success) { failed = true; break; }
+            if (!response.Success)
+            {
+                failed = true;
+                // The host checks child liveness before reading the pipe. Keep
+                // this failed, non-dispatching worker alive briefly so a fully
+                // written failure frame is consumed before process teardown.
+                await Task.Delay(TimeSpan.FromSeconds(1), shutdown.Token);
+                break;
+            }
         }
     }
     finally { await shutdown.CancelAsync(); await health; }
@@ -110,6 +117,14 @@ static async Task MonitorAsync(SupervisionSession session, PlaywrightChromeDrive
     catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { }
     catch (Exception exception) when (exception is not OutOfMemoryException)
     {
+        // Requests are already denied by the latched policy. Give the host's
+        // next authentication poll a bounded opportunity to receive the safe
+        // failure details before the watchdog exits the process.
+        if (driver.RequestRejection != BrowserRequestRejection.None)
+        {
+            try { await Task.Delay(TimeSpan.FromSeconds(3), shutdown.Token); }
+            catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { return; }
+        }
         await shutdown.CancelAsync();
         Environment.Exit(WorkerFailure.ExitCode(driver.RequestRejection));
     }

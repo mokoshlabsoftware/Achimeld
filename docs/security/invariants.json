@@ -143,7 +143,7 @@
     },
     {
       "id": "SEC-READ-002",
-      "claim": "Trusted browser requests lose authentication authority on read, retain one pinned App ID, and grant fixed draft-save/upload routes only inside a reviewed write scope; rejected traffic is terminal.",
+      "claim": "Trusted browser requests lose authentication authority on read, retain one pinned App ID, and grant fixed draft-save/upload routes only inside a reviewed write scope; rejected traffic is terminal. Exact browser-generated Steam CSP reports are discarded locally without network authority while the policy is healthy.",
       "enforcement": [
         { "file": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs", "symbol": "Allows" },
         { "file": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs", "symbol": "GameBannerUri" },

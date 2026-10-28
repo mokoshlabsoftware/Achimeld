@@ -25,6 +25,7 @@ pub fn allowed_host(host: &str) -> bool {
         "partner.steamgames.com"
             | "store.steampowered.com"
             | "login.steampowered.com"
+            | "api.steampowered.com"
             | "steamcommunity.com"
     ) || ["steamstatic.com", "steamcontent.com"]
         .iter()
@@ -132,6 +133,12 @@ mod tests {
     }
     #[test]
     fn bounded_connect_only() {
+        assert_eq!(
+            connect_host(b"CONNECT api.steampowered.com:443 HTTP/1.1\r\n\r\n").unwrap(),
+            "api.steampowered.com"
+        );
+        assert!(!allowed_host("sub.api.steampowered.com"));
+        assert!(!allowed_host("api.steampowered.com.evil.test"));
         assert_eq!(connect_host(b"CONNECT partner.steamgames.com:443 HTTP/1.1\r\nHost: partner.steamgames.com:443\r\n\r\n").unwrap(),"partner.steamgames.com");
         for bad in [
             "GET https://partner.steamgames.com/ HTTP/1.1\r\n\r\n",

@@ -3,6 +3,9 @@ using Achimeld.Browser;
 using Achimeld.Security;
 
 int checks = 0;
+checks += AuthenticationPolicyFixtures.Run();
+checks += CspReportFixtures.Run();
+checks += MediaPolicyFixtures.Run();
 checks += WorkerDiagnosticFixtures.Run();
 checks += GameBannerFixtures.Run();
 void Reject(Action action) { try { action(); } catch (Exception e) when (e is InvalidDataException or ArgumentException) { checks++; return; } throw new Exception("Unsafe input accepted."); }

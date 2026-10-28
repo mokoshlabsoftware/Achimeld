@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 pub enum Operation {
     Hello,
     Status,
+    ClearProfile,
     UdpProbe4,
     UdpProbe6,
 }
@@ -182,6 +183,28 @@ impl Session {
         }
     }
 
+    /// The supervisor owns the fixed path and refuses deletion while its browser is active.
+    pub fn clear_profile(&mut self) -> Result<(), SecurityError> {
+        self.require_healthy()?;
+        #[cfg(windows)]
+        {
+            let next = crate::windows::exchange(
+                &self.pipe_name,
+                &self.package_root,
+                Operation::ClearProfile,
+                None,
+            )?;
+            crate::windows::validate_paths(&self.package_root, &next)?;
+            validate_continuity(&self.status, &next)?;
+            self.status = next;
+            Ok(())
+        }
+        #[cfg(not(windows))]
+        {
+            Err(SecurityError("Profile deletion requires Windows"))
+        }
+    }
+
     pub fn check_network_denial(&mut self) -> Result<(), SecurityError> {
         if !self.status.network_enforced {
             return Err(SecurityError(
@@ -202,6 +225,19 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn profile_deletion_uses_the_existing_fixed_wire_operation_without_a_path() {
+        let value = serde_json::to_value(Request {
+            operation: Operation::ClearProfile,
+            nonce: "challenge".into(),
+            probe_token: None,
+            failure_code: None,
+        })
+        .unwrap();
+        assert_eq!(value["operation"], "clearProfile");
+        assert!(value.get("path").is_none());
+        assert_eq!(value.as_object().unwrap().len(), 4);
+    }
     fn healthy() -> Status {
         serde_json::from_value(serde_json::json!({"nonce":"challenge", "sessionId":"ab".repeat(32), "supervisorPid":123,
             "packageVersion":"0.1.0", "packageMode":"development", "networkEnforced":true, "monitoringActive":true,

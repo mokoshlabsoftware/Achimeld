@@ -26,6 +26,7 @@ pub(crate) enum Event {
     Complete(Result<Document, String>),
 }
 pub(crate) struct Pending {
+    pub handshake_only: bool,
     pub cancel: Cancellation,
     pub events: mpsc::Receiver<Event>,
     pub approval: mpsc::SyncSender<Vec<(String, String)>>,
@@ -42,6 +43,7 @@ impl Pending {
         revision: u64,
         mut assets: impl AssetSource + Send + 'static,
         ctx: eframe::egui::Context,
+        handshake_only: bool,
     ) -> Self {
         let cancel = Cancellation::default();
         let stop = cancel.clone();
@@ -61,15 +63,19 @@ impl Pending {
                 ctx.request_repaint();
                 Ok(())
             };
-            let result = run(
-                &destination,
-                document,
-                &mut assets,
-                &stop,
-                &approved,
-                &progress,
-                &mut stage,
-            );
+            let result = if handshake_only {
+                handshake(&document, &stop, &progress, &mut stage).map(|()| document)
+            } else {
+                run(
+                    &destination,
+                    document,
+                    &mut assets,
+                    &stop,
+                    &approved,
+                    &progress,
+                    &mut stage,
+                )
+            };
             match &result {
                 Ok(_) => achimeld_application::diagnostics::record(
                     "INFO",
@@ -90,6 +96,7 @@ impl Pending {
             let _ = progress(Event::Complete(result));
         });
         Self {
+            handshake_only,
             cancel,
             events,
             approval,
@@ -100,6 +107,68 @@ impl Pending {
             previews: IconPreviews::default(),
         }
     }
+}
+
+fn connect_steam(
+    app_id: SteamAppId,
+    stop: &Cancellation,
+    progress: &dyn Fn(Event) -> Result<(), String>,
+    stage: &mut &'static str,
+) -> Result<SteamReader, String> {
+    progress(Event::Progress(
+        "Opening Steam · sign in in the dedicated browser if requested".into(),
+    ))?;
+    *stage = "connecting to the supervisor";
+    progress(Event::Progress("Connecting to the supervisor…".into()))?;
+    let session = Session::connect().map_err(|e| e.to_string())?;
+    *stage = "starting the Steam worker";
+    progress(Event::Progress(
+        "Starting the supervised Steam worker…".into(),
+    ))?;
+    let mut reader = SteamReader::connect(session, stop.clone()).map_err(|e| e.to_string())?;
+    *stage = "starting the dedicated browser";
+    progress(Event::Progress(
+        "Starting the dedicated Steam browser…".into(),
+    ))?;
+    reader.start().map_err(|e| e.to_string())?;
+    *stage = "opening the Steamworks destination";
+    progress(Event::Progress(format!(
+        "Opening Steamworks destination · App ID {}",
+        app_id.value()
+    )))?;
+    reader.open_app(app_id).map_err(|e| e.to_string())?;
+    *stage = "waiting for Steam sign-in";
+    progress(Event::Progress(
+        "Waiting for Steam sign-in · complete sign-in in the dedicated browser".into(),
+    ))?;
+    reader
+        .wait_for_authentication(Duration::from_secs(600))
+        .map_err(|e| e.to_string())?;
+    *stage = "opening the Steamworks destination";
+    progress(Event::Progress(format!(
+        "Opening Steamworks destination · App ID {}",
+        app_id.value()
+    )))?;
+    reader.open_app(app_id).map_err(|e| e.to_string())?;
+    reader
+        .wait_for_authentication(Duration::from_secs(30))
+        .map_err(|e| e.to_string())?;
+    Ok(reader)
+}
+
+fn handshake(
+    document: &Document,
+    stop: &Cancellation,
+    progress: &dyn Fn(Event) -> Result<(), String>,
+    stage: &mut &'static str,
+) -> Result<(), String> {
+    let app_id = SteamAppId::new(document.app_id()).map_err(|e| e.to_string())?;
+    let mut reader = connect_steam(app_id, stop, progress, stage)?;
+    stop.check().map_err(|e| e.to_string())?;
+    reader.stop().map_err(|e| e.to_string())?;
+    progress(Event::Progress(
+        "Steam connection validated. Choose Synchronize to prepare a review.".into(),
+    ))
 }
 
 fn run(
@@ -233,41 +302,7 @@ fn run_once(
             );
         }
     }
-    progress(Event::Progress(
-        "Opening Steam · sign in in the dedicated browser if requested".into(),
-    ))?;
-    *stage = "connecting to the supervisor";
-    progress(Event::Progress("Connecting to the supervisor…".into()))?;
-    let session = Session::connect().map_err(|e| e.to_string())?;
-    *stage = "starting the Steam worker";
-    progress(Event::Progress(
-        "Starting the supervised Steam worker…".into(),
-    ))?;
-    let mut reader = SteamReader::connect(session, stop.clone()).map_err(|e| e.to_string())?;
-    *stage = "starting the dedicated browser";
-    progress(Event::Progress(
-        "Starting the dedicated Steam browser…".into(),
-    ))?;
-    reader.start().map_err(|e| e.to_string())?;
-    *stage = "opening the Steamworks destination";
-    progress(Event::Progress(format!(
-        "Opening Steamworks destination · App ID {}",
-        app_id.value()
-    )))?;
-    reader.open_app(app_id).map_err(|e| e.to_string())?;
-    *stage = "waiting for Steam sign-in";
-    progress(Event::Progress(
-        "Waiting for Steam sign-in · complete sign-in in the dedicated browser".into(),
-    ))?;
-    reader
-        .wait_for_authentication(Duration::from_secs(600))
-        .map_err(|e| e.to_string())?;
-    *stage = "opening the Steamworks destination";
-    progress(Event::Progress(format!(
-        "Opening Steamworks destination · App ID {}",
-        app_id.value()
-    )))?;
-    reader.open_app(app_id).map_err(|e| e.to_string())?;
+    let mut reader = connect_steam(app_id, stop, progress, stage)?;
     *stage = "reading Steamworks configuration";
     progress(Event::Progress(
         "Reading Steam and comparing project fields…".into(),

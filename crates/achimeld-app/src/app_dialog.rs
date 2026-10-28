@@ -25,6 +25,8 @@ pub(crate) enum Dialog {
     SavedProjectRequired,
     DiagnosticFailure(String),
     AlreadyRunning,
+    DeleteBrowserProfile,
+    ForgetSteamValidation,
     Save(Option<UiRequest>),
     Open,
     ParticleLoad(achimeld_application::particles::PresetTarget),
@@ -64,6 +66,8 @@ pub(crate) enum Dialog {
 pub(crate) enum DialogResult {
     Discard(UiRequest, SaveChoice),
     Acknowledged,
+    DeleteBrowserProfile(bool),
+    ForgetSteamValidation(bool),
     Save(Option<UiRequest>, Option<PathBuf>),
     Open(Option<PathBuf>),
     ParticleLoad(
@@ -117,6 +121,8 @@ impl Dialog {
             Self::SavedProjectRequired => "Saved project required",
             Self::DiagnosticFailure(_) => "File logging unavailable",
             Self::AlreadyRunning => "Achimeld is already running",
+            Self::DeleteBrowserProfile => "Delete browser profile",
+            Self::ForgetSteamValidation => "Forget validation",
             Self::Save(_) => "Save project",
             Self::Open => "Open project",
             Self::ParticleLoad(_) => "Load particle effect",
@@ -177,6 +183,12 @@ impl Dialog {
             Self::SavedProjectRequired => DialogResult::Acknowledged,
             Self::DiagnosticFailure(_) => DialogResult::Acknowledged,
             Self::AlreadyRunning => DialogResult::Acknowledged,
+            Self::DeleteBrowserProfile => {
+                DialogResult::DeleteBrowserProfile(matches!(choice, SaveChoice::Save))
+            }
+            Self::ForgetSteamValidation => {
+                DialogResult::ForgetSteamValidation(matches!(choice, SaveChoice::Save))
+            }
             Self::Save(then) => DialogResult::Save(then, path),
             Self::Open => DialogResult::Open(path),
             Self::ParticleLoad(target) => DialogResult::ParticleLoad(target, path),
@@ -333,6 +345,8 @@ impl AppDialog {
                 | Dialog::SavedProjectRequired
                 | Dialog::DiagnosticFailure(_)
                 | Dialog::AlreadyRunning
+                | Dialog::DeleteBrowserProfile
+                | Dialog::ForgetSteamValidation
         ) {
             if let Some(pending) = &self.pending {
                 match pending.try_recv() {
@@ -387,6 +401,14 @@ impl AppDialog {
                             self.error = None;
                         }
                     });
+                } else if matches!(kind, Dialog::DeleteBrowserProfile | Dialog::ForgetSteamValidation) {
+                    let message = if matches!(kind, Dialog::DeleteBrowserProfile) {
+                        "Delete Achimeld's Chromium profile, including its saved Steam sign-in and browser data? You will need to sign in again. Your Steam account and project will remain."
+                    } else {
+                        "Forget this project's Steam validation, saved Steam snapshot and downloaded game banner? Your achievements, stats and artwork used by the project will remain. Save the project to keep this change."
+                    };
+                    choice = app_prompt(ui, kind.title(), message, None,
+                        &[("Yes", PromptIcon::Discard, SaveChoice::Save), ("No", PromptIcon::Cancel, SaveChoice::Cancel)]);
                 } else if matches!(kind, Dialog::AlreadyRunning) {
                     choice = app_prompt(ui, kind.title(),
                         "Another Achimeld window is already running. Return to that window to continue. This new launch will close.",
@@ -529,6 +551,8 @@ fn app_prompt(
 
     let header_icon = if title == "Achimeld is already running" {
         PromptIcon::App
+    } else if matches!(title, "Delete browser profile" | "Forget validation") {
+        PromptIcon::Discard
     } else {
         PromptIcon::Save
     };
@@ -725,7 +749,13 @@ mod tests {
                 _ => None,
             }
         }
-        for variant in ["saved", "logging", "running"] {
+        for variant in [
+            "saved",
+            "logging",
+            "running",
+            "delete-profile",
+            "forget-validation",
+        ] {
             for scale in [1.0, 1.5] {
                 for escape in [false, true] {
                     let ctx = egui::Context::default();
@@ -735,6 +765,8 @@ mod tests {
                             "Logs cannot be written. Retained messages will be retried.".into(),
                         ),
                         "running" => Dialog::AlreadyRunning,
+                        "delete-profile" => Dialog::DeleteBrowserProfile,
+                        "forget-validation" => Dialog::ForgetSteamValidation,
                         _ => Dialog::SavedProjectRequired,
                     };
                     let title = kind.title();
@@ -764,10 +796,15 @@ mod tests {
                             .iter()
                             .any(|shape| { text_rect(&shape.shape, title).is_some() })
                     );
+                    let dismiss = if matches!(variant, "delete-profile" | "forget-validation") {
+                        "No"
+                    } else {
+                        "Close"
+                    };
                     let close = output
                         .shapes
                         .iter()
-                        .find_map(|shape| text_rect(&shape.shape, "Close"))
+                        .find_map(|shape| text_rect(&shape.shape, dismiss))
                         .unwrap();
                     assert!(ctx.content_rect().contains_rect(close));
                     if escape {
@@ -791,7 +828,14 @@ mod tests {
                             ]);
                         }
                     }
-                    assert!(matches!(result, Some(DialogResult::Acknowledged)));
+                    assert!(matches!(
+                        result,
+                        Some(
+                            DialogResult::Acknowledged
+                                | DialogResult::DeleteBrowserProfile(false)
+                                | DialogResult::ForgetSteamValidation(false)
+                        )
+                    ));
                     assert!(dialog.pending.is_none());
                     assert!(dialog.kind.is_none());
                 }

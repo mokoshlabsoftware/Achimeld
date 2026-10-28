@@ -1,7 +1,8 @@
-use crate::{Desktop, buttons, localization, style_picker::Glyph};
+use crate::{Desktop, buttons, localization, steam, style_picker::Glyph};
 use achimeld_application::{Command, EditorPort, UiRequest};
 use achimeld_core::SteamAppId;
 use egui::{Align, Color32, Rect, Sense, Vec2};
+use std::collections::BTreeSet;
 
 pub(crate) struct AppIdEdit {
     pub(crate) text: String,
@@ -23,7 +24,60 @@ pub(crate) fn steamworks_destination(app_id: u32) -> String {
     format!("https://partner.steamgames.com/apps/achievements/{app_id}")
 }
 
+/// How far the open project has confirmed access to its Steam partner destination.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SteamAccess {
+    /// This App ID has no remembered partner connection.
+    Unvalidated,
+    /// A previous session connected. This session still needs a live check.
+    PreviousSession,
+    /// This session has a matching review or a completed verification.
+    CurrentSession,
+}
+
+/// Half brightness so a remembered partner banner stays recognizable and reads as inactive.
+pub(crate) const PREVIOUS_SESSION_BANNER_TINT: egui::Color32 =
+    egui::Color32::from_rgb(128, 128, 128);
+
 impl Desktop {
+    pub(crate) fn browser_profile_actions(&mut self, ui: &mut egui::Ui, port: &dyn EditorPort) {
+        for (label, glyph, request) in [
+            (
+                "Open profile folder",
+                Glyph::Import,
+                UiRequest::OpenBrowserProfile,
+            ),
+            (
+                "Delete browser profile",
+                Glyph::Delete,
+                UiRequest::DeleteBrowserProfile,
+            ),
+        ] {
+            if ui
+                .add_enabled(
+                    !port.synchronizing() && !port.reading() && !port.browser_profile_busy(),
+                    buttons::Button::new((glyph.image(ui.ctx(), 20.0), label))
+                        .bar()
+                        .icon_spacing(5.0)
+                        .image_tint_follows_text_color(true),
+                )
+                .clicked()
+            {
+                self.request(request);
+            }
+        }
+    }
+
+    pub(crate) fn steam_access(&self, port: &dyn EditorPort) -> SteamAccess {
+        if self.sync_review_identity(port).is_some() || port.synchronization_verified() {
+            SteamAccess::CurrentSession
+        } else if self.sync_destination_validated(port) {
+            SteamAccess::PreviousSession
+        } else {
+            SteamAccess::Unvalidated
+        }
+    }
+
     pub(crate) fn sync_destination_validated(&self, port: &dyn EditorPort) -> bool {
         let project = port.editor().document().project();
         let snapshot = &project["lastRemoteSnapshot"];
@@ -73,11 +127,10 @@ impl Desktop {
     pub(crate) fn sync_action_label(&self, port: &dyn EditorPort) -> &'static str {
         if SteamAppId::new(port.editor().document().app_id()).is_err() {
             "App ID…"
-        } else if port.synchronization_review().is_some()
-            || port.synchronization_verified()
-            || self.sync_destination_validated(port)
-        {
+        } else if port.synchronization_review().is_some() || port.synchronization_verified() {
             "Synchronize"
+        } else if self.steam_access(port) == SteamAccess::PreviousSession {
+            "Re-validate"
         } else {
             "Validate"
         }
@@ -87,19 +140,19 @@ impl Desktop {
         if self.sync_app_id_edit.is_some() {
             return false;
         }
-        if port.synchronization_verified() && port.synchronization_review().is_none() {
-            return false;
-        }
         if port.synchronization_review().is_some() {
             self.sync_destination_confirmed(port) && self.sync_selected_count(port) > 0
         } else {
-            !port.synchronizing() && !port.reading() && !port.art_busy() && !port.exporting()
+            !port.synchronizing()
+                && !port.reading()
+                && !port.browser_profile_busy()
+                && !port.art_busy()
+                && !port.exporting()
         }
     }
 
     pub(crate) fn sync_wants_click(&self, port: &dyn EditorPort) -> bool {
         self.sync_review_identity(port).is_none()
-            && !self.sync_destination_validated(port)
             && !port.synchronization_verified()
             && !port.synchronizing()
             && !port.reading()
@@ -119,18 +172,14 @@ impl Desktop {
         }
         if SteamAppId::new(port.editor().document().app_id()).is_err() {
             self.open_sync_app_id(port);
-        } else if let Some(review) = port.synchronization_review() {
-            self.request(UiRequest::ApplySynchronization(
-                review["rows"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|row| {
-                        let key = row["key"].as_str()?;
-                        Some((key.into(), self.sync_choices.get(key)?.clone()))
-                    })
-                    .collect(),
-            ));
+        } else if let Some(token) = port
+            .synchronization_review()
+            .and_then(|review| review["token"].as_str())
+            .filter(|token| !token.is_empty())
+        {
+            self.steam_delete_review = false;
+            self.sync_plan_fresh = true;
+            self.sync_plan_token = Some(token.to_owned());
         } else {
             self.sync_confirmation = None;
             achimeld_application::diagnostics::record(
@@ -139,6 +188,167 @@ impl Desktop {
                 "Validate selected · sending request to the application host",
             );
             self.request(UiRequest::PrepareSynchronization);
+        }
+    }
+
+    pub(crate) fn confirm_sync_plan(&mut self, port: &dyn EditorPort) {
+        let Some(review) = port.synchronization_review() else {
+            self.sync_plan_token = None;
+            return;
+        };
+        if self.sync_plan_token.as_deref() != review["token"].as_str()
+            || !self.sync_action_enabled(port)
+        {
+            self.sync_plan_token = None;
+            return;
+        }
+        self.sync_plan_token = None;
+        self.request(UiRequest::ApplySynchronization(
+            review["rows"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|row| {
+                    let key = row["key"].as_str()?;
+                    Some((key.into(), self.sync_choices.get(key)?.clone()))
+                })
+                .collect(),
+        ));
+    }
+
+    pub(crate) fn planned_sync_lines(
+        &self,
+        port: &dyn EditorPort,
+    ) -> (Vec<String>, Vec<String>, Vec<String>) {
+        let rows = port
+            .synchronization_review()
+            .and_then(|review| review["rows"].as_array())
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+        let choice = |key: &str| {
+            self.sync_choices
+                .get(key)
+                .map(String::as_str)
+                .unwrap_or("Skip")
+        };
+        let mut creations = Vec::new();
+        let mut created = BTreeSet::new();
+        for row in rows {
+            let key = row["key"].as_str().unwrap_or("");
+            if row["kind"] == "Achievement"
+                && row["state"] == "LocalOnly"
+                && choice(key) == "Upload"
+            {
+                let api = row["apiName"].as_str().unwrap_or("");
+                let icon = choice(&format!("Icon:{api}")) == "Upload";
+                creations.push(if icon {
+                    format!("Create · {api} · icon included")
+                } else {
+                    format!("Create · {api}")
+                });
+                created.insert(api.to_owned());
+            }
+        }
+        let deletions = self
+            .marked_steam_entries(port)
+            .into_iter()
+            .map(|entry| {
+                let kind = if entry.kind == achimeld_application::EntityKind::Achievement {
+                    "Achievement"
+                } else {
+                    "Stat"
+                };
+                if entry.name.is_empty() {
+                    format!("Delete · {kind} · {}", entry.api)
+                } else {
+                    format!("Delete · {kind} · {} · {}", entry.name, entry.api)
+                }
+            })
+            .collect();
+        let mut other = Vec::new();
+        for row in rows {
+            let key = row["key"].as_str().unwrap_or("");
+            let action = choice(key);
+            if action == "Skip" {
+                continue;
+            }
+            let api = row["apiName"].as_str().unwrap_or("");
+            let kind = row["kind"].as_str().unwrap_or("");
+            if created.contains(api)
+                && action == "Upload"
+                && (kind == "Achievement" || kind == "Icon")
+            {
+                continue;
+            }
+            other.push(format!("{action} · {kind} · {api}"));
+        }
+        (creations, deletions, other)
+    }
+
+    pub(crate) fn sync_plan_window(&mut self, ctx: &egui::Context, port: &mut dyn EditorPort) {
+        let Some(token) = self.sync_plan_token.clone() else {
+            return;
+        };
+        let current = port
+            .synchronization_review()
+            .and_then(|review| review["token"].as_str().map(str::to_owned));
+        if current.as_deref() != Some(token.as_str()) || !self.sync_action_enabled(port) {
+            self.sync_plan_token = None;
+            self.sync_plan_fresh = false;
+            return;
+        }
+        {
+            let snapshot = &port.editor().document().project()["lastRemoteSnapshot"];
+            self.retain_steam_marks(snapshot);
+        }
+        let (creations, deletions, other) = self.planned_sync_lines(port);
+        let choice = steam::review_prompt(
+            ctx,
+            "sync-plan-review",
+            "Review synchronization",
+            steam::glyph_image(
+                ctx,
+                "tab-sync",
+                include_bytes!("../assets/toolbar/tab-sync.rgba"),
+                24.0,
+            ),
+            &[
+                steam::ReviewAction {
+                    label: "Synchronize",
+                    icon: steam::glyph_image(
+                        ctx,
+                        "tab-sync",
+                        include_bytes!("../assets/toolbar/tab-sync.rgba"),
+                        20.0,
+                    ),
+                },
+                steam::ReviewAction {
+                    label: "Cancel",
+                    icon: Glyph::Cancel.image(ctx, 20.0),
+                },
+            ],
+            |ui| {
+                ui.with_layout(egui::Layout::top_down(Align::Center), |ui| {
+                    ui.add(
+                        egui::Label::new("Review the planned actions before synchronizing. Marked deletions are listed here and are not sent to Steam.")
+                            .wrap()
+                            .halign(Align::Center),
+                    );
+                });
+                steam::review_section(ui, "New achievements", &creations);
+                steam::review_section(ui, "Marked for deletion", &deletions);
+                steam::review_section(ui, "Other selected changes", &other);
+            },
+        );
+        if std::mem::take(&mut self.sync_plan_fresh) {
+            return;
+        }
+        match choice {
+            steam::ReviewChoice::Action(0) => self.confirm_sync_plan(port),
+            steam::ReviewChoice::Action(_) | steam::ReviewChoice::Dismissed => {
+                self.sync_plan_token = None;
+            }
+            steam::ReviewChoice::Idle => {}
         }
     }
 

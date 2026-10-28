@@ -88,6 +88,30 @@ fn toggle_maximized(ctx: &egui::Context) {
     ctx.send_viewport_cmd(command);
 }
 
+/// Application name and working version, right-aligned in the title row.
+pub(crate) fn title_identity(ui: &mut egui::Ui) -> egui::Response {
+    let text = crate::window_title();
+    let color = ui.visuals().text_color();
+    let galley = ui.painter().layout_no_wrap(
+        text.to_owned(),
+        egui::TextStyle::Body.resolve(ui.style()),
+        color,
+    );
+    let (_, bounds) = ui.allocate_space(galley.size());
+    let rect = egui::Align2::RIGHT_CENTER.align_size_within_rect(galley.size(), bounds);
+    let response = ui.interact(
+        rect,
+        egui::Id::new("title-identity"),
+        egui::Sense::click_and_drag(),
+    );
+    response
+        .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, ui.is_enabled(), text));
+    if ui.is_rect_visible(rect) {
+        ui.painter().galley(rect.left_top(), galley, color);
+    }
+    response
+}
+
 // Return close intent to the editor so its draft and save checks stay in charge.
 pub(crate) fn window_controls(ui: &mut egui::Ui) -> bool {
     let expanded = ui.ctx().input(|i| {

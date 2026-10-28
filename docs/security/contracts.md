@@ -1,5 +1,117 @@
 # Security boundary contracts
 
+## Steam sign-in and validation handshake
+
+Validation only opens the pinned Steamworks destination, waits for sign-in, reopens
+that destination and checks authentication again. It does not render upload icons,
+prepare a synchronization plan, import remote entries or write a synchronization
+result. Successful validation is bound to the editor session and revision. A later
+Synchronize action prepares a fresh reviewed plan, retaining existing upload approval.
+
+When Steam redirects the selected app to its signed-out root page, the driver opens
+Steam's own login dialog with the canonical pinned achievement-page return address.
+Only the known root page and visible sign-in button qualify. The driver does not
+read, fill or submit credentials. Steam's public `rootlogin.js` exposes this dialog
+and return-address argument; the root button otherwise selects `/dashboard`.
+Unrelated dashboard navigation remains denied. Synthetic Chromium fixtures check
+the return address, reject unrelated destinations and leave an app page untouched.
+
+The exact `api.steampowered.com` host is approved by both managed and native CONNECT
+policies. Trusted browser requests to that host are restricted to authentication-phase,
+non-navigation fetch/XHR: GET `IAuthenticationService/GetPasswordRSAPublicKey/v1`, and
+POST `BeginAuthSessionViaQR`, `BeginAuthSessionViaCredentials`, `PollAuthSessionStatus`
+and `UpdateAuthSessionWithSteamGuardCode` under the same service and version.
+Steamworks currently selects its same-origin browser transport for these methods:
+the exact `partner.steamgames.com/um/Authentication/<method>/` routes use the same
+GET/POST and authentication-only constraints. The trailing slash is required only
+on these browser routes; API routes retain their exact `/v1` suffix.
+Account management, other services, method changes, noncanonical suffixes, other versions,
+subdomains, ports and read/review-phase authentication are denied. This extends the
+broker destination boundary, not its ability to inspect TLS. A compromised worker
+can bypass browser path checks, as described in SEC-READ-002.
+
+Evidence: the public Steamworks login page and its appmgmt `logindialog.js` and
+`webapiinterface.js` modules inspected on 2026-10-28 identify these methods and the
+API origin. The public `browserapi.js` module maps the methods to the same-origin
+`/um/Authentication/` transport. A 2026-10-28 live failure on version 0.2.25.10
+identified a denied POST/fetch on the partner origin when its sign-in dialog opened;
+the public transport and `rgBrowserAPISites: [all]` method declarations explain this route.
+No credentials, response bodies from signed-in pages or request payloads
+are retained. Diagnostic categories include `api` and `authentication-api`; all
+values remain independently checked by the Rust host. Failure details use the same
+camel-case serializer as the response envelope, including nested request categories;
+the production serializer has a regression fixture. The policy watchdog allows
+three seconds for a failed reply, with all subsequent browser requests denied.
+After writing a failure the dispatcher waits at most one second without accepting
+another operation, allowing the host to consume the frame before child exit.
+Live sign-in and installed-package qualification must still be recorded separately.
+
+The authentication observation reads its URL and bounded indicators in one document.
+A loading document, a changed URL, or Playwright's specific destroyed-execution-context
+error yields `Unknown` until the existing sign-in deadline. Other errors remain fatal;
+the driver checks supervision, request-policy health and unexpected pages again after
+the observation. Only this read is deferred, never a write or synchronization operation.
+Chromium fixtures navigate repeatedly during polling and separately reject a closed page.
+
+Sync and Steam expose the same profile-folder and profile-deletion controls. Opening
+the folder uses the supervisor-authenticated fixed profile path, validates reparse
+points and supplies no shell arguments. Deletion requires the in-app Yes/No prompt
+and uses the existing editor-only `clearProfile` operation with no path parameter.
+The host blocks overlapping Steam operations; the supervisor independently rejects
+an active browser. Deletion runs off the UI thread and invalidates session validation.
+No or Escape is cancellation; fixture tests never delete the user's actual profile.
+
+Sync's separate Forget validation confirmation clears session verification, errors,
+the saved remote snapshot and verification timestamp, and the current game's banner
+entries. A banner referenced by authored content is retained as ordinary bank artwork.
+This is one undoable project edit, persisted through the normal Save action. Immutable
+files remain for undo; authored entries, synchronization baselines and uncertain-write
+recovery journals remain intact. Forgetting validation does not clear browser sign-in.
+
+The public Steamworks CSP declares `/actions/CSPReport`. The pinned Playwright
+runtime recognizes `cspreport`, while its actual intercepted report in the Chromium
+fixture is classified `other`. A healthy owned page's non-navigation POST of either
+type, with exact `application/csp-report` content type, to the exact HTTPS partner endpoint is
+completed locally with an empty 204 response. No report body is inspected, stored
+or sent upstream, and CSP remains enforced. Fetch/XHR, navigation, other destinations,
+queries, fragments and already-rejected sessions do not receive this treatment.
+Real Chromium fixtures trigger a CSP violation, prove both the blocked resource
+and report stay off the upstream, and check that a forged fetch remains terminal.
+Version 0.2.25.11 reached Steam Guard before a partner POST of an unclassified
+resource type stopped the session; this matches the site's CSP report and the
+runtime mapping. The earlier Achiever browser was reviewed as reference only: it
+had no per-request termination guard. No external application source or assembly
+is used as a build input.
+
+## Static media and request failure diagnostics
+
+Browser media requests permit GET, non-navigation HTTPS requests for bounded ASCII paths ending in
+`.mp3`, `.ogg`, `.wav`, `.m4a`, `.aac`, `.mp4`, `.webm` or `.ogv` on the existing
+`steamstatic.com`/`steamcontent.com` host families or the exact Steamworks host's `/public/` prefix.
+Queries are absent or one numeric `v`/`t` cache version of at most 21 digits. Credentials,
+fragments, non-default ports, media requests to login/API endpoints, playlists, other resource
+types and other methods gain no authority. Redirect hops remain intercepted and rejected traffic
+remains terminal. This exception does not change broker hosts, worker operations or process recipes.
+
+Failure reply data optionally includes `request`: closed method, host category, path category,
+extension, resource type and failure categories, plus query-presence and navigation booleans.
+The first policy rejection wins; otherwise a failure can include the most recent owned-page
+Chromium request failure from that operation. This is context, not proof that the last request
+caused the operation failure. The host independently validates every category before logging.
+Legacy replies without the optional object remain accepted. Raw URLs, query values, headers,
+bodies, console output and arbitrary Playwright exception text are never retained. The terminal
+monitor can still exit after its bounded grace period before a reply arrives; that path retains only its existing closed exit code.
+
+Source policy and synthetic routing fixtures cover this allowance. The reported installed
+0.2.25.0 media failure did not identify its resource, so live compatibility with that request
+remains unverified. On 2026-10-28 initial tool reads showed stale diagnostic files, but Preferences
+reported active writing and a subsequent desktop-access read verified startup, supervised entry,
+and advancing heartbeat records in the installed 0.2.25.0 session's canonical `log.txt`.
+Explorer also showed newer retained sessions than the file tools returned. These inconsistent
+inspection results do not establish an application logging failure. The full offline fixture
+audit passed in `audit-a0493fe35c2b4396b3140dd4301b3a69`; this investigation-note correction
+was made afterwards and does not change the audited implementation.
+
 ## Achievement translation handoff
 
 The supervised editor host owns translation file I/O. Desktop and local MCP operations share the catalog serializer, bounded parser and application import planner. The fixed MCP tools are `get_achievement_translations`, `export_achievement_translations`, and `import_achievement_translations`; they add no Steam worker operations or process recipes. Inline CSV is at most 2 MiB of UTF-8 so nested JSON escaping remains below the 16 MiB MCP envelope budget. Dedicated CSV files remain bounded to 64 MiB; MCP file paths must be absolute and use the `.csv` extension. Export publishes a synced, complete file without replacing any destination, rejects the project catalog's reserved suffix, and checks cancellation before publication.
@@ -275,6 +387,10 @@ They add no project open/save, arbitrary executable dispatch, network, worker or
 Steam authority. Filesystem races against a hostile same-user process remain outside
 this local trust claim. Built-in preview artwork is retained by the viewer's
 independent store and is not implicitly imported into project assets.
+
+`create_stats` accepts 1-1000 stat names or objects, or one text list of at most 2,000,000 characters, and commits them with the existing stat creation command in a single undo step. Omitted numeric settings keep new-stat defaults. An invalid entry rejects the batch before editor history changes. It adds no filesystem, project save/open, or Steam authority.
+
+The initialize handshake and the read-only `status` and `list_instances` results report editor uptime, the open project name, achievement count, how many achievements participate in Steam synchronization, and the stat count. Uptime is the editor process creation time. Retired achievements and local style or art cards stay in the achievement count and are excluded from the synchronization count. A document that cannot be read still reports uptime when the process is visible. This read adds no project save/open, filesystem, or Steam authority.
 
 The existing signed verifier accepts exactly `--mcp` after package verification and refuses an elevated facade. It launches no editor/worker/browser. The desktop receiver starts only after the existing supervised app entry point succeeds. The facade's main thread polls current-user editor endpoint discovery every 100 ms and ends the process after two continuous seconds without an endpoint (including startup without an editor), or on discovery failure. Blocking client stdio runs on background threads and cannot retain the process or verified package locks after this shutdown. Discovery is a lifetime hint, not new authentication or mutation authority; existing receiver checks still apply. Multiple open editors keep the facade available. No executable role, supervision wire shape or Steam operation is added. See [MCP usage](../mcp-server.md) and [audit scope](mcp-audit.md).
 

@@ -17,11 +17,18 @@ try {
     & git -C $source commit -m 'Fixture source' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Fixture commit failed.' }
     Set-Content -LiteralPath (Join-Path $source 'CHANGELOG.md') -Value 'captured edit'
+    $oldStamp = [DateTime]::UtcNow.AddDays(-2)
+    [IO.File]::SetLastWriteTimeUtc((Join-Path $source 'CHANGELOG.md'), $oldStamp)
     Remove-Item -LiteralPath (Join-Path $source 'deleted.txt')
     New-Item -ItemType Directory -Path (Join-Path $source 'assets'),(Join-Path $source 'ignored-output') | Out-Null
     Set-Content -LiteralPath (Join-Path $source 'assets/loading.png') -Value 'new source art'
     Set-Content -LiteralPath (Join-Path $source 'ignored-output/generated.bin') -Value 'not source'
+    $captureStarted = [DateTime]::UtcNow
     $snapshot = & (Join-Path $PSScriptRoot 'New-DevelopmentSourceSnapshot.ps1') -SourceRoot $source -OutputRoot $output
+    if ([IO.File]::GetLastWriteTimeUtc((Join-Path $snapshot 'CHANGELOG.md')) -lt $captureStarted -or
+        [IO.File]::GetLastWriteTimeUtc((Join-Path $source 'CHANGELOG.md')) -ne $oldStamp) {
+        throw 'Snapshot did not invalidate timestamp-based build caches without changing source timestamps.'
+    }
     if ((Get-Content -LiteralPath (Join-Path $snapshot 'CHANGELOG.md') -Raw).Trim() -cne 'captured edit' -or
         !(Test-Path -LiteralPath (Join-Path $snapshot 'assets/loading.png')) -or
         (Test-Path -LiteralPath (Join-Path $snapshot 'deleted.txt')) -or

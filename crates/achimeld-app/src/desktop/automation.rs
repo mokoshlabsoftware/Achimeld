@@ -168,6 +168,7 @@ fn read_only(operation: &str) -> bool {
     matches!(
         operation,
         "get_scene"
+            | "status"
             | "get_node"
             | "list_icon_styles"
             | "get_achievement_translations"
@@ -543,6 +544,19 @@ impl Engine {
                 Ok(
                     json!({"project":{"id":document.project()["projectId"],"displayName":document.project()["displayName"],"steamAppId":document.app_id()},"canvas":ui.automation_scene(),"achievements":edits::summaries(document,EntityKind::Achievement),"stats":edits::summaries(document,EntityKind::Stat),"assets":document.project()["assets"],"isDirty":host.editor.is_dirty(),"canUndo":host.editor.undo_label().is_some(),"canRedo":host.editor.redo_label().is_some(),"undoLabel":host.editor.undo_label(),"redoLabel":host.editor.redo_label()}),
                 )
+            }
+            "status" => {
+                let document = host.editor.document();
+                let mut result = json!({
+                    "projectName": document.project()["displayName"].as_str().unwrap_or(""),
+                    "achievementCount": document.entities(EntityKind::Achievement).len(),
+                    "steamSyncCount": document.synchronized_entities(EntityKind::Achievement).count(),
+                    "statCount": document.entities(EntityKind::Stat).len(),
+                });
+                if let Some(path) = host.store.path() {
+                    result["projectPath"] = json!(path.display().to_string());
+                }
+                Ok(result)
             }
             "get_node" => Ok(edits::node(
                 host.editor.document(),
@@ -993,6 +1007,80 @@ fn export_icons(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn status_counts_achievements_steam_sync_and_stats() {
+        let (mut host, mut ui, mut engine) = fixture();
+        host.editor
+            .execute(
+                "Name",
+                Command::ProjectSettings {
+                    name: "Mosaica".into(),
+                    app_id: host.editor.document().app_id(),
+                    atlas: None,
+                    assets: None,
+                },
+                None,
+            )
+            .unwrap();
+        engine.observe(&host, &ui);
+        for (api, name) in [("ONE", "One"), ("TWO", "Two")] {
+            let create = request(
+                &host,
+                &engine,
+                "create_achievement",
+                json!({"apiName":api,"displayName":name,"description":"Text","column":0,"row":0}),
+            );
+            assert_eq!(
+                dispatch(&mut engine, &mut host, &mut ui, create)["success"],
+                true
+            );
+        }
+        for (api, name) in [("STAT_A", "Stat A"), ("STAT_B", "Stat B")] {
+            let create = request(
+                &host,
+                &engine,
+                "create_stat",
+                json!({"apiName":api,"displayName":name,"type":"Int","column":0,"row":0}),
+            );
+            assert_eq!(
+                dispatch(&mut engine, &mut host, &mut ui, create)["success"],
+                true
+            );
+        }
+        let (retired_id, retired) = {
+            let mut retired = host.editor.document().entities(EntityKind::Achievement)[1].clone();
+            retired["steamSyncStatus"] = json!("Retired");
+            let retired_id = retired["id"].as_str().unwrap().to_owned();
+            (retired_id, retired)
+        };
+        host.editor
+            .execute(
+                "Retire",
+                Command::ReplaceEntity {
+                    kind: EntityKind::Achievement,
+                    id: retired_id,
+                    value: retired,
+                },
+                None,
+            )
+            .unwrap();
+        host.editor
+            .execute(
+                "Art image",
+                Command::AddArtImageAt { position: [4, 4] },
+                None,
+            )
+            .unwrap();
+        let status = request(&host, &engine, "status", json!({}));
+        let response = dispatch(&mut engine, &mut host, &mut ui, status);
+        assert_eq!(response["success"], true);
+        let result = &response["data"]["result"];
+        assert_eq!(result["projectName"], "Mosaica");
+        assert_eq!(result["achievementCount"], 3);
+        assert_eq!(result["steamSyncCount"], 1);
+        assert_eq!(result["statCount"], 2);
+        assert!(result.get("projectPath").is_none());
+    }
     #[test]
     fn selection_returns_the_destination_camera_and_global_style_import_is_one_undo_step() {
         let (mut host, mut ui, mut engine) = fixture();
@@ -1742,6 +1830,17 @@ mod tests {
                 .lines()
                 .map(|line| serde_json::from_str(line).unwrap())
                 .collect();
+            let instructions = responses[0]["result"]["instructions"].as_str().unwrap();
+            let line = instructions
+                .lines()
+                .find(|line| line.contains(&format!("Editor {process} ")))
+                .expect("handshake names this editor");
+            assert!(line.contains("has been up for"), "{line}");
+            assert!(line.contains("Open project \"Untitled project\""), "{line}");
+            assert!(
+                line.contains("0 achievement nodes, 0 nodes that sync with Steam, 0 stats."),
+                "{line}"
+            );
             assert_eq!(responses[1]["result"]["isError"], false);
             let scene: Value = serde_json::from_str(
                 responses[1]["result"]["content"][0]["text"]

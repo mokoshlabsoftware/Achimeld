@@ -132,6 +132,10 @@ fn fade_colors(body: Color32, text: Color32, fade: Fade) -> (Color32, Color32) {
 /// Also used by custom-painted icons and window controls.
 pub fn colors(ui: &Ui, response: &Response, style: ButtonStyle) -> (Color32, Color32) {
     let (body, text) = base_colors(ui, style);
+    colors_from(ui, response, body, text)
+}
+
+fn colors_from(ui: &Ui, response: &Response, body: Color32, text: Color32) -> (Color32, Color32) {
     let fade = feedback(ui, response);
     if response.enabled() {
         fade_colors(body, text, fade)
@@ -236,9 +240,11 @@ pub struct Button<'a> {
     min_size: Vec2,
     tint_image: bool,
     square_corners: bool,
+    primary_outline: bool,
     center_glyph: bool,
     subtle_body_opacity: Option<f32>,
     wants_click: bool,
+    resting_colors: Option<(Color32, Color32)>,
 }
 impl<'a> Button<'a> {
     pub fn new(atoms: impl IntoAtoms<'a>) -> Self {
@@ -252,10 +258,18 @@ impl<'a> Button<'a> {
             min_size: Vec2::ZERO,
             tint_image: false,
             square_corners: false,
+            primary_outline: false,
             center_glyph: false,
             subtle_body_opacity: None,
             wants_click: false,
+            resting_colors: None,
         }
+    }
+    /// Resting body and label colors for one destructive action.
+    /// Hover still exchanges those two palette colors.
+    pub fn resting_colors(mut self, body: Color32, text: Color32) -> Self {
+        self.resting_colors = Some((body, text));
+        self
     }
     pub fn style(mut self, style: ButtonStyle) -> Self {
         self.style = style;
@@ -305,6 +319,12 @@ impl<'a> Button<'a> {
     }
     pub fn icon_spacing(mut self, gap: f32) -> Self {
         self.layout = self.layout.gap(gap);
+        self
+    }
+    /// Special treatment for the primary Steam validation/synchronization action.
+    pub(crate) fn primary_outline(mut self) -> Self {
+        self.square_corners = true;
+        self.primary_outline = true;
         self
     }
     pub(crate) fn square_corners(mut self) -> Self {
@@ -368,13 +388,15 @@ impl Widget for Button<'_> {
             &mut prepared.response,
             self.selected == Some(true),
         );
+        let resting_colors = self.resting_colors;
         let response = if ui.is_rect_visible(prepared.response.rect) {
-            let (body, ink) =
-                if let Some(resting_opacity) = self.subtle_body_opacity.filter(|_| !in_popup) {
-                    subtle_colors(ui, &prepared.response, self.style, resting_opacity)
-                } else {
-                    colors(ui, &prepared.response, self.style)
-                };
+            let (body, ink) = if let Some((body, text)) = resting_colors {
+                colors_from(ui, &prepared.response, body, text)
+            } else if let Some(resting_opacity) = self.subtle_body_opacity.filter(|_| !in_popup) {
+                subtle_colors(ui, &prepared.response, self.style, resting_opacity)
+            } else {
+                colors(ui, &prepared.response, self.style)
+            };
             prepared.frame.fill = body;
             if self.wants_click && prepared.response.enabled() && !ui.is_sizing_pass() {
                 ui.painter().rect_filled(
@@ -393,6 +415,14 @@ impl Widget for Button<'_> {
         } else {
             prepared.response
         };
+        if self.primary_outline && ui.is_rect_visible(response.rect) {
+            ui.painter().rect_stroke(
+                response.rect,
+                0,
+                egui::Stroke::new(1.0 / ui.ctx().pixels_per_point(), Color32::WHITE),
+                egui::StrokeKind::Inside,
+            );
+        }
         response.widget_info(|| {
             let label = text.as_deref().unwrap_or("");
             if let Some(selected) = self.selected {

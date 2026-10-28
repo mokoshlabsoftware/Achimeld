@@ -839,22 +839,14 @@ impl Desktop {
         ui.separator();
     }
     fn style_banner(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort, icon: &mut Value) {
-        let signature = style_signature(icon);
         let local_style = self
             .selection
             .first()
             .and_then(|id| port.editor().document().entity(EntityKind::Achievement, id))
             .is_some_and(achimeld_application::style_achievements::is_local_icon);
         let project_styles = port.icon_styles();
-        let linked = self.linked_icon_style(port);
-        let matching = project_styles
-            .iter()
-            .find(|style| Some(style.id.as_str()) == linked.as_deref())
-            .or_else(|| {
-                project_styles
-                    .iter()
-                    .find(|style| style_signature(&style.recipe) == signature)
-            })
+        let matching = self
+            .matching_icon_style(port, icon, &project_styles)
             .cloned();
         let active = self
             .layer_palette
@@ -900,12 +892,12 @@ impl Desktop {
             .on_hover_text("Edit the project style and every icon using it in this project");
             if style.clicked() {
                 affect = !affect;
-                port.finish_group();
-                self.layer_palette.active_style = if affect {
+                let target = if affect {
                     matching.as_ref().map(|s| s.id.clone())
                 } else {
                     None
                 };
+                self.set_style_edit_mode(port, target);
             }
         });
     }
@@ -1014,16 +1006,7 @@ impl Desktop {
         scope: Option<&str>,
     ) -> egui::Response {
         let project_styles = port.icon_styles();
-        let signature = style_signature(icon);
-        let linked = self.linked_icon_style(port);
-        let matching = project_styles
-            .iter()
-            .find(|s| Some(s.id.as_str()) == linked.as_deref())
-            .or_else(|| {
-                project_styles
-                    .iter()
-                    .find(|s| style_signature(&s.recipe) == signature)
-            });
+        let matching = self.matching_icon_style(port, icon, &project_styles);
         let active = self
             .layer_palette
             .active_style
