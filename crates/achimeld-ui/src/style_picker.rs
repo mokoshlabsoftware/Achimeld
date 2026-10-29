@@ -189,10 +189,14 @@ impl Desktop {
             Glyph::Save.image(ctx, 24.0),
             &[
                 ReviewAction {
+                    colors: None,
+                    enabled: true,
                     label: "Stay in icon edit mode",
                     icon: Glyph::Cancel.image(ctx, 20.0),
                 },
                 ReviewAction {
+                    colors: None,
+                    enabled: true,
                     label: "Edit style",
                     icon: Glyph::Rename.image(ctx, 20.0),
                 },

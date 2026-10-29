@@ -64,11 +64,10 @@ pub(crate) fn mix(a: Rgba<u8>, b: Rgba<u8>, amount: f64, mode: &str) -> Rgba<u8>
     }
     let alpha = f64::from(a[3]) * (1.0 - amount) + f64::from(b[3]) * amount;
     let mut result = Rgba([0, 0, 0, alpha.round() as u8]);
+    let blended = crate::blending::pixels(b, a, mode);
     if result[3] > 0 {
         for i in 0..3 {
-            let changed =
-                crate::renderer::blend(f64::from(b[i]) / 255.0, f64::from(a[i]) / 255.0, mode)
-                    * 255.0;
+            let changed = blended[i] * 255.0;
             result[i] = ((f64::from(a[i]) * f64::from(a[3]) * (1.0 - amount)
                 + changed * f64::from(b[3]) * amount)
                 / alpha)
@@ -177,6 +176,7 @@ pub(crate) fn wrapped_sample(image: &RgbaImage, x: f64, y: f64) -> Rgba<u8> {
         }
     }
     let mut result = Rgba([0, 0, 0, sum[3].round() as u8]);
+
     if result[3] > 0 {
         for c in 0..3 {
             result[c] = (sum[c] / sum[3]).round() as u8;

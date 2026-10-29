@@ -56,28 +56,6 @@ pub fn render_cancellable(
     };
     let achieved = compose_achieved(document, id, size, assets, &mut work)?;
     work.plane(achieved.width(), achieved.height())?;
-    if let Some(locked_id) = document
-        .entity(EntityKind::Achievement, id)
-        .and_then(|entity| entity["unachievedImageId"].as_str())
-    {
-        let reference = document.project()["assets"]["images"]
-            .as_array()
-            .and_then(|images| images.iter().find(|image| image["id"] == locked_id))
-            .map(|image| &image["image"])
-            .ok_or("Locked icon image asset is missing")?;
-        let source = assets.image(reference)?;
-        work.check()?;
-        let unachieved = image::imageops::resize(
-            source.as_ref(),
-            achieved.width(),
-            achieved.height(),
-            image::imageops::FilterType::Lanczos3,
-        );
-        return Ok(IconPair {
-            achieved,
-            unachieved,
-        });
-    }
     let settings = &document.project()["atlas"]["unachievedIcon"];
     let tint = match settings["mode"].as_str().unwrap_or("Grayscale") {
         "Grayscale" => None,
@@ -86,6 +64,8 @@ pub fn render_cancellable(
     };
     let opacity = num(settings, "opacity", 1.0).clamp(0.0, 1.0);
     let mut unachieved = achieved.clone();
+    // Locked artwork has exactly one source: this achievement's composed icon.
+    // Legacy unachievedImageId references must never override this derivation.
     for pixel in unachieved.pixels_mut() {
         let grey = (0.2126 * f64::from(pixel[0])
             + 0.7152 * f64::from(pixel[1])
@@ -98,6 +78,26 @@ pub fn render_cancellable(
         }
         pixel[3] = (f64::from(pixel[3]) * opacity).round() as u8;
     }
+    assert_eq!(achieved.dimensions(), unachieved.dimensions());
+    debug_assert!(
+        achieved
+            .pixels()
+            .zip(unachieved.pixels())
+            .all(|(source, locked)| {
+                locked[3] == (f64::from(source[3]) * opacity).round() as u8
+                    && (tint.is_some() || (locked[0] == locked[1] && locked[1] == locked[2]))
+            })
+    );
+    achimeld_application::diagnostics::record(
+        "INFO",
+        "artwork",
+        &format!(
+            "Locked artwork derived from composed achievement {id}; mode={}; size={}x{}; opacity={opacity}; separate locked assets ignored",
+            if tint.is_some() { "Tint" } else { "Grayscale" },
+            achieved.width(),
+            achieved.height()
+        ),
+    );
     Ok(IconPair {
         achieved,
         unachieved,
@@ -680,7 +680,7 @@ fn plane(
         )?;
         Ok(transform(image, layer, width, height))
     };
-    let mut image = crate::effects::apply(
+    let image = crate::effects::apply(
         image,
         layer,
         width,
@@ -689,17 +689,6 @@ fn plane(
         font.as_ref()
             .map(|_| &outline as &crate::effects::OutlineRenderer<'_>),
     )?;
-    if layer["id"]
-        .as_str()
-        .is_some_and(|id| work.mask_ids.contains(id))
-    {
-        for row in image.rows_mut() {
-            work.check()?;
-            for pixel in row {
-                *pixel = Rgba(achimeld_application::masks::grayscale(pixel.0));
-            }
-        }
-    }
     Ok(image)
 }
 fn text_content(text: &Value, achievement: &Value) -> String {
@@ -740,7 +729,26 @@ fn is_adjustment(layer: &Value) -> bool {
 
 fn mask_strength(owner: &Value, source: &Value, pixel: &Rgba<u8>) -> f64 {
     let alpha = f64::from(pixel[3]) / 255.0;
-    let coverage = if owner["maskMode"] == "Luminance" {
+    let coverage = if let Some(channels) = owner["maskChannels"].as_array() {
+        let weights = [0.2126, 0.7152, 0.0722];
+        let mut weight = 0.0;
+        let mut color = 0.0;
+        for i in 0..3 {
+            if channels.get(i).and_then(Value::as_bool) == Some(true) {
+                weight += weights[i];
+                color += weights[i] * f64::from(pixel[i]) / 255.0;
+            }
+        }
+        let use_alpha = channels.get(3).and_then(Value::as_bool) == Some(true);
+        let color = if weight > 0.0 {
+            color / weight
+        } else if use_alpha {
+            1.0
+        } else {
+            0.0
+        };
+        color * if use_alpha { alpha } else { 1.0 }
+    } else if owner["maskMode"] == "Luminance" {
         alpha
             * (0.2126 * f64::from(pixel[0])
                 + 0.7152 * f64::from(pixel[1])
@@ -755,6 +763,25 @@ fn mask_strength(owner: &Value, source: &Value, pixel: &Rgba<u8>) -> f64 {
         coverage
     };
     coverage * num(source, "opacity", 1.0).clamp(0.0, 1.0)
+}
+
+#[test]
+fn mask_channels_select_color_and_optional_alpha() {
+    let pixel = Rgba([255, 0, 128, 64]);
+    let source = serde_json::json!({});
+    for (channels, expected) in [
+        ([true, false, false, false], 1.0),
+        ([false, true, false, false], 0.0),
+        ([false, false, true, false], 128.0 / 255.0),
+        ([false, false, false, true], 64.0 / 255.0),
+        ([true, false, false, true], 64.0 / 255.0),
+        ([false; 4], 0.0),
+    ] {
+        let mut owner = serde_json::json!({"maskChannels":channels});
+        assert!((mask_strength(&owner, &source, &pixel) - expected).abs() < 1e-9);
+        owner["maskInvert"] = Value::Bool(true);
+        assert!((mask_strength(&owner, &source, &pixel) - (1.0 - expected)).abs() < 1e-9);
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1115,10 +1142,11 @@ pub(crate) fn composite(target: &mut RgbaImage, source: &RgbaImage, opacity: f64
         if out <= 0.0 {
             continue;
         }
+        let blended = crate::blending::pixels(*src, *dst, mode);
         for i in 0..3 {
             let s = f64::from(src[i]) / 255.0;
             let d = f64::from(dst[i]) / 255.0;
-            let blend = blend(s, d, mode);
+            let blend = blended[i];
             dst[i] = (((s * (1.0 - b) + blend * b) * a + d * b * (1.0 - a)) / out * 255.0)
                 .round()
                 .clamp(0.0, 255.0) as u8;
@@ -1129,7 +1157,23 @@ pub(crate) fn composite(target: &mut RgbaImage, source: &RgbaImage, opacity: f64
 pub(crate) fn check_blend_mode(mode: &str) -> Result<(), String> {
     if matches!(
         mode,
-        "Normal" | "Multiply" | "Screen" | "Overlay" | "Darken" | "Lighten" | "Add" | "Difference"
+        "Normal"
+            | "Multiply"
+            | "Screen"
+            | "Overlay"
+            | "Darken"
+            | "Lighten"
+            | "Add"
+            | "Difference"
+            | "Color"
+            | "Hue"
+            | "Saturation"
+            | "Luminosity"
+            | "Soft Light"
+            | "Hard Light"
+            | "Color Dodge"
+            | "Color Burn"
+            | "Exclusion"
     ) {
         Ok(())
     } else {
@@ -1138,6 +1182,44 @@ pub(crate) fn check_blend_mode(mode: &str) -> Result<(), String> {
 }
 pub(crate) fn blend(s: f64, d: f64, mode: &str) -> f64 {
     match mode {
+        "Exclusion" => s + d - 2.0 * s * d,
+        "Hard Light" => {
+            if s <= 0.5 {
+                2.0 * s * d
+            } else {
+                1.0 - 2.0 * (1.0 - s) * (1.0 - d)
+            }
+        }
+        "Soft Light" => {
+            if s <= 0.5 {
+                d - (1.0 - 2.0 * s) * d * (1.0 - d)
+            } else {
+                let curve = if d <= 0.25 {
+                    ((16.0 * d - 12.0) * d + 4.0) * d
+                } else {
+                    d.sqrt()
+                };
+                d + (2.0 * s - 1.0) * (curve - d)
+            }
+        }
+        "Color Dodge" => {
+            if d == 0.0 {
+                0.0
+            } else if s == 1.0 {
+                1.0
+            } else {
+                (d / (1.0 - s)).min(1.0)
+            }
+        }
+        "Color Burn" => {
+            if d == 1.0 {
+                1.0
+            } else if s == 0.0 {
+                0.0
+            } else {
+                1.0 - ((1.0 - d) / s).min(1.0)
+            }
+        }
         "Multiply" => s * d,
         "Screen" => 1.0 - (1.0 - s) * (1.0 - d),
         "Overlay" => {
@@ -1189,21 +1271,35 @@ fn adjust(image: &mut RgbaImage, layer: &Value) {
         let amount = num(settings, "unsharpAmount", 100.0) / 100.0;
         let threshold = num(settings, "unsharpThreshold", 0.0);
         for (pixel, blur) in image.pixels_mut().zip(blurred.pixels()) {
+            let original = *pixel;
+            let changed = std::array::from_fn(|i| {
+                let delta = f64::from(original[i]) - f64::from(blur[i]);
+                let value = f64::from(original[i])
+                    + if delta.abs() >= threshold {
+                        delta * amount
+                    } else {
+                        0.0
+                    };
+                (value / 255.0).clamp(0.0, 1.0)
+            });
+            let blended = crate::blending::rgb(
+                changed,
+                std::array::from_fn(|i| f64::from(original[i]) / 255.0),
+                layer["blendMode"].as_str().unwrap_or("Normal"),
+            );
+            let opacity = num(layer, "opacity", 1.0).clamp(0.0, 1.0);
             for i in 0..3 {
-                let delta = f64::from(pixel[i]) - f64::from(blur[i]);
-                if delta.abs() >= threshold {
-                    let original = f64::from(pixel[i]);
-                    let changed = ((original + delta * amount) / 255.0).clamp(0.0, 1.0);
-                    let changed = blend(
-                        changed,
-                        original / 255.0,
-                        layer["blendMode"].as_str().unwrap_or("Normal"),
-                    );
-                    let opacity = num(layer, "opacity", 1.0).clamp(0.0, 1.0);
-                    pixel[i] = (original * (1.0 - opacity) + changed * 255.0 * opacity)
-                        .round()
-                        .clamp(0.0, 255.0) as u8;
+                // Preserve threshold bypass for existing per-channel modes.
+                if (f64::from(original[i]) - f64::from(blur[i])).abs() < threshold
+                    && !matches!(
+                        layer["blendMode"].as_str(),
+                        Some("Hue" | "Saturation" | "Color" | "Luminosity")
+                    )
+                {
+                    continue;
                 }
+                pixel[i] = (f64::from(original[i]) * (1.0 - opacity) + blended[i] * 255.0 * opacity)
+                    .round() as u8;
             }
         }
         return;
@@ -1244,6 +1340,7 @@ fn adjust(image: &mut RgbaImage, layer: &Value) {
         saturation = (saturation + num(settings, "saturation", 0.0) / 100.0).clamp(0.0, 1.0);
         lightness = (lightness + num(settings, "lightness", 0.0) / 100.0).clamp(0.0, 1.0);
         let shifted = rgb(hue, saturation, lightness);
+        let mut changed = [0.0; 3];
         for i in 0..3 {
             let mut value = f64::from(pixel[i]) / 255.0;
             match kind {
@@ -1316,14 +1413,16 @@ fn adjust(image: &mut RgbaImage, layer: &Value) {
                 }
                 _ => {}
             }
-            let opacity = num(layer, "opacity", 1.0).clamp(0.0, 1.0);
-            value = blend(
-                value.clamp(0.0, 1.0),
-                f64::from(original[i]) / 255.0,
-                layer["blendMode"].as_str().unwrap_or("Normal"),
-            );
-            pixel[i] = (f64::from(original[i]) * (1.0 - opacity)
-                + value.clamp(0.0, 1.0) * 255.0 * opacity)
+            changed[i] = value.clamp(0.0, 1.0);
+        }
+        let blended = crate::blending::rgb(
+            changed,
+            std::array::from_fn(|i| f64::from(original[i]) / 255.0),
+            layer["blendMode"].as_str().unwrap_or("Normal"),
+        );
+        let opacity = num(layer, "opacity", 1.0).clamp(0.0, 1.0);
+        for i in 0..3 {
+            pixel[i] = (f64::from(original[i]) * (1.0 - opacity) + blended[i] * 255.0 * opacity)
                 .round() as u8;
         }
     }
@@ -1456,12 +1555,10 @@ pub(crate) fn gradient_map(
         };
         let mapped = lookup[input.round().clamp(0.0, 255.0) as usize];
         let amount = opacity.clamp(0.0, 1.0) * f64::from(mapped[3]) / 255.0;
+        let blended = crate::blending::pixels(mapped, *pixel, mode);
         for i in 0..3 {
             let base = f64::from(pixel[i]) / 255.0;
-            pixel[i] = ((base * (1.0 - amount)
-                + blend(f64::from(mapped[i]) / 255.0, base, mode) * amount)
-                * 255.0)
-                .round() as u8;
+            pixel[i] = ((base * (1.0 - amount) + blended[i] * amount) * 255.0).round() as u8;
         }
     }
     Ok(())

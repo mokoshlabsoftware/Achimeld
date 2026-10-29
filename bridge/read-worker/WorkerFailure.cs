@@ -7,6 +7,27 @@ namespace Achimeld.ReadWorker;
 // Playwright call logs, URLs, portal contents and credentials never cross it.
 internal static class WorkerFailure
 {
+    // Exact, source-owned messages map to a closed vocabulary. Never forward
+    // arbitrary exception text, portal data, API names, URLs or credentials.
+    private static string? SynchronizationCode(string message) => message switch
+    {
+        "The synchronization snapshot has inconsistent identities, ownership or fingerprints." => "steam.sync.snapshot-invalid",
+        "Reviewed synchronization command rejected." => "steam.sync.command-invalid",
+        "A pending API rename conflicts with Steam. Reconcile or revert the rename before synchronizing." => "steam.sync.rename-conflict",
+        "Project and Steam API names differ only by case; align their spelling before synchronizing." => "steam.sync.name-case-conflict",
+        "Steam changed after review; prepare a new synchronization plan." => "steam.sync.review-changed",
+        "Steam changed during synchronization; prepare a fresh plan." => "steam.sync.remote-changed",
+        "Steam draft read-back did not match the approved change." => "steam.sync.readback-mismatch",
+        "Steam did not preserve the renamed record identity." => "steam.sync.rename-identity",
+        "A localization row is missing." => "steam.sync.localization-missing",
+        "Select the progress stat before its dependent achievement." => "steam.sync.progress-selection",
+        "An icon upload requires its achievement definition." => "steam.sync.icon-selection",
+        "An unrelated Steam value changed during the draft save." => "steam.sync.unrelated-change",
+        "Steam artwork changed after review; prepare a fresh plan." => "steam.sync.artwork-changed",
+        "Imported artwork exceeds 8 MiB." => "steam.sync.artwork-size",
+        "Import the progress stat first." => "steam.sync.progress-import",
+        _ => null,
+    };
     internal static System.Text.Json.JsonElement Details(string stage, Exception exception, long elapsed,
         BrowserRequestDiagnostic? request) => System.Text.Json.JsonSerializer.SerializeToElement(new {
             stage, kind = Kind(exception), elapsedMs = Math.Clamp(elapsed, 0, 300000), request,
@@ -51,6 +72,7 @@ internal static class WorkerFailure
         FileNotFoundException or DirectoryNotFoundException => "steam.runtime.missing",
         UnauthorizedAccessException => "steam.runtime.access-denied",
         System.Text.Json.JsonException when operation == "prepareSync" => "steam.project.invalid",
+        InvalidDataException when operation is "prepareSync" or "beginSync" or "syncStep" or "finishSync" => SynchronizationCode(exception.Message) ?? "steam.sync.failed",
         PortalSafetyException => "steam.portal.rejected",
         UnsupportedPortalStructureException => "steam.portal.unsupported",
         IncompleteRemoteSnapshotException => "steam.snapshot.incomplete",

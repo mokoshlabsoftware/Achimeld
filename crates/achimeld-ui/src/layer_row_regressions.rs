@@ -360,7 +360,9 @@ fn blend_property_previews_every_layer_kind_and_keyboard_selection_survives_idle
         let mut labels = std::collections::BTreeMap::new();
         for shape in &output.shapes {
             if let egui::Shape::Text(text) = &shape.shape
-                && crate::blend_preview::MODES.contains(&text.galley.text())
+                && crate::blend_preview::MODES
+                    .iter()
+                    .any(|mode| localization::text(&rows.ctx, mode) == text.galley.text())
             {
                 labels.insert(
                     text.galley.text().to_owned(),
@@ -368,7 +370,17 @@ fn blend_property_previews_every_layer_kind_and_keyboard_selection_survives_idle
                 );
             }
         }
-        assert_eq!(labels.len(), 8, "{kind}: all blend modes visible");
+        assert_eq!(
+            labels.len(),
+            crate::blend_preview::MODES.len(),
+            "{kind}: all blend modes visible"
+        );
+        for mode in crate::blend_preview::MODES {
+            let pointer = labels[&localization::text(&rows.ctx, mode)];
+            rows.frame(vec![egui::Event::PointerMoved(pointer)]);
+            assert_eq!(rows.fixture.blend_preview.as_ref().expect(mode).mode, mode);
+            assert_eq!(rows.fixture.editor.document(), &before);
+        }
         let pointer = labels["Multiply"];
         rows.frame(vec![egui::Event::PointerMoved(pointer)]);
         assert_eq!(

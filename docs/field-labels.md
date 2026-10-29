@@ -27,6 +27,12 @@ point smaller than body text, measured and painted with the same font. Complete
 localized names remain available on hover. Single-word names, acronyms, and axis labels retain their meaning.
 The hovered or dragged label divider spans the visible panel height with a
 three-point line and three centered circular grip marks.
+The marks have one-third of their original diameter (5/3 logical points) and
+20% opacity, including their spacing scaled to one-third. The drag target retains
+its existing width. Explosion's main rotary parameter bank above Shape is an explicit exception
+to left-hand field labels: names sit above the dials and this section has no
+label divider. Shape keeps the shared field layout and original double-ended
+sliders, with its expanded content unindented. See [Numeric controls](numeric-sliders.md).
 See [Preferences and layer layout](preferences.md) for budgets and interaction.
 Prompts also follow [Application prompt windows](application-prompts.md).
 

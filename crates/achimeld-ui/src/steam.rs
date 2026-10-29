@@ -12,6 +12,66 @@ fn api_name(entity: &Value) -> &str {
         .unwrap_or("")
 }
 
+pub(crate) fn pending_rename<'a>(
+    project: &'a Value,
+    entity: &'a Value,
+    stat: bool,
+) -> Option<&'a str> {
+    if entity["pendingApiRename"]["appId"] == project["steamAppId"]
+        && let Some(old) = entity["pendingApiRename"]["from"]
+            .as_str()
+            .filter(|old| *old != api_name(entity))
+    {
+        return Some(old);
+    }
+    let kind = if stat { "Stat" } else { "Achievement" };
+    let baseline = project["syncBaselines"]
+        .as_array()?
+        .iter()
+        .find(|b| b["entityType"] == kind && b["localId"] == entity["id"])?;
+    let old = baseline["apiName"].as_str()?;
+    (old != api_name(entity)).then_some(old)
+}
+
+pub(crate) fn rename_panel(
+    ui: &mut egui::Ui,
+    port: &dyn EditorPort,
+    entity: &mut Value,
+    stat: bool,
+) {
+    use crate::buttons::UiButtonExt as _;
+    let Some(old) =
+        pending_rename(port.editor().document().project(), entity, stat).map(str::to_owned)
+    else {
+        return;
+    };
+    let fill = crate::theme::color(port.preferences(), "Warning");
+    let response = egui::Frame::new()
+        .fill(fill)
+        .inner_margin(6)
+        .show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.label(
+                egui::RichText::new(format!(
+                    "{} {old}",
+                    crate::localization::text(ui.ctx(), "Rename from")
+                ))
+                .color(egui::Color32::BLACK),
+            );
+        })
+        .response
+        .interact(Sense::click());
+    crate::buttons::context_menu(&response, |ui| {
+        if ui
+            .app_button(crate::localization::text(ui.ctx(), "Revert rename"))
+            .clicked()
+        {
+            entity["apiName"] = Value::String(old.clone());
+            ui.close();
+        }
+    });
+}
+
 fn localizations<'a>(snapshot: &'a Value, language: &str) -> BTreeMap<(&'a str, &'a str), &'a str> {
     snapshot["localizations"]
         .as_array()
@@ -99,6 +159,8 @@ pub(crate) enum ReviewChoice {
 pub(crate) struct ReviewAction {
     pub label: &'static str,
     pub icon: egui::Image<'static>,
+    pub colors: Option<(Color32, Color32)>,
+    pub enabled: bool,
 }
 
 fn prompt_divider(ui: &mut egui::Ui) {
@@ -118,123 +180,169 @@ pub(crate) fn review_prompt(
     actions: &[ReviewAction],
     body: impl FnOnce(&mut egui::Ui),
 ) -> ReviewChoice {
+    prompt(ctx, id, title, header_icon, actions, body, false)
+}
+
+pub(crate) fn progress_prompt(
+    ctx: &egui::Context,
+    title: &str,
+    header_icon: egui::Image<'static>,
+    actions: &[ReviewAction],
+    body: impl FnOnce(&mut egui::Ui),
+) -> ReviewChoice {
+    prompt(
+        ctx,
+        "steam-operation-progress",
+        title,
+        header_icon,
+        actions,
+        body,
+        true,
+    )
+}
+
+fn prompt(
+    ctx: &egui::Context,
+    id: &'static str,
+    title: &str,
+    header_icon: egui::Image<'static>,
+    actions: &[ReviewAction],
+    body: impl FnOnce(&mut egui::Ui),
+    floating: bool,
+) -> ReviewChoice {
     let mut choice = None;
-    let response = egui::Modal::new(egui::Id::new(id))
-        .frame(
-            egui::Frame::new()
-                .fill(Color32::BLACK)
-                .corner_radius(0)
-                .stroke(Stroke::new(
-                    1.0,
-                    ctx.global_style()
-                        .visuals
-                        .widgets
-                        .noninteractive
-                        .bg_stroke
-                        .color,
-                )),
-        )
-        .show(ctx, |ui| {
-            let font = egui::TextStyle::Button.resolve(ui.style());
-            let natural: Vec<f32> = actions
-                .iter()
-                .map(|action| {
-                    ui.painter()
-                        .layout_no_wrap(
-                            crate::localization::text(ctx, action.label),
-                            font.clone(),
-                            ui.visuals().text_color(),
-                        )
-                        .size()
-                        .x
-                        + 28.0
-                        + 2.0 * ui.spacing().button_padding.x
-                })
-                .collect();
-            let total = natural.iter().sum::<f32>().max(1.0);
-            let width = 468.0_f32
-                .max(total)
-                .min((ctx.content_rect().width() - 32.0).max(1.0));
-            ui.set_width(width);
-            ui.spacing_mut().item_spacing = Vec2::ZERO;
-            let title_galley = ui.painter().layout_no_wrap(
-                title.into(),
-                egui::TextStyle::Heading.resolve(ui.style()),
-                ui.visuals().text_color(),
+    let frame = egui::Frame::new()
+        .fill(Color32::BLACK)
+        .corner_radius(0)
+        .stroke(Stroke::new(
+            1.0,
+            ctx.global_style()
+                .visuals
+                .widgets
+                .noninteractive
+                .bg_stroke
+                .color,
+        ));
+    let content = |ui: &mut egui::Ui| {
+        let font = egui::TextStyle::Button.resolve(ui.style());
+        let natural: Vec<f32> = actions
+            .iter()
+            .map(|action| {
+                ui.painter()
+                    .layout_no_wrap(
+                        crate::localization::text(ctx, action.label),
+                        font.clone(),
+                        ui.visuals().text_color(),
+                    )
+                    .size()
+                    .x
+                    + 28.0
+                    + 2.0 * ui.spacing().button_padding.x
+            })
+            .collect();
+        let total = natural.iter().sum::<f32>().max(1.0);
+        let width = 468.0_f32
+            .max(total)
+            .min((ctx.content_rect().width() - 32.0).max(1.0));
+        ui.set_width(width);
+        ui.spacing_mut().item_spacing = Vec2::ZERO;
+        let title_galley = ui.painter().layout_no_wrap(
+            title.into(),
+            egui::TextStyle::Heading.resolve(ui.style()),
+            ui.visuals().text_color(),
+        );
+        let (header, _) = ui.allocate_exact_size(
+            Vec2::new(width, title_galley.size().y.max(24.0) + 24.0),
+            Sense::hover(),
+        );
+        header_icon
+            .clone()
+            .tint(ui.visuals().text_color())
+            .paint_at(
+                ui,
+                Rect::from_center_size(
+                    egui::pos2(header.left() + 36.0, header.center().y),
+                    Vec2::splat(24.0),
+                ),
             );
-            let (header, _) = ui.allocate_exact_size(
-                Vec2::new(width, title_galley.size().y.max(24.0) + 24.0),
-                Sense::hover(),
-            );
-            header_icon
-                .clone()
-                .tint(ui.visuals().text_color())
-                .paint_at(
-                    ui,
-                    Rect::from_center_size(
-                        egui::pos2(header.left() + 36.0, header.center().y),
-                        Vec2::splat(24.0),
-                    ),
-                );
-            ui.painter().galley(
-                header.center() - title_galley.size() / 2.0,
-                title_galley,
-                ui.visuals().text_color(),
-            );
-            prompt_divider(ui);
-            let bar = crate::buttons::bar_height(ui, 20.0);
-            let body_height =
-                (ctx.content_rect().height() - header.height() - bar - 76.0).clamp(120.0, 420.0);
-            egui::Frame::new()
-                .inner_margin(egui::Margin::symmetric(24, 20))
-                .show(ui, |ui| {
-                    ui.set_width((width - 48.0).max(1.0));
-                    egui::ScrollArea::vertical()
-                        .id_salt((id, "body"))
-                        .max_height(body_height)
-                        .show(ui, |ui| {
-                            ui.set_width(ui.available_width());
-                            body(ui);
-                        });
-                });
-            prompt_divider(ui);
-            ui.allocate_ui_with_layout(
-                Vec2::new(width, bar),
-                egui::Layout::left_to_right(egui::Align::Center),
-                |ui| {
-                    let start = ui.cursor().left();
-                    let mut used = 0.0;
-                    for (index, action) in actions.iter().enumerate() {
-                        used += natural[index];
-                        let right = if index + 1 == actions.len() {
-                            start + width
-                        } else {
-                            ((start + width * used / total) * ctx.pixels_per_point()).round()
-                                / ctx.pixels_per_point()
-                        };
-                        if ui
-                            .add(
-                                crate::buttons::Button::new((
-                                    action.icon.clone(),
-                                    crate::localization::text(ctx, action.label),
-                                ))
-                                .id(egui::Id::new((id, "action", index)))
-                                .bar()
-                                .min_size(Vec2::new((right - ui.cursor().left()).max(1.0), bar))
-                                .icon_spacing(8.0)
-                                .image_tint_follows_text_color(true),
+        ui.painter().galley(
+            header.center() - title_galley.size() / 2.0,
+            title_galley,
+            ui.visuals().text_color(),
+        );
+        prompt_divider(ui);
+        let bar = crate::buttons::bar_height(ui, 20.0);
+        let body_height =
+            (ctx.content_rect().height() - header.height() - bar - 76.0).clamp(120.0, 420.0);
+        egui::Frame::new()
+            .inner_margin(egui::Margin::symmetric(24, 20))
+            .show(ui, |ui| {
+                ui.set_width((width - 48.0).max(1.0));
+                egui::ScrollArea::vertical()
+                    .id_salt((id, "body"))
+                    .max_height(body_height)
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        body(ui);
+                    });
+            });
+        prompt_divider(ui);
+        ui.allocate_ui_with_layout(
+            Vec2::new(width, bar),
+            egui::Layout::left_to_right(egui::Align::Center),
+            |ui| {
+                let start = ui.cursor().left();
+                let mut used = 0.0;
+                for (index, action) in actions.iter().enumerate() {
+                    used += natural[index];
+                    let right = if index + 1 == actions.len() {
+                        start + width
+                    } else {
+                        ((start + width * used / total) * ctx.pixels_per_point()).round()
+                            / ctx.pixels_per_point()
+                    };
+                    if ui
+                        .add_enabled(
+                            action.enabled,
+                            crate::buttons::Button::new((
+                                action.icon.clone(),
+                                crate::localization::text(ctx, action.label),
+                            ))
+                            .id(egui::Id::new((id, "action", index)))
+                            .bar()
+                            .resting_colors(
+                                action.colors.map_or(ui.visuals().panel_fill, |c| c.0),
+                                action.colors.map_or(ui.visuals().text_color(), |c| c.1),
                             )
-                            .clicked()
-                        {
-                            choice = Some(index);
-                        }
+                            .min_size(Vec2::new((right - ui.cursor().left()).max(1.0), bar))
+                            .icon_spacing(8.0)
+                            .image_tint_follows_text_color(true),
+                        )
+                        .clicked()
+                    {
+                        choice = Some(index);
                     }
-                },
-            );
-        });
+                }
+            },
+        );
+    };
+    let dismissed = if floating {
+        egui::Area::new(egui::Id::new(id))
+            .order(egui::Order::Foreground)
+            .movable(true)
+            .constrain(true)
+            .default_pos(ctx.content_rect().center() - Vec2::new(234.0, 142.0))
+            .show(ctx, |ui| frame.show(ui, content));
+        false
+    } else {
+        egui::Modal::new(egui::Id::new(id))
+            .frame(frame)
+            .show(ctx, content)
+            .should_close()
+    };
     if let Some(index) = choice {
         ReviewChoice::Action(index)
-    } else if response.should_close() {
+    } else if dismissed {
         ReviewChoice::Dismissed
     } else {
         ReviewChoice::Idle
@@ -310,6 +418,9 @@ impl Desktop {
     }
 
     pub(crate) fn steam_view(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
+        if Self::steam_operation_active(port) {
+            ui.disable();
+        }
         crate::buttons::bar_panel(ui, "steam-toolbar", 24.0).show(ui, |ui| {
             let height = ui.available_height();
             let reading = port.reading();
@@ -362,6 +473,14 @@ impl Desktop {
                                         "Delete on Steam",
                                     ))
                                     .bar()
+                                    .resting_colors(
+                                        crate::theme::mix(
+                                            crate::theme::color(port.preferences(), "Panel"),
+                                            delete_fill(port.preferences()),
+                                            0.18,
+                                        ),
+                                        ui.visuals().text_color(),
+                                    )
                                     .icon_spacing(5.0)
                                     .image_tint_follows_text_color(true),
                                 )
@@ -418,6 +537,28 @@ impl Desktop {
                             .map(Vec::as_slice)
                             .unwrap_or_default();
                         ui.heading(format!("{title} ({})", entities.len()));
+                        ui.push_id(("steam-mark-actions", kind.key()), |ui| {
+                            crate::buttons::bar(ui, 0.0, |ui| {
+                                let all_marked = entities.iter().filter(|row| !api_name(row).is_empty()).all(|row| {
+                                    self.steam_marks.contains(&(kind, api_name(row).to_owned()))
+                                });
+                                if ui.add_enabled(!reading && !all_marked,
+                                    crate::buttons::Button::new("Mark all").bar())
+                                    .on_hover_text(format!("Mark every loaded {title} entry, including entries hidden by the filter."))
+                                    .clicked()
+                                {
+                                    self.steam_marks.extend(entities.iter().filter_map(|row| {
+                                        let api = api_name(row);
+                                        (!api.is_empty()).then(|| (kind, api.to_owned()))
+                                    }));
+                                }
+                                if ui.add_enabled(!reading && self.steam_marks.iter().any(|(marked_kind, _)| *marked_kind == kind),
+                                    crate::buttons::Button::new("Clear marks").bar()).clicked()
+                                {
+                                    self.steam_marks.retain(|(marked_kind, _)| *marked_kind != kind);
+                                }
+                            });
+                        });
                         let visible: Vec<_> = entities
                             .iter()
                             .enumerate()
@@ -655,10 +796,23 @@ impl Desktop {
                 include_bytes!("../assets/toolbar/steam-delete.rgba"),
                 24.0,
             ),
-            &[ReviewAction {
-                label: "Close",
-                icon: Glyph::Cancel.image(ctx, 20.0),
-            }],
+            &[
+                ReviewAction {
+                    label: "Delete on Steam",
+                    icon: Glyph::Delete.image(ctx, 20.0),
+                    colors: None,
+                    enabled: self.steam_panel_available(port)
+                        && !port.synchronizing()
+                        && !port.reading()
+                        && !port.browser_profile_busy(),
+                },
+                ReviewAction {
+                    label: "Cancel",
+                    icon: Glyph::Cancel.image(ctx, 20.0),
+                    colors: None,
+                    enabled: true,
+                },
+            ],
             |ui| {
                 ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                     ui.add(egui::Label::new(intro).wrap().halign(egui::Align::Center));
@@ -686,8 +840,43 @@ impl Desktop {
             },
         );
         let fresh = std::mem::take(&mut self.steam_delete_fresh);
+        if !fresh
+            && matches!(choice, ReviewChoice::Action(0))
+            && self.steam_panel_available(port)
+            && !port.synchronizing()
+            && !port.reading()
+        {
+            self.request(UiRequest::DeleteSteam(
+                entries
+                    .into_iter()
+                    .map(|entry| (entry.kind, entry.api))
+                    .collect(),
+            ));
+        }
         if !fresh && !matches!(choice, ReviewChoice::Idle) {
             self.steam_delete_review = false;
+        }
+    }
+}
+
+#[cfg(test)]
+mod rename_tests {
+    use super::pending_rename;
+    use serde_json::json;
+
+    #[test]
+    fn rename_panel_uses_persisted_origin_for_both_kinds_and_clears_on_revert() {
+        for stat in [false, true] {
+            let project = json!({"steamAppId":480,"syncBaselines":[]});
+            let mut entity = json!({"id":"local","apiName":"NEW","pendingApiRename":{"from":"OLD","steamId":"1","appId":480}});
+            assert_eq!(pending_rename(&project, &entity, stat), Some("OLD"));
+            entity["apiName"] = json!("NEWER");
+            assert_eq!(pending_rename(&project, &entity, stat), Some("OLD"));
+            entity["apiName"] = json!("OLD");
+            assert_eq!(pending_rename(&project, &entity, stat), None);
+            entity["apiName"] = json!("NEW");
+            entity["pendingApiRename"]["appId"] = json!(481);
+            assert_eq!(pending_rename(&project, &entity, stat), None);
         }
     }
 }

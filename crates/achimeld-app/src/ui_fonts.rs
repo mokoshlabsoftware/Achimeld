@@ -7,5 +7,8 @@ pub(crate) fn configure(ctx: &eframe::egui::Context) {
             std::fs::read(fonts.join("segoeuib.ttf")).ok()?,
         ])
     });
-    achimeld_ui::configure_fonts(ctx, faces);
+    let console = std::env::var_os("SystemRoot").and_then(|root| {
+        std::fs::read(std::path::PathBuf::from(root).join("Fonts/consola.ttf")).ok()
+    });
+    achimeld_ui::configure_fonts_with_monospace(ctx, faces, console);
 }

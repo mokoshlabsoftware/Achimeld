@@ -8,6 +8,15 @@ slider handle, not a rotary dial.
 
 ## Appearance and layout
 
+All integer and decimal editors use the Windows Consolas monospace face, loaded
+by the host alongside the existing Windows UI fonts. This includes shared numeric
+editors, slider values, knobs, inline effect values, stat decimal text fields,
+Steam App ID entry and Style Viewer unlock values. Numeric range readouts use the
+same face. Font sizes still come from Preferences: ordinary numbers use Normal
+font size, while knob numbers use Knob value font size. The existing embedded
+monospace/CJK fallback chain remains available if Consolas is unavailable; Windows
+font files are not redistributed. Labels retain the ordinary UI face.
+
 - Use the shared implementation in [sliders.rs](../crates/achimeld-ui/src/sliders.rs).
   `value_slider` supplies the labeled row and numeric field; `range_track` is
   the lower-level track for specialized layouts; `discrete_slider` supports
@@ -37,6 +46,37 @@ Do not add raw `egui::Slider` controls outside the shared implementation.
 A new slider should not duplicate the rail or handle painter.
 
 ## Specialized controls
+
+The main Explosion parameters above Shape use the rotary bank in `knobs.rs`, an explicit exception
+to the ordinary left-label slider layout. Square cells contain a generated type
+icon, a complete wrapping localized name, a shaded 45-point dial and an editable
+number. Range settings retain independent Minimum and Maximum controls, constrained
+against crossing; at narrow widths the pair stacks inside its cell. The bank
+reflows by available width and configured font sizes without a label divider.
+Other property editors retain the default sliders.
+Shape retains its original scalar and double-ended range sliders, including
+interval dragging. Its expanded content is flush with the parent panel, without
+an indentation or guide line. Gradient overlay controls retain their sliders too.
+
+Dial shading, indicators, icons and states derive from Preferences > Colors
+(Panel, Window, Control, Primary text, Muted text and Accent). App style adds
+Knob label font size and Knob value font size, each defaulting to 10 points and
+configurable from 8 to 24. These are saved appearance preferences; older settings
+receive the small defaults. App style includes an interactive knob preview.
+Source icon artwork and its generation prompt are retained in
+`crates/achimeld-ui/assets/knob-icons.png` and `knob-icons.json`.
+
+Drag up/right to increase; Shift gives fine adjustment. A focused knob accepts
+arrow keys, Page Up/Down, Home/End and wheel input while hovered. Unfocused wheel
+input scrolls the panel. Double-click, Delete or Backspace restores the parameter
+default, constrained by the other endpoint for ranges. Direct number entry retains
+units, bounds and precision. Signed ranges fill from zero; Shape X/Y put unity at
+the center of their 0-10 multiplier sweep. Dragging updates immediately; typed
+changes and resets ease their visual pointer. Gradient faces have a
+one-physical-pixel antialias fringe and fine circular geometry at every display
+scale. Compact range headers avoid reserving an empty endpoint row underneath
+ordinary knobs. Rendering alone never edits recipes.
+The Regularity spacing explanation is available on hover, without a helper row.
 
 The recessed **Opacity** control in layer rows and its compact popup remains
 supported through [opacity.rs](../crates/achimeld-ui/src/opacity.rs). It uses the

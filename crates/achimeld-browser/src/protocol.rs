@@ -11,6 +11,10 @@ pub(crate) enum ReadCommand {
     AuthenticationState,
     Navigate(SteamAppId),
     ReadConfiguration(SteamAppId),
+    DeleteSteam {
+        project: Value,
+        targets: Value,
+    },
     PrepareSync {
         project: Value,
         catalog: Value,
@@ -37,6 +41,10 @@ pub(crate) enum ReadCommand {
 impl ReadCommand {
     pub(crate) fn request(self, request_id: String) -> WorkerRequest {
         let (operation, arguments) = match self {
+            Self::DeleteSteam { project, targets } => (
+                "deleteSteam",
+                serde_json::json!({"project":project,"targets":targets}),
+            ),
             Self::Start => ("start", Value::Null),
             Self::Authenticate => ("authenticate", Value::Null),
             Self::AuthenticationState => ("authenticationState", Value::Null),
@@ -347,6 +355,51 @@ impl WorkerResponse {
                 Some("steam.portal.unsupported") => {
                     Some("The Steamworks page structure is not supported by this application build")
                 }
+                Some("steam.sync.snapshot-invalid") => {
+                    Some("Steam snapshot identities, ownership or fingerprints are inconsistent.")
+                }
+                Some("steam.sync.command-invalid") => Some(
+                    "Synchronization request failed project, catalog, icon or session validation.",
+                ),
+                Some("steam.sync.rename-conflict") => Some(
+                    "A pending API rename conflicts with the current Steam record identity. Reconcile or revert the rename before synchronizing.",
+                ),
+                Some("steam.sync.name-case-conflict") => Some(
+                    "Project and Steam API names differ only by case. Align their spelling before synchronizing.",
+                ),
+                Some("steam.sync.review-changed") => {
+                    Some("Steam changed after review. Prepare a new synchronization plan.")
+                }
+                Some("steam.sync.remote-changed") => {
+                    Some("Steam changed during synchronization. Prepare a fresh plan.")
+                }
+                Some("steam.sync.readback-mismatch") => {
+                    Some("Steam draft read-back did not match the approved change.")
+                }
+                Some("steam.sync.rename-identity") => {
+                    Some("Steam did not preserve the renamed record identity.")
+                }
+                Some("steam.sync.localization-missing") => {
+                    Some("A required project localization row is missing.")
+                }
+                Some("steam.sync.progress-selection") => {
+                    Some("Select the progress stat before its dependent achievement.")
+                }
+                Some("steam.sync.icon-selection") => {
+                    Some("An icon upload requires its achievement definition.")
+                }
+                Some("steam.sync.unrelated-change") => {
+                    Some("An unrelated Steam value changed during the draft save.")
+                }
+                Some("steam.sync.artwork-changed") => {
+                    Some("Steam artwork changed after review. Prepare a fresh plan.")
+                }
+                Some("steam.sync.artwork-size") => {
+                    Some("Imported artwork exceeds the 8 MiB limit.")
+                }
+                Some("steam.sync.progress-import") => {
+                    Some("Import the progress stat before its dependent achievement.")
+                }
                 Some("steam.project.invalid") => Some(
                     "The Steam worker could not read this saved project format; check artwork and synchronization settings",
                 ),
@@ -546,7 +599,92 @@ mod tests {
             };
             assert_eq!(response.accept("same"), Err(expected));
         }
+        for (code, expected) in [
+            (
+                "steam.sync.snapshot-invalid",
+                "Steam snapshot identities, ownership or fingerprints are inconsistent.",
+            ),
+            (
+                "steam.sync.command-invalid",
+                "Synchronization request failed project, catalog, icon or session validation.",
+            ),
+            (
+                "steam.sync.rename-conflict",
+                "A pending API rename conflicts with the current Steam record identity. Reconcile or revert the rename before synchronizing.",
+            ),
+            (
+                "steam.sync.name-case-conflict",
+                "Project and Steam API names differ only by case. Align their spelling before synchronizing.",
+            ),
+            (
+                "steam.sync.review-changed",
+                "Steam changed after review. Prepare a new synchronization plan.",
+            ),
+            (
+                "steam.sync.remote-changed",
+                "Steam changed during synchronization. Prepare a fresh plan.",
+            ),
+            (
+                "steam.sync.readback-mismatch",
+                "Steam draft read-back did not match the approved change.",
+            ),
+            (
+                "steam.sync.rename-identity",
+                "Steam did not preserve the renamed record identity.",
+            ),
+            (
+                "steam.sync.localization-missing",
+                "A required project localization row is missing.",
+            ),
+            (
+                "steam.sync.progress-selection",
+                "Select the progress stat before its dependent achievement.",
+            ),
+            (
+                "steam.sync.icon-selection",
+                "An icon upload requires its achievement definition.",
+            ),
+            (
+                "steam.sync.unrelated-change",
+                "An unrelated Steam value changed during the draft save.",
+            ),
+            (
+                "steam.sync.artwork-changed",
+                "Steam artwork changed after review. Prepare a fresh plan.",
+            ),
+            (
+                "steam.sync.artwork-size",
+                "Imported artwork exceeds the 8 MiB limit.",
+            ),
+            (
+                "steam.sync.progress-import",
+                "Import the progress stat before its dependent achievement.",
+            ),
+        ] {
+            let response = WorkerResponse {
+                request_id: "same".into(),
+                success: false,
+                data: serde_json::json!({"password":"hidden"}),
+                error_code: Some(code.into()),
+            };
+            assert_eq!(response.accept("same"), Err(expected));
+        }
         for code in [
+            "steam.sync.snapshot-invalid",
+            "steam.sync.command-invalid",
+            "steam.sync.rename-conflict",
+            "steam.sync.name-case-conflict",
+            "steam.sync.review-changed",
+            "steam.sync.remote-changed",
+            "steam.sync.readback-mismatch",
+            "steam.sync.rename-identity",
+            "steam.sync.localization-missing",
+            "steam.sync.progress-selection",
+            "steam.sync.icon-selection",
+            "steam.sync.unrelated-change",
+            "steam.sync.artwork-changed",
+            "steam.sync.artwork-size",
+            "steam.sync.progress-import",
             "security.operation.interrupted",
             "steam.operation.timeout",
             "steam.runtime.missing",

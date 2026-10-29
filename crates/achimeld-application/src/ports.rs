@@ -1,4 +1,4 @@
-use crate::{Command, Editor};
+use crate::{Command, Editor, EntityKind};
 use std::path::PathBuf;
 
 /// Closed destinations for locally dropped artwork. Files are decoded and owned by the host.
@@ -40,6 +40,7 @@ pub enum UiRequest {
     SaveProject,
     SaveProjectAs,
     ReadSteam,
+    DeleteSteam(Vec<(EntityKind, String)>),
     CancelRead,
     PrepareSynchronization,
     ApplySynchronization(Vec<(String, String)>),
@@ -385,6 +386,10 @@ pub trait EditorPort {
     }
     fn synchronization_error(&self) -> Option<&str> {
         None
+    }
+    /// Presentation label for the active supervised Steam operation.
+    fn synchronization_activity(&self) -> &str {
+        "Synchronizing Steam"
     }
     fn synchronizing(&self) -> bool {
         false

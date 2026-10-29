@@ -17,34 +17,34 @@ The original improvement plan is `docs/security-auditability.md`; current contra
 # Runtime logs and crash dumps for every build
 
 Every runnable build, including Build and Run, quick builds and installed builds,
-must create real-time runtime logs in AppData from process entry, before supervision
+must create real-time runtime logs in Public Documents from process entry, before supervision
 or UI initialization. This is a delivery requirement, not something satisfied by
 logging code or build/test output alone. Verify files from the exact launched build
 while it runs and after a controlled failure. Missing runtime evidence is a bug.
-Keep crash dumps and safe crash metadata in this same AppData diagnostic area,
+Keep crash dumps and safe crash metadata in the private AppData diagnostic area,
 with bounded retention, visible capture failures and no automatic upload. Capture
 Rust panics, unhandled native exceptions and prolonged active UI hangs; document
 limits such as forced process termination and power loss. Dumps are local sensitive
 diagnostic artifacts, not redacted log text; use minimal filtered dumps, never full
 memory or browser/worker dumps, and never commit or publish them.
 
-The canonical installed-app diagnostic directory is `%LOCALAPPDATA%\Achimeld\RustDiagnostics`
-(on this workstation: `C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics`).
-Production resolves Local AppData through Windows' current-user known-folder API,
-not a launcher-provided environment override. Test executables alone redirect
-diagnostics into isolated fixture storage. This applies to builds run without installation too.
-Inspect it directly when investigating a reported bug; do not ask the user to paste
-logs that are accessible locally. Sandboxed tools may redirect `LOCALAPPDATA` to
-their own sandbox: use the explicit workstation path above for the installed app.
-
+The canonical text-log directory for all builds is Windows Public Documents,
+`C:\Users\Public\Documents\Achimeld\Logs` on this workstation. Production resolves
+it through the Windows Public Documents known-folder API, never a launcher-provided
+environment override. Open log folder and Preferences show this public location.
+Crash dumps, startup failure metadata and the per-user desktop-instance lock remain
+private under `%LOCALAPPDATA%\Achimeld\RustDiagnostics` (on this workstation:
+`C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics`). Existing private logs
+remain there as historical evidence. Test executables isolate both locations in
+fixture storage. Inspect logs directly; do not ask the user to paste accessible logs.
 `log.txt` is the live application log, flushed after each record and readable while
-the app runs. `log_bak.txt` retains the previous session; `failure-*.json` contains
-startup failure reports. Concurrent instances use `log-instance-1.txt` through
+the app runs. `log_bak.txt` retains the previous session. Private `failure-*.json` files
+in AppData contain startup failure reports. Concurrent instances use `log-instance-1.txt` through
 `log-instance-4.txt` (with matching `_bak.txt` files) in this same directory when
 the main log is locked; inspect these too and follow the file whose timestamp is
 advancing. Up to five simultaneous instances can persist logs. Read session logs before launching or restarting the
 app because startup rotates them. Follow the current session with
-`Get-Content -LiteralPath 'C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics\log.txt' -Tail 100 -Wait`;
+`Get-Content -LiteralPath 'C:\Users\Public\Documents\Achimeld\Logs\log.txt' -Tail 100 -Wait`;
 reopen the reader after an application restart. Timestamps ending in `Z` are UTC.
 
 Before rotating a supervised runtime session, retain its bounded contents in

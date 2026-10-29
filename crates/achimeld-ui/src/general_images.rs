@@ -420,6 +420,13 @@ impl Desktop {
         if let Some(index) = remove.filter(|i| *i < list.len()) {
             list.remove(index);
             store_entries(entity, list.clone());
+            if let Some(layer) = layer.as_mut() {
+                layer["generalImageIndex"] = json!(
+                    list.first()
+                        .and_then(|entry| entry["id"].as_i64())
+                        .unwrap_or(0)
+                );
+            }
             selected = Some(if list.is_empty() { -1 } else { 0 });
             port.finish_group();
         }

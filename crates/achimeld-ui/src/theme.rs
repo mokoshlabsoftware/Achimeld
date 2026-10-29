@@ -44,6 +44,7 @@ pub fn apply(ctx: &egui::Context, p: &Preferences) {
     style
         .text_styles
         .insert(TextStyle::Monospace, FontId::monospace(p.normal_size));
+    style.drag_value_text_style = TextStyle::Monospace;
     let v = &mut style.visuals;
     v.handle_shape = egui::style::HandleShape::Circle;
     v.text_options.font_hinting = true;

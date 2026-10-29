@@ -26,8 +26,41 @@ public sealed partial class PlaywrightChromeDriver
             await ReadConfigurationJsonAsync(operation.AppId, "fetch" + kind).ConfigureAwait(false));
         JsonElement array = stat ? configuration.RootElement : configuration.RootElement.GetProperty("achievements");
         JsonElement? existing = array.EnumerateArray().Where(item =>
-            item.GetProperty(stat ? "name" : "api_name").GetString() == operation.Target.ApiName.Value)
+            item.GetProperty(stat ? "name" : "api_name").GetString() == (operation.RenameFrom ?? operation.Target.ApiName.Value))
             .Select(static item => (JsonElement?)item).SingleOrDefault();
+        if (operation.RenameFrom is not null)
+        {
+            if (operation.Delete || existing is null || operation.Target.Kind is not (PortalEntityKind.Stat or PortalEntityKind.Achievement))
+                throw new InvalidDataException("The reviewed rename target is unavailable.");
+            string identity = LivePortalIdentity.RecordId(existing.Value, "stat_id") +
+                (stat ? "" : "_" + LivePortalIdentity.RecordId(existing.Value, "bit_id"));
+            if (identity != operation.ExpectedSteamId || array.EnumerateArray().Any(item =>
+                item.GetProperty(stat ? "name" : "api_name").GetString() != operation.RenameFrom &&
+                string.Equals(item.GetProperty(stat ? "name" : "api_name").GetString(), operation.Target.ApiName.Value, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidDataException("The reviewed rename identity or destination changed.");
+        }
+        if (operation.Delete)
+        {
+            if (operation.Target.Kind is not (PortalEntityKind.Stat or PortalEntityKind.Achievement) || operation.Fields.Count != 0 || operation.GeneratedUploads.Count != 0)
+                throw new InvalidDataException("Invalid reviewed deletion.");
+            if (existing is null) return;
+            string row = stat ? "s" + LivePortalIdentity.RecordId(existing.Value, "stat_id")
+                : "a" + LivePortalIdentity.RecordId(existing.Value, "stat_id") + "_" + LivePortalIdentity.RecordId(existing.Value, "bit_id");
+            ILocator delete = page.Locator($"#{row} input[value='Delete']");
+            if (row[1..] != operation.ExpectedSteamId) throw new InvalidDataException("Steam deletion identity changed.");
+            await EnsureUniqueAsync(delete, "reviewed deletion control").ConfigureAwait(false);
+            Uri deletionUri = _requestPolicy.ArmReviewedDeletion(operation.AppId.Value, row[1..]);
+            EventHandler<IDialog> confirm = (_, dialog) => { if (dialog.Type == "confirm") _ = dialog.AcceptAsync(); else _ = dialog.DismissAsync(); };
+            page.Dialog += confirm;
+            try
+            {
+                await page.RunAndWaitForResponseAsync(() => delete.ClickAsync(), response =>
+                    response.Url == deletionUri.AbsoluteUri).ConfigureAwait(false);
+            }
+            finally { page.Dialog -= confirm; }
+            await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
+            return;
+        }
         if (existing is null)
         {
             if (operation.Target.Kind == PortalEntityKind.Localization)

@@ -5,6 +5,26 @@ use achimeld_application::{
 };
 use serde_json::json;
 use std::sync::Arc;
+
+#[test]
+fn explosion_zero_shape_multipliers_render_without_geometry() {
+    for base in [
+        ExplosionSettings::default(),
+        ExplosionSettings::new_deltoid(),
+    ] {
+        for (x, y) in [(0.0, 1.0), (1.0, 0.0), (0.0, 0.0)] {
+            let settings = ExplosionSettings {
+                shape_x: x,
+                shape_y: y,
+                ..base.clone()
+            };
+            let image =
+                crate::explosion::render(&json!(settings), "zero", 32, 32, &|| false).unwrap();
+            assert!(image.pixels().all(|pixel| pixel[3] == 0));
+        }
+    }
+}
+
 struct NoAssets;
 impl crate::AssetSource for NoAssets {
     fn image(&mut self, _: &serde_json::Value) -> Result<Arc<image::RgbaImage>, String> {

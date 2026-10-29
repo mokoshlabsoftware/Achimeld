@@ -8,7 +8,7 @@ using Achimeld.Security;
 
 namespace Achimeld.Browser;
 
-public sealed record SyncIconHashes(string Achieved, string Unachieved);
+public sealed record SyncIconHashes(string Achieved, string Unachieved, bool Deferred = false);
 public sealed record PrepareSyncRequest(JsonElement Project, Dictionary<string, Dictionary<string, string>> Catalog,
     Dictionary<string, SyncIconHashes> Icons);
 public sealed record SyncChoice(string Key, string Action);
@@ -49,6 +49,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
     private int next;
     private bool terminal;
     private readonly Dictionary<string, JsonObject> renamedAchievements = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (string OldName, string SteamId)> pendingRenames = new(StringComparer.Ordinal);
+    private readonly HashSet<string> recoveredRenames = new(StringComparer.Ordinal);
 
     private static bool Active(JsonObject entity) => entity["steamSyncStatus"] is null || entity["steamSyncStatus"]!.GetValue<string>() != "Retired";
 
@@ -86,8 +88,42 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         foreach (var row in catalog.Values)
             if (row.Count > 9 || row.Any(p => p.Value.Length > 1_048_576 || !Languages.Contains(p.Key) && p.Key != "Context")) throw Rejected();
         foreach (SyncIconHashes pair in icons.Values)
-            if (!Hash(pair.Achieved) || !Hash(pair.Unachieved)) throw Rejected();
+            if (pair.Deferred ? pair.Achieved != "" || pair.Unachieved != "" : !Hash(pair.Achieved) || !Hash(pair.Unachieved)) throw Rejected();
         current = await ReadAsync();
+        foreach (bool stat in new[] { true, false })
+        foreach (JsonObject entity in Entities(stat).OfType<JsonObject>().Where(e => stat || Active(e)))
+        {
+            string name = entity["apiName"]!.GetValue<string>();
+            string kind = stat ? "Stat" : "Achievement";
+            JsonObject? baseline = raw["syncBaselines"]!.AsArray().OfType<JsonObject>().SingleOrDefault(b =>
+                b["entityType"]?.GetValue<string>() == kind && b["localId"]!.GetValue<Guid>() == entity["id"]!.GetValue<Guid>());
+            JsonObject? pending = entity["pendingApiRename"] as JsonObject;
+            if (pending is not null && pending["appId"]?.GetValue<uint>() != pinnedAppId) throw Rejected();
+            string? old = pending?["from"]?.GetValue<string>() ?? baseline?["apiName"]?.GetValue<string>();
+            if (old is null || old == name) continue;
+            string? identity = pending?["steamId"]?.GetValue<string>() ?? baseline?["steamId"]?.GetValue<string>();
+            var records = stat ? current.Stats.Select(s => (Name: s.ApiName.Value, s.SteamId)) : current.Achievements.Select(a => (Name: a.ApiName.Value, a.SteamId));
+            // A historical baseline is not an explicit rename intent. A complete
+            // fresh read can prove that both names and the old identity are gone.
+            // This also repairs projects saved by builds that retained deleted history.
+            if (pending is null && baseline is not null && !string.IsNullOrEmpty(identity) &&
+                !records.Any(r => string.Equals(r.Name, old, StringComparison.OrdinalIgnoreCase) || string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase) || r.SteamId == identity))
+            {
+                raw["syncBaselines"]!.AsArray().Remove(baseline);
+                Guid localId = entity["id"]!.GetValue<Guid>();
+                project = project with { SyncBaselines = project.SyncBaselines.Where(b => b.LocalId != localId || b.EntityType != (stat ? ProjectEntityType.Stat : ProjectEntityType.Achievement)).ToArray() };
+                continue;
+            }
+            // Recover a save whose acknowledgement or local commit was interrupted.
+            if (!string.IsNullOrEmpty(identity) && !records.Any(r => r.Name == old) &&
+                records.Count(r => r.SteamId == identity) == 1 && records.Any(r => r.Name == name && r.SteamId == identity))
+            { recoveredRenames.Add(kind + ":" + name); continue; }
+            var matches = records.Where(r => r.Name == old && !string.IsNullOrEmpty(r.SteamId) && (identity is null || r.SteamId == identity)).ToArray();
+            if (string.IsNullOrEmpty(identity) || matches.Length != 1 || records.Any(r => r.Name != old && string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase)) ||
+                records.Count(r => r.SteamId == matches[0].SteamId) != 1 || Entities(stat).OfType<JsonObject>().Any(e => e["apiName"]!.GetValue<string>() == old))
+                throw new InvalidDataException("A pending API rename conflicts with Steam. Reconcile or revert the rename before synchronizing.");
+            pendingRenames.Add(kind + ":" + name, (old, matches[0].SteamId!));
+        }
         // Match only a unique, stable Steam identity from the previous verified
         // snapshot. Names or artwork resemblance never establish a rename.
         JsonObject? previousSnapshot = raw["lastRemoteSnapshot"] as JsonObject;
@@ -130,10 +166,12 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                 .Concat(stat ? current.Stats.Select(s => s.ApiName.Value) : current.Achievements.Select(a => a.ApiName.Value))
                 .Where(name => stat || !retiredNames.Contains(name)).Distinct(StringComparer.Ordinal);
             string[] identities = names.ToArray();
-            if (identities.Distinct(StringComparer.OrdinalIgnoreCase).Count() != identities.Length)
+            string[] effectiveIdentities = identities.Where(name => !pendingRenames.Any(p => p.Key.StartsWith(kind + ":", StringComparison.Ordinal) && p.Value.OldName == name)).ToArray();
+            if (effectiveIdentities.Distinct(StringComparer.OrdinalIgnoreCase).Count() != effectiveIdentities.Length)
                 throw new InvalidDataException("Project and Steam API names differ only by case; align their spelling before synchronizing.");
             foreach (string name in identities)
             {
+                if (pendingRenames.Any(p => p.Key.StartsWith(kind + ":", StringComparison.Ordinal) && p.Value.OldName == name)) continue;
                 JsonObject? local = Local(stat, name);
                 if (!stat && (local is not null && !Active(local) || renamedAchievements.Values.Any(old => old["apiName"]!.GetValue<string>() == name))) continue;
                 string localHash = local is null ? SyncFingerprint.Absent : DefinitionFingerprint(stat, name).EntityFingerprint;
@@ -155,6 +193,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                     }
                 string[] actions = local is null ? ["Skip", "Import"] : remoteHash == SyncFingerprint.Absent ? ["Skip", "Upload"] : ["Skip", "Upload", "Import"];
                 string initial = state is SyncState.LocalOnly or SyncState.LocalChanged ? "Upload" : state == SyncState.SteamOnly ? "Import" : "Skip";
+                if (recoveredRenames.Contains(kind + ":" + name)) { state = SyncState.LocalChanged; initial = "Upload"; }
                 string? uploadError = null;
                 if (local is not null)
                 {
@@ -162,6 +201,12 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                     catch (InvalidDataException exception) { uploadError = exception.Message; actions = actions.Where(a => a != "Upload").ToArray(); if (initial == "Upload") initial = "Skip"; }
                 }
                 object[] fields = FieldReview(stat, name, local);
+                if (pendingRenames.TryGetValue(kind + ":" + name, out var pending))
+                {
+                    actions = actions.Where(a => a != "Import").ToArray();
+                    fields = fields.Append(new { field = "Rename from", local = pending.OldName, steam = name }).ToArray();
+                    state = SyncState.LocalChanged;
+                }
                 JsonObject? predecessor = renamedAchievements.GetValueOrDefault(name);
                 bool renamed = !stat && predecessor is not null;
                 if (renamed) fields = fields.Append(new { field = "Previous API name (retained as Retired)", local = predecessor!["apiName"]!.GetValue<string>(), steam = name }).ToArray();
@@ -171,7 +216,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                 {
                     bool available = icons.TryGetValue(name, out SyncIconHashes? pair);
                     RemoteIconMetadata? remoteIcon = current.Icons.SingleOrDefault(i => i.AchievementApiName.Value == name);
-                    string? localIcon = pair is null ? null : PairFingerprint(pair);
+                    string? localIcon = pair is null || pair.Deferred ? null : PairFingerprint(pair);
                     SyncState iconState = baseline?.Icons is IconSyncBaseline previous && localIcon == previous.LocalFingerprint && remoteIcon?.ContentFingerprint == previous.RemoteFingerprint
                         ? SyncState.InSync : remoteIcon is null || remoteIcon.AchievedIdentity is null ? SyncState.LocalOnly
                         : baseline?.Icons is IconSyncBaseline old && remoteIcon.ContentFingerprint == old.RemoteFingerprint ? SyncState.LocalChanged : SyncState.Conflict;
@@ -243,6 +288,16 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         else if (step.NeedsIcons)
         {
             SyncIconHashes pair = icons[step.ApiName];
+            // Deferred artwork is supplied only for the next receiver-owned icon
+            // step. Pin its bounded PNG bytes here before any write or read-back.
+            if (pair.Deferred)
+            {
+                if (request.Achieved is not { Length: > 0 and <= 8 * 1024 * 1024 } ||
+                    request.Unachieved is not { Length: > 0 and <= 8 * 1024 * 1024 }) throw Rejected();
+                pair = new(Convert.ToHexStringLower(SHA256.HashData(request.Achieved)),
+                    Convert.ToHexStringLower(SHA256.HashData(request.Unachieved)));
+                icons[step.ApiName] = pair;
+            }
             ValidatePng(request.Achieved, pair.Achieved);
             ValidatePng(request.Unachieved, pair.Unachieved);
             string desired = PairFingerprint(pair);
@@ -257,8 +312,10 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
             bool stat = step.Key.StartsWith("Stat:", StringComparison.Ordinal);
             ValidateUpload(stat, step.ApiName);
             PortalEntityKind kind = stat ? PortalEntityKind.Stat : PortalEntityKind.Achievement;
-            await WriteAsync(new(Guid.NewGuid(), project!.AppId, new(kind, new(step.ApiName)), Resolve(current!, kind, step.ApiName),
-                DefinitionFingerprint(stat, step.ApiName).EntityFingerprint, DefinitionFields(stat, step.ApiName), new Dictionary<string, byte[]>()));
+            pendingRenames.TryGetValue(step.Key, out var rename);
+            await WriteAsync(new(Guid.NewGuid(), project!.AppId, new(kind, new(step.ApiName)), Resolve(current!, kind, rename.OldName ?? step.ApiName),
+                DefinitionFingerprint(stat, step.ApiName).EntityFingerprint, DefinitionFields(stat, step.ApiName), new Dictionary<string, byte[]>(),
+                RenameFrom: rename.OldName, ExpectedSteamId: rename.SteamId));
             foreach (var text in Localizations(stat, step.ApiName))
                 await WriteAsync(new(Guid.NewGuid(), project.AppId, new(PortalEntityKind.Localization, new(step.ApiName), text.Field),
                     Resolve(current!, PortalEntityKind.Localization, step.ApiName, text.Field), CanonicalFingerprint.For(text.Row).EntityFingerprint,
@@ -298,6 +355,14 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         }
         if (!await Matches(after))
             throw new InvalidDataException("Steam draft read-back did not match the approved change.");
+        if (operation.RenameFrom is string oldName)
+        {
+            bool stat = operation.Target.Kind == PortalEntityKind.Stat;
+            string? identity = stat ? after.Stats.Single(s => s.ApiName == operation.Target.ApiName).SteamId : after.Achievements.Single(a => a.ApiName == operation.Target.ApiName).SteamId;
+            if (identity != operation.ExpectedSteamId || Resolve(after, operation.Target.Kind, oldName) != SyncFingerprint.Absent)
+                throw new InvalidDataException("Steam did not preserve the renamed record identity.");
+            before = NormalizeRename(before, stat, oldName, operation.Target.ApiName);
+        }
         RequireOtherTargetsUnchanged(before, after, operation.Target);
         current = after;
     }
@@ -411,6 +476,17 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
     }
     private void ValidateSelectedDefinitions(HashSet<string> uploadStats, HashSet<string> uploadAchievements)
     {
+        RemoteSnapshot original = current!;
+        try
+        {
+            foreach (string name in uploadStats)
+                if (pendingRenames.TryGetValue("Stat:" + name, out var rename)) current = NormalizeRename(current!, true, rename.OldName, new(name));
+            ValidateSelectedDefinitionsCore(uploadStats, uploadAchievements);
+        }
+        finally { current = original; }
+    }
+    private void ValidateSelectedDefinitionsCore(HashSet<string> uploadStats, HashSet<string> uploadAchievements)
+    {
         foreach (string name in uploadStats) ValidateUpload(true, name);
         foreach (string name in uploadAchievements) ValidateUpload(false, name);
         var changedStats = project!.Stats.Where(s => uploadStats.Contains(s.ApiName.Value) && DefinitionFingerprint(true, s.ApiName.Value).EntityFingerprint != Resolve(current!, PortalEntityKind.Stat, s.ApiName.Value)).ToArray();
@@ -443,9 +519,9 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         _ => null,
     } ?? SyncFingerprint.Absent;
 
-    private static void RequireOtherTargetsUnchanged(RemoteSnapshot before, RemoteSnapshot after, PortalWriteTarget target)
+    internal static void RequireOtherTargetsUnchanged(RemoteSnapshot before, RemoteSnapshot after, PortalWriteTarget target)
     {
-        bool created = Resolve(before, target.Kind, target.ApiName.Value, target.LocalizationField) == SyncFingerprint.Absent && target.Kind is PortalEntityKind.Stat or PortalEntityKind.Achievement;
+        bool created = (Resolve(before, target.Kind, target.ApiName.Value, target.LocalizationField) == SyncFingerprint.Absent || Resolve(after, target.Kind, target.ApiName.Value, target.LocalizationField) == SyncFingerprint.Absent) && target.Kind is PortalEntityKind.Stat or PortalEntityKind.Achievement;
         Dictionary<string, string> Values(RemoteSnapshot snapshot)
         {
             Dictionary<string, string> result = [];
@@ -459,9 +535,22 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         if (a.Count != b.Count || a.Any(p => b.GetValueOrDefault(p.Key) != p.Value)) throw new InvalidDataException("An unrelated Steam value changed during the draft save.");
     }
 
+    public static RemoteSnapshot NormalizeRename(RemoteSnapshot snapshot, bool stat, string old, SteamApiName name)
+    {
+        var stats = snapshot.Stats.Select(s => stat && s.ApiName.Value == old ? s with { ApiName = name } : s)
+            .Select(s => s with { ContentFingerprint = CanonicalFingerprint.For(s, snapshot.SupportsDisplayOrder).EntityFingerprint }).ToArray();
+        var achievements = snapshot.Achievements.Select(a => !stat && a.ApiName.Value == old ? a with { ApiName = name }
+            : stat && a.ProgressStatApiName?.Value == old ? a with { ProgressStatApiName = name } : a)
+            .Select(a => a with { ContentFingerprint = CanonicalFingerprint.For(a, snapshot.SupportsDisplayOrder).EntityFingerprint }).ToArray();
+        return snapshot with { Stats = stats, Achievements = achievements,
+            Localizations = snapshot.Localizations.Select(l => l.ApiName.Value == old && l.EntityType == (stat ? ProjectEntityType.Stat : ProjectEntityType.Achievement) ? l with { ApiName = name } : l).ToArray(),
+            Icons = snapshot.Icons.Select(i => !stat && i.AchievementApiName.Value == old ? i with { AchievementApiName = name } : i).ToArray() };
+    }
+
     private void UpdateBaseline(bool stat, string name)
     {
         JsonObject entity = Local(stat, name)!;
+        entity.Remove("pendingApiRename");
         if (!stat) entity["steamSyncStatus"] = "Active";
         Guid id = entity["id"]!.GetValue<Guid>();
         JsonArray baselines = raw!["syncBaselines"]!.AsArray();

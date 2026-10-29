@@ -13,6 +13,13 @@ From left to right it contains:
 1. The white, transparent 18-by-18-point Achimeld mark, with an Achimeld tooltip. The mark is the leftmost content and also acts as a window drag target. All in-app identity surfaces, including About and prompts, share `crates/achimeld-ui/assets/achimeld-logo.rgba`, a 128-by-128 derivative of the supplied alpha glyph. The display PNG is capped at 256-by-256. Windows application and shortcut icons use the transparent orange glyph instead.
 2. Five adjacent text headings: **File**, **Edit**, **Tools**, **Windows**, **Help**. There are no horizontal gaps between heading bodies. Each heading has square corners, uses the shared Quiet button, and rests on exactly the panel background.
 3. Flexible empty space that acts as the main window drag target.
+   When rejected entity/localization edits or a failed effect preset save need recovery,
+   show **Revert to working version** in a temporary shared action bar immediately
+   below the title row, keeping identity and window controls reachable at narrow
+   widths. It discards pending failed
+   edits and retains accepted project changes, including unsaved changes. Save and
+   Save As remain available and save the accepted document; pending invalid drafts
+   are not included. Recovery does not reload the last saved file or undo accepted work.
 4. The application name and compiled four-part working version, right-aligned against the separator before the window controls. This identity is a drag target and must remain visible. The native Windows title uses the same identity, including when Windows shows a Not Responding title. The title row does not show Saved or Unsaved changes.
 5. A separator, then **Minimize**, **Maximize/Restore**, and **Close** at the right edge. The controls are allocated from right to left, producing that visual order. Each has a 28-by-24-point body and a centered glyph, with no gaps between bodies. Maximize changes to Restore while maximized or fullscreen.
 

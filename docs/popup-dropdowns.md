@@ -10,7 +10,7 @@ This is the appearance and interaction contract for every Achimeld dropdown. It 
 - Hover and keyboard focus exchange the row's own body and text colors. Use the shared reversible 0.15-second body and 0.2-second ink animation, its contrast-preserving path, and disabled treatment. Actual glyphs and icon tint must use the animated ink without changing font weight, width, or layout.
 - Button, body and caption text inside a popup are one logical point smaller than their corresponding configured application fonts. Resolve from the application font each time; nested menus must not reduce it again. Ordinary collapsed choices also use button text one point smaller.
 - Menu labels align left and center vertically. Center icon-only glyphs within their bodies; retain icon aspect ratios. Where a control has generated artwork, use the embedded asset and tint it with the same ink as its label. The blend property has its own icon, and every supported blend mode has a distinct icon.
-- Show complete short lists together. The eight blend modes always appear in one list with no ScrollArea. Long catalogs (system fonts, styles, languages, project references) may scroll to stay inside the viewport. Preserve searches and virtualized preview lists; do not request previews for hidden catalog rows merely to support navigation.
+- Show complete short lists together. The seventeen blend modes always appear in one list with no ScrollArea. Long catalogs (system fonts, styles, languages, project references) may scroll to stay inside the viewport. Preserve searches and virtualized preview lists; do not request previews for hidden catalog rows merely to support navigation.
 
 ## Input ownership and dismissal
 
@@ -43,7 +43,7 @@ Eleven direct framework dropdown construction sites were replaced: ten now use t
 | Particle effects and composite shape presets | `particles`, `particle_shapes` → `dropdowns::Dropdown` |
 | Color-map presets | `gradient_map` → `dropdowns::Dropdown` |
 | Language | `settings` → `dropdowns::Dropdown` |
-| Layer-list and property blend choices | `blend_preview`, `blend_icons` → shared menu/buttons, all eight rows |
+| Layer-list and property blend choices | `blend_preview`, `blend_icons` → shared menu/buttons, all seventeen rows |
 | Font search/results | `font_picker` → shared popup/buttons and full logical order for virtualized rows |
 | Project style previews and actions / global style submenu | `style_picker`, `layer_palette` → shared menus, virtualized logical order |
 | Achievement general choices | `achievement_general` → shared menus/buttons |

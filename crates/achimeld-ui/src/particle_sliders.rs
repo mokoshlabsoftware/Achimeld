@@ -30,7 +30,7 @@ pub(crate) fn scalar(
         settings[key] = if integer {
             json!((value / factor).round() as u64)
         } else {
-            json!(value / factor)
+            json!((value / factor).clamp(*bounds.start(), *bounds.end()))
         };
     }
 }
@@ -50,15 +50,15 @@ pub(crate) fn range(
     let mut low = settings[min_key].as_f64().unwrap_or(high);
     crate::inspector::field(ui, label, 170.0, |ui| {
         let text = if factor == 100.0 || bounds.end() - bounds.start() > 10.0 {
-            format!("{:.0}–{:.0}{suffix}", low * factor, high * factor)
+            format!("{:.0}-{:.0}{suffix}", low * factor, high * factor)
         } else {
-            format!("{:.2}–{:.2}{suffix}", low * factor, high * factor)
+            format!("{:.2}-{:.2}{suffix}", low * factor, high * factor)
         };
         let text_width = ui
             .painter()
             .layout_no_wrap(
                 text.clone(),
-                egui::TextStyle::Body.resolve(ui.style()),
+                egui::TextStyle::Monospace.resolve(ui.style()),
                 ui.visuals().text_color(),
             )
             .size()
@@ -68,7 +68,7 @@ pub(crate) fn range(
                 let width = ui.available_width() - text_width - ui.spacing().item_spacing.x;
                 let changed =
                     range_track(ui, label, &mut low, &mut high, bounds.clone(), width).changed();
-                ui.label(&text);
+                ui.label(egui::RichText::new(&text).monospace());
                 changed
             })
             .inner
@@ -77,7 +77,7 @@ pub(crate) fn range(
                 let width = ui.available_width();
                 let changed =
                     range_track(ui, label, &mut low, &mut high, bounds.clone(), width).changed();
-                ui.add(egui::Label::new(egui::RichText::new(&text).weak()).truncate())
+                ui.add(egui::Label::new(egui::RichText::new(&text).monospace().weak()).truncate())
                     .on_hover_text(&text);
                 changed
             })
@@ -127,7 +127,10 @@ fn range_part(pos: Pos2, a: f32, b: f32, y: f32) -> RangePart {
 
 fn shift_range(low: f64, high: f64, delta: f64, min: f64, max: f64) -> (f64, f64) {
     let delta = delta.clamp(min - low, max - high);
-    (low + delta, high + delta)
+    (
+        (low + delta).clamp(min, max),
+        (high + delta).clamp(min, max),
+    )
 }
 
 pub(crate) fn range_track(
@@ -143,7 +146,9 @@ pub(crate) fn range_track(
         ui.allocate_exact_size(Vec2::new(width.max(24.0), height), Sense::click_and_drag());
     let track = rect.shrink2(egui::vec2(7.0, 0.0));
     let (min, max) = (*bounds.start(), *bounds.end());
-    let to_x = |value: f64| track.left() + ((value - min) / (max - min)) as f32 * track.width();
+    let to_x = |value: f64| {
+        track.left() + ((value - min) / (max - min).max(f64::EPSILON)) as f32 * track.width()
+    };
     let y = rect.center().y;
     let selected_id = response.id.with("range-part");
     let drag_id = response.id.with("range-drag");
@@ -223,7 +228,9 @@ pub(crate) fn range_track(
             };
         }
     }
-    if next != (*low, *high) {
+    next.1 = next.1.clamp(min, max);
+    next.0 = next.0.clamp(min, next.1);
+    if next.0.is_finite() && next.1.is_finite() && next != (*low, *high) {
         (*low, *high) = next;
         response.mark_changed();
     }
@@ -283,6 +290,30 @@ pub(crate) fn range_track(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn collapsed_range_has_finite_paint_geometry() {
+        let ctx = egui::Context::default();
+        let mut low = 0.0;
+        let mut high = 0.0;
+        let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+            super::range_track(ui, "Collapsed", &mut low, &mut high, 0.0..=0.0, 100.0);
+        });
+        for shape in &output.shapes {
+            assert!(shape.shape.visual_bounding_rect().is_finite());
+        }
+        output.textures_delta.clear();
+        assert_eq!((low, high), (0.0, 0.0));
+    }
+    #[test]
+    fn fractional_range_shift_stays_inside_shape_limits() {
+        for step in 0..1000 {
+            let low = 0.05 + f64::from(step) * 0.0001;
+            let (low, high) = super::shift_range(low, 0.7, -10.0, 0.05, 1.0);
+            assert!((0.05..=1.0).contains(&low));
+            assert!((low..=1.0).contains(&high));
+        }
+    }
+
     struct Slider {
         ctx: egui::Context,
         low: f64,

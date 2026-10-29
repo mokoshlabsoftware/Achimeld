@@ -177,7 +177,7 @@ impl MapFixture {
 }
 
 #[test]
-fn particle_color_map_selected_swatch_opens_the_picker_without_a_color_label_button() {
+fn particle_color_map_selection_opens_ephemeral_picker() {
     for (scale, width) in [(1.0, 400.0), (1.5, 280.0), (2.0, 240.0)] {
         let mut f = MapFixture::new(scale, width);
         f.frame(vec![]);
@@ -185,16 +185,14 @@ fn particle_color_map_selected_swatch_opens_the_picker_without_a_color_label_but
         f.click(f.at(0.0, 0.0), egui::PointerButton::Primary);
         let original = f.map.clone();
         assert!(!f.labels.iter().any(|(text, _)| text == "Color…"));
-        let swatch = f
-            .swatch
-            .expect("Selected point needs a clickable color swatch");
-        f.click(swatch.center(), egui::PointerButton::Primary);
         assert!(f.labels.iter().any(|(text, _)| text == "Point color"));
         assert_eq!(
             f.map, original,
             "Opening the picker must preserve the selected anchor"
         );
         f.key(egui::Key::Escape);
+        f.time += 0.5;
+        f.frame(vec![]);
         assert!(!f.labels.iter().any(|(text, _)| text == "Point color"));
     }
 }
@@ -258,7 +256,7 @@ fn particle_color_map_double_click_adds_one_sampled_point_and_respects_anchors_a
             achimeld_application::gradient_map::encode_color(field.sample(point.x, point.y))
         );
         assert_eq!(&f.map.points[..EDGE_POINTS], original.points.as_slice());
-        assert!(f.swatch.is_some());
+        assert!(f.labels.iter().any(|(text, _)| text == "Point color"));
         f.map.validate().unwrap();
         f.key(egui::Key::Escape);
         f.click(pointer, egui::PointerButton::Primary);
@@ -307,7 +305,7 @@ fn particle_color_map_has_context_actions_and_inline_controls() {
     );
     f.click(f.at(0.0, 0.0), egui::PointerButton::Primary);
     assert!(f.labels.iter().any(|(s, _)| s == "Power"));
-    assert!(f.swatch.is_some());
+    assert!(f.labels.iter().any(|(text, _)| text == "Point color"));
     f.click(f.delete.unwrap().center(), egui::PointerButton::Primary);
     assert_eq!(f.map.points.len(), EDGE_POINTS - 1);
     f.map.validate().unwrap();

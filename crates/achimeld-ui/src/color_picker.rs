@@ -111,7 +111,8 @@ pub(crate) fn picker(ui: &mut egui::Ui, color: &mut Hsva) -> bool {
     let font = ui.text_style_height(&egui::TextStyle::Body);
     let width = (font * 22.0)
         .max(256.0)
-        .min((ui.ctx().content_rect().width() - 48.0).max(160.0));
+        .min((ui.ctx().content_rect().width() - 48.0).max(160.0))
+        * 0.5;
     ui.set_width(width);
     ui.spacing_mut().interact_size.y = (ui.spacing().interact_size.y * 0.7).max(font + 4.0);
     // The color editor is the explicit exception to the application's swatch-only fields.
@@ -210,24 +211,11 @@ pub(crate) fn picker(ui: &mut egui::Ui, color: &mut Hsva) -> bool {
     *color = Hsva::from(hsv);
     let mut rgba = color.to_srgba_unmultiplied();
     let mut changed = false;
-    ui.columns(4, |columns| {
-        for (index, label) in ["R", "G", "B", "A"].into_iter().enumerate() {
-            columns[index].horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 2.0;
-                ui.label(label)
-                    .on_hover_text(["Red", "Green", "Blue", "Alpha"][index]);
-                changed |= ui
-                    .add_sized(
-                        [ui.available_width(), ui.spacing().interact_size.y],
-                        egui::DragValue::new(&mut rgba[index])
-                            .range(0..=255)
-                            .speed(0.5),
-                    )
-                    .on_hover_text(["Red", "Green", "Blue", "Alpha"][index])
-                    .changed();
-            });
-        }
-    });
+    for (index, label) in ["R", "G", "B", "A"].into_iter().enumerate() {
+        let mut value = f64::from(rgba[index]);
+        changed |= crate::sliders::value_slider(ui, label, &mut value, 0.0..=255.0, "", 0);
+        rgba[index] = value.round() as u8;
+    }
     if changed {
         let next = Hsva::from_srgba_unmultiplied(rgba);
         // Keep the selected hue when numeric edits produce gray or black.
@@ -276,14 +264,58 @@ pub(crate) fn window(
     }
     let mut changed = false;
     let grayscale = grayscale_scope(ui);
-    egui::Window::new(crate::localization::text(ui.ctx(), title))
+    let attached = matches!(title, "Color stop" | "Point color");
+    if attached
+        && *open
+        && ui.input(|i| i.pointer.any_pressed())
+        && let Some(pointer) = ui.input(|i| i.pointer.interact_pos())
+        && !anchor.expand(6.0).contains(pointer)
+        && !ui
+            .ctx()
+            .memory(|m| m.area_rect(id))
+            .is_some_and(|r| r.contains(pointer))
+    {
+        *open = false;
+    }
+    let opacity = ui
+        .ctx()
+        .animate_bool_with_time(id.with("visibility"), *open, 0.4);
+    if opacity == 0.0 && !*open {
+        return false;
+    }
+    let previous_style = ui.ctx().global_style();
+    let mut animated_style = (*previous_style).clone();
+    animated_style.animation_time = 0.4;
+    ui.ctx().set_global_style(animated_style);
+    let window_width =
+        (ui.text_style_height(&egui::TextStyle::Body) * 22.0).max(256.0) * 0.5 + 24.0;
+    let shown = egui::Window::new(crate::localization::text(ui.ctx(), title))
         .id(id)
         .order(egui::Order::Tooltip)
         .open(open)
-        .default_pos(egui::pos2(anchor.right() + 8.0, anchor.top()))
+        .fade_in(true)
+        .fade_out(true)
+        .default_pos(if attached {
+            egui::pos2(
+                if ui.max_rect().left() >= window_width + 16.0 {
+                    ui.max_rect().left() - window_width - 16.0
+                } else if ui.max_rect().right() + window_width + 16.0
+                    < ui.ctx().content_rect().right()
+                {
+                    ui.max_rect().right() + 16.0
+                } else {
+                    anchor.right() + 16.0
+                },
+                anchor.top() - 200.0,
+            )
+        } else {
+            egui::pos2(anchor.right() + 8.0, anchor.top())
+        })
         .movable(true)
         .resizable(false)
         .collapsible(false)
+        .default_width(window_width)
+        .default_height(400.0)
         .auto_sized()
         .min_width(0.0)
         .min_height(0.0)
@@ -296,6 +328,30 @@ pub(crate) fn window(
                 };
             })
         });
+    ui.ctx().set_global_style(previous_style);
+    if attached && let Some(shown) = shown {
+        let rect = shown.response.rect;
+        let tip = if title == "Point color" {
+            anchor.center()
+        } else {
+            anchor.center_top()
+        };
+        if ui.clip_rect().contains(tip) {
+            let x = if tip.x >= rect.center().x {
+                rect.right()
+            } else {
+                rect.left()
+            };
+            let y = tip.y.clamp(rect.top() + 12.0, rect.bottom() - 12.0);
+            ui.ctx()
+                .layer_painter(shown.response.layer_id)
+                .add(egui::Shape::convex_polygon(
+                    vec![Pos2::new(x, y - 10.0), tip, Pos2::new(x, y + 10.0)],
+                    ui.visuals().window_fill().gamma_multiply(opacity),
+                    Stroke::NONE,
+                ));
+        }
+    }
     changed
 }
 
@@ -398,7 +454,7 @@ mod tests {
         }
     }
     #[test]
-    fn color_channels_share_the_bottom_row() {
+    fn color_channels_have_sliders_and_numbers_on_separate_rows() {
         let ctx = egui::Context::default();
         let mut color = Hsva::from_srgba_unmultiplied([125, 191, 194, 170]);
         let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
@@ -417,7 +473,7 @@ mod tests {
             .collect();
         let y = |name: &str| labels.iter().find(|(label, _)| label == name).unwrap().1;
         for name in ["G", "B", "A"] {
-            assert!((y(name) - y("R")).abs() < 1.0);
+            assert!(y(name) > y("R"));
         }
         assert!(y("R") > y("Hex"));
         output.textures_delta.clear();
@@ -521,7 +577,7 @@ mod tests {
                     );
                     output.textures_delta.clear();
                     assert!(
-                        (bounds.width() - expected_width).abs() < 1.0,
+                        (bounds.width() - expected_width * 0.5).abs() < 1.0,
                         "{} vs {expected_width}",
                         bounds.width()
                     );

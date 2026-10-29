@@ -269,6 +269,7 @@ pub(crate) struct WindowSizeDraft {
 
 pub struct Desktop {
     pub(crate) terminal: crate::terminal::Terminal,
+    pub(crate) operation_clock: crate::operation_progress::OperationClock,
     pub(crate) window_size: Option<WindowSizeDraft>,
     pub(crate) sync_token: String,
     pub(crate) sync_choices: BTreeMap<String, String>,
@@ -348,6 +349,7 @@ impl Default for Desktop {
     fn default() -> Self {
         Self {
             terminal: Default::default(),
+            operation_clock: Default::default(),
             window_size: None,
             sync_token: String::new(),
             sync_choices: BTreeMap::new(),
@@ -978,6 +980,22 @@ impl Desktop {
                     });
                 });
             });
+        if !self.entity_drafts.is_empty()
+            || !self.localization_drafts.is_empty()
+            || self.effect_explorer.needs_recovery()
+        {
+            crate::buttons::bar_panel(root, "edit-recovery", 24.0).show(root, |ui| {
+                crate::buttons::bar(ui, 24.0, |ui| {
+                    if ui.add(crate::buttons::Button::new("Revert to working version").bar()
+                        .id(egui::Id::new("revert-invalid-edits")))
+                        .on_hover_text("Discard invalid pending edits. Keep all accepted project changes, including unsaved changes.")
+                        .clicked() {
+                        self.revert_invalid_edits();
+                        self.effect_explorer.revert_failed_edit(port);
+                    }
+                });
+            });
+        }
         crate::buttons::bar_panel(root, "toolbar", 24.0).show(root, |ui| {
             crate::buttons::bar(ui, 24.0, |ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
@@ -1024,16 +1042,22 @@ impl Desktop {
                             .zip(tab_images)
                             {
                                 let wants_click = view == View::Sync && self.sync_wants_click(port);
-                                if toolbar_tab_attention(
-                                    ui,
-                                    &mut self.view,
-                                    view,
-                                    label,
-                                    image,
-                                    wants_click,
-                                    !plan.icons_only,
-                                )
-                                .changed()
+                                let enabled =
+                                    view != View::Steam || self.steam_panel_available(port);
+                                if ui
+                                    .add_enabled_ui(enabled, |ui| {
+                                        toolbar_tab_attention(
+                                            ui,
+                                            &mut self.view,
+                                            view,
+                                            label,
+                                            image,
+                                            wants_click,
+                                            !plan.icons_only,
+                                        )
+                                    })
+                                    .inner
+                                    .changed()
                                 {
                                     self.selection.clear();
                                     self.node_drag = None;
@@ -1253,7 +1277,14 @@ impl Desktop {
                 } else if self.view == View::Sync {
                     self.synchronization_view(ui, port);
                 } else if self.view == View::Steam {
-                    self.steam_view(ui, port);
+                    if self.steam_panel_available(port) {
+                        self.steam_view(ui, port);
+                    } else {
+                        self.steam_marks.clear();
+                        self.steam_delete_review = false;
+                        self.view = View::Sync;
+                        self.synchronization_view(ui, port);
+                    }
                 } else {
                     self.canvas(ui, port, &preferences, canvas_action);
                 }
@@ -1278,6 +1309,9 @@ impl Desktop {
         self.sort_window(&ctx, port);
         self.preferences_window(&ctx, port);
         self.about_window(&ctx);
+        if root.is_enabled() {
+            self.operation_progress(&ctx, port);
+        }
         if root.is_enabled() {
             self.dropped_art(&ctx, port);
         }
@@ -1307,35 +1341,49 @@ impl Desktop {
             if (!self.entity_drafts.is_empty() || !self.localization_drafts.is_empty())
                 && !matches!(
                     request,
-                    UiRequest::CancelRead | UiRequest::CancelExport | UiRequest::AboutDismissed
+                    UiRequest::CancelRead
+                        | UiRequest::CancelSynchronization
+                        | UiRequest::CancelExport
+                        | UiRequest::AboutDismissed
+                        | UiRequest::SaveProject
+                        | UiRequest::SaveProjectAs
                 )
             {
                 self.error = Some(
-                    "Finish or revert the highlighted invalid edits before continuing.".into(),
+                    "Use Revert to working version in the upper bar to discard invalid pending edits, or correct them before continuing. You can still save accepted project changes.".into(),
                 );
                 achimeld_application::diagnostics::record(
                     "WARN",
                     "editor",
                     self.error.as_deref().unwrap_or_default(),
                 );
+            } else if matches!(request, UiRequest::Exit) {
+                self.close(port);
             } else {
                 port.request(request);
             }
         }
         if let Some(message) = self.error.clone() {
-            egui::Window::new("Action could not be completed")
-                .order(egui::Order::Foreground)
-                .collapsible(false)
-                .resizable(false)
-                .show(&ctx, |ui| {
-                    ui.label(message);
-                    if ui
-                        .app_button(crate::localization::text(ui.ctx(), "OK"))
-                        .clicked()
-                    {
-                        self.error = None;
-                    }
-                });
+            use crate::steam::{ReviewAction, ReviewChoice, review_prompt};
+            use crate::style_picker::Glyph;
+            let choice = review_prompt(
+                &ctx,
+                "editor-action-error",
+                "Action could not be completed",
+                Glyph::Validate.image(&ctx, 24.0),
+                &[ReviewAction {
+                    label: "OK",
+                    icon: Glyph::Approve.image(&ctx, 20.0),
+                    colors: None,
+                    enabled: true,
+                }],
+                |ui| {
+                    ui.add(egui::Label::new(message).wrap().halign(egui::Align::Center));
+                },
+            );
+            if !matches!(choice, ReviewChoice::Idle) {
+                self.error = None;
+            }
         }
     }
     pub(crate) fn apply(
@@ -1379,7 +1427,7 @@ impl Desktop {
             port.request(UiRequest::Exit);
         } else {
             self.error =
-                Some("Finish or revert the highlighted invalid edits before closing.".into());
+                Some("Use Revert to working version in the upper bar before closing. Accepted project changes are preserved and can still be saved.".into());
         }
     }
     pub fn open_style_viewer(&mut self) {
@@ -1393,13 +1441,26 @@ impl Desktop {
             achimeld_application::style_viewer::StyleViewerAction::Open,
         ));
     }
+    pub(crate) fn revert_invalid_edits(&mut self) {
+        self.entity_drafts.clear();
+        self.localization_drafts.clear();
+        self.error = None;
+        self.layer_drag = None;
+        self.layer_palette.effect_drag = None;
+        self.node_drag = None;
+        self.selection_drag = None;
+        achimeld_application::diagnostics::record(
+            "INFO",
+            "editor",
+            "Discarded invalid pending edits; accepted project changes retained",
+        );
+    }
     pub(crate) fn undo(&mut self, port: &mut dyn EditorPort) {
         self.layer_palette.active_style = None;
         if self.entity_drafts.is_empty() && self.localization_drafts.is_empty() {
             port.undo();
         } else {
-            self.entity_drafts.clear();
-            self.localization_drafts.clear();
+            self.revert_invalid_edits();
         }
         self.layer_drag = None;
         self.layer_palette.effect_drag = None;

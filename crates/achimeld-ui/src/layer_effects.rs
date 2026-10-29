@@ -146,7 +146,7 @@ impl Desktop {
                             let plan = crate::effect_mini::layout(
                                 ui,
                                 effect,
-                                (ui.available_width() - 28.0).max(24.0),
+                                (ui.available_width() - 44.0).max(24.0),
                                 port.preferences().show_effect_mini_values,
                             );
                             let kind = effect["kind"].as_str().unwrap_or("Effect").to_owned();

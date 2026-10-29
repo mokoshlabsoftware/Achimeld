@@ -115,7 +115,7 @@ fn toolbar_actions(ui: &mut egui::Ui, port: &mut dyn EditorPort, layer: &mut Val
             ui,
             layer,
             "explosion-count-range",
-            "Count range: switch between an exact object count and a random count between two bounds (1–512).",
+            "Count range: switch between an exact object count and a random count between two bounds (1-512).",
             include_bytes!("../assets/toolbar/explosion-range.rgba"),
             width,
             range,
@@ -261,145 +261,46 @@ pub(crate) fn body_properties(
     };
     let mut settings = json!(parsed);
     let initial = settings.clone();
-    sliders::scalar(
-        ui,
-        "Base brightness",
-        &mut settings,
-        "brightness",
-        0.0..=2.0,
-        false,
-        100.0,
-    );
-    if settings["countMin"].is_number() {
-        let mut low = settings["countMin"].as_f64().unwrap_or(1.0);
-        let mut high = settings["count"].as_f64().unwrap_or(9.0);
-        crate::inspector::field(ui, "Objects", 170.0, |ui| {
-            let text = format!("{low:.0}–{high:.0}");
-            let text_width = ui
-                .painter()
-                .layout_no_wrap(
-                    text,
-                    egui::TextStyle::Body.resolve(ui.style()),
-                    ui.visuals().text_color(),
-                )
-                .size()
-                .x;
-            let changed = if ui.available_width() >= text_width + ui.spacing().item_spacing.x + 60.0
-            {
-                ui.horizontal(|ui| {
-                    let width = ui.available_width() - text_width - ui.spacing().item_spacing.x;
-                    let changed = sliders::range_track(
-                        ui,
-                        "Object count",
-                        &mut low,
-                        &mut high,
-                        1.0..=f64::from(MAX_OBJECTS),
-                        width,
-                    )
-                    .changed();
-                    let text = format!("{low:.0}–{high:.0}");
-                    ui.add(egui::Label::new(&text).truncate())
-                        .on_hover_text(text);
-                    changed
-                })
-                .inner
-            } else {
-                ui.vertical(|ui| {
-                    let width = ui.available_width();
-                    let changed = sliders::range_track(
-                        ui,
-                        "Object count",
-                        &mut low,
-                        &mut high,
-                        1.0..=f64::from(MAX_OBJECTS),
-                        width,
-                    )
-                    .changed();
-                    let text = format!("{low:.0}–{high:.0}");
-                    ui.add(egui::Label::new(&text).truncate())
-                        .on_hover_text(text);
-                    changed
-                })
-                .inner
-            };
-            if changed {
-                settings["countMin"] = json!(low.round() as u32);
-                settings["count"] = json!(high.round() as u32);
-            }
-        });
-    } else {
-        sliders::scalar(
-            ui,
-            "Objects",
-            &mut settings,
-            "count",
-            1.0..=f64::from(MAX_OBJECTS),
-            true,
-            1.0,
-        );
+    use crate::knobs::{Parameter as P, bank};
+    let preferences = port.preferences().clone();
+    let mut defaults = json!(ExplosionSettings::new_deltoid());
+    defaults["countMin"] = json!(9);
+    defaults["overallScale"] = json!(1.0);
+    settings["overallScale"] = json!(layout(&parsed, instance).scale);
+    let params = vec![
+        P::new("Base brightness", "brightness", 0.0..=2.0, 0).percent(),
+        if settings["countMin"].is_number() {
+            P::new("Objects", "countMin", 1.0..=f64::from(MAX_OBJECTS), 1)
+                .pair("count")
+                .integer()
+        } else {
+            P::new("Objects", "count", 1.0..=f64::from(MAX_OBJECTS), 1).integer()
+        },
+        P::new("Overall scale", "overallScale", 0.01..=2.0, 2).percent(),
+        P::new("Shape X", "shapeX", 0.0..=10.0, 3).multiplier(),
+        P::new("Shape Y", "shapeY", 0.0..=10.0, 4).multiplier(),
+        P::new("Fill power", "bottomPower", 0.0..=9.0, 5).percent(),
+        P::new("Fill stretch", "bottomStretch", 0.0..=1.0, 6).percent(),
+        P::new("Radial blur", "radialBlur", 0.0..=1.0, 7).percent(),
+        P::new("Angular blur", "angularBlur", 0.0..=1.0, 8).percent(),
+        P::new("Aspect ratio", "aspectMin", 1.0..=10.0, 9)
+            .pair("aspectMax")
+            .ratio(),
+        P::new("Regularity", "regularity", 0.0..=1.0, 10),
+    ];
+    let previous_scale = settings["overallScale"].clone();
+    bank(ui, &preferences, &mut settings, &defaults, &params);
+    if settings["overallScale"] != previous_scale {
+        settings["scaleMin"] = settings["overallScale"].clone();
+        settings["scaleMax"] = settings["overallScale"].clone();
     }
-    // Keep a saved range's current appearance until the single value is edited.
-    let mut overall_scale = layout(&parsed, instance).scale * 100.0;
-    let scale_changed =
-        crate::sliders::value_slider(ui, "Overall scale", &mut overall_scale, 1.0..=200.0, "%", 1);
-    if scale_changed {
-        overall_scale = (overall_scale * 10.0).round() / 10.0;
-        settings["scaleMin"] = json!(overall_scale / 100.0);
-        settings["scaleMax"] = settings["scaleMin"].clone();
-    }
-    for (label, key) in [("Shape X", "shapeX"), ("Shape Y", "shapeY")] {
-        let mut value = settings[key].as_f64().unwrap_or(1.0);
-        if crate::sliders::value_slider(ui, label, &mut value, 1.0..=10.0, "×", 2) {
-            settings[key] = json!(value);
-        }
-    }
-    sliders::scalar(
-        ui,
-        "Fill power",
-        &mut settings,
-        "bottomPower",
-        0.0..=9.0,
-        false,
-        100.0,
-    );
-    sliders::scalar(
-        ui,
-        "Fill stretch",
-        &mut settings,
-        "bottomStretch",
-        0.0..=1.0,
-        false,
-        100.0,
-    );
-    for (label, key) in [
-        ("Radial blur", "radialBlur"),
-        ("Angular blur", "angularBlur"),
-    ] {
-        sliders::scalar(ui, label, &mut settings, key, 0.0..=1.0, false, 100.0);
-    }
-    sliders::range(
-        ui,
-        "Aspect ratio",
-        &mut settings,
-        "aspectMin",
-        "aspectMax",
-        1.0..=10.0,
-        1.0,
-        ":1",
-    );
-    sliders::scalar(
-        ui,
-        "Regularity",
-        &mut settings,
-        "regularity",
-        0.0..=1.0,
-        false,
-        1.0,
-    );
-    ui.weak("0: equal spacing · 1: fully random");
+    settings
+        .as_object_mut()
+        .expect("explosion settings")
+        .remove("overallScale");
     egui::CollapsingHeader::new("Shape")
         .default_open(true)
-        .show(ui, |ui| {
+        .show_unindented(ui, |ui| {
             sliders::range(
                 ui,
                 "Brightness variation",

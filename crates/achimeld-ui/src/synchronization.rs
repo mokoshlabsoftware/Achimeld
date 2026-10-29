@@ -1,5 +1,4 @@
 use crate::Desktop;
-use crate::buttons::UiButtonExt as _;
 use achimeld_application::{EditorPort, EntityKind, UiRequest};
 
 fn snapshot_time(stamp: &str) -> String {
@@ -16,6 +15,9 @@ fn snapshot_time(stamp: &str) -> String {
 
 impl Desktop {
     pub(crate) fn synchronization_view(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
+        if Self::steam_operation_active(port) {
+            ui.disable();
+        }
         crate::buttons::bar_panel(ui, "sync-toolbar", 24.0).show(ui, |ui| {
             let height = ui.available_height();
             egui::ScrollArea::horizontal()
@@ -80,7 +82,7 @@ impl Desktop {
                     let token = review["token"].as_str().unwrap_or("");
                     let rows = review["rows"].as_array().map(Vec::as_slice).unwrap_or_default();
                     if self.sync_token != token {
-                        self.sync_confirmation = None;
+                        self.sync_confirmation = self.sync_review_identity(port);
                         self.sync_token = token.into();
                         self.sync_filter.clear(); self.sync_page = 0;
                         self.sync_choices = rows.iter().filter_map(|row| Some((row["key"].as_str()?.into(), row["defaultAction"].as_str()?.into()))).collect();
@@ -91,10 +93,6 @@ impl Desktop {
                         ui.strong(format!("Validated destination · Steam App ID {}", identity.1));
                         ui.add(egui::Label::new(crate::synchronization_target::steamworks_destination(identity.1)).wrap());
                         ui.label("Steamworks configuration loaded successfully. Check the App ID and reviewed entries before synchronizing.");
-                        let mut confirmed = self.sync_destination_confirmed(port);
-                        if ui.checkbox(&mut confirmed, "I confirm this is the correct Steam App ID.").changed() {
-                            self.sync_confirmation = confirmed.then_some(identity);
-                        }
                     } else {
                         ui.colored_label(crate::theme::color(port.preferences(), "Warning"), "This validation belongs to another Steam App ID. Cancel and validate again.");
                     }
@@ -125,29 +123,11 @@ impl Desktop {
                                         "Conflict" => "Review both versions", "InSync" => "Up to date", "ArtworkUnavailable" => "Artwork unavailable", "RenamedOnSteam" => "Renamed on Steam · import keeps the old entry as Retired", value => value,
                                     });
                                     let choice = self.sync_choices.entry(key.into()).or_insert_with(|| "Skip".into());
-                                    for action in row["actions"].as_array().into_iter().flatten().filter_map(|v| v.as_str()) {
-                                        if ui.add(crate::buttons::Button::selectable(choice == action, action)).clicked() { *choice = action.into(); imported = action == "Import"; }
+                                    for action in row["actions"].as_array().into_iter().flatten().filter_map(|v| v.as_str()).filter(|action| row["state"] == "Conflict" || review["reconciliation"] == true || *action == "Import") {
+                                        if ui.add(crate::buttons::Button::selectable(choice == action, match action { "Upload" => "Use project", "Skip" => "Leave unchanged", "Import" => "Use Steam", _ => action })).clicked() { *choice = action.into(); imported = action == "Import"; }
                                     }
                                 });
                                 if imported { self.sync_choices.insert(format!("Icon:{}", row["apiName"].as_str().unwrap_or("")), "Skip".into()); }
-                                if row["kind"] == "Icon" && row["hasArtwork"] == true && ui.is_rect_visible(egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 100.0))) {
-                                    let api = row["apiName"].as_str().unwrap_or("");
-                                    ui.horizontal_wrapped(|ui| {
-                                        for (locked, label) in [(false, "Achieved"), (true, "Locked")] {
-                                            ui.vertical(|ui| {
-                                                ui.weak(label);
-                                                if let Some(preview) = port.synchronization_icon_preview(api, locked) {
-                                                    let size = egui::vec2(preview.width as f32, preview.height as f32);
-                                                    let size = size * (64.0 / size.max_elem().max(1.0)).min(1.0);
-                                                    if let Some(texture) = self.preview_texture(ui.ctx(), &format!("sync:{token}:{api}:{locked}"), preview) { ui.image((texture, size)); }
-                                                } else {
-                                                    ui.spinner();
-                                                    self.request(UiRequest::PreviewSynchronizationIcons(api.into()));
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
                                 if row["state"] == "ArtworkUnavailable" { ui.weak("Artwork could not be generated. Repair its source in the Art Data Bank before uploading icons."); }
                                 if let Some(error) = row["uploadError"].as_str() { ui.colored_label(crate::theme::color(port.preferences(), "Warning"), error); }
                                 let fields = row["fields"].as_array().map(Vec::as_slice).unwrap_or_default();
@@ -174,10 +154,7 @@ impl Desktop {
                         if ui.add(crate::buttons::Button::new("Cancel").bar()).clicked() { self.sync_confirmation = None; self.request(UiRequest::CancelSynchronization); }
                     });
                 } else if port.synchronizing() {
-                    ui.horizontal_wrapped(|ui| {
-                        ui.spinner(); ui.label(port.status());
-                        if ui.app_button("Stop synchronization").clicked() { self.request(UiRequest::CancelSynchronization); }
-                    });
+                    // Active work is presented by the centered progress modal.
                 } else {
                     self.sync_confirmation = None;
                     let valid_id = achimeld_core::SteamAppId::new(port.editor().document().app_id()).is_ok();

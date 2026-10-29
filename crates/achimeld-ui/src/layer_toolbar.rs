@@ -96,6 +96,8 @@ impl Action {
         response.widget_info(|| {
             egui::WidgetInfo::labeled(egui::WidgetType::Button, response.enabled(), &label)
         });
-        response.on_hover_text(label)
+        response
+            .on_hover_cursor(egui::CursorIcon::Default)
+            .on_hover_text(label)
     }
 }

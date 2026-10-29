@@ -136,6 +136,24 @@ internal static class BrowserFixtures
                 try { session.Policy.RequireHealthy(); } catch (InvalidDataException) { return; }
                 throw new Exception("Forbidden browser traffic did not terminate policy authority.");
             }
+            // Steam's public apps.js deletion closures put record IDs in the
+            // URL, with an empty request body. Exercise the actual routing guard.
+            foreach (PortalEntityKind kind in new[] { PortalEntityKind.Achievement, PortalEntityKind.Stat })
+            {
+                var deletion = await Session();
+                await using IBrowserContext context = deletion.Context;
+                deletion.Policy.BeginReviewedDraft(480, kind);
+                string identity = kind == PortalEntityKind.Stat ? "9" : "9_0";
+                Uri uri = deletion.Policy.ArmReviewedDeletion(480, identity);
+                int before = reached;
+                await deletion.Page.EvaluateAsync("url => fetch(url, {method:'POST', body:''})", uri.AbsoluteUri);
+                deletion.Policy.RequireHealthy();
+                if (reached != before + 1) throw new Exception("Reviewed record deletion did not reach synthetic upstream.");
+                await deletion.Page.EvaluateAsync("url => fetch(url, {method:'POST'}).catch(() => {})", uri.AbsoluteUri);
+                if (reached != before + 1 || deletion.Policy.Rejection != BrowserRequestRejection.Dynamic)
+                    throw new Exception("Repeated deletion regained write authority.");
+            }
+            Console.WriteLine("PASS: record-specific achievement and stat deletions route once and reject replay.");
             var login = await Session(authenticate: true);
             await using (IBrowserContext context = login.Context)
             {

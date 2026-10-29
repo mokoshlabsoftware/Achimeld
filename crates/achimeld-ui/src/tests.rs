@@ -53,6 +53,67 @@ mod terminal_regressions;
 mod window_layout_regressions;
 struct NoAssets;
 
+#[test]
+fn recovery_preserves_accepted_unsaved_project_and_releases_close() {
+    let mut fixture = Fixture::new();
+    let mut desktop = Desktop::default();
+    let entity = fixture.editor.document().entities(EntityKind::Achievement)[0].clone();
+    let id = entity["id"].as_str().unwrap().to_owned();
+    desktop.entity_drafts.insert(
+        id.clone(),
+        desktop::EntityDraft {
+            base: entity.clone(),
+            value: json!({"invalid": null}),
+            error: "Invalid draft".into(),
+        },
+    );
+    desktop.localization_drafts.insert(
+        (id.clone(), "English".into()),
+        ("pending".into(), "invalid".into()),
+    );
+    desktop.close(&mut fixture);
+    assert_eq!(fixture.requests, 0);
+    desktop.error = None;
+    let ctx = egui::Context::default();
+    for request in [UiRequest::SaveProject, UiRequest::SaveProjectAs] {
+        desktop.request(request);
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(720.0, 650.0),
+                )),
+                ..Default::default()
+            },
+            |ui| desktop.show(ui, &mut fixture),
+        );
+        output.textures_delta.clear();
+        assert!(!desktop.entity_drafts.is_empty());
+        let button = ctx
+            .read_response(egui::Id::new("revert-invalid-edits"))
+            .unwrap();
+        assert!(
+            button.rect.is_finite() && button.rect.left() >= 0.0 && button.rect.right() <= 720.0
+        );
+    }
+    assert_eq!(fixture.requests, 2);
+    assert!(fixture.editor.is_dirty());
+    desktop.revert_invalid_edits();
+    assert!(desktop.entity_drafts.is_empty());
+    assert!(desktop.localization_drafts.is_empty());
+    assert!(desktop.error.is_none());
+    assert!(fixture.editor.is_dirty());
+    assert_eq!(
+        fixture
+            .editor
+            .document()
+            .entity(EntityKind::Achievement, &id),
+        Some(&entity)
+    );
+    desktop.close(&mut fixture);
+    assert!(matches!(fixture.last_request, Some(UiRequest::Exit)));
+}
+
 fn steam_snapshot() -> Value {
     json!({
         "appId": 0, "isComplete": true, "readAtUtc": "2026-10-15T12:00:00Z",
@@ -303,7 +364,7 @@ fn steam_tiles_mark_for_deletion_and_read_steam_clears_the_marks() {
     );
     assert!(labels.iter().any(|(text, _)| text == "Achievements (1)"));
     assert!(labels.iter().any(|(text, _)| text == "Stats (1)"));
-    click(&mut desktop, &mut fixture, center(&labels, "Close"));
+    click(&mut desktop, &mut fixture, center(&labels, "Cancel"));
     let labels = frame(&mut desktop, &mut fixture, vec![]);
     assert!(!desktop.steam_delete_review);
     assert_eq!(desktop.steam_marks.len(), 2);
@@ -329,7 +390,10 @@ pub(crate) fn configure_test_fonts(ctx: &egui::Context) {
             std::fs::read(fonts.join("segoeuib.ttf")).ok()?,
         ])
     });
-    crate::configure_fonts(ctx, faces);
+    let console = std::env::var_os("SystemRoot").and_then(|root| {
+        std::fs::read(std::path::PathBuf::from(root).join("Fonts/consola.ttf")).ok()
+    });
+    crate::configure_fonts_with_monospace(ctx, faces, console);
 }
 
 #[test]
@@ -1683,6 +1747,21 @@ fn title_bar_controls_preserve_close_checks_and_emit_window_actions() {
     assert_eq!(fixture.requests, requests);
     assert!(desktop.error.is_some());
     assert!(!commands.contains(&egui::ViewportCommand::Close));
+
+    // Errors use the shared modal prompt; dismiss it before testing title dragging.
+    frame(
+        &mut desktop,
+        &mut fixture,
+        vec![egui::Event::Key {
+            key: egui::Key::Escape,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }],
+        (false, false),
+    );
+    assert!(desktop.error.is_none());
 
     // Let earlier control clicks age out of egui's triple-click interval.
     for _ in 0..14 {

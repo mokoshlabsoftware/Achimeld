@@ -159,9 +159,10 @@
     },
     {
       "id": "SEC-SYNC-001",
-      "claim": "The receiver retains reviewed project values, a fresh complete remote snapshot and generated icon hashes; only selected prepared row IDs execute in dependency order, with fresh checks, read-back and no failed-step replay. Unsynced achievements remain eligible; Retired cards and text are preserved outside synchronization. A unique verified Steam identity rename can retire the old card when the reviewed replacement is imported.",
+      "claim": "The receiver retains reviewed project values, a fresh complete remote snapshot and either generated icon hashes or explicit deferred icon candidates; deferred bytes are bounded and hash-pinned at their selected step before writes. Only selected prepared row IDs execute in dependency order, with fresh checks, read-back and no failed-step replay. Unsynced achievements remain eligible; Retired cards and text are preserved outside synchronization. A unique verified Steam identity rename can retire the old card when the reviewed replacement is imported.",
       "enforcement": [
         { "file": "bridge/Achimeld.Browser/SynchronizationSession.cs", "symbol": "RequireToken" },
+        { "file": "bridge/Achimeld.Browser/SteamDeletionSession.cs", "symbol": "RunAsync" },
         { "file": "bridge/Achimeld.Browser/SynchronizationSession.cs", "symbol": "RequireOtherTargetsUnchanged" },
         { "file": "bridge/Achimeld.Browser/SynchronizationSnapshotPolicy.cs", "symbol": "Validate" },
         { "file": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs", "symbol": "BeginReviewedDraft" },

@@ -369,6 +369,7 @@ impl Desktop {
                 {
                     entity["apiName"] = json!(api);
                 }
+                crate::steam::rename_panel(ui, port, entity, false);
                 ui.add_space(8.0);
                 let mut icon = crate::layer_palette::effective_icon(entity);
                 let before = icon.clone();

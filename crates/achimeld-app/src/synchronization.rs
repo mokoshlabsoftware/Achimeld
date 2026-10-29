@@ -11,21 +11,162 @@ use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-use std::fs::{self, OpenOptions};
-use std::io::{Cursor, Read, Write};
+use std::fs;
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::time::Duration;
 
+// Only reconcile the confirmed batch, in its own entity namespace. A renamed
+// identity still present remotely is not a confirmed deletion.
+fn reconcile_deleted_history(
+    project: &mut Value,
+    result: &Value,
+    targets: &Value,
+) -> Result<(), String> {
+    let invalid = || "Invalid verified deletion history".to_owned();
+    let snapshot = &result["snapshot"];
+    if snapshot["steamAppId"] != project["steamAppId"] || snapshot["isComplete"] != true {
+        return Err(invalid());
+    }
+    let targets = targets.as_array().ok_or_else(invalid)?;
+    let results = result["results"].as_array().ok_or_else(invalid)?;
+    if results.len() != targets.len() {
+        return Err(invalid());
+    }
+    let mut deleted = Vec::new();
+    for target in targets {
+        let kind = target["kind"].as_str().ok_or_else(invalid)?;
+        let name = target["apiName"].as_str().ok_or_else(invalid)?;
+        let key = match kind {
+            "Stat" => "stats",
+            "Achievement" => "achievements",
+            _ => return Err(invalid()),
+        };
+        if results
+            .iter()
+            .filter(|r| {
+                r["kind"] == kind
+                    && r["apiName"] == name
+                    && matches!(r["status"].as_str(), Some("Deleted" | "AlreadyAbsent"))
+            })
+            .count()
+            != 1
+        {
+            return Err(invalid());
+        }
+        let previous = project["lastRemoteSnapshot"][key]
+            .as_array()
+            .ok_or_else(invalid)?;
+        let scalar_name = |r: &Value| {
+            r["apiName"]
+                .as_str()
+                .or_else(|| r["apiName"]["value"].as_str())
+                .map(str::to_owned)
+        };
+        let old: Vec<_> = previous
+            .iter()
+            .filter(|r| scalar_name(r).as_deref() == Some(name))
+            .collect();
+        if old.len() != 1 {
+            return Err(invalid());
+        }
+        let identity = old[0]["steamId"]
+            .as_str()
+            .filter(|id| !id.is_empty())
+            .ok_or_else(invalid)?;
+        let current = snapshot[key].as_array().ok_or_else(invalid)?;
+        if current.iter().any(|r| {
+            scalar_name(r).is_some_and(|n| n.eq_ignore_ascii_case(name)) || r["steamId"] == identity
+        }) {
+            return Err(invalid());
+        }
+        deleted.push((kind.to_owned(), key, name.to_owned(), identity.to_owned()));
+    }
+    for (kind, key, name, identity) in deleted {
+        project["syncBaselines"]
+            .as_array_mut()
+            .ok_or_else(invalid)?
+            .retain(|b| {
+                b["entityType"] != kind || (b["apiName"] != name && b["steamId"] != identity)
+            });
+        for entity in project[key].as_array_mut().ok_or_else(invalid)? {
+            let pending = &entity["pendingApiRename"];
+            if pending["appId"] == snapshot["steamAppId"]
+                && pending["from"] == name
+                && pending["steamId"] == identity
+            {
+                entity
+                    .as_object_mut()
+                    .ok_or_else(invalid)?
+                    .remove("pendingApiRename");
+            }
+        }
+    }
+    Ok(())
+}
+
 pub(crate) enum Event {
+    Summary(String),
     Banner(Box<Document>),
     Imported(Box<Document>),
     Review(Value),
-    IconFiles(BTreeMap<String, Vec<PathBuf>>),
     Progress(String),
     Complete(Result<Document, String>),
 }
+
+/// Combine independently edited fields. Arrays are atomic: ambiguous concurrent
+/// changes (including reordered/deleted layers) fail instead of losing artwork.
+pub(crate) fn preserve_local_edits(
+    baseline: &Document,
+    local: &Document,
+    remote: &Document,
+) -> Result<Document, String> {
+    fn merge(
+        base: Option<&Value>,
+        local: Option<&Value>,
+        remote: Option<&Value>,
+    ) -> Result<Option<Value>, String> {
+        if local == base || local == remote {
+            return Ok(remote.cloned());
+        }
+        if remote == base {
+            return Ok(local.cloned());
+        }
+        if let (Some(Value::Object(b)), Some(Value::Object(l)), Some(Value::Object(r))) =
+            (base, local, remote)
+        {
+            let keys: std::collections::BTreeSet<_> =
+                b.keys().chain(l.keys()).chain(r.keys()).collect();
+            let mut result = serde_json::Map::new();
+            for key in keys {
+                if let Some(value) = merge(b.get(key), l.get(key), r.get(key))? {
+                    result.insert(key.clone(), value);
+                }
+            }
+            return Ok(Some(Value::Object(result)));
+        }
+        Err("Steam completed with conflicting project changes. Your edits are retained; save the project and prepare a fresh synchronization review.".into())
+    }
+    let project = merge(
+        Some(baseline.project()),
+        Some(local.project()),
+        Some(remote.project()),
+    )?
+    .ok_or("Missing merged project")?;
+    let base = serde_json::to_value(baseline.catalog()).map_err(|e| e.to_string())?;
+    let current = serde_json::to_value(local.catalog()).map_err(|e| e.to_string())?;
+    let result = serde_json::to_value(remote.catalog()).map_err(|e| e.to_string())?;
+    let catalog = serde_json::from_value(
+        merge(Some(&base), Some(&current), Some(&result))?.ok_or("Missing merged catalog")?,
+    )
+    .map_err(|e| e.to_string())?;
+    Document::from_parts(project, catalog)
+}
 pub(crate) struct Pending {
+    pub baseline: Document,
+    pub activity: &'static str,
+    pub completion_message: Option<String>,
     pub handshake_only: bool,
     pub cancel: Cancellation,
     pub events: mpsc::Receiver<Event>,
@@ -36,7 +177,170 @@ pub(crate) struct Pending {
     pub thread: Option<std::thread::JoinHandle<()>>,
     pub previews: IconPreviews,
 }
+
+#[cfg(test)]
+mod concurrent_edit_tests {
+    use super::*;
+
+    #[test]
+    fn independent_changes_merge_and_overlapping_changes_fail_without_mutating_local() {
+        let base = Document::new();
+        let mut local = base.project().clone();
+        local["name"] = json!("Local artwork session");
+        let local = Document::from_parts(local, base.catalog().clone()).unwrap();
+        let mut remote = base.project().clone();
+        remote["lastRemoteSnapshot"] = json!({"steamAppId":base.app_id()});
+        let remote = Document::from_parts(remote, base.catalog().clone()).unwrap();
+        let merged = preserve_local_edits(&base, &local, &remote).unwrap();
+        assert_eq!(merged.project()["name"], local.project()["name"]);
+        assert_eq!(
+            merged.project()["lastRemoteSnapshot"],
+            remote.project()["lastRemoteSnapshot"]
+        );
+        let mut conflict = remote.project().clone();
+        conflict["name"] = json!("Conflicting name");
+        let conflict = Document::from_parts(conflict, base.catalog().clone()).unwrap();
+        assert!(preserve_local_edits(&base, &local, &conflict).is_err());
+        assert_eq!(local.project()["name"], "Local artwork session");
+    }
+}
 impl Pending {
+    pub fn start_deletion(
+        path: PathBuf,
+        document: Document,
+        revision: u64,
+        targets: Vec<(EntityKind, String)>,
+        ctx: eframe::egui::Context,
+    ) -> Self {
+        let baseline = document.clone();
+        let cancel = Cancellation::default();
+        let stop = cancel.clone();
+        let (sender, events) = mpsc::sync_channel(8);
+        let (approval, _) = mpsc::sync_channel(1);
+        let destination = path.clone();
+        let thread = std::thread::spawn(move || {
+            let started = std::time::Instant::now();
+            let mut stage = "checking deletion selection";
+            let achievements = targets
+                .iter()
+                .filter(|(kind, _)| *kind == EntityKind::Achievement)
+                .count();
+            let stats = targets
+                .iter()
+                .filter(|(kind, _)| *kind == EntityKind::Stat)
+                .count();
+            achimeld_application::diagnostics::record(
+                "INFO",
+                "steam-deletion",
+                &format!("Started reviewed deletion: {achievements} achievements, {stats} stats"),
+            );
+            let progress = |event| -> Result<(), String> {
+                if let Event::Progress(message) | Event::Summary(message) = &event {
+                    achimeld_application::diagnostics::record("INFO", "steam-deletion", message);
+                }
+                sender
+                    .send(event)
+                    .map_err(|_| "Steam deletion view closed".to_owned())?;
+                ctx.request_repaint();
+                Ok(())
+            };
+            let result = (|| {
+                let app_id = SteamAppId::new(document.app_id()).map_err(|e| e.to_string())?;
+                let mut store = ProjectStore::new();
+                if store.load(&destination)? != document {
+                    return Err("Save the project before deleting Steam entries".into());
+                }
+                let mut reader = connect_steam(app_id, &stop, &progress, &mut stage)?;
+                progress(Event::Progress(
+                    "Deleting reviewed Steam entries; missing entries will be skipped".into(),
+                ))?;
+                let targets: Vec<_> = targets.into_iter().map(|(kind, api)| json!({"kind":if kind == EntityKind::Stat {"Stat"} else {"Achievement"}, "apiName":api})).collect();
+                stage = "saving the deletion recovery journal";
+                let journal_root = runtime_root()?;
+                fs::create_dir_all(&journal_root).map_err(|e| e.to_string())?;
+                let journal = journal_root.join(format!("delete-{}.json", app_id.value()));
+                save_journal(
+                    &journal,
+                    &json!({"appId": app_id.value(), "targets": targets, "state": "outcome-uncertain"}),
+                )?;
+                stage = "deleting and verifying reviewed Steam entries";
+                let result = reader
+                    .delete_steam(document.project().clone(), json!(targets))
+                    .map_err(|_| "Steam deletion stopped. Some entries may already have been deleted. Validate and refresh Steam before retrying.".to_owned())?;
+                close_steam(&mut reader, &progress, &mut stage)?;
+                stop.check().map_err(|e| e.to_string())?;
+                stage = "checking verified deletion results";
+                let mut project = document.project().clone();
+                if !result["snapshot"].is_object() {
+                    return Err("Invalid deletion result snapshot".into());
+                }
+                reconcile_deleted_history(&mut project, &result, &json!(targets))?;
+                project["lastRemoteSnapshot"] = result["snapshot"].clone();
+                let updated = Document::from_parts(project, document.catalog().clone())?;
+                if store.load(&destination)? != document {
+                    return Err(
+                        "Project changed during Steam deletion; refresh Steam before continuing"
+                            .into(),
+                    );
+                }
+                stage = "saving verified deletion results";
+                progress(Event::Progress("Saving verified deletion results…".into()))?;
+                store.save(&updated, &destination)?;
+                stage = "removing the completed deletion recovery journal";
+                fs::remove_file(&journal).map_err(|e| e.to_string())?;
+                stage = "summarizing verified deletion results";
+                let results = result["results"]
+                    .as_array()
+                    .ok_or("Invalid deletion results")?;
+                let deleted = results.iter().filter(|r| r["status"] == "Deleted").count();
+                let absent = results
+                    .iter()
+                    .filter(|r| r["status"] == "AlreadyAbsent")
+                    .count();
+                progress(Event::Summary(format!(
+                    "Steam deletion completed: {deleted} deleted, {absent} already absent. Steam draft verified; publish manually in Steamworks."
+                )))?;
+                stage = "reloading saved deletion results";
+                store.load(&destination)
+            })();
+            if result.is_ok() {
+                achimeld_application::diagnostics::record(
+                    "INFO",
+                    "steam-deletion",
+                    &format!(
+                        "Completed and saved in {} ms",
+                        started.elapsed().as_millis()
+                    ),
+                );
+            } else {
+                achimeld_application::diagnostics::record(
+                    "ERROR",
+                    "steam-deletion",
+                    &format!(
+                        "Stopped while {stage} after {} ms; refresh Steam to reconcile completed and unattempted entries",
+                        started.elapsed().as_millis()
+                    ),
+                );
+            }
+            let _ = progress(Event::Complete(result));
+            ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Focus);
+        });
+        Self {
+            baseline,
+            activity: "Deleting Steam entries",
+            completion_message: None,
+            handshake_only: false,
+            cancel,
+            events,
+            approval,
+            review: None,
+            revision,
+            path,
+            thread: Some(thread),
+            previews: IconPreviews::default(),
+        }
+    }
+
     pub fn start(
         path: PathBuf,
         document: Document,
@@ -45,6 +349,7 @@ impl Pending {
         ctx: eframe::egui::Context,
         handshake_only: bool,
     ) -> Self {
+        let baseline = document.clone();
         let cancel = Cancellation::default();
         let stop = cancel.clone();
         let (sender, events) = mpsc::sync_channel(8);
@@ -53,9 +358,15 @@ impl Pending {
         let thread = std::thread::spawn(move || {
             let started = std::time::Instant::now();
             let mut stage = "checking saved project";
+            let component = if handshake_only {
+                "validation"
+            } else {
+                "synchronization"
+            };
+            achimeld_application::diagnostics::record("INFO", component, "Started");
             let progress = |event| -> Result<(), String> {
                 if let Event::Progress(message) = &event {
-                    achimeld_application::diagnostics::record("INFO", "validation", message);
+                    achimeld_application::diagnostics::record("INFO", component, message);
                 }
                 sender
                     .send(event)
@@ -79,12 +390,12 @@ impl Pending {
             match &result {
                 Ok(_) => achimeld_application::diagnostics::record(
                     "INFO",
-                    "synchronization",
+                    component,
                     &format!("Completed in {} ms", started.elapsed().as_millis()),
                 ),
                 Err(error) => achimeld_application::diagnostics::record(
                     "ERROR",
-                    "validation",
+                    component,
                     &format!(
                         "Stopped while {stage} after {} ms · {error}",
                         started.elapsed().as_millis()
@@ -96,6 +407,13 @@ impl Pending {
             let _ = progress(Event::Complete(result));
         });
         Self {
+            baseline,
+            activity: if handshake_only {
+                "Validating Steam connection"
+            } else {
+                "Synchronizing Steam"
+            },
+            completion_message: None,
             handshake_only,
             cancel,
             events,
@@ -165,9 +483,29 @@ fn handshake(
     let app_id = SteamAppId::new(document.app_id()).map_err(|e| e.to_string())?;
     let mut reader = connect_steam(app_id, stop, progress, stage)?;
     stop.check().map_err(|e| e.to_string())?;
-    reader.stop().map_err(|e| e.to_string())?;
+    close_steam(&mut reader, progress, stage)?;
     progress(Event::Progress(
         "Steam connection validated. Choose Synchronize to prepare a review.".into(),
+    ))
+}
+
+fn close_steam(
+    reader: &mut SteamReader,
+    progress: &dyn Fn(Event) -> Result<(), String>,
+    stage: &mut &'static str,
+) -> Result<(), String> {
+    *stage = "closing the dedicated Steam browser";
+    progress(Event::Progress(
+        "Closing the dedicated Steam browser…".into(),
+    ))?;
+    let cleanup_complete = reader.stop().map_err(|e| e.to_string())?;
+    progress(Event::Progress(
+        if cleanup_complete {
+            "Dedicated Steam browser cleanup completed"
+        } else {
+            "Steam operation completed. Browser cleanup continues in the background."
+        }
+        .into(),
     ))
 }
 
@@ -209,6 +547,33 @@ fn automatic_imports(review: &Value) -> Vec<(String, String)> {
         .collect()
 }
 
+fn automatic_upload_choices(review: &Value, reconciliation: bool) -> Option<Vec<(String, String)>> {
+    let rows = review["rows"].as_array()?;
+    if reconciliation
+        || rows.iter().any(|row| {
+            matches!(
+                row["state"].as_str(),
+                Some("Conflict" | "ArtworkUnavailable")
+            ) || row["uploadError"].as_str().is_some()
+        })
+    {
+        return None;
+    }
+    rows.iter()
+        .map(|row| {
+            let action = row["defaultAction"].as_str()?;
+            if !row["actions"]
+                .as_array()?
+                .iter()
+                .any(|allowed| allowed == action)
+            {
+                return None;
+            }
+            Some((row["key"].as_str()?.to_owned(), action.to_owned()))
+        })
+        .collect()
+}
+
 fn run_once(
     path: &Path,
     document: Document,
@@ -238,70 +603,17 @@ fn run_once(
     );
     let journal_path = root.join(format!("{project_key}.json"));
     let reconciliation = journal_path.exists();
-    let mut generated = Generated::new(&root)?;
-    let mut pairs = BTreeMap::new();
-    let mut hashes = serde_json::Map::new();
-    let mut disk_bytes = 0_u64;
-    *stage = "preparing achievement artwork";
-    for (index, entity) in document
+    // Declare icon candidates without rendering. The frozen document is rendered
+    // only when the receiver reaches that icon's upload step.
+    let hashes: serde_json::Map<String, Value> = document
         .synchronized_entities(EntityKind::Achievement)
-        .enumerate()
-    {
-        stop.check().map_err(|e| e.to_string())?;
-        let api = entity["apiName"]
-            .as_str()
-            .ok_or("Achievement has no API name")?;
-        progress(Event::Progress(format!("Preparing artwork · {api}")))?;
-        let result = (|| {
-            let pair = render_cancellable(
-                &document,
-                entity["id"].as_str().ok_or("Missing achievement ID")?,
-                None,
-                assets,
-                &|| stop.check().is_err(),
-            )?;
-            let mut paths = Vec::new();
-            let mut digests = Vec::new();
-            for (side, image) in [pair.achieved, pair.unachieved].into_iter().enumerate() {
-                if image.width() > 4096 || image.height() > 4096 {
-                    return Err("Icon upload resolution exceeds 4096 pixels".to_owned());
-                }
-                let mut bytes = Cursor::new(Vec::new());
-                image
-                    .write_to(&mut bytes, image::ImageFormat::Png)
-                    .map_err(|e| e.to_string())?;
-                let bytes = bytes.into_inner();
-                if bytes.len() > 8 * 1024 * 1024
-                    || disk_bytes + bytes.len() as u64 > 512 * 1024 * 1024
-                {
-                    return Err("Generated synchronization artwork exceeds its budget".into());
-                }
-                disk_bytes += bytes.len() as u64;
-                let destination = generated.directory.join(format!("{index}-{side}.png"));
-                write_new(&destination, &bytes)?;
-                generated.files.push(destination.clone());
-                paths.push(destination);
-                digests.push(format!("{:x}", Sha256::digest(&bytes)));
-            }
-            Ok::<_, String>((paths, digests))
-        })();
-        if let Ok((paths, digests)) = result {
-            pairs.insert(api.to_owned(), paths);
-            hashes.insert(
-                api.into(),
-                json!({"achieved":digests[0],"unachieved":digests[1]}),
-            );
-        } else if let Err(error) = result {
-            achimeld_application::diagnostics::record(
-                "WARN",
-                "validation",
-                &format!(
-                    "Artwork preparation skipped for achievement {} · {error}",
-                    index + 1
-                ),
-            );
-        }
-    }
+        .filter_map(|entity| {
+            Some((
+                entity["apiName"].as_str()?.to_owned(),
+                json!({"achieved":"", "unachieved":"", "deferred":true}),
+            ))
+        })
+        .collect();
     let mut reader = connect_steam(app_id, stop, progress, stage)?;
     *stage = "reading Steamworks configuration";
     progress(Event::Progress(
@@ -353,6 +665,8 @@ fn run_once(
         imports
     } else if !has_changes {
         Vec::new()
+    } else if let Some(choices) = automatic_upload_choices(&review, reconciliation) {
+        choices
     } else {
         for (kind, field) in [("Stat", "steamStats"), ("Achievement", "steamAchievements")] {
             review[field] = json!(
@@ -364,7 +678,7 @@ fn run_once(
                     .count()
             );
         }
-        progress(Event::IconFiles(pairs.clone()))?;
+
         progress(Event::Review(review))?;
         *stage = "waiting for review approval";
         progress(Event::Progress(
@@ -406,25 +720,57 @@ fn run_once(
     save_journal(&journal_path, &journal)?;
     let mut references = BTreeMap::new();
     for (index, step) in steps.iter().enumerate() {
+        let step_started = std::time::Instant::now();
         *stage = "applying a reviewed synchronization step";
         stop.check().map_err(|e| e.to_string())?;
         let api = step["apiName"]
             .as_str()
             .ok_or("Missing synchronization target")?;
         progress(Event::Progress(format!(
-            "{} · {api} · {} of {}",
+            "{} · {} · {api} · {} of {}",
             step["action"].as_str().unwrap_or("Synchronizing"),
+            step["key"]
+                .as_str()
+                .and_then(|key| key.split_once(':'))
+                .map_or("Entry", |(kind, _)| kind),
             index + 1,
             steps.len()
         )))?;
         let (achieved, unachieved) = if step["needsIcons"] == true {
-            let paths = pairs
-                .get(api)
-                .ok_or("The reviewed artwork is unavailable")?;
-            (
-                Some(STANDARD.encode(read_bounded(&paths[0], 8 * 1024 * 1024)?)),
-                Some(STANDARD.encode(read_bounded(&paths[1], 8 * 1024 * 1024)?)),
-            )
+            *stage = "preparing the current icon upload";
+            progress(Event::Progress(format!(
+                "Preparing icon · {api} · {} of {}",
+                index + 1,
+                steps.len()
+            )))?;
+            let entity = document
+                .synchronized_entities(EntityKind::Achievement)
+                .find(|entity| entity["apiName"] == api)
+                .ok_or("Icon upload target is missing")?;
+            let pair = render_cancellable(
+                &document,
+                entity["id"].as_str().ok_or("Icon identity is missing")?,
+                None,
+                assets,
+                &|| stop.check().is_err(),
+            )?;
+            let encode = |image: image::RgbaImage| -> Result<String, String> {
+                let mut bytes = Cursor::new(Vec::new());
+                image
+                    .write_to(&mut bytes, image::ImageFormat::Png)
+                    .map_err(|e| e.to_string())?;
+                if bytes.get_ref().len() > 8 * 1024 * 1024 {
+                    return Err("Icon upload exceeds 8 MiB".into());
+                }
+                Ok(STANDARD.encode(bytes.into_inner()))
+            };
+            let bytes = (Some(encode(pair.achieved)?), Some(encode(pair.unachieved)?));
+            progress(Event::Progress(format!(
+                "Uploading icon · {api} · {} of {}",
+                index + 1,
+                steps.len()
+            )))?;
+            bytes
         } else {
             (None, None)
         };
@@ -477,10 +823,24 @@ fn run_once(
         journal["state"] = json!("verified");
         journal["next"] = json!(index + 1);
         save_journal(&journal_path, &journal)?;
+        achimeld_application::diagnostics::record(
+            "INFO",
+            "synchronization",
+            &format!(
+                "Reviewed step {} of {} verified and recovery journal advanced in {} ms",
+                index + 1,
+                steps.len(),
+                step_started.elapsed().as_millis()
+            ),
+        );
     }
     *stage = "verifying synchronization results";
+    progress(Event::Progress(
+        "Verifying final Steam synchronization results…".into(),
+    ))?;
     let mut result = reader.finish_sync(token).map_err(|e| e.to_string())?;
-    reader.stop().map_err(|e| e.to_string())?;
+    close_steam(&mut reader, progress, stage)?;
+    *stage = "checking verified synchronization results";
     bind_result_artwork(&document, &mut result["project"], &mut references)?;
     if let Some(banner) = &banner {
         merge_game_banner(&mut result["project"], banner)?;
@@ -495,7 +855,6 @@ fn run_once(
         &mut catalog,
     )?;
     let synchronized = Document::from_parts(result["project"].take(), catalog)?;
-    let synchronized = accept_imported_icons(synchronized, &choices, assets, stop)?;
     achimeld_application::style_achievements::require_preserved(&document, &synchronized)?;
     stop.check().map_err(|e| e.to_string())?;
     progress(Event::Progress(
@@ -516,78 +875,6 @@ fn run_once(
         )))?;
     }
     Ok((synchronized, imported))
-}
-
-// Import accepts the retained artwork and its rendered project representation.
-// Keep both identities: Steam may convert uploads and the project may resize an
-// imported raster. A subsequent edit must still compare against these bytes.
-fn accept_imported_icons(
-    document: Document,
-    choices: &[Value],
-    assets: &mut dyn AssetSource,
-    stop: &Cancellation,
-) -> Result<Document, String> {
-    use achimeld_core::canonical::{Value as CanonicalValue, compute};
-    let mut project = document.project().clone();
-    for api in choices
-        .iter()
-        .filter(|choice| choice["action"] == "Import")
-        .filter_map(|choice| choice["key"].as_str()?.strip_prefix("Achievement:"))
-    {
-        let entity = document
-            .synchronized_entities(EntityKind::Achievement)
-            .find(|entity| entity["apiName"] == api)
-            .ok_or("Imported achievement is missing")?;
-        if entity["icon"]["layers"]
-            .as_array()
-            .is_none_or(|layers| layers.len() != 1 || layers[0]["kind"] != "StandaloneImage")
-        {
-            continue;
-        }
-        let remote = project["lastRemoteSnapshot"]["icons"]
-            .as_array()
-            .and_then(|icons| icons.iter().find(|icon| icon["achievementApiName"] == api))
-            .and_then(|icon| icon["contentFingerprint"].as_str())
-            .map(str::to_owned)
-            .ok_or("Imported icon has no verified Steam identity")?;
-        let pair = render_cancellable(
-            &document,
-            entity["id"]
-                .as_str()
-                .ok_or("Missing imported achievement identity")?,
-            None,
-            assets,
-            &|| stop.check().is_err(),
-        )?;
-        let mut fields = Vec::new();
-        for (name, image) in [
-            ("achievedIdentity", pair.achieved),
-            ("unachievedIdentity", pair.unachieved),
-        ] {
-            let mut bytes = Cursor::new(Vec::new());
-            image
-                .write_to(&mut bytes, image::ImageFormat::Png)
-                .map_err(|error| error.to_string())?;
-            fields.push((
-                name.into(),
-                CanonicalValue::Text(format!("{:x}", Sha256::digest(bytes.get_ref()))),
-            ));
-        }
-        let local = compute(fields).map_err(|error| error.to_string())?.entity;
-        let baseline = project["syncBaselines"]
-            .as_array_mut()
-            .and_then(|baselines| {
-                baselines.iter_mut().find(|baseline| {
-                    baseline["entityType"] == "Achievement"
-                        && baseline["localId"] == entity["id"]
-                        && baseline["apiName"] == api
-                })
-            })
-            .ok_or("Imported icon has no verified baseline")?;
-        baseline["localIconFingerprint"] = json!(local);
-        baseline["remoteIconFingerprint"] = json!(remote);
-    }
-    Document::from_parts(project, document.catalog().clone())
 }
 
 // The worker supplies bounded bytes only. The supervised host decodes, owns and
@@ -745,28 +1032,6 @@ fn runtime_root() -> Result<PathBuf, String> {
         .map(|p| PathBuf::from(p).join("Achimeld/RustSync"))
         .ok_or("Local application data is unavailable".into())
 }
-fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    let mut file = OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(path)
-        .map_err(|e| e.to_string())?;
-    file.write_all(bytes)
-        .and_then(|()| file.sync_all())
-        .map_err(|e| e.to_string())
-}
-fn read_bounded(path: &Path, maximum: u64) -> Result<Vec<u8>, String> {
-    let mut bytes = Vec::new();
-    fs::File::open(path)
-        .map_err(|e| e.to_string())?
-        .take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|e| e.to_string())?;
-    if bytes.len() as u64 > maximum {
-        return Err("Synchronization file exceeds its budget".into());
-    }
-    Ok(bytes)
-}
 fn save_journal(path: &Path, journal: &Value) -> Result<(), String> {
     let bytes = serde_json::to_vec(journal).map_err(|e| e.to_string())?;
     achimeld_persistence::project::write_atomic(path, &bytes)
@@ -786,99 +1051,71 @@ fn validate_image(bytes: &[u8]) -> Result<(), String> {
     reader.decode().map_err(|e| e.to_string())?;
     Ok(())
 }
-struct Generated {
-    directory: PathBuf,
-    files: Vec<PathBuf>,
-}
-impl Generated {
-    fn new(root: &Path) -> Result<Self, String> {
-        let directory = root.join(format!("generated-{}", new_id()));
-        fs::create_dir(&directory).map_err(|e| e.to_string())?;
-        Ok(Self {
-            directory,
-            files: Vec::new(),
-        })
-    }
-}
-impl Drop for Generated {
-    fn drop(&mut self) {
-        for path in &self.files {
-            let _ = fs::remove_file(path);
-        }
-        let _ = fs::remove_dir(&self.directory);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn imported_icon_baseline_accepts_only_import_choices_and_detects_later_recipe_changes() {
-        struct Imported;
-        impl AssetSource for Imported {
-            fn image(&mut self, _: &Value) -> Result<std::sync::Arc<image::RgbaImage>, String> {
-                Ok(std::sync::Arc::new(image::RgbaImage::from_pixel(
-                    2,
-                    2,
-                    image::Rgba([220, 30, 90, 255]),
-                )))
-            }
-            fn font(&mut self, _: &str) -> Option<std::sync::Arc<achimeld_imaging::Font>> {
-                None
+    fn automatic_upload_uses_only_allowed_defaults_and_pauses_for_conflicts_or_recovery() {
+        let mut review = json!({"rows":[{"key":"Stat:SCORE","state":"LocalOnly","defaultAction":"Upload","actions":["Skip","Upload"]}]});
+        assert_eq!(
+            automatic_upload_choices(&review, false),
+            Some(vec![("Stat:SCORE".into(), "Upload".into())])
+        );
+        assert!(automatic_upload_choices(&review, true).is_none());
+        for state in ["Conflict", "ArtworkUnavailable"] {
+            review["rows"][0]["state"] = json!(state);
+            assert!(automatic_upload_choices(&review, false).is_none());
+        }
+        review["rows"][0]["state"] = json!("LocalOnly");
+        review["rows"][0]["actions"] = json!(["Skip"]);
+        assert!(automatic_upload_choices(&review, false).is_none());
+    }
+
+    #[test]
+    fn verified_deletion_clears_only_matching_history_and_pending_rename() {
+        for kind in ["Achievement", "Stat"] {
+            for status in ["Deleted", "AlreadyAbsent"] {
+                let key = if kind == "Stat" {
+                    "stats"
+                } else {
+                    "achievements"
+                };
+                let other = if kind == "Stat" {
+                    "Achievement"
+                } else {
+                    "Stat"
+                };
+                let mut project = json!({"steamAppId":480,"stats":[],"achievements":[],
+                    "lastRemoteSnapshot":{"stats":[],"achievements":[]},
+                    "syncBaselines":[{"entityType":kind,"apiName":"OLD","steamId":"9"},
+                        {"entityType":kind,"apiName":"RENAMED_HISTORY","steamId":"9"},
+                        {"entityType":other,"apiName":"OLD","steamId":"9"},
+                        {"entityType":kind,"apiName":"KEEP","steamId":"10"}]});
+                project["lastRemoteSnapshot"][key] = json!([{"apiName":"OLD","steamId":"9"}]);
+                project[key] = json!([{"apiName":"NEW","pendingApiRename":{"from":"OLD","steamId":"9","appId":480}}]);
+                let result = json!({"snapshot":{"steamAppId":480,"isComplete":true,"stats":[],"achievements":[]},
+                    "results":[{"kind":kind,"apiName":"OLD","status":status}]});
+                let targets = json!([{"kind":kind,"apiName":"OLD"}]);
+                for fault in 0..4 {
+                    let mut bad = result.clone();
+                    match fault {
+                        0 => bad["snapshot"]["isComplete"] = json!(false),
+                        1 => bad["snapshot"]["steamAppId"] = json!(481),
+                        2 => bad["results"][0]["status"] = json!("Failed"),
+                        _ => bad["snapshot"][key] = json!([{"apiName":"RENAMED","steamId":"9"}]),
+                    }
+                    let mut unchanged = project.clone();
+                    assert!(reconcile_deleted_history(&mut unchanged, &bad, &targets).is_err());
+                    assert_eq!(unchanged, project);
+                }
+                reconcile_deleted_history(&mut project, &result, &targets).unwrap();
+                assert_eq!(project["syncBaselines"].as_array().unwrap().len(), 2);
+                assert_eq!(project["syncBaselines"][0]["entityType"], other);
+                assert_eq!(project[key][0]["apiName"], "NEW");
+                assert!(project[key][0].get("pendingApiRename").is_none());
             }
         }
-        let mut editor = achimeld_application::Editor::default();
-        editor
-            .execute(
-                "Add",
-                achimeld_application::Command::Add(EntityKind::Achievement),
-                None,
-            )
-            .unwrap();
-        let mut project = editor.document().project().clone();
-        let id = project["achievements"][0]["id"].clone();
-        let api = project["achievements"][0]["apiName"]
-            .as_str()
-            .unwrap()
-            .to_owned();
-        let image_id = new_id();
-        project["achievements"][0]["icon"] =
-            json!({"layers":[{"id":new_id(),"kind":"StandaloneImage","imageId":image_id}]});
-        project["assets"]["images"] = json!([{"id":image_id,"kind":"SteamImportedArtwork","displayName":"Imported","image":{"kind":"RelativeToProject","path":"imported.png"}}]);
-        project["lastRemoteSnapshot"] =
-            json!({"icons":[{"achievementApiName":api,"contentFingerprint":"a".repeat(64)}]});
-        project["syncBaselines"] = json!([{"entityType":"Achievement","localId":id,"apiName":api,"localIconFingerprint":null,"remoteIconFingerprint":null}]);
-        let document = Document::from_parts(project, editor.document().catalog().clone()).unwrap();
-        let choice = json!({"key":format!("Achievement:{api}"),"action":"Import"});
-        let skipped = accept_imported_icons(
-            document.clone(),
-            &[json!({"key":format!("Achievement:{api}"),"action":"Skip"})],
-            &mut Imported,
-            &Cancellation::default(),
-        )
-        .unwrap();
-        assert!(skipped.project()["syncBaselines"][0]["localIconFingerprint"].is_null());
-        let accepted = accept_imported_icons(
-            document,
-            std::slice::from_ref(&choice),
-            &mut Imported,
-            &Cancellation::default(),
-        )
-        .unwrap();
-        let before = accepted.project()["syncBaselines"][0].clone();
-        assert_eq!(before["localIconFingerprint"].as_str().unwrap().len(), 64);
-        assert_eq!(before["remoteIconFingerprint"], "a".repeat(64));
-        let mut changed = accepted.project().clone();
-        changed["achievements"][0]["icon"]["layers"][0]["opacity"] = json!(0.5);
-        let changed = Document::from_parts(changed, accepted.catalog().clone()).unwrap();
-        let after =
-            accept_imported_icons(changed, &[choice], &mut Imported, &Cancellation::default())
-                .unwrap();
-        assert_ne!(
-            before["localIconFingerprint"],
-            after.project()["syncBaselines"][0]["localIconFingerprint"]
-        );
     }
 
     #[test]
@@ -1042,17 +1279,5 @@ mod tests {
         assert_eq!(fs::read_dir(&directory).unwrap().count(), 1);
         fs::remove_file(path).unwrap();
         fs::remove_dir(directory).unwrap();
-    }
-    #[test]
-    fn generated_artwork_cleanup_removes_only_its_owned_files() {
-        let root = crate::test_output::root();
-        let mut stage = Generated::new(&root).unwrap();
-        let path = stage.directory.join("icon.png");
-        write_new(&path, b"fixture").unwrap();
-        stage.files.push(path.clone());
-        let directory = stage.directory.clone();
-        drop(stage);
-        assert!(!path.exists() && !directory.exists());
-        assert!(validate_image(b"not an image").is_err());
     }
 }

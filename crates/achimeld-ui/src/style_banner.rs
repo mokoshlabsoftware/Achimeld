@@ -1,6 +1,61 @@
 //! Style artwork behind its name; banners have no separate caption band.
 use crate::buttons;
 
+/// A moving white alpha trail identifies a recipe whose edits affect its users.
+/// Paint inside the banner so gapless neighbors and hit targets stay unchanged.
+pub(crate) fn paint_shared_edit_glow(ui: &egui::Ui, rect: egui::Rect) {
+    if !ui.is_rect_visible(rect) || !rect.is_positive() {
+        return;
+    }
+    let phase = ui.input(|input| (input.time / 3.0).rem_euclid(1.0)) as f32;
+    let depth = 3.0_f32.min(rect.height() * 0.25).min(rect.width() * 0.25);
+    let inner = rect.shrink(depth);
+    let outside = [
+        rect.left_top(),
+        rect.right_top(),
+        rect.right_bottom(),
+        rect.left_bottom(),
+    ];
+    let inside = [
+        inner.left_top(),
+        inner.right_top(),
+        inner.right_bottom(),
+        inner.left_bottom(),
+    ];
+    let perimeter = 2.0 * (rect.width() + rect.height());
+    let mut distance = 0.0;
+    let mut mesh = egui::Mesh::default();
+    for side in 0..4 {
+        let next = (side + 1) % 4;
+        let length = outside[side].distance(outside[next]);
+        // Bounded geometry, with a smoothly interpolated alpha across each quad.
+        for step in 0..32 {
+            let base = mesh.vertices.len() as u32;
+            for endpoint in [step, step + 1] {
+                let t = endpoint as f32 / 32.0;
+                let position = (distance + length * t) / perimeter;
+                let age = (phase - position).rem_euclid(1.0);
+                let trail = (1.0 - age / 0.65).max(0.0);
+                let alpha = (180.0 * trail * trail) as u8;
+                mesh.colored_vertex(
+                    outside[side].lerp(outside[next], t),
+                    egui::Color32::from_white_alpha(alpha),
+                );
+                mesh.colored_vertex(
+                    inside[side].lerp(inside[next], t),
+                    egui::Color32::TRANSPARENT,
+                );
+            }
+            mesh.add_triangle(base, base + 2, base + 1);
+            mesh.add_triangle(base + 1, base + 2, base + 3);
+        }
+        distance += length;
+    }
+    ui.painter().add(mesh);
+    ui.ctx()
+        .request_repaint_after(std::time::Duration::from_millis(33));
+}
+
 pub(crate) fn paint(
     ui: &egui::Ui,
     response: &egui::Response,

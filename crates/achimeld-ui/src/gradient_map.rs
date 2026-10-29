@@ -295,7 +295,15 @@ pub(crate) fn editor(ui: &mut egui::Ui, map: &mut GradientMap) -> egui::Response
         ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
     }
     slice_strip(ui, &field, state.slice, slice_rect);
-    controls::show(ui, id, map, &mut state, outer);
+    if response.clicked()
+        && response
+            .interact_pointer_pos()
+            .and_then(|p| hit(map, rect, p))
+            .is_some()
+    {
+        state.color = true;
+    }
+    controls::show(ui, id, map, &mut state, rect);
     ui.data_mut(|data| data.insert_temp(id, state));
     if *map != before {
         response.mark_changed();

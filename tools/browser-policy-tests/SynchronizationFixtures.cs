@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Achimeld.Browser;
 using Achimeld.Core;
 using Achimeld.Security;
+using Achimeld.Persistence;
 
 internal static class SynchronizationFixtures
 {
@@ -14,6 +15,8 @@ internal static class SynchronizationFixtures
 
     internal static async Task RunAsync()
     {
+        await PendingRenameAsync();
+        await DeletedHistoryAsync();
         int checks = 0;
         void Check(bool value) { if (!value) throw new Exception("Synchronization fixture assertion failed."); checks++; }
         async Task Reject(Func<Task> action)
@@ -23,6 +26,60 @@ internal static class SynchronizationFixtures
             throw new Exception("Unsafe synchronization accepted.");
         }
         FakePortal portal = new();
+        foreach (int fault in new[] { 0, 1, 2 })
+        {
+            var deletionPortal = new FakePortal { InjectUnrelatedChange = fault == 2 };
+            deletionPortal.AddAchievement();
+            var capture = new SynchronizationSession(deletionPortal);
+            var captureReview = await capture.PrepareAsync(Request(achievement: true), 480);
+            await capture.BeginAsync(new(captureReview.Token, []));
+            var captured = JsonSerializer.SerializeToElement(await capture.FinishAsync(new(captureReview.Token)), SecurityWire.Json).GetProperty("project");
+            if (fault == 0) deletionPortal.ChangeDeletionIdentity();
+            if (fault == 1) deletionPortal.MakeIncomplete();
+            await Reject(() => new SteamDeletionSession(deletionPortal).RunAsync(new(captured, [new("Achievement", "ACH_WIN")]), 480));
+            Check(deletionPortal.Writes == (fault == 2 ? 1 : 0));
+        }
+        foreach (var (missing, rawSnapshot) in new[] { (false, false), (true, false), (false, true), (true, true) })
+        {
+            var deletionPortal = new FakePortal();
+            deletionPortal.AddAchievement(withIcons: true);
+            var capture = new SynchronizationSession(deletionPortal);
+            var captureReview = await capture.PrepareAsync(Request(achievement: true), 480);
+            await capture.BeginAsync(new(captureReview.Token, []));
+            var deletionProject = JsonSerializer.SerializeToElement(await capture.FinishAsync(new(captureReview.Token)), SecurityWire.Json).GetProperty("project");
+            if (rawSnapshot)
+            {
+                var rawProject = JsonNode.Parse(deletionProject.GetRawText())!.AsObject();
+                var snapshot = rawProject["lastRemoteSnapshot"]!.AsObject();
+                snapshot.Remove("steamAppId");
+                snapshot.Remove("isComplete");
+                snapshot["appId"] = new JsonObject { ["value"] = 480 };
+                snapshot["revision"] = "steamworks-configuration-json-v1";
+                foreach (string key in new[] { "achievements", "stats" })
+                    foreach (var row in snapshot[key]!.AsArray()) row!["apiName"] = new JsonObject { ["value"] = row["apiName"]!.GetValue<string>() };
+                deletionProject = JsonSerializer.SerializeToElement(rawProject);
+            }
+            if (missing) deletionPortal.RemoveAchievement();
+            var deletion = new SteamDeletionSession(deletionPortal);
+            var deletionRequest = new SteamDeletionRequest(deletionProject, [new("Stat", "SCORE"), new("Achievement", "ACH_WIN")]);
+            var deleted = JsonSerializer.SerializeToElement(await deletion.RunAsync(deletionRequest, 480), SecurityWire.Json);
+            Check(deletionPortal.Snapshot.Stats.Count == 0 && deletionPortal.Snapshot.Achievements.Count == 0);
+            Check(deletionPortal.Writes == (missing ? 1 : 2));
+            Check(deleted.GetProperty("results")[0].GetProperty("status").GetString() == (missing ? "AlreadyAbsent" : "Deleted"));
+            await Reject(() => deletion.RunAsync(deletionRequest, 480));
+        }
+        {
+            var deletionPortal = new FakePortal { SuppressSave = true };
+            deletionPortal.AddAchievement();
+            var capture = new SynchronizationSession(deletionPortal);
+            var captureReview = await capture.PrepareAsync(Request(achievement: true), 480);
+            await capture.BeginAsync(new(captureReview.Token, []));
+            var deletionProject = JsonSerializer.SerializeToElement(await capture.FinishAsync(new(captureReview.Token)), SecurityWire.Json).GetProperty("project");
+            await Reject(() => new SteamDeletionSession(deletionPortal).RunAsync(new(deletionProject, [new("Achievement", "ACH_WIN"), new("Stat", "SCORE")]), 480));
+            Check(deletionPortal.Writes == 1);
+            await Reject(() => new SteamDeletionSession(deletionPortal).RunAsync(new(deletionProject, [new("Stat", "SCORE")]), 480));
+            Check(deletionPortal.Writes == 1);
+        }
         // Renaming a local icon must never let its legacy achievement-shaped
         // record enter a review, even if a caller bypasses the host projection.
         foreach (string marker in new[] { "styleAchievement", "artImage" })
@@ -172,6 +229,18 @@ internal static class SynchronizationFixtures
         // PNG bytes are pinned by both hashes and decoded dimensions before uploads.
         portal = new(); portal.AddAchievement(); session = new(portal);
         string hash = Convert.ToHexStringLower(SHA256.HashData(Png));
+        // Deferred candidates do not require rendered bytes during preparation.
+        // Only the selected next icon step can supply bounded PNGs for pinning.
+        var deferredRequest = Request(achievement: true) with { Icons = new() { ["ACH_WIN"] = new("", "", true) } };
+        var deferredPortal = new FakePortal(); deferredPortal.AddAchievement();
+        var deferredSession = new SynchronizationSession(deferredPortal);
+        var deferredReview = await deferredSession.PrepareAsync(deferredRequest, 480);
+        await deferredSession.BeginAsync(new(deferredReview.Token, [new("Icon:ACH_WIN", "Upload")]));
+        await deferredSession.StepAsync(new(deferredReview.Token, "Icon:ACH_WIN", Png, Png));
+        Check(deferredPortal.Writes == 1 && deferredPortal.Verifications > 0);
+        await Reject(() => deferredSession.StepAsync(new(deferredReview.Token, "Icon:ACH_WIN", Png, Png)));
+        await Reject(() => new SynchronizationSession(new FakePortal()).PrepareAsync(
+            deferredRequest with { Icons = new() { ["ACH_WIN"] = new(hash, "", true) } }, 480));
         var iconRequest = Request(achievement: true) with { Icons = new() { ["ACH_WIN"] = new(hash, hash) } };
         review = await session.PrepareAsync(iconRequest, 480);
         await session.BeginAsync(new(review.Token, [new("Icon:ACH_WIN", "Upload")]));
@@ -225,6 +294,28 @@ internal static class SynchronizationFixtures
         Check(!policy.Allows("POST", new("https://partner.steamgames.com/images/uploadachievement"), "xhr", false));
         Check(!policy.Allows("POST", new("https://partner.steamgames.com/apps/deleteachievement/480"), "xhr", false));
         policy.EndReviewedDraft();
+        foreach (PortalEntityKind deletionKind in new[] { PortalEntityKind.Achievement, PortalEntityKind.Stat })
+        {
+            policy.BeginReviewedDraft(480, deletionKind);
+            foreach (string invalid in new[] { "", "01", "-1", "9/0", "9?x=1", "4294967296", "9_00", "9_0_1" })
+                await Reject(() => Task.Run(() => policy.ArmReviewedDeletion(480, invalid)));
+            string identity = deletionKind == PortalEntityKind.Stat ? "9" : "9_0";
+            Uri deletionUri = policy.ArmReviewedDeletion(480, identity);
+            string deletionRoute = deletionKind == PortalEntityKind.Stat ? "deletestat" : "deleteachievement";
+            string suffix = deletionKind == PortalEntityKind.Stat ? "/9" : "/9/0";
+            Check(deletionUri.AbsoluteUri == $"https://partner.steamgames.com/apps/{deletionRoute}/480{suffix}");
+            Check(!policy.Allows("POST", new($"https://partner.steamgames.com/apps/{deletionRoute}/481"), "xhr", false));
+            Check(!policy.Allows("GET", new($"https://partner.steamgames.com/apps/{deletionRoute}/480"), "xhr", false));
+            foreach (string wrong in new[] { $"/{deletionRoute}/480", $"/{deletionRoute}/481{suffix}",
+                $"/{deletionRoute}/480/8", $"/{deletionRoute}/480/9/1", $"/{deletionRoute}/480{suffix}?x=1",
+                $"/{deletionRoute}/480{suffix}/", $"/{deletionRoute}/480/09/0" })
+                Check(!policy.Allows("POST", new("https://partner.steamgames.com/apps" + wrong), "xhr", false));
+            Check(!policy.Allows("GET", deletionUri, "xhr", false));
+            Check(!policy.Allows("POST", deletionUri, "document", true));
+            Check(policy.Allows("POST", deletionUri, "xhr", false));
+            Check(!policy.Allows("POST", deletionUri, "xhr", false));
+            policy.EndReviewedDraft();
+        }
         Check(!policy.Allows("POST", new("https://partner.steamgames.com/apps/fetchachievement/480/9/0"), "xhr", false));
         foreach (PortalEntityKind kind in new[] { PortalEntityKind.Achievement, PortalEntityKind.Stat, PortalEntityKind.Icon })
         {
@@ -416,6 +507,72 @@ internal static class SynchronizationFixtures
         protected override void Dispose(bool disposing) { if (disposing) input.Dispose(); base.Dispose(disposing); }
     }
 
+    private static async Task DeletedHistoryAsync()
+    {
+        foreach (bool stat in new[] { false, true })
+        foreach (bool explicitIntent in new[] { false, true })
+        {
+            var request = Request(achievement: true);
+            var raw = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+            string kind = stat ? "Stat" : "Achievement", key = stat ? "stats" : "achievements";
+            string name = stat ? "SCORE" : "ACH_WIN";
+            Guid id = stat ? StatIdValue : AchievementIdValue;
+            raw["syncBaselines"]!.AsArray().Add(new JsonObject {
+                ["entityType"] = kind, ["localId"] = JsonValue.Create(id), ["apiName"] = "DELETED_OLD_NAME",
+                ["steamId"] = "99", ["fieldFingerprints"] = new JsonObject(), ["verifiedAtUtc"] = JsonValue.Create(DateTimeOffset.UtcNow) });
+            if (explicitIntent) raw[key]![0]!["pendingApiRename"] = new JsonObject { ["from"] = "DELETED_OLD_NAME", ["steamId"] = "99", ["appId"] = 480 };
+            var portal = new FakePortal();
+            var session = new SynchronizationSession(portal);
+            try
+            {
+                var review = await session.PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(raw) }, 480);
+                if (explicitIntent) throw new Exception("Deleted explicit rename was silently cleared.");
+                if (review.Rows.Single(r => r.Kind == kind && r.ApiName == name).State != "LocalOnly") throw new Exception("Deleted history blocked recreation.");
+                await session.BeginAsync(new(review.Token, []));
+                var result = JsonSerializer.SerializeToElement(await session.FinishAsync(new(review.Token)));
+                if (result.GetProperty("project").GetProperty("syncBaselines").GetArrayLength() != 0 || portal.Writes != 0) throw new Exception("Deleted history was not repaired without writes.");
+            }
+            catch (InvalidDataException) when (explicitIntent) { }
+        }
+    }
+
+    private static async Task PendingRenameAsync()
+    {
+        foreach (bool stat in new[] { false, true })
+        {
+            var portal = new FakePortal(); portal.AddAchievement(withIcons: true);
+            var request = Request(achievement: true);
+            var raw = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+            string kind = stat ? "Stat" : "Achievement", old = stat ? "SCORE" : "ACH_WIN", name = stat ? "POINTS" : "ACH_VICTORY";
+            var entity = raw[stat ? "stats" : "achievements"]![0]!;
+            entity["apiName"] = name;
+            entity["pendingApiRename"] = new JsonObject { ["from"] = old, ["steamId"] = stat ? "1" : "2", ["appId"] = 480 };
+            request = request with { Project = JsonSerializer.SerializeToElement(raw) };
+            var session = new SynchronizationSession(portal);
+            var review = await session.PrepareAsync(request, 480);
+            if (review.Rows.Any(r => r.Kind == kind && r.ApiName == old)) throw new Exception("Rename exposed a second record.");
+            var steps = await session.BeginAsync(new(review.Token, [new(kind + ":" + name, "Upload")]));
+            foreach (var step in steps) await session.StepAsync(new(review.Token, step.Key));
+            var result = JsonSerializer.SerializeToElement(await session.FinishAsync(new(review.Token)));
+            if (portal.Snapshot.Stats.Count != 1 || portal.Snapshot.Achievements.Count != 1 ||
+                result.GetProperty("project").GetProperty(stat ? "stats" : "achievements")[0].TryGetProperty("pendingApiRename", out _)) throw new Exception("Rename did not complete in place.");
+            if (stat && portal.Snapshot.Achievements.Single().ProgressStatApiName?.Value != name) throw new Exception("Stat rename lost progress reference.");
+            // The persisted old intent can reconcile a successful remote save after interruption.
+            await new SynchronizationSession(portal).PrepareAsync(request, 480);
+            var wrongIdentity = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+            wrongIdentity[stat ? "stats" : "achievements"]![0]!["pendingApiRename"]!["steamId"] = "unrelated";
+            var unchanged = new FakePortal(); unchanged.AddAchievement();
+            bool rejected = false;
+            try { await new SynchronizationSession(unchanged).PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(wrongIdentity) }, 480); }
+            catch (InvalidDataException) { rejected = true; }
+            if (!rejected || unchanged.Writes != 0) throw new Exception("Rename accepted a different Steam identity.");
+            var collision = new FakePortal(); collision.AddAchievement();
+            if (stat) collision.AddStat(name); else collision.RenameAchievement(name);
+            try { await new SynchronizationSession(collision).PrepareAsync(request, 480); if (stat) throw new Exception("Occupied rename accepted."); }
+            catch (InvalidDataException) { }
+        }
+    }
+
     private static PrepareSyncRequest Request(bool localStat = true, bool achievement = false)
     {
         JsonObject project = new()
@@ -483,6 +640,9 @@ internal static class SynchronizationFixtures
                 Localizations = Snapshot.Localizations.Select(l => l.EntityType == ProjectEntityType.Achievement ? l with { ApiName = new(name) } : l).ToArray() };
         }
         public Task<RemoteSnapshot> ReadAsync(SteamAppId appId) => Task.FromResult(Snapshot);
+        public void RemoveAchievement() => Snapshot = Snapshot with { Achievements = [], Icons = [], Localizations = Snapshot.Localizations.Where(l => l.EntityType != ProjectEntityType.Achievement).ToArray() };
+        public void ChangeDeletionIdentity() => Snapshot = Snapshot with { Achievements = Snapshot.Achievements.Select(a => a with { SteamId = "99" }).ToArray() };
+        public void MakeIncomplete() => Snapshot = Snapshot with { IsComplete = false };
         public Task<byte[]> DownloadArtworkAsync(Uri uri) => Task.FromResult(ChangeDownloadedArtwork ? new byte[] { 1, 2, 3 } : Png);
         public Task<bool> VerifyIconsAsync(PortalWriteOperation operation, RemoteIconMetadata? actual) { Verifications++; return Task.FromResult(actual is not null && operation.GeneratedUploads.Values.All(bytes => bytes.SequenceEqual(Png))); }
         public Task ApplyAsync(PortalWriteOperation operation)
@@ -490,6 +650,15 @@ internal static class SynchronizationFixtures
             Writes++;
             if (SuppressSave) return Task.CompletedTask;
             string name = operation.Target.ApiName.Value;
+            if (operation.RenameFrom is string old)
+                Snapshot = SynchronizationSession.NormalizeRename(Snapshot, operation.Target.Kind == PortalEntityKind.Stat, old, operation.Target.ApiName);
+            if (operation.Delete)
+            {
+                if (operation.Target.Kind == PortalEntityKind.Achievement) RemoveAchievement();
+                else Snapshot = Snapshot with { Stats = Snapshot.Stats.Where(s => s.ApiName.Value != name).ToArray() };
+                if (InjectUnrelatedChange) AddStat("UNRELATED");
+                return Task.CompletedTask;
+            }
             if (operation.Target.Kind == PortalEntityKind.Stat)
             {
                 var fields = operation.Fields;
@@ -499,6 +668,11 @@ internal static class SynchronizationFixtures
                 Snapshot = Snapshot with { Stats = Snapshot.Stats.Where(s => s.ApiName.Value != name).Append(stat).ToArray() };
                 if (InjectUnrelatedChange) AddStat("UNRELATED");
                 if (ChangeSameNameAchievementText) AddAchievementText(name, "Changed by page");
+            }
+            else if (operation.Target.Kind == PortalEntityKind.Achievement)
+            {
+                var a = Snapshot.Achievements.Single(v => v.ApiName.Value == name);
+                Snapshot = Snapshot with { Achievements = [a with { ContentFingerprint = operation.DesiredFingerprint }] };
             }
             else if (operation.Target.Kind == PortalEntityKind.Localization)
             {

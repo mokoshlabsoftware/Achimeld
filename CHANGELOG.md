@@ -2,6 +2,170 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.29.0 (2026-10-29)
+
+- Move particle icon decoding out of the runtime UI
+
+## 0.2.28.1 (2026-10-29)
+
+- Prepare bundled particle icons at build time to preserve UI authority boundaries
+
+## 0.2.28.0 (2026-10-29)
+
+- Fix compact effect row regression blocking publication
+
+## 0.2.27.1 (2026-10-29)
+
+- Keep compact effect selection regression compatible with icon-only rows
+
+## 0.2.27.0 (2026-10-29)
+
+- Fix worker cleanup handle validation blocking publication
+
+## 0.2.26.36 (2026-10-29)
+
+- Reject invalid worker cleanup Job handles before Windows enumeration
+
+## 0.2.26.35 (2026-10-29)
+
+- Store runtime text logs in Public Documents and rotate them safely while readers are open
+
+## 0.2.26.34 (2026-10-29)
+
+- Finish successful Steam operations while browser cleanup continues safely in the background
+
+## 0.2.26.33 (2026-10-29)
+
+- Recover Steam browser cleanup automatically without requiring an application restart
+
+## 0.2.26.32 (2026-10-29)
+
+- Start Steam uploads automatically, render icons when needed, and derive locked artwork from the current icon
+
+## 0.2.26.31 (2026-10-29)
+
+- Confirm all owned Steam browser processes exit before reopening and report cleanup failures
+
+## 0.2.26.30 (2026-10-29)
+
+- Keep Steam progress movable while editing artwork, preserve local edits, and show elapsed time in the console font
+
+## 0.2.26.29 (2026-10-29)
+
+- Repair stale Steam synchronization history after deletion and report specific safe synchronization failure reasons
+
+## 0.2.26.28 (2026-10-29)
+
+- Use Consolas consistently in integer and decimal fields throughout the application
+
+## 0.2.26.27 (2026-10-29)
+
+- Center Steam operation progress in a prominent window with larger text and an elapsed timer for validation, deletion, reading and synchronization.
+
+## 0.2.26.26 (2026-10-29)
+
+- Keep unrelated icon previews sharp and preserve their render work when editing or rerolling one icon
+
+## 0.2.26.25 (2026-10-29)
+
+- Restore unindented Shape sliders and smooth and compact the main Explosion knobs
+
+## 0.2.26.24 (2026-10-29)
+
+- Swap the Random and Mask controls in icon layer rows
+
+## 0.2.26.23 (2026-10-29)
+
+- Log Steam workflow stages, browser cleanup, verified step timings and deletion totals
+
+## 0.2.26.22 (2026-10-29)
+
+- Replace Explosion sliders with responsive themed knob banks, configurable small fonts and subtle label-divider grips
+
+## 0.2.26.21 (2026-10-29)
+
+- Use normal resting, hover and focus styling for the Steam deletion confirmation button
+
+## 0.2.26.20 (2026-10-29)
+
+- Add separate Mark all and Clear marks controls to Steam achievements and stats
+
+## 0.2.26.19 (2026-10-29)
+
+- Fix Steam achievement and stat deletion routes and finish validation when browser shutdown stalls
+
+## 0.2.26.18 (2026-10-29)
+
+- Recover rejected edits from the upper bar, preserve saving, and reject non-finite numeric control changes
+
+## 0.2.26.17 (2026-10-29)
+
+- Center Explosion Shape X and Shape Y sliders at 1x, with 0x on the left and 10x on the right.
+
+## 0.2.26.16 (2026-10-29)
+
+- Align layer rows, make mask, random and blend buttons transparent at rest, and move the mask icon before random.
+
+## 0.2.26.15 (2026-10-29)
+
+- Show an animated white radar glow on the style banner while edits affect all style instances.
+
+## 0.2.26.14 (2026-10-29)
+
+- Fix compact layer controls, repeated mask actions, passive image selection changes, and particle icon texture limits.
+
+## 0.2.26.13 (2026-10-29)
+
+- Edit gradient stops and 2D points with compact animated color windows, connected pointers, and direct stop gestures.
+
+## 0.2.26.12 (2026-10-29)
+
+- Simplify particle shape controls by removing redundant headings and showing the current shape in the preset selector.
+
+## 0.2.26.11 (2026-10-29)
+
+- Fix Rust source formatting that blocked the publishing audit
+
+## 0.2.26.10 (2026-10-29)
+
+- Show per-achievement random seed toggles on particle and explosion layer rows and use the normal cursor on layer toolbar actions
+
+## 0.2.26.9 (2026-10-29)
+
+- Add nine blend modes including Color, with generated icons and live previews
+
+## 0.2.26.8 (2026-10-29)
+
+- Keep particle controls available for invalid transforms and constrain particle slider edits
+
+## 0.2.26.7 (2026-10-29)
+
+- Add a visible mask inversion toggle beside the RGBA channel buttons.
+
+## 0.2.26.6 (2026-10-29)
+
+- Add visible layer mask controls, RGBA channel selection, automatic General image references, and matching blend and opacity heights.
+
+## 0.2.26.5 (2026-10-29)
+
+- Show pending achievement and stat API renames with revert, and rename verified Steam records in place during sync.
+
+## 0.2.26.4 (2026-10-29)
+
+- Separate mask actions from other layer menu commands.
+
+## 0.2.26.3 (2026-10-29)
+
+- Delete reviewed Steam entries with fresh checks, skip missing entries and return control to the app after completion or failure.
+
+## 0.2.26.2 (2026-10-29)
+
+- Require current-session Steam validation before opening the Steam panel and return to Sync when validation expires.
+
+## 0.2.26.1 (2026-10-29)
+
+- Highlight Delete on Steam with the marked entry color when entries are marked for deletion.
+
 ## 0.2.26.0 (2026-10-28)
 
 - Fix the Steam delete action lint error blocking publication.

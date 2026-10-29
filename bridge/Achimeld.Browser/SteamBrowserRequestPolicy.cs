@@ -160,6 +160,21 @@ public sealed class SteamBrowserRequestPolicy
         }
     }
 
+    public Uri ArmReviewedDeletion(uint selected, string recordIdentity)
+    {
+        lock (gate)
+        {
+            RequireRead(selected);
+            if (phase != Phase.ReviewedDraft || draftKind is not (PortalEntityKind.Stat or PortalEntityKind.Achievement) || armedPost is not null)
+                throw new InvalidDataException("Reviewed deletion is unavailable.");
+            string[] parts = recordIdentity.Split('_');
+            if (parts.Length != (draftKind == PortalEntityKind.Stat ? 1 : 2) || !parts.All(RecordPart))
+                throw new InvalidDataException("Reviewed deletion identity is invalid.");
+            armedPost = $"/apps/{(draftKind == PortalEntityKind.Stat ? "deletestat" : "deleteachievement")}/{selected.ToString(CultureInfo.InvariantCulture)}/{string.Join('/', parts)}";
+            return new Uri("https://partner.steamgames.com" + armedPost);
+        }
+    }
+
     public bool AllowsDraftNavigation(Uri uri)
     {
         lock (gate) return phase == Phase.ReviewedDraft && draftKind == PortalEntityKind.Stat && appId is uint id &&

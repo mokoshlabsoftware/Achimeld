@@ -1,9 +1,9 @@
 use crate::buttons::{self, Button, UiButtonExt as _};
-use achimeld_application::particles::{ParticleSettings, ParticleShape};
+use achimeld_application::particles::ParticleShape;
 use serde_json::{Value, json};
 
 pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
-    let Ok(settings) = ParticleSettings::from_value(value) else {
+    let Ok(settings) = super::editable_settings(value) else {
         return;
     };
     let mut parts = json!(settings.components());
@@ -15,13 +15,13 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
         .data(|data| data.get_temp::<usize>(id))
         .unwrap_or(0)
         .min(count - 1);
-    ui.strong("Particle shapes");
-    ui.weak("Every particle uses this composite.");
+
     crate::inspector::field(ui, "Shape preset", 100.0, |ui| {
         crate::dropdowns::Dropdown::from_id_salt("particle-shape-presets")
             .width(ui.available_width().min(180.0))
             .truncate()
-            .selected_text("Choose…")
+            .selected_text(preset_name(&parts))
+            .selected_image(shape_icon(ui.ctx(), preset_name(&parts)))
             .show_ui(ui, |ui| {
                 for (name, kind, vertices, inner) in [
                     ("Sphere", "Sphere", 6, 0.45),
@@ -33,7 +33,8 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
                 ] {
                     if ui
                         .add(
-                            Button::new(name)
+                            Button::new((shape_icon(ui.ctx(), name), name))
+                                .image_tint_follows_text_color(true)
                                 .bar()
                                 .min_size(egui::vec2(ui.available_width(), 28.0)),
                         )
@@ -51,7 +52,8 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
                 }
                 if ui
                     .add(
-                        Button::new("Ring")
+                        Button::new((shape_icon(ui.ctx(), "Ring"), "Ring"))
+                            .image_tint_follows_text_color(true)
                             .bar()
                             .min_size(egui::vec2(ui.available_width(), 28.0)),
                     )
@@ -70,42 +72,44 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
                 }
             });
     });
-    egui::ScrollArea::vertical()
-        .id_salt("particle-parts")
-        .max_height(160.0)
-        .show(ui, |ui| {
-            ui.scope(|ui| {
-                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                for (index, part) in parts.as_array().into_iter().flatten().enumerate() {
-                    let label = format!(
-                        "{}  {}{}",
-                        index + 1,
-                        part["kind"].as_str().unwrap_or("Sphere"),
-                        if index == 0 {
-                            String::new()
-                        } else {
-                            format!(" · {}", part["operation"].as_str().unwrap_or("Union"))
-                        }
-                    );
-                    buttons::bar(ui, 20.0, |ui| {
-                        if ui
-                            .add(
-                                Button::selectable(selected == index, label)
-                                    .bar()
-                                    .min_size(egui::vec2(
-                                        ui.available_width(),
-                                        buttons::bar_height(ui, 20.0),
-                                    ))
-                                    .wrap_mode(egui::TextWrapMode::Truncate),
-                            )
-                            .clicked()
-                        {
-                            selected = index;
-                        }
-                    });
-                }
+    if count > 1 {
+        egui::ScrollArea::vertical()
+            .id_salt("particle-parts")
+            .max_height(160.0)
+            .show(ui, |ui| {
+                ui.scope(|ui| {
+                    ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+                    for (index, part) in parts.as_array().into_iter().flatten().enumerate() {
+                        let label = format!(
+                            "{}  {}{}",
+                            index + 1,
+                            part["kind"].as_str().unwrap_or("Sphere"),
+                            if index == 0 {
+                                String::new()
+                            } else {
+                                format!(" · {}", part["operation"].as_str().unwrap_or("Union"))
+                            }
+                        );
+                        buttons::bar(ui, 20.0, |ui| {
+                            if ui
+                                .add(
+                                    Button::new(label)
+                                        .bar()
+                                        .min_size(egui::vec2(
+                                            ui.available_width(),
+                                            buttons::bar_height(ui, 20.0),
+                                        ))
+                                        .wrap_mode(egui::TextWrapMode::Truncate),
+                                )
+                                .clicked()
+                            {
+                                selected = index;
+                            }
+                        });
+                    }
+                });
             });
-        });
+    }
     let mut move_by = 0;
     let mut remove = false;
     let mut add = None;
@@ -116,7 +120,8 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
                 for kind in ["Sphere", "Polygon", "Star"] {
                     if ui
                         .add(
-                            Button::new(kind)
+                            Button::new((shape_icon(ui.ctx(), kind), kind))
+                                .image_tint_follows_text_color(true)
                                 .bar()
                                 .min_size(egui::vec2(ui.available_width(), 28.0)),
                         )
@@ -218,4 +223,62 @@ pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
     if parts != before {
         value["shapes"] = parts;
     }
+}
+
+fn preset_name(parts: &Value) -> &'static str {
+    if *parts
+        == json!([
+            ParticleShape::default(),
+            ParticleShape {
+                operation: "Subtract".into(),
+                scale: 0.6,
+                ..Default::default()
+            }
+        ])
+    {
+        return "Ring";
+    }
+    if parts.as_array().is_some_and(|p| p.len() != 1) {
+        return "Custom";
+    }
+    match (
+        parts[0]["kind"].as_str().unwrap_or("Sphere"),
+        parts[0]["vertexCount"].as_u64().unwrap_or(6),
+    ) {
+        ("Sphere", _) => "Sphere",
+        ("Polygon", 3) => "Triangle",
+        ("Polygon", 4) => "Square",
+        ("Polygon", 6) => "Hexagon",
+        ("Star", 4) => "Sparkle",
+        ("Star", _) => "Star",
+        _ => "Custom",
+    }
+}
+fn shape_icon(ctx: &egui::Context, name: &str) -> egui::Image<'static> {
+    let index = match name {
+        "Triangle" => 1,
+        "Square" => 2,
+        "Polygon" | "Hexagon" | "Custom" => 3,
+        "Star" => 4,
+        "Sparkle" => 5,
+        "Ring" => 6,
+        _ => 0,
+    };
+    let id = egui::Id::new("particle-shape-artwork");
+    let texture = ctx
+        .data(|data| data.get_temp::<egui::TextureHandle>(id))
+        .unwrap_or_else(|| {
+            let (size, pixels) = include!(concat!(env!("OUT_DIR"), "/particle-shapes.rs"));
+            let texture = ctx.load_texture(
+                "particle-shapes",
+                egui::ColorImage::from_rgba_unmultiplied(size, pixels),
+                egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
+            );
+            ctx.data_mut(|data| data.insert_temp(id, texture.clone()));
+            texture
+        });
+    egui::Image::new((texture.id(), egui::Vec2::splat(20.0))).uv(egui::Rect::from_min_max(
+        egui::pos2(index as f32 / 7.0, 0.28),
+        egui::pos2((index + 1) as f32 / 7.0, 0.72),
+    ))
 }

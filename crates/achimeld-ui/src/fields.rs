@@ -80,11 +80,11 @@ fn divider(ui: &mut egui::Ui, id: egui::Id, row: egui::Rect, label_width: f32, r
             [egui::pos2(x, panel.top()), egui::pos2(x, panel.bottom())],
             egui::Stroke::new(3.0, ui.visuals().selection.bg_fill),
         );
-        for offset in [-8.0, 0.0, 8.0] {
+        for offset in [-8.0 / 3.0, 0.0, 8.0 / 3.0] {
             painter.circle_filled(
                 egui::pos2(x, panel.center().y + offset),
-                2.5,
-                ui.visuals().text_color(),
+                2.5 / 3.0,
+                ui.visuals().text_color().gamma_multiply(0.2),
             );
         }
     }
@@ -130,12 +130,6 @@ fn label_width(rules: LabelRules, available: f32, gap: f32) -> f32 {
     (available * rules.width_percent / 100.0)
         .max(rules.min_width)
         .min((available - gap - 24.0).max(0.0))
-}
-
-pub(crate) fn minimum_row_width(ui: &egui::Ui, control_width: f32) -> f32 {
-    let rules = rules(ui.ctx());
-    let control = control_width + ui.spacing().item_spacing.x;
-    (rules.min_width + control).max(control / (1.0 - rules.width_percent / 100.0))
 }
 
 fn abbreviated(full: &str) -> String {
@@ -334,7 +328,10 @@ mod tests {
                     .shapes
                     .iter()
                     .filter_map(|paint| match &paint.shape {
-                        egui::Shape::Circle(circle) if circle.radius == 2.5 => Some(circle.center),
+                        egui::Shape::Circle(circle) if circle.radius == 2.5 / 3.0 => {
+                            assert_eq!(circle.fill, ui_dot_color(&ctx));
+                            Some(circle.center)
+                        }
                         _ => None,
                     })
                     .collect();
@@ -343,6 +340,10 @@ mod tests {
             }
             output.textures_delta.clear();
         }
+    }
+
+    fn ui_dot_color(ctx: &egui::Context) -> egui::Color32 {
+        ctx.global_style().visuals.text_color().gamma_multiply(0.2)
     }
 
     #[test]

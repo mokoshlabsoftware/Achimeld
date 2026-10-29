@@ -4,15 +4,11 @@ use image::{Rgba, RgbaImage};
 use serde_json::{Value, json};
 struct Assets;
 #[test]
-fn imported_locked_artwork_is_preserved_instead_of_regenerated_from_achieved() {
+fn locked_artwork_is_derived_from_current_icon_despite_legacy_override() {
     struct Imported;
     impl AssetSource for Imported {
         fn image(&mut self, _: &Value) -> Result<std::sync::Arc<RgbaImage>, String> {
-            Ok(std::sync::Arc::new(RgbaImage::from_pixel(
-                2,
-                2,
-                Rgba([20, 180, 40, 127]),
-            )))
+            panic!("A separate locked artwork asset must never be loaded");
         }
         fn font(&mut self, _: &str) -> Option<std::sync::Arc<crate::Font>> {
             None
@@ -37,7 +33,7 @@ fn imported_locked_artwork_is_preserved_instead_of_regenerated_from_achieved() {
             .unwrap();
     let pair = render(&document, &id, Some((16, 12)), &mut Imported).unwrap();
     assert_eq!(pair.unachieved.dimensions(), (16, 12));
-    assert_eq!(*pair.unachieved.get_pixel(0, 0), Rgba([20, 180, 40, 127]));
+    assert_eq!(*pair.unachieved.get_pixel(0, 0), Rgba([54, 54, 54, 255]));
     assert_eq!(*pair.achieved.get_pixel(0, 0), Rgba([255, 0, 0, 255]));
 }
 #[test]
@@ -512,7 +508,7 @@ fn unassigned_reference_masks_and_sources_without_masks_fully_reveal() {
 }
 
 #[test]
-fn colored_mask_artwork_and_effects_render_grayscale_thumbnails() {
+fn colored_mask_artwork_preserves_channels_and_legacy_luminance_coverage() {
     let mut editor = Editor::default();
     editor
         .execute("Add", Command::Add(EntityKind::Achievement), None)
@@ -538,11 +534,15 @@ fn colored_mask_artwork_and_effects_render_grayscale_thumbnails() {
     let thumbnail =
         crate::render_layer_cancellable(editor.document(), &id, &mask, &mut Assets, &|| false)
             .unwrap();
-    assert!(thumbnail.pixels().all(|p| p[0] == p[1] && p[1] == p[2]));
+    assert!(
+        thumbnail
+            .pixels()
+            .all(|p| p[0] == 0 && p[1] == 255 && p[2] == 0)
+    );
     let output = render(editor.document(), &id, Some((16, 16)), &mut Assets).unwrap();
     assert_eq!(
         output.achieved.get_pixel(8, 8)[3],
-        thumbnail.get_pixel(64, 64)[0]
+        achimeld_application::masks::grayscale(thumbnail.get_pixel(64, 64).0)[0]
     );
 }
 fn icon_with_assets(layers: Value, assets: &mut dyn AssetSource) -> RgbaImage {

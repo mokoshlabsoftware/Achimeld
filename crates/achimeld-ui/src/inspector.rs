@@ -251,6 +251,7 @@ impl Desktop {
                     } else {
                         text(ui, "Internal name", &mut entity, "internalName");
                         text(ui, "Steam API name", &mut entity, "apiName");
+                        crate::steam::rename_panel(ui, port, &mut entity, true);
                         choice(
                             ui,
                             "Set by",
@@ -552,7 +553,8 @@ pub(crate) fn number(
     if field(ui, label, 72.0, |ui| {
         ui.add(egui::DragValue::new(&mut number).range(range).speed(speed))
             .changed()
-    }) {
+    }) && number.is_finite()
+    {
         value[key] = json!(number);
     }
 }
@@ -569,7 +571,11 @@ fn decimal(ui: &mut egui::Ui, entity_id: &str, label: &str, value: &mut Value, k
     };
     let response = field(ui, label, 72.0, |ui| {
         ui.push_id((entity_id, key), |ui| {
-            ui.add(egui::TextEdit::singleline(&mut content).desired_width(ui.available_width()))
+            ui.add(
+                egui::TextEdit::singleline(&mut content)
+                    .font(egui::TextStyle::Monospace)
+                    .desired_width(ui.available_width()),
+            )
         })
         .inner
     });

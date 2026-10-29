@@ -40,6 +40,11 @@ pub(crate) const PREVIOUS_SESSION_BANNER_TINT: egui::Color32 =
     egui::Color32::from_rgb(128, 128, 128);
 
 impl Desktop {
+    pub(crate) fn steam_panel_available(&self, port: &dyn EditorPort) -> bool {
+        self.steam_access(port) == SteamAccess::CurrentSession
+            && port.synchronization_error().is_none()
+    }
+
     pub(crate) fn browser_profile_actions(&mut self, ui: &mut egui::Ui, port: &dyn EditorPort) {
         for (label, glyph, request) in [
             (
@@ -314,6 +319,8 @@ impl Desktop {
             ),
             &[
                 steam::ReviewAction {
+                    colors: None,
+                    enabled: true,
                     label: "Synchronize",
                     icon: steam::glyph_image(
                         ctx,
@@ -323,6 +330,8 @@ impl Desktop {
                     ),
                 },
                 steam::ReviewAction {
+                    colors: None,
+                    enabled: true,
                     label: "Cancel",
                     icon: Glyph::Cancel.image(ctx, 20.0),
                 },
@@ -404,6 +413,7 @@ impl Desktop {
                             ui.add(egui::Label::new("Changing the App ID clears the previous Steam comparison history and keeps your project entries and artwork.").wrap().halign(Align::Center));
                             crate::fields::row(ui, "Steam App ID", |ui| {
                                 let field = ui.add(egui::TextEdit::singleline(&mut edit.text)
+                                    .font(egui::TextStyle::Monospace)
                                     .id(egui::Id::new("sync-app-id-field")).char_limit(32)
                                     .desired_width(ui.available_width()));
                                 if edit.focus { field.request_focus(); edit.focus = false; }

@@ -226,7 +226,7 @@ pub(crate) fn show(ui: &mut Ui, effect: &mut Value, layout: &Layout) -> bool {
                             .speed(0.5)
                             .fixed_decimals(1),
                     );
-                    if response.changed() {
+                    if response.changed() && (value / factor).is_finite() {
                         effect[key] = json!(value / factor);
                     }
                     active |= response.clicked() || response.drag_started() || response.has_focus();

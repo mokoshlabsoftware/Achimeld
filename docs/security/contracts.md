@@ -6,7 +6,22 @@ Validation only opens the pinned Steamworks destination, waits for sign-in, reop
 that destination and checks authentication again. It does not render upload icons,
 prepare a synchronization plan, import remote entries or write a synchronization
 result. Successful validation is bound to the editor session and revision. A later
-Synchronize action prepares a fresh reviewed plan, retaining existing upload approval.
+Synchronize action prepares a fresh receiver-owned plan and automatically selects
+its default actions when there are no conflicts or uncertain prior outcomes.
+Conflicts and recovery still require review. The App ID is checked against the
+current project without a separate confirmation checkbox. Progress remains open
+while connecting, uploading individual entries, verifying and closing the browser.
+
+Icon candidates may use `deferred: true` with empty achieved/unachieved hashes.
+The host renders from its frozen document only at that icon's upload step, after
+stats and achievement definitions. The receiver accepts bytes only for the selected
+next icon step, checks the 8 MiB per-image limit and PNG dimensions, and pins hashes
+before writing and verifying read-back. Legacy non-deferred hashes still require an
+exact match. This explicitly moves byte pinning from preparation to execution for
+deferred candidates; it adds no operation, path, URL or executable authority.
+Locked artwork always derives from the same composed achievement image using the
+configured grayscale/tint and opacity. Legacy separate locked images never override
+it. Derivation mode, dimensions and achievement identity go to host diagnostics.
 
 When Steam redirects the selected app to its signed-out root page, the driver opens
 Steam's own login dialog with the canonical pinned achievement-page return address.
@@ -125,7 +140,7 @@ Local icon style nodes (`styleAchievement`) and art images (`artImage`) remain h
 | Boundary | Contract | Failure outcome |
 | --- | --- | --- |
 | Worker pipe | Current-user local first-instance byte pipe; actual launched child PID; 4-byte little-endian nonzero UTF-8 JSON length; 32 MiB maximum, JSON depth 64; strict envelope, correlated request ID; no replay. | Bad transport/result closes Rust reader and drops its child Job. Receiving policy/operation failure sends only a static failure code and ends its loop. |
-| Worker calls | 15-second connection deadline; 300-second exchange deadline; 9,000 total calls; transport cancellation/health polling. | Terminal closure; no automatic restart/retry. |
+| Worker calls | 15-second connection deadline; 300-second exchange deadline (5 seconds for graceful stop); 9,000 total calls; transport cancellation/health polling. | Terminal closure; no automatic restart/retry. Cleanup terminates the owned worker Job and polls its active process count for up to 5 seconds, including descendants after worker exit. Success is logged only at zero active processes. Failed termination, query or deadline is logged and retains the owned Job/process handles for automatic background termination retries. Reader connections wait cancellably for up to 90 seconds for confirmed cleanup, with the final spawn guard retaining its 15-second bound; pending cleanup never permanently latches the host or requires restarting it. At most eight active or recovering worker Jobs are retained. Explicit stop initiates group termination and transfers pending handles to the reaper without waiting for Windows teardown. A completed operation remains successful after successful cancellation/supervisor checks; its cleanup status remains distinct from confirmed process exit. Cleanup errors still fail, and pending cleanup still gates reopening. |
 | Receiving operations | Existing read/lifecycle envelopes remain compatible. `prepareSync` retains project/catalog/icon hashes for the pinned App ID; `beginSync` selects retained row IDs; `syncStep` consumes the next row with optional hash-pinned PNG bytes; `finishSync` re-reads and returns local data. Synchronization DTOs reject unknown fields. | Generic mutation/download/evaluation operations, arbitrary URLs/paths, changed App IDs, stale tokens/snapshots and repeated failed steps are rejected. Failure and stop are terminal. |
 | Synchronization budgets | At most 10,000 local or remote definitions, 8 MiB per uploaded/imported image, generated PNG dimensions at most 4096, 512 MiB generated disk staging, one background thumbnail decode and 8 MiB thumbnail cache. The host reserves the remaining 9,000-call budget before the first selected step. | Unavailable local artwork disables only its icon-upload choice. Oversized/changed data or an insufficient call budget stops the plan before mutation. A durable journal records uncertain outcomes; a new session reads fresh and defaults all choices to Skip. |
 | Validation banner | `prepareSync` optionally returns `gameBanner` image bytes discovered through the fixed `store.steampowered.com/api/appdetails?appids={pinnedAppId}&filters=basic` public metadata route (512 KiB limit, JSON depth 32). Only the matching successful app entry and its `capsule_image` are considered. The resolver accepts exact Steam shared Fastly/Akamai or legacy Akamai hosts, the matching app path, a 40-hex content hash, and the small capsule filename; only an optional numeric `t` query is allowed and is stripped. It derives `capsule_231x87_2x.jpg` and retains the old fixed CDN route as an optional fallback. The cookie-free broker-proxied client disables redirects, limits each image body to 2 MiB and covers headers/body with a five-second deadline per request (at most three requests). The host accepts only a decoded 462 × 174 raster with a 4 MiB allocation limit and retains a re-encoded PNG in the sibling project Art Data Bank as an ordinary `User` image with optional `steamBannerAppId` metadata. | Missing, malformed or oversized artwork does not grant validation or write authority. The host saves the banner after a matching authenticated review, retains it on review cancellation, and merges only its own retained banner into a verified final result. No caller-selected URL/path, generic operation, network role or process recipe is added. |
@@ -136,7 +151,7 @@ Local icon style nodes (`styleAchievement`) and art images (`artImage`) remain h
 | Broker | Loopback only; process-table attribution and Job/role checks; CONNECT only, approved DNS names, :443, 8 KiB header, 64 active clients; checked address connected directly. | Invalid client/request rejected; listener failure stops session. Tunnel lifecycle and total deadlines are reviewed separately from hostname parsing. |
 | Diagnostics | Static failure messages/stages, bounded supervisor records and broker diagnostics; process-table destinations are metadata, not payloads. | No arbitrary worker/portal errors included in persisted failure/report data. Local compiler/test logs are separate source evidence. |
 
-The desktop host persists bounded application diagnostic lines immediately under `%LOCALAPPDATA%\Achimeld\RustDiagnostics\log.txt`; startup rotates the previous session to `log_bak.txt`. This applies to development, quick and installed builds. A Windows exclusive lock prevents concurrent sessions from rotating an active log. Each session file is capped at 8 MiB (older current-session records are discarded at the cap). The application library only supplies a host-installed line callback and gains no filesystem authority. Panic records retain source locations, never arbitrary panic payloads. Reparse checks cover the storage directory and fixed filenames; hostile same-user filesystem races and power-loss durability remain unqualified. Clearing the UI output does not delete persisted diagnostics. Startup records identify the executable, compiled version and PID; independent ten-second runtime heartbeats and FX menu breadcrumbs give evidence without opening Terminal.
+The desktop host persists bounded application diagnostic lines immediately under Windows Public Documents at `Achimeld\Logs\log.txt`; startup copies the bounded previous session to `log_bak.txt` before truncating the same pinned current-file handle. Crash dumps, failure metadata and desktop ownership remain private in Local AppData. This applies to development, quick and installed builds. A Windows exclusive lock prevents concurrent sessions from rotating an active log. Each session file is capped at 8 MiB (older current-session records are discarded at the cap). The application library only supplies a host-installed line callback and gains no filesystem authority. Panic records retain source locations, never arbitrary panic payloads. Reparse checks cover the storage directory and fixed filenames; hostile same-user filesystem races and power-loss durability remain unqualified. Clearing the UI output does not delete persisted diagnostics. Startup records identify the executable, compiled version and PID; independent ten-second runtime heartbeats and FX menu breadcrumbs give evidence without opening Terminal.
 
 Effect diagnostics use the same bounded host sink. Opening effect menus, rows and
 properties records paired operations on entry or selection changes, not every
@@ -153,7 +168,8 @@ effects and check live and post-failure log evidence for panic, native exception
 and active UI hang; installed reproduction remains a separate qualification.
 
 The editor initializes a dedicated crash-capture thread before supervision/UI work.
-Production diagnostic paths use Windows' current-user Local AppData known folder;
+Production text logs use Windows' Public Documents known folder; crash artifacts
+and desktop ownership use the current-user Local AppData known folder;
 only test builds honor a fixture environment override. Before log rotation, a
 supervised session is copied into the corresponding fixed `last-runtime-log*.txt`
 file (five slots, 8 MiB each). Startup-only failures cannot replace this evidence.
@@ -260,6 +276,20 @@ are discarded. Legacy boolean failure data remains accepted. No envelope or
 operation authority changes. Waiting operations report elapsed time every five
 seconds while checking worker lifetime and supervisor health. Chromium timeout,
 network-change, disconnected and generic failure markers map to static text.
+
+Synchronization failures map exact source-owned validation reasons to closed
+`steam.sync.*` error codes and static host messages, including rename conflicts,
+case aliases, invalid snapshots, changed reviews, read-back and artwork failures.
+Unknown exception messages retain the generic fallback; exception text and portal
+values never cross the boundary. The response shape is unchanged.
+
+After a verified deletion, the host checks the complete matching snapshot and
+batch results before clearing only the selected entity namespace's matching
+name/Steam-identity baselines and pending rename. A surviving identity is not
+absence. Older stale history is repaired during preparation only after a fresh
+complete read proves both names and the old identity absent, and only without
+an explicit pending rename. Repair grants no write authority and retains local
+cards, recipes and localization; recreation still needs reviewed approval.
 
 The default desktop and `--read-steam APP_ID` run as the current user from the signed package without installation. `--protected [--read-steam APP_ID]` explicitly requires protected package ACLs and verified persistent WFP before launch. Existing `--self-test`/`--self-test-hold` always select protected enforcement. There is no fallback from a failed protected launch. `--user-self-test` is development-only and exercises the app/worker handshake and stop without browser startup or live Steam traffic.
 

@@ -57,6 +57,7 @@ enum Transport {
 const MAXIMUM_READ_CALLS: usize = 9_000;
 const WORKER_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const WORKER_CALL_TIMEOUT: Duration = Duration::from_secs(300);
+const WORKER_STOP_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg(windows)]
 impl SteamReader {
     pub fn connect(
@@ -72,6 +73,11 @@ impl SteamReader {
         if session.status().network_enforced {
             session.check_network_denial()?;
         }
+        WorkerChild::wait_for_cleanup(Duration::from_secs(90), &mut || {
+            cancellation.check()?;
+            cancellation::check_console()?;
+            session.require_healthy()
+        })?;
         let name = format!("Achimeld.Steam.{}", request_id().replace('-', ""));
         let mut pipe = PrivatePipe::create(&name)?;
         let child = WorkerChild::spawn(session.package_root(), &name)?;
@@ -107,13 +113,18 @@ impl SteamReader {
         let started = Instant::now();
         let request = command.request(request_id());
         let operation = request.operation.as_str();
+        let timeout = if operation == "stop" {
+            WORKER_STOP_TIMEOUT
+        } else {
+            WORKER_CALL_TIMEOUT
+        };
         // Polling uses the separate authentication state-change log below.
         let report = operation != "authenticationState";
         if report {
             log::info!(
                 "Worker {operation}: started · call {} · transport deadline {} ms",
                 self.calls + 1,
-                WORKER_CALL_TIMEOUT.as_millis()
+                timeout.as_millis()
             );
         }
         if matches!(self.transport, Transport::Closed) || self.calls >= MAXIMUM_READ_CALLS {
@@ -147,8 +158,7 @@ impl SteamReader {
                 }
                 Ok(())
             };
-            let response: WorkerResponse =
-                pipe.exchange(&request, WORKER_CALL_TIMEOUT, &mut check)?;
+            let response: WorkerResponse = pipe.exchange(&request, timeout, &mut check)?;
             if let Some(details) = response.failure_details(&request.request_id) {
                 log::error!("{details}");
             }
@@ -175,13 +185,17 @@ impl SteamReader {
                 "Worker {operation}: completed in {} ms",
                 started.elapsed().as_millis()
             ),
+            Err(error) if operation == "stop" => log::warn!(
+                "Worker stop: acknowledgement unavailable after {} ms; falling back to owned cleanup · {error}",
+                started.elapsed().as_millis()
+            ),
             Err(error) => log::error!(
                 "Worker {operation}: failed after {} ms · {error}",
                 started.elapsed().as_millis()
             ),
             _ => {}
         }
-        if result.is_err() {
+        if result.is_err() && operation != "stop" {
             self.fail_closed();
         }
         result
@@ -226,6 +240,13 @@ impl SteamReader {
             catalog,
             icons,
         })
+    }
+    pub fn delete_steam(
+        &mut self,
+        project: serde_json::Value,
+        targets: serde_json::Value,
+    ) -> Result<serde_json::Value, SecurityError> {
+        self.call(ReadCommand::DeleteSteam { project, targets })
     }
     pub fn begin_sync(
         &mut self,
@@ -292,14 +313,31 @@ impl SteamReader {
             std::thread::sleep(Duration::from_millis(250));
         }
     }
-    pub fn stop(&mut self) -> Result<(), SecurityError> {
-        let result = if matches!(self.transport, Transport::Closed) {
-            Err(SecurityError("Steam read session is closed"))
-        } else {
-            self.boolean(ReadCommand::Stop)
+    /// Ends this transport and requests owned group termination. The returned flag
+    /// distinguishes confirmed exit from retained background cleanup.
+    pub fn stop(&mut self) -> Result<bool, SecurityError> {
+        if matches!(self.transport, Transport::Closed) {
+            return Err(SecurityError("Steam read session is closed"));
+        }
+        let result = self.call::<bool>(ReadCommand::Stop);
+        // Graceful Chromium shutdown can stall after an otherwise completed
+        // operation. Closing the owned Job is the final cleanup authority.
+        let Transport::Open { pipe, child } =
+            std::mem::replace(&mut self.transport, Transport::Closed)
+        else {
+            return Err(SecurityError("Steam read session is closed"));
         };
-        self.fail_closed();
-        result
+        drop(pipe);
+        let cleanup_complete = child.close_in_background()?;
+        self.cancellation.check()?;
+        cancellation::check_console()?;
+        self.session.require_healthy()?;
+        if result.is_err() {
+            log::warn!(
+                "Steam browser graceful shutdown acknowledgement unavailable; owned process cleanup requested"
+            );
+        }
+        Ok(cleanup_complete)
     }
     pub fn session_id(&self) -> &str {
         &self.session.status().session_id

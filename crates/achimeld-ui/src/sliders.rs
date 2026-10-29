@@ -10,6 +10,44 @@ pub(crate) fn value_slider(
     suffix: &str,
     decimals: usize,
 ) -> bool {
+    value_slider_scaled(ui, label, value, range, suffix, decimals, false)
+}
+
+fn multiplier_position(value: f64) -> f64 {
+    if value <= 1.0 {
+        value / 2.0
+    } else {
+        0.5 + (value - 1.0) / 18.0
+    }
+}
+
+fn multiplier_value(position: f64) -> f64 {
+    if position <= 0.5 {
+        position * 2.0
+    } else {
+        1.0 + (position - 0.5) * 18.0
+    }
+}
+
+fn multiplier_track(ui: &mut Ui, value: &mut f64, width: f32) -> Response {
+    let mut position = multiplier_position(*value);
+    let response = range_track(ui, &mut position, 0.0..=1.0, width);
+    if response.changed() {
+        *value = multiplier_value(position);
+    }
+    response
+}
+
+fn value_slider_scaled(
+    ui: &mut Ui,
+    label: &str,
+    value: &mut f64,
+    range: std::ops::RangeInclusive<f64>,
+    suffix: &str,
+    decimals: usize,
+    unity_centered: bool,
+) -> bool {
+    let previous = *value;
     let number_width = ui
         .painter()
         .layout_no_wrap(
@@ -35,7 +73,11 @@ pub(crate) fn value_slider(
             } else {
                 (ui.available_width() - number_width - gap).clamp(24.0, 360.0)
             };
-            let response = range_track(ui, value, range.clone(), width);
+            let response = if unity_centered {
+                multiplier_track(ui, value, width)
+            } else {
+                range_track(ui, value, range.clone(), width)
+            };
             response.widget_info(|| egui::WidgetInfo::slider(ui.is_enabled(), *value, label));
             let mut changed = response.changed();
             changed |= ui
@@ -54,6 +96,10 @@ pub(crate) fn value_slider(
         } else {
             ui.horizontal(controls).inner
         };
+        if changed && !value.is_finite() {
+            *value = previous;
+            return false;
+        }
         if changed {
             let factor = 10.0_f64.powi(decimals as i32);
             *value = ((*value * factor).round() / factor).clamp(*range.start(), *range.end());
@@ -178,6 +224,50 @@ pub(crate) fn discrete_slider(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn multiplier_track_clicks_match_zero_unity_and_ten() {
+        let ctx = egui::Context::default();
+        let mut value = 1.0;
+        let mut rect = egui::Rect::NOTHING;
+        let mut frame = |events, value: &mut f64| {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    events,
+                    ..Default::default()
+                },
+                |ui| {
+                    rect = multiplier_track(ui, value, 200.0).rect;
+                },
+            );
+            output.textures_delta.clear();
+            rect
+        };
+        let rect = frame(vec![], &mut value);
+        assert_eq!(value, 1.0);
+        for (x, expected) in [
+            (rect.left() + 5.0, 0.0),
+            (rect.center().x, 1.0),
+            (rect.right() - 5.0, 10.0),
+        ] {
+            let pos = egui::pos2(x, rect.center().y);
+            for pressed in [true, false] {
+                frame(
+                    vec![
+                        egui::Event::PointerMoved(pos),
+                        egui::Event::PointerButton {
+                            pos,
+                            button: egui::PointerButton::Primary,
+                            pressed,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ],
+                    &mut value,
+                );
+            }
+            assert!((value - expected).abs() < 1e-9, "{value} != {expected}");
+        }
+    }
 
     #[test]
     fn standard_handle_stays_small_solid_and_disabled_values_stay_unchanged() {

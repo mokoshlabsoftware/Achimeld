@@ -78,10 +78,6 @@ fn multiple_points_offer_unify_color_then_shared_color_edit_and_merge() {
     let unify = f.labels.iter().find(|(s, _)| s == "Unify color").unwrap().1;
     f.click(unify, egui::PointerButton::Primary);
     assert_eq!(f.map.points[0].color_hex, f.map.points[1].color_hex);
-    let swatch = f
-        .swatch
-        .expect("Unified selection needs a shared color swatch");
-    f.click(swatch.center(), egui::PointerButton::Primary);
     assert!(f.labels.iter().any(|(s, _)| s == "Point color"));
     f.key(egui::Key::Escape);
     let merge = f.labels.iter().find(|(s, _)| s == "Merge").unwrap().1;

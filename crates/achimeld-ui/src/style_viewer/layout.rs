@@ -293,7 +293,7 @@ impl Desktop {
             egui::Frame::new().inner_margin(10).show(ui, |ui| {
                 ui.weak("Select a slot, then choose artwork below. These IDs drive every style preview.");
                 crate::fields::row(ui, "Unlock value", |ui| {
-                    let field = ui.add(egui::TextEdit::singleline(&mut viewer.unlock).id(egui::Id::new("viewer-unlock-value")).desired_width(74.0).char_limit(64));
+                    let field = ui.add(egui::TextEdit::singleline(&mut viewer.unlock).font(egui::TextStyle::Monospace).id(egui::Id::new("viewer-unlock-value")).desired_width(74.0).char_limit(64));
                     let mut candidate = state.preview.clone(); candidate.unlock_value = viewer.unlock.trim().into();
                     if field.changed() && candidate.validate().is_ok() { actions.push(Action::SetUnlockValue(candidate.unlock_value.clone())); }
                     if candidate.validate().is_err() { ui.weak("Enter a number"); }

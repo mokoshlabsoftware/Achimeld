@@ -1020,6 +1020,7 @@ impl Desktop {
             port,
             active.or(matching).map(|s| s.id.as_str()),
         );
+        let shared_edit = active.is_some() || self.linked_icon_style(port).is_some();
         let banner_width = ui.available_width();
         let response = ui
             .scope(|ui| {
@@ -1076,6 +1077,9 @@ impl Desktop {
                         0.0,
                         egui::Color32::from_rgba_unmultiplied(fill.r(), fill.g(), fill.b(), 220),
                     );
+                }
+                if shared_edit {
+                    crate::style_banner::paint_shared_edit_glow(ui, response.rect);
                 }
                 let title = name.clone();
                 let mut job = egui::text::LayoutJob::simple(
@@ -1504,8 +1508,29 @@ impl Desktop {
                 }
             }
         }
-        if let Some(action) = self.layer_palette.pending.take() {
+        if !ui.ctx().will_discard()
+            && let Some(action) = self.layer_palette.pending.take()
+        {
+            let general_mask = matches!(
+                &action,
+                LayerAction::AddMask {
+                    kind: "AchievementImage",
+                    ..
+                }
+            );
             self.layer_action(action, &mut icon);
+            if general_mask {
+                let index = achimeld_application::general_image_entries(&entity)
+                    .first()
+                    .and_then(|entry| entry["id"].as_i64())
+                    .unwrap_or(0);
+                if let Some(layer) = icon["layers"]
+                    .as_array_mut()
+                    .and_then(|layers| layers.last_mut())
+                {
+                    layer["generalImageIndex"] = json!(index);
+                }
+            }
             port.finish_group();
         }
         if let Some(background) = self.layer_palette.background.take() {
@@ -1685,23 +1710,12 @@ impl Desktop {
                                 let atlas = kind == "AtlasTile";
                                 let font_size = egui::TextStyle::Body.resolve(ui.style()).size;
                                 let accessory_width = if atlas { 30.0 } else { 0.0 };
-                                let compact_controls = 28.0
-                                    + if kind == "Folder" { 28.0 } else { 0.0 }
-                                    + accessory_width
-                                    + 56.0;
-                                // Deep folders must give up indentation before pushing controls out of the pane.
-                                let indent = (*depth as f32 * 22.0).min(
-                                    (ui.available_width()
-                                        - compact_controls
-                                        - (font_size * 3.0).max(32.0))
-                                    .max(0.0),
-                                );
+                                let indent = 0.0;
                                 let mut effects_origin = Pos2::ZERO;
                                 ui.allocate_ui_with_layout(
                                     Vec2::new(ui.available_width(), 42.0),
                                     egui::Layout::left_to_right(egui::Align::Min),
                                     |ui| {
-                                        ui.add_space(indent);
                                         let visible = layer["visible"].as_bool().unwrap_or(true);
                                         // The two controls share the thumbnail's height, with the eye
                                         // at its top and the smaller fx button at its bottom.
@@ -1849,6 +1863,8 @@ impl Desktop {
                                                     self.layer_palette.selected_effect = None;
                                                 }
                                             }
+                                        } else {
+                                            ui.allocate_exact_size(Vec2::splat(24.0), Sense::hover());
                                         }
                                         let preview_width = 48.0;
                                         let show_previews = ui.available_width()
@@ -1929,6 +1945,7 @@ impl Desktop {
                                             - accessory_width
                                             - opacity_width
                                             - blend_width
+                                            - if mask_source { 0.0 } else { 68.0 }
                                             - 12.0)
                                             .max(16.0);
                                         let name =
@@ -2011,6 +2028,37 @@ impl Desktop {
                                                 id,
                                                 crate::source_picker::SourceKind::Atlas,
                                             );
+                                        }
+                                        if matches!(kind.as_str(), "Particle" | "Explosion") {
+                                            let key = if kind == "Particle" { "particles" } else { "explosion" };
+                                            let selected = layer[key]["differentSeedPerInstance"] == true;
+                                            let glyph = crate::particles::glyph(ui.ctx(), "layer-random-seed",
+                                                include_bytes!("../assets/toolbar/explosion-seed-per-achievement.rgba"));
+                                            if ui.add(crate::buttons::Button::new(glyph)
+                                                .selected(selected).bar().transparent_body().min_size(Vec2::splat(28.0))
+                                                .id(layer_control_id(achievement, id, "random"))
+                                                .image_tint_follows_text_color(true))
+                                                .on_hover_cursor(egui::CursorIcon::Default)
+                                                .on_hover_text(crate::localization::text(ui.ctx(), "Different seed for each achievement"))
+                                                .clicked() {
+                                                if !layer[key].is_object() { layer[key] = json!({}); }
+                                                layer[key]["differentSeedPerInstance"] = json!(!selected);
+                                                port.finish_group();
+                                            }
+                                        } else if !mask_source {
+                                            ui.allocate_exact_size(Vec2::splat(28.0), Sense::hover());
+                                        }
+                                        if !mask_source {
+                                            let glyph = crate::particles::glyph(ui.ctx(), "layer-mask-action",
+                                                include_bytes!("../assets/toolbar/layer-mask.rgba"));
+                                            let mask = ui.add(crate::buttons::Button::new(glyph)
+                                                .bar().transparent_body().min_size(Vec2::splat(28.0))
+                                                .id(layer_control_id(achievement, id, "mask"))
+                                                .image_tint_follows_text_color(true))
+                                                .on_hover_text(crate::localization::text(ui.ctx(), "Mask"));
+                                            crate::buttons::menu_popup(ui, &mask, |ui| {
+                                                self.mask_commands(ui, layer, &mask_layers);
+                                            });
                                         }
                                         if !mask_source {
                                             row_opacity(ui, layer, show_slider, opacity_width);
@@ -2180,8 +2228,10 @@ impl Desktop {
                     );
                     ui.close();
                 }
-                self.mask_commands(ui, layer, &mask_layers);
                 if !mask_source {
+                    ui.separator();
+                    self.mask_commands(ui, layer, &mask_layers);
+                    ui.separator();
                     ui.app_menu_button("Add effect", |ui| {
                         if let Some(effect) = effect_menu(ui, layer) {
                             self.layer_palette.expanded_effects.insert(id.clone());
@@ -2796,7 +2846,7 @@ fn row_opacity(ui: &mut egui::Ui, layer: &mut Value, slider: bool, width: f32) {
         .on_hover_text(format!("Opacity: {opacity:.0}%"));
         paint_menu_icon(ui, &response, Icon::Opacity);
     }
-    if changed {
+    if changed && opacity.is_finite() {
         layer["opacity"] = json!(opacity / 100.0);
     }
 }
@@ -2813,7 +2863,10 @@ impl Desktop {
     ) {
         let control_id = layer_control_id(achievement, layer["id"].as_str().unwrap_or(""), "blend");
         let mode = layer["blendMode"].as_str().unwrap_or("Normal");
-        let button = crate::blend_preview::button(ui, mode, width, expanded).id(control_id);
+        let button = crate::blend_preview::button(ui, mode, width, expanded)
+            .transparent_body()
+            .min_size(Vec2::new(width, 34.0))
+            .id(control_id);
         self.layer_blend_menu(ui, port, achievement, layer, button)
             .on_hover_text("Blend mode");
     }

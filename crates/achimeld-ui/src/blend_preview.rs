@@ -2,7 +2,7 @@ use crate::{Desktop, buttons, localization};
 use achimeld_application::{EditorPort, ports::LayerBlendPreview};
 use serde_json::{Value, json};
 
-pub(crate) const MODES: [&str; 8] = [
+pub(crate) const MODES: [&str; 17] = [
     "Normal",
     "Multiply",
     "Screen",
@@ -11,6 +11,15 @@ pub(crate) const MODES: [&str; 8] = [
     "Lighten",
     "Add",
     "Difference",
+    "Exclusion",
+    "Soft Light",
+    "Hard Light",
+    "Color Dodge",
+    "Color Burn",
+    "Hue",
+    "Saturation",
+    "Color",
+    "Luminosity",
 ];
 
 pub(crate) struct BlendHover {

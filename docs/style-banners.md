@@ -34,6 +34,13 @@ artwork/name treatment for Style Viewer and the project-style dropdown.
 The compact General-view selector retains its existing selector affordance and
 shows the unprefixed name.
 
+While Affect style or linked project-style editing is active, the compact style
+banner shows a clockwise white alpha trail around its inside edge. The trail
+fades toward the center and behind its moving head, repeating every three seconds
+to indicate that edits affect every instance. It adds no padding or hit target,
+keeps the name readable, and disappears in individual-icon editing mode. Only
+visible banners request animation frames.
+
 Use the shared button implementation for hit testing, keyboard focus, hover,
 selection and context menus. Visible rows request previews before selection;
 keep asynchronous rendering, bounded caches and last successful previews.

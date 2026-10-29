@@ -107,6 +107,20 @@ fn preset_menu(
     }
 }
 impl Explorer {
+    pub(crate) fn needs_recovery(&self) -> bool {
+        self.error.is_some()
+    }
+    pub(crate) fn revert_failed_edit(&mut self, port: &dyn EditorPort) {
+        if self.needs_recovery() {
+            self.draft = self
+                .selected
+                .as_ref()
+                .and_then(|id| port.effect_presets().iter().find(|preset| &preset.id == id))
+                .cloned();
+            self.error = None;
+            self.texture = None;
+        }
+    }
     pub(crate) fn save(&mut self, port: &mut dyn EditorPort) -> bool {
         let Some(draft) = &self.draft else {
             return true;

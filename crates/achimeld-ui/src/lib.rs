@@ -31,6 +31,7 @@ mod icons;
 mod image_drop;
 mod inspector;
 mod inspector_panel;
+mod knobs;
 mod layer_backdrop;
 mod layer_effects;
 mod layer_icons;
@@ -41,6 +42,7 @@ mod layers;
 mod localization;
 mod node_navigation;
 mod opacity;
+mod operation_progress;
 mod particles;
 mod perlin;
 mod settings;
@@ -67,7 +69,7 @@ mod window_layout;
 pub use change_log::window_title;
 pub use desktop::{Desktop, MIN_WINDOW_INNER_SIZE};
 pub use theme::apply as apply_theme;
-pub use typography::{BOLD_FAMILY, configure_fonts};
+pub use typography::{BOLD_FAMILY, configure_fonts, configure_fonts_with_monospace};
 
 #[cfg(test)]
 mod tests;

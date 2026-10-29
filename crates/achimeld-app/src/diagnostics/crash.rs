@@ -371,7 +371,8 @@ mod tests {
                 .spawn()
                 .unwrap();
             let deadline = Instant::now() + Duration::from_secs(30);
-            let logs = root.join("Achimeld/RustDiagnostics");
+            let logs = root.join("Achimeld/Logs");
+            let private = root.join("Achimeld/RustDiagnostics");
             let mut saw_live_log = false;
             loop {
                 saw_live_log |= std::fs::read_to_string(logs.join("log.txt")).is_ok_and(|s| {
@@ -412,7 +413,9 @@ mod tests {
             if mode == "hang" {
                 assert!(text.contains("UI work has not completed"));
             }
-            let paths: Vec<_> = std::fs::read_dir(logs.join("CrashDumps"))
+            assert!(!logs.join("CrashDumps").exists());
+            assert!(!private.join("log.txt").exists());
+            let paths: Vec<_> = std::fs::read_dir(private.join("CrashDumps"))
                 .unwrap()
                 .map(|e| e.unwrap().path())
                 .collect();

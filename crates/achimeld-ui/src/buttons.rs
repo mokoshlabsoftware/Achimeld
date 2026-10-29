@@ -243,6 +243,7 @@ pub struct Button<'a> {
     primary_outline: bool,
     center_glyph: bool,
     subtle_body_opacity: Option<f32>,
+    transparent_body: bool,
     wants_click: bool,
     resting_colors: Option<(Color32, Color32)>,
 }
@@ -261,6 +262,7 @@ impl<'a> Button<'a> {
             primary_outline: false,
             center_glyph: false,
             subtle_body_opacity: None,
+            transparent_body: false,
             wants_click: false,
             resting_colors: None,
         }
@@ -335,6 +337,11 @@ impl<'a> Button<'a> {
         self.subtle_body_opacity = Some(resting_opacity);
         self
     }
+    /// Reveal row artwork at rest while retaining the shared hover/focus swap.
+    pub(crate) fn transparent_body(mut self) -> Self {
+        self.transparent_body = true;
+        self
+    }
     pub(crate) fn sense(mut self, sense: Sense) -> Self {
         self.layout = self.layout.sense(sense);
         self
@@ -390,13 +397,21 @@ impl Widget for Button<'_> {
         );
         let resting_colors = self.resting_colors;
         let response = if ui.is_rect_visible(prepared.response.rect) {
-            let (body, ink) = if let Some((body, text)) = resting_colors {
+            let (mut body, ink) = if let Some((body, text)) = resting_colors {
                 colors_from(ui, &prepared.response, body, text)
             } else if let Some(resting_opacity) = self.subtle_body_opacity.filter(|_| !in_popup) {
                 subtle_colors(ui, &prepared.response, self.style, resting_opacity)
             } else {
                 colors(ui, &prepared.response, self.style)
             };
+            if self.transparent_body && !in_popup {
+                let fade = feedback(ui, &prepared.response);
+                body = body.gamma_multiply(if prepared.response.enabled() {
+                    smooth(fade.body)
+                } else {
+                    0.0
+                });
+            }
             prepared.frame.fill = body;
             if self.wants_click && prepared.response.enabled() && !ui.is_sizing_pass() {
                 ui.painter().rect_filled(

@@ -311,8 +311,8 @@ impl ExplosionSettings {
         }
         validate_range("Aspect ratio", self.aspect_min, self.aspect_max, 1.0, 10.0)?;
         validate_range("Overall scale", self.scale_min, self.scale_max, 0.01, 2.0)?;
-        validate_range("Shape X", self.shape_x, self.shape_x, 1.0, 10.0)?;
-        validate_range("Shape Y", self.shape_y, self.shape_y, 1.0, 10.0)?;
+        validate_range("Shape X", self.shape_x, self.shape_x, 0.0, 10.0)?;
+        validate_range("Shape Y", self.shape_y, self.shape_y, 0.0, 10.0)?;
         validate_range(
             "Bottom power",
             self.bottom_power,
@@ -908,6 +908,14 @@ mod tests {
     fn explosion_rejects_invalid_ranges_and_round_trips() {
         let s = ExplosionSettings::default();
         assert_eq!(ExplosionSettings::from_value(&json!(s)).unwrap(), s);
+        for multiplier in [0.0, 0.5, 1.0, 10.0] {
+            let mut value = json!(s);
+            value["shapeX"] = json!(multiplier);
+            value["shapeY"] = json!(multiplier);
+            let parsed = ExplosionSettings::from_value(&value).unwrap();
+            assert_eq!(parsed.shape_x, multiplier);
+            assert_eq!(parsed.shape_y, multiplier);
+        }
         for (key, value) in [
             ("count", json!(0)),
             ("count", json!(513)),
@@ -917,9 +925,9 @@ mod tests {
             ("scaleMin", json!(0)),
             ("scaleMax", json!(0.8)),
             ("regularity", json!(1.01)),
-            ("shapeX", json!(0.99)),
+            ("shapeX", json!(-0.01)),
             ("shapeX", json!(10.01)),
-            ("shapeY", json!(0.99)),
+            ("shapeY", json!(-0.01)),
             ("shapeY", json!(10.01)),
             ("radialBlur", json!(-0.1)),
             ("radialBlur", json!(1.1)),

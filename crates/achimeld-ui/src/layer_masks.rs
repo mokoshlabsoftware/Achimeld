@@ -23,11 +23,10 @@ pub(crate) fn menu_layers(layers: &[Value]) -> Vec<Value> {
 
 pub(crate) fn new_mask(kind: &str) -> Value {
     let mut mask = crate::layer_palette::new_layer(kind);
-    mask["displayName"] = json!(if kind == "MaskReference" {
-        "Reference mask".to_owned()
-    } else {
-        format!("{} mask", crate::layer_palette::label(kind))
-    });
+    mask["displayName"] = json!("");
+    if kind == "AchievementImage" {
+        mask["generalImageIndex"] = json!(0);
+    }
     mask["visible"] = json!(false);
     for key in [
         "opacity",
@@ -175,7 +174,7 @@ impl Desktop {
         ui: &mut egui::Ui,
         port: &mut dyn EditorPort,
         achievement: &str,
-        owner: &Value,
+        owner: &mut Value,
         layers: &[Value],
         depth: usize,
     ) -> Option<(String, egui::Rect)> {
@@ -185,69 +184,73 @@ impl Desktop {
         let id = mask["id"].as_str().unwrap_or("");
         let texture = self.layer_texture(ui.ctx(), port, achievement, id);
         let (response, preview_rect) = ui
-            .push_id(("nested-mask", owner["id"].as_str()), |ui| {
-                let height = crate::layer_toolbar::HEIGHT;
-                crate::buttons::bar_with_height(ui, height, |ui| {
-                    ui.add_space(
-                        ((depth + 1) as f32 * 22.0).min((ui.available_width() - 80.0).max(0.0)),
-                    );
-                    if mask["kind"] == "Folder" {
-                        let collapsed = self.layer_palette.collapsed.contains(id);
-                        if icons::sized_button(
-                            ui,
-                            icons::Icon::Chevron(collapsed),
-                            "Expand / collapse folder",
-                            true,
-                            height,
-                        )
-                        .clicked()
-                        {
-                            if collapsed {
-                                self.layer_palette.collapsed.remove(id);
-                            } else {
-                                self.layer_palette.collapsed.insert(id.into());
+            .push_id(
+                ("nested-mask", owner["id"].as_str().map(str::to_owned)),
+                |ui| {
+                    let height = crate::layer_toolbar::HEIGHT;
+                    crate::buttons::bar_with_height(ui, height, |ui| {
+                        ui.spacing_mut().button_padding.x = 0.0;
+                        ui.add_space(
+                            ((depth + 1) as f32 * 22.0).min((ui.available_width() - 80.0).max(0.0)),
+                        );
+                        if mask["kind"] == "Folder" {
+                            let collapsed = self.layer_palette.collapsed.contains(id);
+                            if icons::sized_button(
+                                ui,
+                                icons::Icon::Chevron(collapsed),
+                                "Expand / collapse folder",
+                                true,
+                                height,
+                            )
+                            .clicked()
+                            {
+                                if collapsed {
+                                    self.layer_palette.collapsed.remove(id);
+                                } else {
+                                    self.layer_palette.collapsed.insert(id.into());
+                                }
                             }
                         }
-                    }
-                    let preview = texture
-                        .or_else(|| crate::layer_icons::texture(ui.ctx(), "MaskReference"))
-                        .expect("Embedded mask icon");
-                    let thumbnail = ui.add(
-                        crate::buttons::Button::new(egui::Image::new((
-                            preview,
-                            egui::Vec2::splat(height - 4.0),
-                        )))
-                        .id(layer_control_id(
-                            achievement,
-                            owner["id"].as_str().unwrap_or(""),
-                            "mask-entry-preview",
-                        ))
-                        .bar()
-                        .min_size(egui::Vec2::splat(height))
-                        .image_tint_follows_text_color(texture.is_none()),
-                    );
-                    let name = mask["displayName"].as_str().unwrap_or("Mask");
-                    let label = ui.add(
-                        crate::buttons::Button::new(name)
+                        let preview = texture
+                            .or_else(|| crate::layer_icons::texture(ui.ctx(), "MaskReference"))
+                            .expect("Embedded mask icon");
+                        let thumbnail = ui.add(
+                            crate::buttons::Button::new(egui::Image::new((
+                                preview,
+                                egui::Vec2::splat(height - 4.0),
+                            )))
                             .id(layer_control_id(
                                 achievement,
                                 owner["id"].as_str().unwrap_or(""),
-                                "mask-entry",
+                                "mask-entry-preview",
                             ))
                             .bar()
-                            .wrap_mode(egui::TextWrapMode::Truncate)
-                            .selected(self.selected_layer.as_deref() == Some(id))
-                            .align(egui::Align2::LEFT_CENTER)
-                            .min_size(egui::vec2(ui.available_width(), height)),
-                    );
-                    let preview_rect = egui::Rect::from_center_size(
-                        thumbnail.rect.center(),
-                        egui::Vec2::splat(height - 4.0),
-                    );
-                    (thumbnail | label, preview_rect)
-                })
-                .inner
-            })
+                            .min_size(egui::Vec2::splat(height))
+                            .image_tint_follows_text_color(texture.is_none()),
+                        );
+                        channels(ui, owner);
+                        let label = ui.add(
+                            crate::buttons::Button::new("")
+                                .id(layer_control_id(
+                                    achievement,
+                                    owner["id"].as_str().unwrap_or(""),
+                                    "mask-entry",
+                                ))
+                                .bar()
+                                .wrap_mode(egui::TextWrapMode::Truncate)
+                                .selected(self.selected_layer.as_deref() == Some(id))
+                                .align(egui::Align2::LEFT_CENTER)
+                                .min_size(egui::vec2(ui.available_width(), height)),
+                        );
+                        let preview_rect = egui::Rect::from_center_size(
+                            thumbnail.rect.center(),
+                            egui::Vec2::splat(height - 4.0),
+                        );
+                        (thumbnail | label, preview_rect)
+                    })
+                    .inner
+                },
+            )
             .inner;
         if response.clicked() {
             self.selected_layer = Some(id.into());
@@ -255,5 +258,37 @@ impl Desktop {
         }
         self.mask_context_menu(&response, owner, layers);
         Some((id.into(), preview_rect))
+    }
+}
+
+pub(crate) fn channels(ui: &mut egui::Ui, owner: &mut Value) {
+    let mut selected: [bool; 4] = std::array::from_fn(|i| {
+        owner["maskChannels"][i]
+            .as_bool()
+            .unwrap_or(owner["maskMode"] == "Luminance" || i == 3)
+    });
+    for (i, label) in ["R", "G", "B", "A"].iter().enumerate() {
+        if ui
+            .add(
+                crate::buttons::Button::new(*label)
+                    .bar()
+                    .selected(selected[i]),
+            )
+            .clicked()
+        {
+            selected[i] = !selected[i];
+            owner["maskChannels"] = json!(selected);
+        }
+    }
+    let inverted = owner["maskInvert"].as_bool().unwrap_or(false);
+    if ui
+        .add(
+            crate::buttons::Button::new(crate::localization::text(ui.ctx(), "Invert mask"))
+                .bar()
+                .selected(inverted),
+        )
+        .clicked()
+    {
+        owner["maskInvert"] = json!(!inverted);
     }
 }

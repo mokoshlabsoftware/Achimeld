@@ -9,6 +9,10 @@ pub struct Preferences {
     pub header_size: f32,
     pub normal_size: f32,
     pub small_size: f32,
+    #[serde(skip_serializing_if = "is_default_knob_size")]
+    pub knob_label_size: f32,
+    #[serde(skip_serializing_if = "is_default_knob_size")]
+    pub knob_value_size: f32,
     pub inspector_spacing: f32,
     #[serde(skip_serializing_if = "is_default_label_min_width")]
     pub field_label_min_width: f32,
@@ -33,6 +37,9 @@ pub struct Preferences {
 }
 fn is_true(value: &bool) -> bool {
     *value
+}
+fn is_default_knob_size(value: &f32) -> bool {
+    *value == 10.0
 }
 fn is_default_label_min_width(value: &f32) -> bool {
     *value == 90.0
@@ -63,6 +70,8 @@ impl Default for Preferences {
             header_size: 18.0,
             normal_size: 13.0,
             small_size: 11.0,
+            knob_label_size: 10.0,
+            knob_value_size: 10.0,
             inspector_spacing: 7.0,
             field_label_min_width: 90.0,
             field_label_width_percent: 15.0,
@@ -89,6 +98,8 @@ impl Preferences {
             || !(10.0..=48.0).contains(&self.header_size)
             || !(9.0..=32.0).contains(&self.normal_size)
             || !(8.0..=24.0).contains(&self.small_size)
+            || !(8.0..=24.0).contains(&self.knob_label_size)
+            || !(8.0..=24.0).contains(&self.knob_value_size)
             || !(0.0..=32.0).contains(&self.inspector_spacing)
             || !(40.0..=240.0).contains(&self.field_label_min_width)
             || !(5.0..=50.0).contains(&self.field_label_width_percent)

@@ -33,6 +33,7 @@ try
     HashSet<Guid> requests = [];
     ReadOnlyPolicy policy = new();
     SynchronizationSession synchronization = new(new DriverSynchronizationPortal(driver));
+    SteamDeletionSession deletion = new(new DriverSynchronizationPortal(driver));
     bool failed = false;
     try
     {
@@ -49,7 +50,11 @@ try
                 // The authenticated supervisor supplies mode. Caller environment cannot enable probes.
                 await supervision.RequireHealthyAsync(shutdown.Token);
                 object data;
-                if (request.Operation is "prepareSync" or "beginSync" or "syncStep" or "finishSync")
+                if (request.Operation == "deleteSteam")
+                {
+                    data = await deletion.RunAsync(request.Arguments.Deserialize<SteamDeletionRequest>(SecurityWire.Json) ?? throw new InvalidDataException(), policy.RequireSynchronizationApp());
+                }
+                else if (request.Operation is "prepareSync" or "beginSync" or "syncStep" or "finishSync")
                 {
                     uint appId = policy.RequireSynchronizationApp();
                     data = request.Operation switch

@@ -14,6 +14,21 @@ internal static class WorkerDiagnosticFixtures
             detail.GetRawText().Contains("hidden", StringComparison.Ordinal))
             throw new Exception("Production failure details lost wire casing or exposed request data.");
         (Exception Error, string Code)[] cases = [
+            (new InvalidDataException("The synchronization snapshot has inconsistent identities, ownership or fingerprints."), "steam.sync.snapshot-invalid"),
+            (new InvalidDataException("Reviewed synchronization command rejected."), "steam.sync.command-invalid"),
+            (new InvalidDataException("A pending API rename conflicts with Steam. Reconcile or revert the rename before synchronizing."), "steam.sync.rename-conflict"),
+            (new InvalidDataException("Project and Steam API names differ only by case; align their spelling before synchronizing."), "steam.sync.name-case-conflict"),
+            (new InvalidDataException("Steam changed after review; prepare a new synchronization plan."), "steam.sync.review-changed"),
+            (new InvalidDataException("Steam changed during synchronization; prepare a fresh plan."), "steam.sync.remote-changed"),
+            (new InvalidDataException("Steam draft read-back did not match the approved change."), "steam.sync.readback-mismatch"),
+            (new InvalidDataException("Steam did not preserve the renamed record identity."), "steam.sync.rename-identity"),
+            (new InvalidDataException("A localization row is missing."), "steam.sync.localization-missing"),
+            (new InvalidDataException("Select the progress stat before its dependent achievement."), "steam.sync.progress-selection"),
+            (new InvalidDataException("An icon upload requires its achievement definition."), "steam.sync.icon-selection"),
+            (new InvalidDataException("An unrelated Steam value changed during the draft save."), "steam.sync.unrelated-change"),
+            (new InvalidDataException("Steam artwork changed after review; prepare a fresh plan."), "steam.sync.artwork-changed"),
+            (new InvalidDataException("Imported artwork exceeds 8 MiB."), "steam.sync.artwork-size"),
+            (new InvalidDataException("Import the progress stat first."), "steam.sync.progress-import"),
             (new OperationCanceledException(secret), "security.operation.interrupted"),
             (new System.TimeoutException(secret), "steam.operation.timeout"),
             (new Achimeld.Core.IncompleteRemoteSnapshotException(), "steam.snapshot.incomplete"),
@@ -37,6 +52,8 @@ internal static class WorkerDiagnosticFixtures
         ];
         foreach (var test in cases)
         {
+            if (WorkerFailure.Details("operation", test.Error, 12, null).GetRawText().Contains(secret, StringComparison.Ordinal))
+                throw new Exception("Failure details exposed exception contents.");
             if (WorkerFailure.Code("prepareSync", test.Error) != test.Code)
                 throw new Exception("Worker diagnostic classification changed or exposed raw error data.");
             if (WorkerFailure.Kind(test.Error).Contains(secret, StringComparison.Ordinal))

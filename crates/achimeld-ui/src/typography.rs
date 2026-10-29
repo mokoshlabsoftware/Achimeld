@@ -52,7 +52,27 @@ fn install_cjk(fonts: &mut FontDefinitions, index: u32) {
 /// Windows faces are supplied by the host; Noto CJK fallbacks are embedded.
 /// Presentation never reads font paths or requires installed CJK fonts.
 pub fn configure_fonts(ctx: &Context, windows_faces: Option<[Vec<u8>; 2]>) {
+    configure_fonts_with_monospace(ctx, windows_faces, None);
+}
+
+/// Host-supplied Windows console face for all numeric editors and monospace text.
+/// Font bytes stay host-owned inputs; this module never opens font paths.
+pub fn configure_fonts_with_monospace(
+    ctx: &Context,
+    windows_faces: Option<[Vec<u8>; 2]>,
+    console_face: Option<Vec<u8>>,
+) {
     let mut fonts = FontDefinitions::default();
+    if let Some(console) = console_face {
+        fonts
+            .font_data
+            .insert("Consolas".into(), FontData::from_owned(console).into());
+        fonts
+            .families
+            .entry(FontFamily::Monospace)
+            .or_default()
+            .insert(0, "Consolas".into());
+    }
     if let Some([regular, bold]) = windows_faces {
         fonts
             .font_data
@@ -135,6 +155,53 @@ pub(crate) fn ensure_fonts(ctx: &Context, language: &str) {
 mod tests {
     use super::*;
     use egui::{Color32, FontId};
+
+    #[test]
+    fn numeric_editors_use_consolas_with_existing_size_preferences() {
+        let ctx = Context::default();
+        crate::tests::configure_test_fonts(&ctx);
+        let preferences = achimeld_application::Preferences {
+            normal_size: 17.0,
+            knob_value_size: 12.0,
+            ..Default::default()
+        };
+        crate::theme::apply(&ctx, &preferences);
+        let mut output = ctx.run_ui(Default::default(), |ui| {
+            ui.set_style(ui.ctx().global_style());
+            assert_eq!(ui.style().drag_value_text_style, egui::TextStyle::Monospace);
+            assert_eq!(egui::TextStyle::Monospace.resolve(ui.style()).size, 17.0);
+            ui.fonts_mut(|fonts| {
+                assert_eq!(
+                    fonts.definitions().families[&FontFamily::Monospace][0],
+                    "Consolas"
+                );
+                let font = FontId::monospace(17.0);
+                let widths: Vec<_> = ['0', '1', '5', '8']
+                    .iter()
+                    .map(|c| {
+                        fonts
+                            .layout_no_wrap(c.to_string(), font.clone(), Color32::WHITE)
+                            .size()
+                            .x
+                    })
+                    .collect();
+                assert!(widths.iter().all(|w| (*w - widths[0]).abs() < 0.05));
+            });
+            ui.add(egui::DragValue::new(&mut 125.0_f64));
+        });
+        output.textures_delta.clear();
+        // Language fallback updates keep the host console face at the front.
+        ensure_fonts(&ctx, "Japanese");
+        let mut output = ctx.run_ui(Default::default(), |ui| {
+            ui.fonts_mut(|fonts| {
+                assert_eq!(
+                    fonts.definitions().families[&FontFamily::Monospace][0],
+                    "Consolas"
+                )
+            });
+        });
+        output.textures_delta.clear();
+    }
 
     const SAMPLES: [(&str, &str); 4] = [
         ("Korean", "한국어 업적 통계 설정 한글"),

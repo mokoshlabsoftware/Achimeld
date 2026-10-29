@@ -73,6 +73,7 @@ impl PersistentLog {
     }
 
     fn open_slot(directory: &std::path::Path, slot: u8) -> std::io::Result<Self> {
+        use std::io::{Read, Seek};
         use std::os::windows::fs::OpenOptionsExt;
         let stem = if slot == 0 {
             "log".to_owned()
@@ -92,18 +93,25 @@ impl PersistentLog {
             .truncate(false)
             .share_mode(0)
             .open(lock)?;
-        if current.exists() {
-            preserve_runtime_session(directory, &stem, &current)?;
-            if backup.exists() {
-                std::fs::remove_file(&backup)?;
-            }
-            std::fs::rename(&current, backup)?;
-        }
-        let file = std::fs::OpenOptions::new()
+        // Pin the current file before rotation. Retain its contents before
+        // truncating this same handle, with no delete/rename/create-new gap.
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
             .write(true)
-            .create_new(true)
+            .create(true)
+            .truncate(false)
             .share_mode(1)
             .open(&current)?;
+        let mut previous = Vec::new();
+        (&mut file)
+            .take(8 * 1024 * 1024)
+            .read_to_end(&mut previous)?;
+        if !previous.is_empty() {
+            preserve_runtime_session(directory, &stem, &previous)?;
+            write_snapshot(&backup, &previous)?;
+        }
+        file.set_len(0)?;
+        file.rewind()?;
         Ok(Self {
             file,
             path: current,
@@ -137,27 +145,27 @@ impl PersistentLog {
     }
 }
 
-fn preserve_runtime_session(directory: &Path, stem: &str, current: &Path) -> std::io::Result<()> {
-    use std::io::{Read, Write};
-    use std::os::windows::fs::OpenOptionsExt;
-    let mut bytes = Vec::new();
-    std::fs::File::open(current)?
-        .take(8 * 1024 * 1024)
-        .read_to_end(&mut bytes)?;
-    if !String::from_utf8_lossy(&bytes).contains("[application] Supervised session connected") {
+fn preserve_runtime_session(directory: &Path, stem: &str, bytes: &[u8]) -> std::io::Result<()> {
+    if !String::from_utf8_lossy(bytes).contains("[application] Supervised session connected") {
         return Ok(());
     }
     // One fixed archive per log slot. Failed/rejected launches cannot erase the
     // last useful runtime session by repeatedly rotating the startup-only files.
     let archive = directory.join(format!("last-runtime-{stem}.txt"));
-    validate_file(&archive)?;
+    write_snapshot(&archive, bytes)
+}
+
+fn write_snapshot(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    use std::os::windows::fs::OpenOptionsExt;
+    validate_file(path)?;
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
         .share_mode(1)
-        .open(archive)?;
-    file.write_all(&bytes)?;
+        .open(path)?;
+    file.write_all(bytes)?;
     file.sync_all()
 }
 
@@ -213,7 +221,23 @@ fn initialize_persistence() {
 }
 
 fn diagnostic_directory() -> Option<PathBuf> {
-    diagnostic_root().map(|p| p.join("Achimeld/RustDiagnostics"))
+    public_log_root().map(|p| p.join("Achimeld/Logs"))
+}
+
+fn public_log_root() -> Option<PathBuf> {
+    #[cfg(test)]
+    {
+        diagnostic_root()
+    }
+    #[cfg(not(test))]
+    {
+        windows_known_folder(&windows_sys::Win32::UI::Shell::FOLDERID_PublicDocuments).ok()
+    }
+}
+
+fn log_directory() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let root = public_log_root().ok_or("Public Documents path unavailable")?;
+    crate::storage_directory_in(&root, "Logs")
 }
 
 fn diagnostic_root() -> Option<PathBuf> {
@@ -229,17 +253,17 @@ fn diagnostic_root() -> Option<PathBuf> {
 }
 
 fn windows_local_app_data() -> std::io::Result<PathBuf> {
+    windows_known_folder(&windows_sys::Win32::UI::Shell::FOLDERID_LocalAppData)
+}
+
+fn windows_known_folder(id: &windows_sys::core::GUID) -> std::io::Result<PathBuf> {
     use std::os::windows::ffi::OsStringExt;
-    use windows_sys::Win32::{
-        System::Com::CoTaskMemFree,
-        UI::Shell::{FOLDERID_LocalAppData, SHGetKnownFolderPath},
-    };
+    use windows_sys::Win32::{System::Com::CoTaskMemFree, UI::Shell::SHGetKnownFolderPath};
     let mut raw = std::ptr::null_mut();
     // SAFETY: Windows returns an allocated terminated UTF-16 path for the current user.
     // It is read only on success, bounded by Windows' maximum path length and freed once.
     unsafe {
-        let result =
-            SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, std::ptr::null_mut(), &mut raw);
+        let result = SHGetKnownFolderPath(id, 0, std::ptr::null_mut(), &mut raw);
         if result < 0 || raw.is_null() {
             if !raw.is_null() {
                 CoTaskMemFree(raw.cast());
@@ -259,7 +283,7 @@ fn windows_local_app_data() -> std::io::Result<PathBuf> {
         };
         CoTaskMemFree(raw.cast());
         path.filter(|p| p.is_absolute())
-            .ok_or_else(|| std::io::Error::other("Local AppData path unavailable"))
+            .ok_or_else(|| std::io::Error::other("Windows known-folder path unavailable"))
     }
 }
 
@@ -310,7 +334,7 @@ fn retry_persistence() {
         return;
     }
     let directory = diagnostic_directory();
-    let prepared = match self::directory() {
+    let prepared = match log_directory() {
         Ok(path) => path,
         Err(error) => {
             let error = error
@@ -398,7 +422,7 @@ fn read_previous(directory: &Path) -> Vec<output::PreviousSession> {
 
 pub fn open_folder() -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;
-    let directory = self::directory().map_err(|_| "Log folder unavailable")?;
+    let directory = log_directory().map_err(|_| "Log folder unavailable")?;
     let path: Vec<u16> = directory.as_os_str().encode_wide().chain(Some(0)).collect();
     let verb: Vec<u16> = "open".encode_utf16().chain(Some(0)).collect();
     // SAFETY: Both terminated strings remain live; the shell is asked to open
@@ -452,6 +476,50 @@ mod tests {
     use super::*;
 
     #[test]
+    fn rotation_works_while_a_log_reader_disallows_deletion() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let directory = crate::test_output::root()
+            .join(format!("log-reader-{}", achimeld_application::new_id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let mut first = PersistentLog::open(&directory).unwrap();
+        first.write("previous session\n").unwrap();
+        drop(first);
+        let reader = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(3)
+            .open(directory.join("log.txt"))
+            .unwrap();
+        let mut next = PersistentLog::open(&directory).unwrap();
+        next.write("current session\n").unwrap();
+        assert_eq!(
+            std::fs::read_to_string(directory.join("log_bak.txt")).unwrap(),
+            "previous session\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(directory.join("log.txt")).unwrap(),
+            "current session\n"
+        );
+        drop(next);
+        drop(reader);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn failed_backup_preserves_current_session_contents() {
+        let directory = crate::test_output::root()
+            .join(format!("log-backup-{}", achimeld_application::new_id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(directory.join("log.txt"), "retain me\n").unwrap();
+        std::fs::create_dir(directory.join("log_bak.txt")).unwrap();
+        assert!(PersistentLog::open(&directory).is_err());
+        assert_eq!(
+            std::fs::read_to_string(directory.join("log.txt")).unwrap(),
+            "retain me\n"
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn failed_startups_do_not_erase_the_last_real_runtime_session() {
         let directory = crate::test_output::root().join(format!(
             "runtime-history-{}",
@@ -489,7 +557,7 @@ mod tests {
     fn initialization_and_recovery_are_verified_in_an_isolated_process() {
         let directory = crate::test_output::root()
             .join(format!("log-recovery-{}", achimeld_application::new_id()));
-        let logs = directory.join("Achimeld/RustDiagnostics");
+        let logs = directory.join("Achimeld/Logs");
         std::fs::create_dir_all(logs.join("log.txt")).unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args([

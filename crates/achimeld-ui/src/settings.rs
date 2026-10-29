@@ -480,6 +480,18 @@ impl Desktop {
                     ("Normal font size", &mut preferences.normal_size, 9.0, 32.0),
                     ("Small font size", &mut preferences.small_size, 8.0, 24.0),
                     (
+                        "Knob label font size",
+                        &mut preferences.knob_label_size,
+                        8.0,
+                        24.0,
+                    ),
+                    (
+                        "Knob value font size",
+                        &mut preferences.knob_value_size,
+                        8.0,
+                        24.0,
+                    ),
+                    (
                         "Inspector spacing",
                         &mut preferences.inspector_spacing,
                         0.0,
@@ -490,6 +502,24 @@ impl Desktop {
                         ui.add(egui::DragValue::new(size).range(min..=max));
                     });
                 }
+                ui.label("Knob preview");
+                let preview_id = ui.id().with("knob-preview");
+                let defaults = serde_json::json!({"brightness": 1.0, "count": 9});
+                let mut preview = ui
+                    .data(|data| data.get_temp::<serde_json::Value>(preview_id))
+                    .unwrap_or_else(|| defaults.clone());
+                crate::knobs::bank(
+                    ui,
+                    preferences,
+                    &mut preview,
+                    &defaults,
+                    &[
+                        crate::knobs::Parameter::new("Base brightness", "brightness", 0.0..=2.0, 0)
+                            .percent(),
+                        crate::knobs::Parameter::new("Objects", "count", 1.0..=512.0, 1).integer(),
+                    ],
+                );
+                ui.data_mut(|data| data.insert_temp(preview_id, preview));
             }
             3 => {
                 crate::fields::row(ui, "Achievement naming convention", |ui| {

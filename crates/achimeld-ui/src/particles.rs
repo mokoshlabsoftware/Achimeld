@@ -38,7 +38,7 @@ impl Desktop {
             port.finish_group();
             layer["particles"] = loaded;
         }
-        let Ok(parsed) = ParticleSettings::from_value(&layer["particles"]) else {
+        let Ok(parsed) = editable_settings(&layer["particles"]) else {
             ui.label("Invalid particle settings");
             return;
         };
@@ -104,7 +104,7 @@ impl Desktop {
         );
         if ui
             .add(Button::new("No rotation"))
-            .on_hover_text("Set the rotation range to 0°–0° for every particle")
+            .on_hover_text("Set the rotation range to 0 degrees for every particle")
             .clicked()
         {
             settings["rotationMin"] = json!(0.0);
@@ -304,7 +304,17 @@ impl Desktop {
             crate::layers::gradient_stops_ui(ui, &mut settings["gradient"]);
         }
         if settings != initial {
-            layer["particles"] = settings;
+            match ParticleSettings::from_value(&settings) {
+                Ok(_) => layer["particles"] = settings,
+                Err(_) => {
+                    self.error = Some("The particle edit was rejected. The previous settings and other project changes are preserved.".into());
+                    achimeld_application::diagnostics::record(
+                        "WARN",
+                        "editor",
+                        "Rejected invalid particle control candidate; previous settings retained",
+                    );
+                }
+            }
         }
     }
 }
@@ -333,7 +343,7 @@ pub(crate) fn action_bar(
     explorer: bool,
     mask: Option<&mut crate::explosion::MaskControl<'_>>,
 ) {
-    let Ok(parsed) = ParticleSettings::from_value(&layer["particles"]) else {
+    let Ok(parsed) = editable_settings(&layer["particles"]) else {
         ui.label("Invalid particle settings");
         return;
     };
@@ -357,7 +367,7 @@ pub(crate) fn action_bar(
                 width,
             );
             // A library preset may have replaced the complete recipe.
-            if let Ok(parsed) = ParticleSettings::from_value(&layer["particles"]) {
+            if let Ok(parsed) = editable_settings(&layer["particles"]) {
                 settings = json!(parsed);
             }
         }
@@ -546,4 +556,33 @@ pub(crate) fn spawn_gizmo(
         painter.circle_stroke(center, 6.0, Stroke::new(1.0, ink));
     }
     response.on_hover_cursor(egui::CursorIcon::Crosshair)
+}
+
+// Validation belongs at the commit boundary. Keep repair controls available for
+// structurally readable drafts even when a numeric value is out of range.
+pub(super) fn editable_settings(value: &Value) -> Result<ParticleSettings, serde_json::Error> {
+    if value.is_null() {
+        Ok(ParticleSettings::default())
+    } else {
+        serde_json::from_value(value.clone())
+    }
+}
+
+#[cfg(test)]
+mod repair_tests {
+    use super::*;
+
+    #[test]
+    fn invalid_transform_remains_editable_without_resetting_the_effect() {
+        let mut value = json!(ParticleSettings::default());
+        value["shapes"] = json!([achimeld_application::particles::ParticleShape::default()]);
+        value["shapes"][0]["scale"] = json!(2.01);
+        value["seed"] = json!(123);
+        assert!(ParticleSettings::from_value(&value).is_err());
+        let draft = editable_settings(&value).unwrap();
+        assert_eq!(draft.seed, 123);
+        assert_eq!(draft.shapes[0].scale, 2.01);
+        value["shapes"][0]["scale"] = json!(2.0);
+        assert!(ParticleSettings::from_value(&value).is_ok());
+    }
 }

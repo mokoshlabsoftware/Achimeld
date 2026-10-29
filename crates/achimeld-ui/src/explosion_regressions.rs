@@ -49,21 +49,21 @@ fn explosion_inspector_preserves_sparse_records_and_switches_to_a_count_range() 
     assert!(
         labels
             .lines()
-            .any(|text| crate::fields::label_matches(text, "O. Scale"))
+            .any(|text| crate::fields::label_matches(text, "Overall scale"))
             && labels
                 .lines()
-                .any(|text| crate::fields::label_matches(text, "A. Ratio"))
+                .any(|text| crate::fields::label_matches(text, "Aspect ratio"))
     );
     for label in [
-        "B. Brightness",
+        "Base brightness",
         "B. Variation",
         "Shape X",
         "Shape Y",
         "D. → Ellipse",
-        "R. Blur",
-        "A. Blur",
-        "F. Power",
-        "F. Stretch",
+        "Radial blur",
+        "Angular blur",
+        "Fill power",
+        "Fill stretch",
     ] {
         assert!(
             labels
@@ -422,6 +422,50 @@ fn explosion_deltoid_shapes_fit_narrow_inspectors_without_dirtying_recipes() {
 }
 
 #[test]
+fn shape_keeps_double_sliders_and_starts_flush_with_the_main_panel() {
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut fixture = Fixture::new();
+    let mut layer = crate::layer_palette::new_layer("Explosion");
+    let before = layer.clone();
+    let mut left = 0.0;
+    let mut output = ctx.run_ui(Default::default(), |ui| {
+        theme::apply(ui.ctx(), &Preferences::default());
+        ui.set_style(ui.ctx().global_style());
+        ui.set_width(440.0);
+        left = ui.available_rect_before_wrap().left();
+        crate::explosion::body_properties(ui, &mut fixture, &mut layer, "shape-layout");
+    });
+    output.textures_delta.clear();
+    let label = output
+        .shapes
+        .iter()
+        .find_map(|s| match &s.shape {
+            egui::Shape::Text(text)
+                if crate::fields::label_matches(text.galley.text(), "B. Variation") =>
+            {
+                Some(text.pos.x)
+            }
+            _ => None,
+        })
+        .expect("Original Shape brightness range label");
+    assert!(
+        (label - left).abs() < 1.0,
+        "Shape is indented: {label} vs {left}"
+    );
+    let handles = output
+        .shapes
+        .iter()
+        .filter(|s| matches!(&s.shape, egui::Shape::Circle(c) if c.radius == 5.0))
+        .count();
+    assert!(
+        handles >= 14,
+        "Shape retains the seven original double-ended ranges"
+    );
+    assert_eq!(layer, before);
+}
+
+#[test]
 #[ignore = "Native explosion inspector screenshot; writes outside source"]
 fn native_explosion_inspector_screenshot() {
     use winit::platform::windows::EventLoopBuilderExtWindows as _;
@@ -502,7 +546,7 @@ fn native_explosion_inspector_screenshot() {
         eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_decorations(false)
-                .with_inner_size([1000.0, 1200.0]),
+                .with_inner_size([720.0, 1700.0]),
             event_loop_builder: Some(Box::new(|builder| {
                 builder.with_any_thread(true);
             })),

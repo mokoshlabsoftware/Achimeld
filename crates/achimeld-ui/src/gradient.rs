@@ -8,6 +8,8 @@ const MAX_STOPS: usize = 128;
 #[derive(Clone, Copy, Default)]
 struct EditorState {
     selected: usize,
+    pending_click: Option<(f64, f64)>,
+    closing: bool,
     drag: Option<(usize, f32)>,
     menu: Option<(Option<usize>, f64)>,
     color: Option<usize>,
@@ -77,6 +79,7 @@ fn delete(stops: &mut Vec<Value>, index: usize, state: &mut EditorState) {
     if stops.len() <= 1 || index >= stops.len() {
         return;
     }
+    state.pending_click = None;
     stops.remove(index);
     state.selected = index.min(stops.len() - 1);
     state.drag = None;
@@ -136,7 +139,7 @@ fn handle_rect(ramp: Rect, stop: &Value) -> Rect {
     Rect::from_center_size(
         Pos2::new(
             egui::lerp(ramp.x_range(), offset(stop) as f32),
-            ramp.bottom() + 16.0,
+            ramp.bottom() + 9.0,
         ),
         Vec2::new(12.0, 18.0),
     )
@@ -182,6 +185,7 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
         && let Some(press) = ui.input(|input| input.pointer.press_origin())
         && let Some(index) = hit(&stops, ramp, press, state.selected)
     {
+        state.pending_click = None;
         state.selected = index;
         state.drag = Some((index, press.x - handle_rect(ramp, &stops[index]).center().x));
         response.request_focus();
@@ -201,15 +205,54 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
         && let Some(pointer) = response.interact_pointer_pos()
         && hit(&stops, ramp, pointer, state.selected).is_none()
     {
+        state.pending_click = None;
         add(&mut stops, position(pointer), &mut state);
         response.request_focus();
     } else if response.clicked()
         && let Some(pointer) = response.interact_pointer_pos()
         && let Some(index) = hit(&stops, ramp, pointer, state.selected)
     {
+        state.pending_click = None;
         state.selected = index;
         state.color = Some(index);
+        state.closing = false;
         response.request_focus();
+    }
+    if response.clicked()
+        && !response.double_clicked()
+        && let Some(pointer) = response.interact_pointer_pos()
+        && hit(&stops, ramp, pointer, state.selected).is_none()
+    {
+        state.pending_click = Some((position(pointer), ui.input(|i| i.time)));
+        state.closing = true;
+    }
+    if !ui.is_enabled() {
+        state.pending_click = None;
+    }
+    if let Some((position, time)) = state.pending_click {
+        if ui.input(|i| i.time) - time
+            > ui.ctx().options(|o| o.input_options.max_double_click_delay)
+        {
+            let nearest = (0..stops.len())
+                .min_by(|&a, &b| {
+                    (offset(&stops[a]) - position)
+                        .abs()
+                        .total_cmp(&(offset(&stops[b]) - position).abs())
+                })
+                .unwrap();
+            stops[nearest]["offset"] = json!(position);
+            state.selected = nearest;
+            state.pending_click = None;
+            response.request_focus();
+        } else {
+            ui.ctx().request_repaint();
+        }
+    }
+    if response.has_focus()
+        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Delete))
+    {
+        let selected = state.selected;
+        delete(&mut stops, selected, &mut state);
     }
     if response.secondary_clicked()
         && let Some(pointer) = response.interact_pointer_pos()
@@ -225,6 +268,7 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
             if let Some(index) = index {
                 if ui.app_button("Change color…").clicked() {
                     state.color = Some(index);
+                    state.closing = false;
                     ui.close();
                 }
                 if ui
@@ -267,74 +311,24 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
         } else {
             ui.visuals().text_color()
         };
-        ui.painter().line_segment(
-            [
-                Pos2::new(handle.center().x, ramp.bottom()),
-                handle.center_top(),
-            ],
-            Stroke::new(1.0, ink),
-        );
-        checker(ui, handle);
         let [r, g, b, a] = rgba(stop);
-        ui.painter()
-            .rect_filled(handle, 0.0, Color32::from_rgba_unmultiplied(r, g, b, a));
-        ui.painter().rect_stroke(
-            handle,
-            0.0,
+        ui.painter().add(egui::Shape::convex_polygon(
+            vec![
+                handle.center_top(),
+                Pos2::new(handle.right(), handle.top() + handle.width() * 0.5),
+                handle.right_bottom(),
+                handle.left_bottom(),
+                Pos2::new(handle.left(), handle.top() + handle.width() * 0.5),
+            ],
+            Color32::from_rgba_unmultiplied(r, g, b, a),
             Stroke::new(if index == state.selected { 2.0 } else { 1.0 }, ink),
-            egui::StrokeKind::Outside,
-        );
+        ));
     }
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::Other, ui.is_enabled(), "Gradient stops")
     });
     response.on_hover_text("Double-click empty space to add a stop. Click a stop to change its color. Drag to move it. Right-click the strip to add a stop, or a stop to change or delete it.");
-    ui.weak(crate::localization::text(
-        ui.ctx(),
-        "Double-click to add · Drag stops to move · Click to change color",
-    ));
-
     let selected = state.selected;
-    let fields = |ui: &mut egui::Ui, state: &mut EditorState, stops: &mut Vec<Value>| {
-        crate::inspector::number(
-            ui,
-            "Position",
-            &mut stops[selected],
-            "offset",
-            0.0..=1.0,
-            0.01,
-        );
-        crate::inspector::field(ui, "Color", 40.0, |ui| {
-            let mut color = rgba(&stops[selected]);
-            if crate::color_picker::edit_button(ui, &mut color).changed() {
-                set_color(&mut stops[selected], color);
-            }
-        });
-        state.selected = selected;
-    };
-    let control_width = (ui.text_style_height(&egui::TextStyle::Body) * 5.0).max(72.0);
-    if ui.available_width()
-        >= crate::fields::minimum_row_width(ui, control_width) * 2.0 + ui.spacing().item_spacing.x
-    {
-        ui.columns(2, |columns| {
-            crate::inspector::number(
-                &mut columns[0],
-                "Position",
-                &mut stops[selected],
-                "offset",
-                0.0..=1.0,
-                0.01,
-            );
-            crate::inspector::field(&mut columns[1], "Color", 40.0, |ui| {
-                let mut color = rgba(&stops[selected]);
-                if crate::color_picker::edit_button(ui, &mut color).changed() {
-                    set_color(&mut stops[selected], color);
-                }
-            });
-        });
-    } else {
-        fields(ui, &mut state, &mut stops);
-    }
     buttons::bar(ui, 0.0, |ui| {
         let height = ui.spacing().interact_size.y;
         let image = crate::particles::glyph(
@@ -413,7 +407,7 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
                 || egui::ecolor::Hsva::from_srgba_unmultiplied(bytes),
                 |(_, _, color)| color,
             );
-        let mut open = true;
+        let mut open = !state.closing;
         if crate::color_picker::window(
             ui,
             color_id,
@@ -426,7 +420,7 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
         }
         state.picker = Some((index, rgba(&stops[index]), color));
         if !open {
-            state.color = None;
+            state.closing = true;
         }
     } else {
         state.color = None;

@@ -237,16 +237,19 @@ fn compact_layers_start_collapsed_and_keep_one_pixel_dividers_at_each_scale() {
                 (b.height() - 50.0).abs() < 1.0,
                 "Compact artwork row: {b:?}"
             );
-            let effect_pos = output
-                .shapes
-                .iter()
-                .find_map(|shape| match &shape.shape {
-                    egui::Shape::Text(text) if text.galley.text() == "Outline" => {
-                        Some(text.pos + text.galley.rect.center().to_vec2())
-                    }
-                    _ => None,
-                })
+            // Narrow rows retain the effect's icon while omitting its text label.
+            // Exercise the actual selector in both icon-only and labeled layouts.
+            let effect_row = ctx
+                .read_response(crate::layer_effects::effect_control_id(
+                    &achievement,
+                    &top,
+                    &effect,
+                    "row",
+                ))
                 .expect("Expanding FX must show the existing effect");
+            assert!(effect_row.rect.is_positive());
+            assert!(a.contains_rect(effect_row.rect));
+            let effect_pos = effect_row.rect.center();
             assert!(!output.shapes.iter().any(|shape| matches!(&shape.shape,
                 egui::Shape::Text(text) if text.galley.text() == "Effects" && a.contains(text.pos))));
             for pressed in [true, false] {

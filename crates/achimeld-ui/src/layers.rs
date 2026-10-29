@@ -63,7 +63,9 @@ impl Desktop {
                         );
                     });
                 }
-                identity(ui, layer);
+                if !mask {
+                    identity(ui, layer);
+                }
             });
         }
         // Keep the three shared rows visible while type-specific properties scroll below.
@@ -612,6 +614,7 @@ fn compact_number(
                 .suffix(if percent { "%" } else { "" }),
         )
         .changed()
+        && (number / factor).is_finite()
     {
         value[key] = json!(number / factor);
     }
@@ -786,7 +789,8 @@ fn effect_property_fields_inner(ui: &mut egui::Ui, effect: &mut Value) {
                             .suffix("%"),
                     )
                     .changed()
-                }) {
+                }) && opacity.is_finite()
+                {
                     effect["blurOpacity"] = json!(opacity / 100.0);
                 }
                 crate::blend_preview::property_key(
@@ -874,7 +878,8 @@ fn spatial_number(
                 .suffix(suffix),
         )
         .changed()
-    }) {
+    }) && (value / scale).is_finite()
+    {
         effect[key] = json!(value / scale);
     }
 }

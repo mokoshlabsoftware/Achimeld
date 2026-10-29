@@ -52,6 +52,7 @@ pub(crate) struct Dropdown {
     salt: egui::Id,
     width: Option<f32>,
     selected: egui::WidgetText,
+    image: Option<egui::Image<'static>>,
 }
 
 impl Dropdown {
@@ -60,6 +61,7 @@ impl Dropdown {
             salt: egui::Id::new(salt),
             width: None,
             selected: Default::default(),
+            image: None,
         }
     }
     pub(crate) fn width(mut self, width: f32) -> Self {
@@ -71,6 +73,10 @@ impl Dropdown {
     }
     pub(crate) fn selected_text(mut self, text: impl Into<egui::WidgetText>) -> Self {
         self.selected = text.into();
+        self
+    }
+    pub(crate) fn selected_image(mut self, image: egui::Image<'static>) -> Self {
+        self.image = Some(image);
         self
     }
     pub(crate) fn show_ui<R>(
@@ -90,7 +96,7 @@ impl Dropdown {
                 .insert(egui::TextStyle::Button, font);
             let response = ui.add_sized(
                 [width, ui.spacing().interact_size.y],
-                Button::new((self.selected, disclosure(ui)))
+                Button::new((self.image.unwrap_or_else(|| disclosure(ui)), self.selected))
                     .image_tint_follows_text_color(true)
                     .id(ui.make_persistent_id(self.salt))
                     .bar()

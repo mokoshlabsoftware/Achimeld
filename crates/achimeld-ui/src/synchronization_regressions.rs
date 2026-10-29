@@ -121,6 +121,97 @@ impl EditorPort for ReviewPort {
 }
 
 #[test]
+fn steam_panel_requires_current_session_validation_without_failure() {
+    let mut port = ReviewPort::new();
+    let desktop = Desktop::default();
+    assert!(desktop.steam_panel_available(&port));
+    port.review["appId"] = json!(481);
+    assert!(!desktop.steam_panel_available(&port));
+    port.show_review = false;
+    assert!(!desktop.steam_panel_available(&port));
+    port.verified = true;
+    assert!(desktop.steam_panel_available(&port));
+    port.error = Some("Connection lost".into());
+    assert!(!desktop.steam_panel_available(&port));
+    port.error = None;
+    port.verified = false;
+    assert!(!desktop.steam_panel_available(&port));
+}
+
+#[test]
+fn steam_delete_confirmation_only_requests_reviewed_targets_when_validated() {
+    for verified in [false, true] {
+        let mut port = ReviewPort::new();
+        port.show_review = false;
+        port.verified = verified;
+        let mut project = port.base.editor.document().project().clone();
+        project["lastRemoteSnapshot"] = steam_snapshot();
+        port.base.editor = Editor::new(
+            achimeld_application::Document::from_parts(
+                project,
+                port.base.editor.document().catalog().clone(),
+            )
+            .unwrap(),
+        );
+        let mut desktop = Desktop::default();
+        desktop
+            .steam_marks
+            .insert((EntityKind::Achievement, "STEAM_FIRST".into()));
+        desktop.steam_delete_review = true;
+        let ctx = egui::Context::default();
+        configure_test_fonts(&ctx);
+        let mut render = |events| {
+            let output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(1000.0, 900.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |_| desktop.steam_delete_window(&ctx, &port),
+            );
+            let mut output = output;
+            output.textures_delta.clear();
+            let mut labels = Vec::new();
+            for shape in output.shapes {
+                texts(&shape.shape, &mut labels);
+            }
+            labels
+        };
+        render(vec![]);
+        let labels = render(vec![]);
+        let position = labels
+            .iter()
+            .rev()
+            .find(|(text, _)| text == "Delete on Steam")
+            .unwrap()
+            .1
+            .center();
+        for pressed in [true, false] {
+            render(vec![
+                egui::Event::PointerMoved(position),
+                egui::Event::PointerButton {
+                    pos: position,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]);
+        }
+        let requests = &desktop.requests;
+        if verified {
+            assert!(
+                matches!(requests.as_slice(), [UiRequest::DeleteSteam(targets)] if targets == &vec![(EntityKind::Achievement, "STEAM_FIRST".into())])
+            );
+        } else {
+            assert!(requests.is_empty());
+        }
+    }
+}
+
+#[test]
 fn saved_destination_validation_survives_reopen_but_is_bound_to_app_id() {
     for (app_id, validated) in [(480, true), (481, false)] {
         let mut port = ReviewPort::new();
@@ -467,7 +558,7 @@ fn review_is_side_effect_free_and_only_selected_prepared_rows_are_submitted() {
     );
     let import = labels
         .iter()
-        .find(|(label, _)| label == "Import")
+        .find(|(label, _)| label == "Use Steam")
         .unwrap()
         .1
         .center();
@@ -480,19 +571,10 @@ fn review_is_side_effect_free_and_only_selected_prepared_rows_are_submitted() {
         .unwrap()
         .1
         .center();
-    click(&ctx, &mut desktop, &mut port, apply);
-    assert!(
-        desktop.requests.is_empty(),
-        "Destination must be confirmed before applying"
-    );
-    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
-    let confirm = labels
-        .iter()
-        .find(|(label, _)| label == "I confirm this is the correct Steam App ID.")
-        .unwrap()
-        .1
-        .center();
-    click(&ctx, &mut desktop, &mut port, confirm);
+    assert!(!labels.iter().any(|(label, _)| matches!(
+        label.as_str(),
+        "Skip" | "Upload" | "I confirm this is the correct Steam App ID."
+    )));
     click(&ctx, &mut desktop, &mut port, apply);
     assert!(
         desktop.requests.is_empty(),
@@ -706,7 +788,7 @@ fn a_new_review_resets_choices_and_narrow_rows_wrap() {
     port.review["token"] = json!("fresh-review");
     let labels = frame(&ctx, &mut desktop, &mut port, 420.0, vec![]);
     assert_eq!(desktop.sync_choices["Stat:SCORE"], "Upload");
-    assert!(!desktop.sync_destination_confirmed(&port));
+    assert!(desktop.sync_destination_confirmed(&port));
     for (label, rect) in labels {
         // Utility actions now live in a horizontally scrolling fixed-height bar.
         if matches!(
@@ -1039,8 +1121,8 @@ fn validated_review_without_a_banner_explains_the_missing_artwork() {
     );
     assert!(!desktop.sync_wants_click(&port));
     assert!(
-        !desktop.sync_action_enabled(&port),
-        "A missing banner never confirms a destination"
+        desktop.sync_action_enabled(&port),
+        "A missing decorative banner must not block a matching validated destination"
     );
 }
 

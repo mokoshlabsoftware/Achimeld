@@ -389,6 +389,7 @@ fn axes(
                 if ui
                     .add(egui::DragValue::new(&mut n).range(range.clone()).speed(0.5))
                     .changed()
+                    && n.is_finite()
                 {
                     value[key][i] = json!(n);
                 }

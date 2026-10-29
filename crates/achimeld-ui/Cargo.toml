@@ -11,12 +11,16 @@ achimeld-application = { path = "../achimeld-application" }
 egui.workspace = true
 serde_json.workspace = true
 
+[build-dependencies]
+image.workspace = true
+
 [dev-dependencies]
+image.workspace = true
 achimeld-persistence = { path = "../achimeld-persistence" }
 eframe.workspace = true
 winit = { version = "=0.30.13", default-features = false }
 achimeld-imaging = { path = "../achimeld-imaging" }
-image.workspace = true
+
 
 [lints]
 workspace = true

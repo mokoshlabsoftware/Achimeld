@@ -205,8 +205,10 @@ fn every_effect_row_keeps_complete_controls_inside_the_stack_at_large_fonts() {
                 };
                 assert!(
                     parent.contains_rect(rect("row")) && parent.contains_rect(rect("delete")),
-                    "Effect {} overflow at {width}/{font}",
-                    effect["kind"]
+                    "Effect {} overflow at {width}/{font}: parent {parent:?}, row {:?}, delete {:?}",
+                    effect["kind"],
+                    rect("row"),
+                    rect("delete")
                 );
             }
         }

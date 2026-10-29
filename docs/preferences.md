@@ -1,5 +1,15 @@
 # Preferences and layer layout
 
+App style includes separate **Knob label font size** and **Knob value font size**
+settings (10 points by default, 8-24 supported), with an interactive knob preview.
+The Explosion bank uses these sizes independently of ordinary form text. Its
+shading and all states derive from the existing entries in **Colors**, including
+Accent, Control, Panel, Window, Primary text and Muted text. Save and Cancel retain
+the usual appearance-preview behavior; older settings receive the small defaults.
+Integer and decimal fields throughout the app use Consolas, the standard Windows
+console face, with the existing monospace/CJK fallbacks when it is unavailable.
+Their sizes still use Normal font size or, for knob numbers, Knob value font size.
+
 Preferences uses square panel edges and shared square buttons. The five generated
 section icons are embedded as white tintable RGBA artwork; original transparent
 PNGs and exact built-in imagegen prompts are retained under

@@ -197,6 +197,7 @@ fn real_project_performance() {
             match render_job(
                 &document,
                 &Job {
+                    generation: 1,
                     id: id.clone(),
                     pass,
                     cancelled: None,

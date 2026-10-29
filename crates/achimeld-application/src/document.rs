@@ -513,6 +513,43 @@ impl Document {
                     .insert("English".into(), "Art image".into());
             }
             Command::ReplaceEntity { kind, id, value } => {
+                let mut value = value.clone();
+                if let Some(previous) = self.entity(*kind, id) {
+                    value
+                        .as_object_mut()
+                        .ok_or("Invalid entity")?
+                        .remove("pendingApiRename");
+                    if let Some(pending) = previous.get("pendingApiRename") {
+                        if value["apiName"] != pending["from"] {
+                            value["pendingApiRename"] = pending.clone();
+                        }
+                    } else if previous["apiName"] != value["apiName"]
+                        && !crate::style_achievements::is_local_icon(previous)
+                    {
+                        let snapshot = &self.project["lastRemoteSnapshot"];
+                        let app = snapshot["steamAppId"]
+                            .as_u64()
+                            .or_else(|| snapshot["appId"].as_u64())
+                            .or_else(|| snapshot.pointer("/appId/value").and_then(Value::as_u64));
+                        let key = if *kind == EntityKind::Stat {
+                            "stats"
+                        } else {
+                            "achievements"
+                        };
+                        if app == Some(u64::from(self.app_id()))
+                            && let Some(remote) = snapshot[key].as_array().and_then(|rows| {
+                                rows.iter().find(|r| {
+                                    r["apiName"] == previous["apiName"]
+                                        || r["apiName"]["value"] == previous["apiName"]
+                                })
+                            })
+                            && remote["steamId"].as_str().is_some_and(|s| !s.is_empty())
+                        {
+                            value["pendingApiRename"] = json!({"from":previous["apiName"],"steamId":remote["steamId"],"appId":self.app_id()});
+                        }
+                    }
+                }
+                let value = &value;
                 if crate::art_images::is_art_image(value)
                     != self
                         .entity(*kind, id)
@@ -683,6 +720,14 @@ impl Document {
                     self.project["lastVerifiedAtUtc"] = Value::Null;
                     self.project["syncBaselines"] = json!([]);
                     self.project["tombstones"] = json!([]);
+                    for kind in [EntityKind::Stat, EntityKind::Achievement] {
+                        for entity in self.entities_mut(kind)? {
+                            entity
+                                .as_object_mut()
+                                .ok_or("Invalid entity")?
+                                .remove("pendingApiRename");
+                        }
+                    }
                 }
                 self.project["displayName"] = json!(name);
                 self.project["steamAppId"] = json!(app_id);

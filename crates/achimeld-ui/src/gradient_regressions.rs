@@ -483,3 +483,26 @@ fn gradient_editor_live_layers_effects_and_vignette_drags_undo_as_one_edit() {
         assert_eq!(fixture.editor.document(), &edited);
     }
 }
+
+#[test]
+fn gradient_empty_single_click_moves_nearest_stop_and_delete_removes_selection() {
+    let mut fixture = GradientFixture::new(black_white());
+    fixture.frame(vec![]);
+    fixture.frame(vec![]);
+    let ramp = fixture.ramp();
+    let pointer = egui::pos2(egui::lerp(ramp.x_range(), 0.7), ramp.center().y);
+    fixture.click(pointer, egui::PointerButton::Primary);
+    assert_eq!(fixture.gradient, black_white());
+    fixture.time += 0.5;
+    fixture.frame(vec![]);
+    assert_eq!(fixture.gradient["stops"].as_array().unwrap().len(), 2);
+    assert!((fixture.gradient["stops"][1]["offset"].as_f64().unwrap() - 0.7).abs() < 0.0001);
+    fixture.frame(vec![egui::Event::Key {
+        key: egui::Key::Delete,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    }]);
+    assert_eq!(fixture.gradient["stops"].as_array().unwrap().len(), 1);
+}

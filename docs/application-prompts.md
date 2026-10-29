@@ -42,6 +42,17 @@ Selecting **Validate** for a project without a saved file shows **Saved project 
 
 ## Review
 
+Active Steam validation, synchronization, reviewed deletion, reading, and browser
+profile deletion use a movable, initially centered progress panel with the same black
+header/body and shared full-width action row. Show a large spinner, centered
+wrapped stage text at least 18 points, and an elapsed HH:MM:SS timer at least
+28 points, using the console monospace font. The timer starts when work becomes visible, continues across stage
+updates and tab changes, and resets for a new operation or after a review pause.
+Repaint while waiting so elapsed time advances without worker events. Outside
+clicks never dismiss active progress. Cancel and Escape use the existing cancel
+request; browser profile deletion has no cancellation action. Completion and
+failure remove progress and preserve the existing result/error presentation. The panel has no dimmed backdrop and leaves local artwork editing available. Steam and Sync content is disabled during active work. Drag the panel aside by its header. Saving and switching projects remain guarded while synchronization owns the saved file. Local edits remain dirty after a result is merged; conflicting changes preserve the local editor and require a fresh review. An existing review must be finished or cancelled before editing. Undo and redo remain guarded during Steam work to preserve destination identity.
+
 **Delete browser profile** is available from both Sync and Steam. Its Yes/No prompt
 explains that only Achimeld's Chromium profile and saved sign-in are deleted, while
 the Steam account and project remain. **Forget validation** in Sync has a separate

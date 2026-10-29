@@ -442,12 +442,10 @@ fn overlay(
     crate::renderer::check_blend_mode(mode)?;
     for (pixel, coverage) in image.pixels_mut().zip(mask) {
         let amount = f64::from(*coverage) / 255.0 * f64::from(color[3]) / 255.0 * opacity;
+        let blended = crate::blending::pixels(color, *pixel, mode);
         for i in 0..3 {
             let base = f64::from(pixel[i]) / 255.0;
-            pixel[i] = ((base * (1.0 - amount)
-                + crate::renderer::blend(f64::from(color[i]) / 255.0, base, mode) * amount)
-                * 255.0)
-                .round() as u8;
+            pixel[i] = ((base * (1.0 - amount) + blended[i] * amount) * 255.0).round() as u8;
         }
     }
     Ok(())

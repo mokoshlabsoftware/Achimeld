@@ -23,6 +23,7 @@ enum Pass {
 }
 struct Job {
     id: String,
+    generation: u64,
     pass: Pass,
     cancelled: Option<Arc<AtomicBool>>,
 }
@@ -73,6 +74,7 @@ pub struct PreviewWorker {
     queue: Arc<(Mutex<Batch>, Condvar)>,
     receiver: mpsc::Receiver<Completed>,
     states: BTreeMap<String, PreviewState<Preview>>,
+    inputs: BTreeMap<String, (u64, Arc<AtomicBool>)>,
     threads: Vec<std::thread::JoinHandle<()>>,
     usage: BTreeMap<String, u64>,
     clock: u64,
@@ -153,7 +155,7 @@ impl PreviewWorker {
                     let result = render_job(
                         &document,
                         &job,
-                        generation,
+                        job.generation,
                         &mut SharedAssets(assets),
                         &is_cancelled,
                     );
@@ -169,7 +171,7 @@ impl PreviewWorker {
                     let mut completed = Completed {
                         id: job.id,
                         pass: job.pass,
-                        generation,
+                        generation: job.generation,
                         result,
                         cancelled: job.cancelled.clone(),
                     };
@@ -204,6 +206,7 @@ impl PreviewWorker {
             queue,
             receiver,
             states: BTreeMap::new(),
+            inputs: BTreeMap::new(),
             threads,
             usage: BTreeMap::new(),
             clock: 0,
@@ -246,9 +249,14 @@ impl PreviewWorker {
         let (lock, wake) = &*self.queue;
         if let Ok(mut batch) = lock.lock() {
             for (generation, id, cancelled) in refine {
-                if batch.generation == generation && batch.detail.len() < MAX_PENDING {
+                if !cancelled
+                    .as_ref()
+                    .is_some_and(|c| c.load(Ordering::Acquire))
+                    && batch.detail.len() < MAX_PENDING
+                {
                     batch.detail.push_back(Job {
                         id,
+                        generation,
                         pass: Pass::Detail,
                         cancelled,
                     });
@@ -274,6 +282,9 @@ impl PreviewWorker {
                 break;
             };
             self.states.remove(&old);
+            if let Some((_, token)) = self.inputs.remove(&old) {
+                token.store(true, Ordering::Release);
+            }
             self.usage.remove(&old);
         }
     }
@@ -288,6 +299,14 @@ impl PreviewWorker {
         self.blend_cancelled = Arc::new(AtomicBool::new(false));
         self.blend_preview = preview;
         self.states.retain(|id, _| !id.starts_with("blend:"));
+        self.inputs.retain(|id, (_, token)| {
+            if id.starts_with("blend:") {
+                token.store(true, Ordering::Release);
+                false
+            } else {
+                true
+            }
+        });
         self.usage.retain(|id, _| !id.starts_with("blend:"));
         let (lock, wake) = &*self.queue;
         if let Ok(mut batch) = lock.lock() {
@@ -335,19 +354,49 @@ impl PreviewWorker {
             if changed {
                 self.states.clear();
                 self.usage.clear();
+                for (_, token) in self.inputs.values() {
+                    token.store(true, Ordering::Release);
+                }
+                self.inputs.clear();
             }
             self.generation += 1;
             self.source_generation = Some(generation);
             self.identity = Some(identity);
             let (lock, wake) = &*self.queue;
             if let Ok(mut batch) = lock.lock() {
-                batch.cancelled.store(true, Ordering::Release);
-                batch.cancelled = Arc::new(AtomicBool::new(false));
-                batch.generation = self.generation;
+                if changed {
+                    batch.cancelled.store(true, Ordering::Release);
+                    batch.cancelled = Arc::new(AtomicBool::new(false));
+                    batch.generation = self.generation;
+                    batch.active_quick = 0;
+                }
+                for (key, (version, token)) in &mut self.inputs {
+                    if render_inputs(key, &batch.document) != render_inputs(key, document) {
+                        token.store(true, Ordering::Release);
+                        *token = Arc::new(AtomicBool::new(false));
+                        *version = self.generation;
+                        // Reject results already in the completion channel too.
+                        if let Some(state) = self.states.get_mut(key) {
+                            state.request(*version);
+                            state.defer(*version);
+                        }
+                    }
+                }
                 batch.document = Arc::new(document.clone());
-                batch.quick.clear();
-                batch.detail.clear();
-                batch.active_quick = 0;
+                batch.quick.retain(|job| {
+                    !changed
+                        && !job
+                            .cancelled
+                            .as_ref()
+                            .is_some_and(|c| c.load(Ordering::Acquire))
+                });
+                batch.detail.retain(|job| {
+                    !changed
+                        && !job
+                            .cancelled
+                            .as_ref()
+                            .is_some_and(|c| c.load(Ordering::Acquire))
+                });
                 if changed {
                     let mut files = Files::new();
                     files.project = project.map(std::path::Path::to_path_buf);
@@ -365,12 +414,21 @@ impl PreviewWorker {
                 .map(|(id, _)| id.clone())
         {
             self.states.remove(&old);
+            if let Some((_, token)) = self.inputs.remove(&old) {
+                token.store(true, Ordering::Release);
+            }
             self.usage.remove(&old);
         }
         self.clock += 1;
         self.usage.insert(id.into(), self.clock);
+        let (input_generation, token) = self
+            .inputs
+            .entry(id.into())
+            .or_insert_with(|| (self.generation, Arc::new(AtomicBool::new(false))));
+        let input_generation = *input_generation;
+        let token = token.clone();
         let state = self.states.entry(id.into()).or_default();
-        if state.request(self.generation) {
+        if state.request(input_generation) {
             let (lock, wake) = &*self.queue;
             let mut admitted = false;
             if let Ok(mut batch) = lock.lock()
@@ -390,10 +448,9 @@ impl PreviewWorker {
                 };
                 let job = Job {
                     id: id.into(),
+                    generation: input_generation,
                     pass,
-                    cancelled: id
-                        .starts_with("blend:")
-                        .then(|| self.blend_cancelled.clone()),
+                    cancelled: Some(token),
                 };
                 if id.starts_with("blend:") {
                     batch.quick.push_front(job);
@@ -404,12 +461,105 @@ impl PreviewWorker {
                 wake.notify_all();
             }
             if !admitted {
-                state.defer(self.generation);
+                state.defer(input_generation);
             }
         }
         state.output().cloned()
     }
 }
+// Keep this dependency projection beside render_job. Unknown preview routes use
+// the complete document so a new route fails toward freshness, never stale pixels.
+fn render_inputs(key: &str, document: &Document) -> serde_json::Value {
+    use serde_json::{Value, json};
+    let id = if let Some(rest) = key.strip_prefix("canvas:") {
+        rest.split_once(':').map(|(_, id)| id)
+    } else if let Some(rest) = key.strip_prefix("blend:") {
+        rest.splitn(4, ':').nth(3)
+    } else if key.contains(':') {
+        None
+    } else {
+        Some(key.split_once('/').map_or(key, |(id, _)| id))
+    };
+    let Some(id) = id else {
+        return json!(document);
+    };
+    let project = document.project();
+    let entities = project["achievements"].as_array();
+    let mut pending = vec![id.to_owned()];
+    let mut dependencies = BTreeMap::new();
+    while let Some(id) = pending.pop() {
+        if dependencies.contains_key(&id) {
+            continue;
+        }
+        let entity = entities.and_then(|entities| entities.iter().find(|e| e["id"] == id));
+        let mut input = serde_json::Map::new();
+        if let Some(entity) = entity {
+            for field in [
+                "id",
+                "icon",
+                "unlockValue",
+                "atlasId",
+                "tileIndex",
+                "standaloneImageId",
+                "generalImageEntries",
+                "generalImageId",
+                "generalAtlasId",
+                "generalTileIndex",
+                "artImage",
+            ] {
+                input.insert(field.into(), entity[field].clone());
+            }
+            for layer in entity["icon"]["layers"].as_array().into_iter().flatten() {
+                if let Some(source) = achimeld_application::art_images::layer_source(entity, layer)
+                {
+                    pending.push(source.to_owned());
+                }
+            }
+        }
+        dependencies.insert(id, Value::Object(input));
+    }
+    fn asset_ids(value: &Value, ids: &mut std::collections::BTreeSet<String>) {
+        match value {
+            Value::Object(fields) => {
+                for (key, value) in fields {
+                    if matches!(
+                        key.as_str(),
+                        "imageId"
+                            | "atlasId"
+                            | "standaloneImageId"
+                            | "generalImageId"
+                            | "generalAtlasId"
+                    ) && let Some(id) = value.as_str()
+                    {
+                        ids.insert(id.to_owned());
+                    }
+                    asset_ids(value, ids);
+                }
+            }
+            Value::Array(values) => {
+                for value in values {
+                    asset_ids(value, ids);
+                }
+            }
+            _ => (),
+        }
+    }
+    let dependencies = json!(dependencies);
+    let mut ids = std::collections::BTreeSet::new();
+    asset_ids(&dependencies, &mut ids);
+    let mut assets = json!({"atlas": project["assets"]["atlas"]});
+    for kind in ["images", "atlases"] {
+        assets[kind] = project["assets"][kind]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|asset| asset["id"].as_str().is_some_and(|id| ids.contains(id)))
+            .cloned()
+            .collect();
+    }
+    json!({"entities": dependencies, "atlas": project["atlas"], "assets": assets})
+}
+
 fn render_job(
     document: &Document,
     job: &Job,
@@ -681,6 +831,126 @@ mod tests {
     use achimeld_application::{Command, Editor, EntityKind, new_id};
     use serde_json::json;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn icon_edits_and_undo_preserve_other_icons_pixels_and_pending_work() {
+        let (document, ids) = fixture(3);
+        let mut worker = PreviewWorker::with_threads(egui::Context::default(), 2);
+        for id in &ids {
+            worker.preview(id, 1, &document, None);
+        }
+        wait_until(|| {
+            worker.poll();
+            ids.iter()
+                .all(|id| worker.states[id].output().is_some_and(|p| p.width == 512))
+        });
+        let untouched = worker.states[&ids[1]].output().unwrap().clone();
+        let token = worker.inputs[&ids[1]].1.clone();
+        let mut project = document.project().clone();
+        project["achievements"][0]["icon"]["layers"][0]["gradient"]["stops"][0]["colorHex"] =
+            json!("#FFFF0000");
+        let edited = Document::from_parts(project, document.catalog().clone()).unwrap();
+        for (revision, doc) in [(2, &edited), (3, &document)] {
+            worker.preview(&ids[0], revision, doc, None);
+            for id in &ids[1..] {
+                let preview = worker.preview(id, revision, doc, None).unwrap();
+                assert!(preview.fingerprint.ends_with("Detail"));
+            }
+            assert!(Arc::ptr_eq(
+                &untouched.rgba,
+                &worker.states[&ids[1]].output().unwrap().rgba
+            ));
+            assert!(!token.load(Ordering::Acquire));
+            assert_eq!(worker.inputs[&ids[1]].0, 1);
+            let batch = worker.queue.0.lock().unwrap();
+            assert!(
+                batch
+                    .quick
+                    .iter()
+                    .chain(&batch.detail)
+                    .all(|job| job.id == ids[0])
+            );
+        }
+
+        // No worker can race this assertion: unrelated queued jobs and tokens
+        // must survive an edit before their first pixels have been rendered.
+        let mut pending = PreviewWorker::with_threads(egui::Context::default(), 0);
+        for id in &ids {
+            pending.preview(id, 1, &document, None);
+        }
+        let token = pending.inputs[&ids[1]].1.clone();
+        pending.preview(&ids[0], 2, &edited, None);
+        assert!(!token.load(Ordering::Acquire));
+        let batch = pending.queue.0.lock().unwrap();
+        assert_eq!(batch.quick.iter().filter(|job| job.id == ids[1]).count(), 1);
+        assert_eq!(
+            batch
+                .quick
+                .iter()
+                .find(|job| job.id == ids[1])
+                .unwrap()
+                .generation,
+            1
+        );
+    }
+
+    #[test]
+    fn linked_art_changes_invalidate_consumers_but_unrelated_icons_do_not() {
+        let (document, ids) = fixture(3);
+        let mut project = document.project().clone();
+        project["achievements"][0]["icon"] =
+            json!({"layers":[{"id":new_id(),"kind":"AchievementImage","generalImageIndex":0}]});
+        project["achievements"][0]["generalImageEntries"] = json!([{"id":0,"artImageId":ids[1]}]);
+        project["achievements"][1]["artImage"] = json!(true);
+        let linked = Document::from_parts(project.clone(), document.catalog().clone()).unwrap();
+        project["achievements"][1]["icon"]["layers"][0]["solidColorHex"] = json!("#FFFF0000");
+        let changed = Document::from_parts(project, document.catalog().clone()).unwrap();
+        assert_ne!(
+            render_inputs(&ids[0], &linked),
+            render_inputs(&ids[0], &changed)
+        );
+        assert_eq!(
+            render_inputs(&ids[2], &linked),
+            render_inputs(&ids[2], &changed)
+        );
+    }
+
+    #[test]
+    fn random_seed_actions_invalidate_only_the_edited_icon_and_reject_late_pixels() {
+        let (document, ids) = fixture(2);
+        for kind in ["particles", "explosion"] {
+            let mut project = document.project().clone();
+            project["achievements"][0]["icon"]["layers"][0]["kind"] =
+                json!(if kind == "particles" {
+                    "Particle"
+                } else {
+                    "Explosion"
+                });
+            project["achievements"][0]["icon"]["layers"][0][kind] =
+                json!({"seed":1,"differentSeedPerInstance":false});
+            let document = Document::from_parts(project, document.catalog().clone()).unwrap();
+            let mut worker = PreviewWorker::with_threads(egui::Context::default(), 0);
+            worker.preview(&ids[0], 1, &document, None);
+            worker.preview(&ids[1], 1, &document, None);
+            let old_token = worker.inputs[&ids[0]].1.clone();
+            let mut project = document.project().clone();
+            project["achievements"][0]["icon"]["layers"][0][kind] =
+                json!({"seed":123,"differentSeedPerInstance":true});
+            let edited = Document::from_parts(project, document.catalog().clone()).unwrap();
+            worker.preview(&ids[0], 2, &edited, None);
+            worker.preview(&ids[1], 2, &edited, None);
+            assert!(old_token.load(Ordering::Acquire));
+            assert_eq!(worker.inputs[&ids[1]].0, 1);
+            assert!(
+                !worker
+                    .states
+                    .get_mut(&ids[0])
+                    .unwrap()
+                    .complete(1, Err("late render".into()))
+            );
+            assert!(worker.error(&ids[0]).is_none());
+        }
+    }
 
     #[test]
     fn blend_hover_renders_only_the_target_and_cancels_without_editing() {
@@ -1055,11 +1325,13 @@ mod tests {
         let mut batch = worker.queue.0.lock().unwrap();
         batch.quick.push_back(Job {
             id: "quick".into(),
+            generation: 0,
             pass: Pass::Quick,
             cancelled: None,
         });
         batch.detail.push_back(Job {
             id: "detail".into(),
+            generation: 0,
             pass: Pass::Detail,
             cancelled: None,
         });

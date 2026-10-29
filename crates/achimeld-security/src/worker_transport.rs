@@ -248,8 +248,71 @@ pub struct WorkerChild {
     process: Handle,
     job: Handle,
     pid: u32,
+    permit: Option<WorkerPermit>,
 }
+static PENDING_CLEANUP: std::sync::Mutex<Vec<CleanupJob>> = std::sync::Mutex::new(Vec::new());
+static CLEANUP_THREAD: std::sync::OnceLock<()> = std::sync::OnceLock::new();
+static WORKER_COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+struct WorkerPermit;
+impl WorkerPermit {
+    fn acquire() -> Result<Self, SecurityError> {
+        WORKER_COUNT
+            .try_update(
+                std::sync::atomic::Ordering::SeqCst,
+                std::sync::atomic::Ordering::SeqCst,
+                |count| (count < 8).then_some(count + 1),
+            )
+            .map(|_| Self)
+            .map_err(|_| SecurityError("Steam browser cleanup capacity is busy"))
+    }
+}
+impl Drop for WorkerPermit {
+    fn drop(&mut self) {
+        WORKER_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
 impl WorkerChild {
+    /// Revoke the owned process group now, retaining unfinished teardown in the reaper.
+    /// False means cleanup is still pending, never that another browser may start.
+    pub fn close_in_background(mut self) -> Result<bool, SecurityError> {
+        let mut cleanup = self.take_cleanup();
+        let result = cleanup.poll();
+        if matches!(result, Ok(true)) {
+            log::info!("Steam browser cleanup confirmed: all owned processes exited");
+        } else {
+            log::info!(
+                "Steam browser cleanup retained in background; new browser starts remain gated"
+            );
+            continue_cleanup(cleanup);
+        }
+        result
+    }
+
+    pub fn require_cleanup_complete() -> Result<(), SecurityError> {
+        Self::wait_for_cleanup(Duration::from_secs(15), &mut || Ok(()))
+    }
+    pub fn wait_for_cleanup(
+        timeout: Duration,
+        check: &mut impl FnMut() -> Result<(), SecurityError>,
+    ) -> Result<(), SecurityError> {
+        let deadline = Instant::now() + timeout;
+        let mut reported = false;
+        while !retry_pending_cleanup() {
+            check()?;
+            if !reported {
+                log::info!("Waiting for the previous owned Steam browser to finish cleanup");
+                reported = true;
+            }
+            if Instant::now() >= deadline {
+                return Err(SecurityError(
+                    "The previous Steam browser is still closing; cleanup continues automatically",
+                ));
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        Ok(())
+    }
     pub fn spawn(root: &Path, name: &str) -> Result<Self, SecurityError> {
         validate_name(name)?;
         let executable = root.join("Achimeld.SteamWorker.exe");
@@ -257,6 +320,8 @@ impl WorkerChild {
         Self::spawn_executable(root, &executable, name)
     }
     fn spawn_executable(root: &Path, executable: &Path, name: &str) -> Result<Self, SecurityError> {
+        Self::require_cleanup_complete()?;
+        let permit = WorkerPermit::acquire()?;
         // SAFETY: Null name/security request an unnamed non-inheritable Job; result is checked before use.
         let job = Handle(unsafe { CreateJobObjectW(ptr::null(), ptr::null()) });
         if job.0.is_null() {
@@ -367,6 +432,7 @@ impl WorkerChild {
             process,
             job,
             pid: info.dwProcessId,
+            permit: Some(permit),
         };
         // SAFETY: Owned thread is resumed only after successful lifetime-Job assignment.
         if unsafe { ResumeThread(thread.0) } == u32::MAX {
@@ -401,12 +467,255 @@ impl WorkerChild {
 }
 impl Drop for WorkerChild {
     fn drop(&mut self) {
-        // SAFETY: Owned Job/process handles stay live through tree termination and the bounded cleanup wait.
-        unsafe {
-            TerminateJobObject(self.job.0, 125);
-            WaitForSingleObject(self.process.0, 5000);
+        if self.job.0.is_null() {
+            return;
+        }
+        log::info!("Steam browser cleanup: terminating owned processes and confirming their exit");
+        let mut cleanup = self.take_cleanup();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            match cleanup.poll() {
+                Ok(true) => {
+                    log::info!("Steam browser cleanup confirmed: all owned processes exited");
+                    return;
+                }
+                Ok(false) => {}
+                Err(error) => {
+                    log::warn!("Steam browser cleanup will retry: {error}");
+                    cleanup.last_error = Some(error.to_string());
+                    break;
+                }
+            }
+            if Instant::now() >= deadline {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        log::warn!("Steam browser cleanup is continuing automatically in the background");
+        if let Some(processes) = &cleanup.processes {
+            for process in processes {
+                // SAFETY: Retained inspected handles remain live for bounded native diagnostics.
+                unsafe {
+                    if WaitForSingleObject(process.as_raw_handle(), 0) == WAIT_TIMEOUT {
+                        let mut exit_code = 0;
+                        let known =
+                            GetExitCodeProcess(process.as_raw_handle(), &mut exit_code) != 0;
+                        log::warn!(
+                            "Steam browser cleanup pending: owned PID={}; exit_code={:?}",
+                            GetProcessId(process.as_raw_handle()),
+                            known.then_some(exit_code)
+                        );
+                    }
+                }
+            }
+        }
+        continue_cleanup(cleanup);
+    }
+}
+impl WorkerChild {
+    fn take_cleanup(&mut self) -> CleanupJob {
+        CleanupJob {
+            job: take_owned_handle(&mut self.job),
+            processes: None,
+            _permit: self.permit.take(),
+            last_error: None,
         }
     }
+}
+fn continue_cleanup(cleanup: CleanupJob) {
+    PENDING_CLEANUP
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .push(cleanup);
+    CLEANUP_THREAD.get_or_init(|| {
+            if let Err(error) = std::thread::Builder::new().name("steam-browser-cleanup".into()).spawn(|| loop {
+                std::thread::sleep(Duration::from_millis(500));
+                retry_pending_cleanup();
+            }) {
+                log::error!("Steam browser cleanup thread unavailable: {:?}; cleanup will retry before the next launch", error.kind());
+            }
+        });
+}
+
+fn take_owned_handle(handle: &mut Handle) -> std::os::windows::io::OwnedHandle {
+    let raw = std::mem::replace(&mut handle.0, ptr::null_mut());
+    // SAFETY: Transfer the uniquely owned live handle; the old wrapper is empty.
+    unsafe { std::os::windows::io::OwnedHandle::from_raw_handle(raw) }
+}
+
+struct CleanupJob {
+    job: std::os::windows::io::OwnedHandle,
+    processes: Option<Vec<std::os::windows::io::OwnedHandle>>,
+    // Keeps active workers plus pending cleanup bounded to eight Jobs.
+    _permit: Option<WorkerPermit>,
+    last_error: Option<String>,
+}
+impl CleanupJob {
+    fn poll(&mut self) -> Result<bool, SecurityError> {
+        let job = self.job.as_raw_handle();
+        if self.processes.is_none() {
+            let inspected = owned_job_processes(job);
+            // Always attempt group termination, even if inspection failed.
+            // SAFETY: The uniquely owned Job stays live for termination.
+            if unsafe { TerminateJobObject(job, 125) } == 0 {
+                return Err(SecurityError("Owned Steam worker Job termination failed"));
+            }
+            self.processes = Some(inspected?.iter_mut().map(take_owned_handle).collect());
+        }
+        let mut complete = true;
+        for process in self
+            .processes
+            .as_ref()
+            .expect("inspected cleanup processes")
+        {
+            // SAFETY: The retained handle pins a verified member's identity.
+            match unsafe { WaitForSingleObject(process.as_raw_handle(), 0) } {
+                WAIT_OBJECT_0 => {}
+                WAIT_TIMEOUT => {
+                    complete = false;
+                    // A nested browser Job can lag behind group termination.
+                    // Retry only this retained, membership-checked process handle.
+                    // SAFETY: The handle belongs to the previously inspected owned Job.
+                    if unsafe { TerminateProcess(process.as_raw_handle(), 125) } == 0 {
+                        // SAFETY: Read the immediate native failure; never log arbitrary process text.
+                        let error = unsafe { GetLastError() };
+                        if error != ERROR_ACCESS_DENIED {
+                            return Err(SecurityError(
+                                "Owned browser process termination retry failed",
+                            ));
+                        }
+                    }
+                }
+                _ => return Err(SecurityError("Owned browser process exit query failed")),
+            }
+        }
+        let mut accounting = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION::default();
+        // SAFETY: Live owned Job and correctly sized writable accounting storage.
+        if unsafe {
+            QueryInformationJobObject(
+                job,
+                JobObjectBasicAccountingInformation,
+                (&mut accounting as *mut JOBOBJECT_BASIC_ACCOUNTING_INFORMATION).cast(),
+                std::mem::size_of_val(&accounting) as u32,
+                ptr::null_mut(),
+            )
+        } == 0
+        {
+            return Err(SecurityError("Owned Steam worker Job cleanup query failed"));
+        }
+        if accounting.ActiveProcesses != 0 {
+            // SAFETY: Reissue termination on the same owned group, including late descendants.
+            if unsafe { TerminateJobObject(job, 125) } == 0 {
+                return Err(SecurityError(
+                    "Owned Steam worker Job termination retry failed",
+                ));
+            }
+            complete = false;
+        }
+        Ok(complete)
+    }
+}
+fn retry_pending_cleanup() -> bool {
+    let mut pending = PENDING_CLEANUP.lock().unwrap_or_else(|p| p.into_inner());
+    pending.retain_mut(|cleanup| match cleanup.poll() {
+        Ok(true) => {
+            log::info!("Steam browser cleanup recovered automatically: all owned processes exited; browser can reopen");
+            false
+        }
+        Ok(false) => true,
+        Err(error) => {
+            let message = error.to_string();
+            if cleanup.last_error.as_ref() != Some(&message) {
+                log::warn!("Steam browser cleanup will retry: {message}");
+                cleanup.last_error = Some(message);
+            }
+            true
+        }
+    });
+    pending.is_empty()
+}
+fn owned_job_processes(job: HANDLE) -> Result<Vec<Handle>, SecurityError> {
+    // NULL queries the caller's ambient Job on Windows, not an owned worker Job.
+    // Reject sentinel handles before enumeration can acquire unrelated processes.
+    if job.is_null() || job == INVALID_HANDLE_VALUE {
+        return Err(SecurityError("Owned Steam worker Job handle is invalid"));
+    }
+    // The worker Job caps membership below this fixed, aligned buffer capacity.
+    let mut buffer = [0usize; 1024];
+    // SAFETY: Live Job and aligned writable storage cover the complete bounded list.
+    if unsafe {
+        QueryInformationJobObject(
+            job,
+            JobObjectBasicProcessIdList,
+            buffer.as_mut_ptr().cast(),
+            std::mem::size_of_val(&buffer) as u32,
+            ptr::null_mut(),
+        )
+    } == 0
+    {
+        return Err(SecurityError(
+            "Owned Steam worker process enumeration failed",
+        ));
+    }
+    // SAFETY: A successful query initialized the aligned fixed header.
+    let list = unsafe { &*buffer.as_ptr().cast::<JOBOBJECT_BASIC_PROCESS_ID_LIST>() };
+    if list.NumberOfAssignedProcesses != list.NumberOfProcessIdsInList
+        || list.NumberOfProcessIdsInList > 256
+    {
+        return Err(SecurityError(
+            "Owned Steam worker process enumeration incomplete",
+        ));
+    }
+    // SAFETY: The capped count fits the initialized buffer; handles are retained below.
+    let pids = unsafe {
+        std::slice::from_raw_parts(
+            list.ProcessIdList.as_ptr(),
+            list.NumberOfProcessIdsInList as usize,
+        )
+    };
+    let mut processes = Vec::new();
+    for pid in pids {
+        // SAFETY: Inspection only; the handle is checked and membership is verified.
+        let mut process = Handle(unsafe {
+            OpenProcess(
+                SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_TERMINATE,
+                0,
+                *pid as u32,
+            )
+        });
+        if process.0.is_null() {
+            // Sandboxed Chromium processes may deny individual termination.
+            // Preserve synchronization ownership and use group termination instead.
+            // SAFETY: Inspection-only retry; membership is checked before retention.
+            process = Handle(unsafe {
+                OpenProcess(
+                    SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
+                    0,
+                    *pid as u32,
+                )
+            });
+        }
+        if process.0.is_null() {
+            // SAFETY: Read the error from the immediately preceding failed open.
+            if unsafe { GetLastError() } == ERROR_INVALID_PARAMETER {
+                continue;
+            }
+            return Err(SecurityError(
+                "Owned Steam worker process inspection failed",
+            ));
+        }
+        let mut member = 0;
+        // SAFETY: Both handles and the membership output remain live for the query.
+        if unsafe { IsProcessInJob(process.0, job, &mut member) } == 0 {
+            return Err(SecurityError(
+                "Owned Steam worker process membership unavailable",
+            ));
+        }
+        if member != 0 {
+            processes.push(process);
+        }
+    }
+    Ok(processes)
 }
 
 #[cfg(test)]
@@ -500,29 +809,83 @@ mod tests {
         // SAFETY: Test PID is used only to obtain a synchronization handle whose successful result is checked.
         let handle = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, descendant) });
         assert!(!handle.0.is_null());
+        // Reproduce a worker exiting before its browser descendant. Waiting only
+        // on the worker handle cannot establish that the browser is gone.
+        // SAFETY: The fixture owns the worker process and retains its live handle.
+        unsafe {
+            assert_ne!(TerminateProcess(child.process.0, 125), 0);
+            assert_eq!(WaitForSingleObject(child.process.0, 5000), WAIT_OBJECT_0);
+            assert_eq!(WaitForSingleObject(handle.0, 0), WAIT_TIMEOUT);
+        }
         drop(pipe);
         drop(child);
         assert_eq!(
             // SAFETY: Checked owned synchronization handle remains live for the test wait.
-            unsafe { WaitForSingleObject(handle.0, 5000) },
+            unsafe { WaitForSingleObject(handle.0, 0) },
             WAIT_OBJECT_0
         );
+        WorkerChild::require_cleanup_complete().unwrap();
+        // A new worker may start only after the previous descendant has exited.
+        let (pipe, child) = fixture();
+        drop(pipe);
+        drop(child);
+    }
+    #[test]
+    fn invalid_job_cleanup_is_reported_as_failure() {
+        assert!(owned_job_processes(ptr::null_mut()).is_err());
+        assert!(owned_job_processes(INVALID_HANDLE_VALUE).is_err());
+    }
+    #[test]
+    #[ignore = "Requires the built C# pipe fixture; build/Test-Bridge.ps1 runs this gate"]
+    fn csharp_background_cleanup_recovers_and_allows_reopening_without_restart() {
+        let (pipe, child) = fixture();
+        let (other_pipe, other_child) = fixture();
+        // SAFETY: Obtain a synchronization-only handle for this fixture's live process.
+        let process = Handle(unsafe { OpenProcess(SYNCHRONIZE, 0, child.pid()) });
+        assert!(!process.0.is_null());
+        drop(pipe);
+        let started = Instant::now();
+        child.close_in_background().unwrap();
+        assert!(started.elapsed() < Duration::from_secs(2));
+        // No foreground recovery call is needed to terminate the retained worker.
+        assert_eq!(
+            // SAFETY: Checked owned handle remains live during the bounded wait.
+            unsafe { WaitForSingleObject(process.0, 5000) },
+            WAIT_OBJECT_0
+        );
+        WorkerChild::require_cleanup_complete().unwrap();
+        other_child.require_alive().unwrap();
+        drop(other_pipe);
+        drop(other_child);
+        let (pipe, child) = fixture();
+        child.require_alive().unwrap();
+        drop(pipe);
+        drop(child);
     }
     #[test]
     #[ignore = "Requires the built C# pipe fixture; build/Test-Bridge.ps1 runs this gate"]
     fn csharp_stalled_reply_is_cancelled_and_health_loss_is_terminal() {
-        for reason in ["cancelled", "supervisor lost"] {
+        for reason in ["cancelled", "supervisor lost", "shutdown deadline"] {
             let (mut pipe, child) = fixture();
             let started = Instant::now();
-            let result: Result<serde_json::Value, _> =
-                pipe.exchange(&request("hang"), Duration::from_secs(300), &mut || {
+            let result: Result<serde_json::Value, _> = pipe.exchange(
+                &request("hang"),
+                if reason == "shutdown deadline" {
+                    Duration::from_millis(100)
+                } else {
+                    Duration::from_secs(300)
+                },
+                &mut || {
                     child.require_alive()?;
-                    if started.elapsed() > Duration::from_millis(100) {
+                    if reason != "shutdown deadline"
+                        && started.elapsed() > Duration::from_millis(100)
+                    {
                         Err(SecurityError(reason))
                     } else {
                         Ok(())
                     }
-                });
+                },
+            );
             assert!(result.is_err());
             assert!(started.elapsed() < Duration::from_secs(2));
             // SAFETY: Test child PID is used only to obtain a synchronization handle whose result is checked.

@@ -1,0 +1,50 @@
+{
+  "tool": "built-in image_gen",
+  "entries": [
+    {
+      "name": "color",
+      "source": "blend-color-source.png",
+      "prompt": "Create one monochrome toolbar icon for the color blend mode in a desktop graphics editor. Subject: three overlapping paint drops. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "hue",
+      "source": "blend-hue-source.png",
+      "prompt": "Create one monochrome toolbar icon for the hue blend mode in a desktop graphics editor. Subject: a circular arrow surrounding three wedge sectors. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "saturation",
+      "source": "blend-saturation-source.png",
+      "prompt": "Create one monochrome toolbar icon for the saturation blend mode in a desktop graphics editor. Subject: a droplet half filled with three small dots on its empty side. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "luminosity",
+      "source": "blend-luminosity-source.png",
+      "prompt": "Create one monochrome toolbar icon for the luminosity blend mode in a desktop graphics editor. Subject: a sun disk with eight short rays. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "soft-light",
+      "source": "blend-soft-light-source.png",
+      "prompt": "Create one monochrome toolbar icon for the soft-light blend mode in a desktop graphics editor. Subject: a disk with three curved outward rays. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "hard-light",
+      "source": "blend-hard-light-source.png",
+      "prompt": "Create one monochrome toolbar icon for the hard-light blend mode in a desktop graphics editor. Subject: a bold lightning bolt over a half disk. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "color-dodge",
+      "source": "blend-color-dodge-source.png",
+      "prompt": "Create one monochrome toolbar icon for the color-dodge blend mode in a desktop graphics editor. Subject: a droplet with a small plus symbol. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "color-burn",
+      "source": "blend-color-burn-source.png",
+      "prompt": "Create one monochrome toolbar icon for the color-burn blend mode in a desktop graphics editor. Subject: a flame with a small minus symbol. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    },
+    {
+      "name": "exclusion",
+      "source": "blend-exclusion-source.png",
+      "prompt": "Create one monochrome toolbar icon for the exclusion blend mode in a desktop graphics editor. Subject: two overlapping circles with a transparent intersection. Pure white solid glyph on genuinely transparent background. Bold simple geometric silhouette, consistent rounded stroke weight, legible at 18 pixels, no lettering, no gradients, no shadows, no border, no decorative background. Center glyph in square canvas, occupy 75 percent of canvas, generous transparent margin. Output a single icon only."
+    }
+  ]
+}

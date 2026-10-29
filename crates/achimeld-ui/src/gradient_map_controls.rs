@@ -1,6 +1,6 @@
-use super::{ColorPoint, GradientMap, State, checker, decode_color, encode_color};
+use super::{ColorPoint, GradientMap, State, decode_color, encode_color};
 use crate::buttons::{self, Button};
-use egui::{Color32, Rect, Vec2};
+use egui::{Rect, Vec2};
 
 // Every point value reserves the same right-hand numeric column, independent of digits or suffix.
 fn value(
@@ -10,6 +10,7 @@ fn value(
     bounds: std::ops::RangeInclusive<f64>,
     suffix: &str,
 ) -> bool {
+    let previous = *value;
     let value_id = ui
         .make_persistent_id("2d-gradient-editor")
         .with(("value", label));
@@ -17,7 +18,7 @@ fn value(
         .painter()
         .layout_no_wrap(
             "200.0%".into(),
-            egui::TextStyle::Body.resolve(ui.style()),
+            egui::TextStyle::Monospace.resolve(ui.style()),
             ui.visuals().text_color(),
         )
         .size()
@@ -55,7 +56,12 @@ fn value(
                         response.changed()
                     })
                     .inner;
-                changed || response.changed()
+                if !value.is_finite() {
+                    *value = previous;
+                    false
+                } else {
+                    changed || response.changed()
+                }
             })
             .inner
         },
@@ -75,6 +81,57 @@ pub(super) fn show(
     state: &mut State,
     anchor: Rect,
 ) {
+    let cache = id.with("point-popup-cache");
+    let previous = ui.data(|d| d.get_temp::<(usize, Rect, egui::ecolor::Hsva)>(cache));
+    if let Some(index) = state
+        .active
+        .or(previous.map(|v| v.0))
+        .filter(|&i| i < map.points.len())
+    {
+        let active = state.active == Some(index);
+        let bytes = decode_color(&map.points[index].color_hex).unwrap_or([255; 4]);
+        let mut color = state
+            .picker
+            .filter(|(i, c, _)| *i == index && *c == bytes)
+            .map_or_else(
+                || egui::ecolor::Hsva::from_srgba_unmultiplied(bytes),
+                |(_, _, c)| c,
+            );
+        let point_anchor = if active {
+            Rect::from_center_size(super::screen(anchor, &map.points[index]), Vec2::splat(12.0))
+        } else {
+            previous.map_or(anchor, |v| v.1)
+        };
+        if previous.is_none_or(|v| v.0 != index) && active {
+            state.color = true;
+        }
+        let unified = state
+            .selected
+            .iter()
+            .all(|&i| map.points[i].color_hex == map.points[index].color_hex);
+        let mut open = active && state.color && unified && ui.is_enabled();
+        if crate::color_picker::window(
+            ui,
+            id.with("point-color"),
+            "Point color",
+            point_anchor,
+            &mut open,
+            &mut color,
+        ) && active
+        {
+            let encoded = encode_color(color.to_srgba_unmultiplied());
+            for &i in &state.selected {
+                map.points[i].color_hex = encoded.clone();
+            }
+        }
+        state.color = open;
+        state.picker = Some((
+            index,
+            decode_color(&map.points[index].color_hex).unwrap_or([255; 4]),
+            color,
+        ));
+        ui.data_mut(|d| d.insert_temp(cache, (index, point_anchor, color)));
+    }
     let Some(index) = state.active else {
         return;
     };
@@ -130,6 +187,7 @@ pub(super) fn show(
                     for &i in &state.selected {
                         map.points[i].color_hex = color.clone();
                     }
+                    state.color = true;
                 }
             });
             if removed {
@@ -138,36 +196,7 @@ pub(super) fn show(
             let unified_color = state.selected.iter().all(|&i| {
                 decode_color(&map.points[i].color_hex) == decode_color(&map.points[index].color_hex)
             });
-            let mut color_anchor = anchor;
-            if unified_color {
-                crate::fields::row(ui, "Color", |ui| {
-                    let c = decode_color(&map.points[index].color_hex).unwrap_or([255; 4]);
-                    let button = ui.add(
-                        Button::new("")
-                            .id(id.with("point-color-swatch"))
-                            .min_size(Vec2::new(40.0, ui.spacing().interact_size.y)),
-                    );
-                    let swatch = button.rect.shrink(4.0);
-                    checker(ui, swatch);
-                    ui.painter().rect_filled(
-                        swatch,
-                        0.0,
-                        Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]),
-                    );
-                    color_anchor = button.rect;
-                    if button.clicked() {
-                        state.color = true;
-                    }
-                    button.widget_info(|| {
-                        egui::WidgetInfo::labeled(
-                            egui::WidgetType::Button,
-                            button.enabled(),
-                            "Change selected point colors",
-                        )
-                    });
-                    button.on_hover_text("Change selected point colors");
-                });
-            } else {
+            if !unified_color {
                 ui.weak("Colors differ. Unify color to edit them together.");
                 state.color = false;
             }
@@ -196,36 +225,6 @@ pub(super) fn show(
                         }
                     }
                 }
-            }
-            if state.color {
-                let bytes = decode_color(&map.points[index].color_hex).unwrap_or([255; 4]);
-                let mut color = state
-                    .picker
-                    .filter(|(i, c, _)| *i == index && *c == bytes)
-                    .map_or_else(
-                        || egui::ecolor::Hsva::from_srgba_unmultiplied(bytes),
-                        |(_, _, v)| v,
-                    );
-                let mut open = true;
-                if crate::color_picker::window(
-                    ui,
-                    id.with("point-color"),
-                    "Point color",
-                    color_anchor,
-                    &mut open,
-                    &mut color,
-                ) {
-                    let encoded = encode_color(color.to_srgba_unmultiplied());
-                    for &i in &state.selected {
-                        map.points[i].color_hex = encoded.clone();
-                    }
-                }
-                state.picker = Some((
-                    index,
-                    decode_color(&map.points[index].color_hex).unwrap_or([255; 4]),
-                    color,
-                ));
-                state.color = open;
             }
         });
 }
