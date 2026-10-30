@@ -36,7 +36,7 @@ installer and helps fund development.
 | Option | What you get | How to get it |
 | --- | --- | --- |
 | **Free — build it yourself** | Source code and build tools. You compile the application on Windows. | Clone or download this repository, then follow the [build guide below](#for-developers). |
-| **$5 supporter package — coming soon** | A ready-made Windows installer, with the same core toolkit. | Visit [achimeld.com](https://achimeld.com/#packages) for installer availability and the purchase link when checkout opens. |
+| **$10 USD supporter package — coming soon** | A ready-made Windows installer, with the same core toolkit. | Visit [achimeld.com](https://achimeld.com/#packages) for installer availability and the purchase link when checkout opens. |
 
 **The supporter checkout is not live yet.** The website currently shows the
 installer as coming soon. GitHub releases contain source code; installers are not
