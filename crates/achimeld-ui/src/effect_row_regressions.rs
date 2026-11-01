@@ -1,5 +1,65 @@
 use super::*;
 
+#[test]
+fn masked_folder_effect_rows_complete_with_native_accessibility() {
+    for kind in [
+        "OuterLight",
+        "InnerLight",
+        "Outline",
+        "Shadow",
+        "ColorOverlay",
+        "GradientOverlay",
+        "BoxBlur",
+        "Skew",
+        "Perspective",
+        "Pinch",
+        "LensBlur",
+    ] {
+        let mut rows = LayerRows::new(1100.0, 1);
+        let effect = new_id();
+        let mut entity = rows.entity();
+        entity["icon"]["layers"] = json!([
+            {"id":rows.ids[0],"kind":"Folder","maskLayerId":rows.ids[1],
+                "effects":[{"id":effect,"kind":kind}]},
+            {"id":rows.ids[1],"kind":"Shape","shape":"Star"},
+            {"id":rows.ids[2],"kind":"Solid","parentFolderId":rows.ids[0],
+                "solidColorHex":"#FFFFFFFF"}
+        ]);
+        rows.fixture
+            .execute(
+                "Recipe",
+                Command::ReplaceEntity {
+                    kind: EntityKind::Achievement,
+                    id: rows.achievement.clone(),
+                    value: entity,
+                },
+                None,
+            )
+            .unwrap();
+        rows.desktop.selected_layer = Some(rows.ids[0].clone());
+        rows.desktop
+            .layer_palette
+            .expanded_effects
+            .insert(rows.ids[0].clone());
+        rows.ctx.enable_accesskit();
+        rows.frame(vec![]);
+        rows.frame(vec![]);
+        for control in ["row", "delete"] {
+            assert!(
+                rows.ctx
+                    .read_response(crate::layer_effects::effect_control_id(
+                        &rows.achievement,
+                        &rows.ids[0],
+                        &effect,
+                        control,
+                    ))
+                    .is_some(),
+                "{kind}: missing {control}"
+            );
+        }
+    }
+}
+
 fn text_rects(output: &egui::FullOutput, label: &str, within: egui::Rect) -> Vec<egui::Rect> {
     output
         .shapes
@@ -146,6 +206,9 @@ fn every_effect_row_keeps_complete_controls_inside_the_stack_at_large_fonts() {
     for font in [13.0, 24.0] {
         for width in [440.0, 700.0, 1100.0] {
             let mut rows = LayerRows::new(width, 1);
+            // Native Windows accessibility invokes widget-info callbacks under
+            // the context lock, unlike the default headless test context.
+            rows.ctx.enable_accesskit();
             let mut preferences = rows.fixture.preferences().clone();
             preferences.normal_size = font;
             rows.fixture.editor =

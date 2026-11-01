@@ -1,5 +1,5 @@
 use crate::Desktop;
-use achimeld_application::{EditorPort, EntityKind, UiRequest};
+use achimeld_application::{EditorPort, EntityKind, SteamPage, UiRequest};
 
 fn snapshot_time(stamp: &str) -> String {
     if let Some(utc) = stamp
@@ -71,7 +71,7 @@ impl Desktop {
                 self.sync_game_banner(ui, port);
                 let project = port.editor().document().project();
                 ui.label(format!("{} · Steam App ID {}", project["displayName"].as_str().unwrap_or("Project"), project["steamAppId"].as_u64().unwrap_or(0)));
-                ui.label("Validate checks Steam sign-in and access. Synchronize prepares artwork and imports existing Steam entries for review.");
+                ui.label("Validate checks Steam sign-in and downloads the game banner. Synchronize prepares achievement artwork and imports existing Steam entries for review.");
                 ui.weak("Uploads save to the Steamworks draft. Publish manually in Steamworks.");
                 ui.checkbox(&mut self.terminal.show_during_sync, "Show Terminal during validation and synchronization");
                 ui.add_space(8.0);
@@ -123,7 +123,14 @@ impl Desktop {
                                         "Conflict" => "Review both versions", "InSync" => "Up to date", "ArtworkUnavailable" => "Artwork unavailable", "RenamedOnSteam" => "Renamed on Steam · import keeps the old entry as Retired", value => value,
                                     });
                                     let choice = self.sync_choices.entry(key.into()).or_insert_with(|| "Skip".into());
-                                    for action in row["actions"].as_array().into_iter().flatten().filter_map(|v| v.as_str()).filter(|action| row["state"] == "Conflict" || review["reconciliation"] == true || *action == "Import") {
+                                    if let Some(default) = row["defaultAction"].as_str().filter(|action| *action != "Skip") {
+                                        let mut included = choice != "Skip";
+                                        if ui.checkbox(&mut included, "Include").changed() {
+                                            *choice = if included { default } else { "Skip" }.into();
+                                            imported = included && default == "Import";
+                                        }
+                                    }
+                                    for action in row["actions"].as_array().into_iter().flatten().filter_map(|v| v.as_str()) {
                                         if ui.add(crate::buttons::Button::selectable(choice == action, match action { "Upload" => "Use project", "Skip" => "Leave unchanged", "Import" => "Use Steam", _ => action })).clicked() { *choice = action.into(); imported = action == "Import"; }
                                     }
                                 });
@@ -147,12 +154,17 @@ impl Desktop {
                         ui.add_space(4.0);
                     }
                     let selected = self.sync_selected_count(port);
+                    let compact_actions = ui.available_width() < 650.0;
                     crate::buttons::bar(ui, 24.0, |ui| {
                         if ui.add_enabled(self.sync_action_enabled(port), crate::buttons::Button::new(format!("Synchronize {selected} selected {}", if selected == 1 { "change" } else { "changes" })).bar().primary_outline()).clicked() {
                             self.run_sync_action(port);
                         }
+                        if !compact_actions { self.steam_page_buttons(ui, port); }
                         if ui.add(crate::buttons::Button::new("Cancel").bar()).clicked() { self.sync_confirmation = None; self.request(UiRequest::CancelSynchronization); }
                     });
+                    if compact_actions {
+                        crate::buttons::bar(ui, 24.0, |ui| self.steam_page_buttons(ui, port));
+                    }
                 } else if port.synchronizing() {
                     // Active work is presented by the centered progress modal.
                 } else {
@@ -163,6 +175,7 @@ impl Desktop {
                     else if self.steam_access(port) != crate::synchronization_target::SteamAccess::PreviousSession {
                         ui.weak("Validate to check Steam sign-in and access before preparing synchronization.");
                     }
+                    let compact_actions = ui.available_width() < 450.0;
                     crate::buttons::bar(ui, 24.0, |ui| {
                         let action = if valid_id {
                             crate::buttons::Button::new((crate::style_picker::Glyph::Validate.image(ui.ctx(), 20.0), self.sync_action_label(port)))
@@ -170,7 +183,11 @@ impl Desktop {
                             crate::buttons::Button::new(self.sync_action_label(port))
                         };
                         if ui.add_enabled(self.sync_action_enabled(port), action.bar().primary_outline().id(egui::Id::new("sync-primary-action")).wants_click(self.sync_validate_wants_click(port)).icon_spacing(5.0).image_tint_follows_text_color(true)).clicked() { self.run_sync_action(port); }
+                        if !compact_actions { self.steam_page_buttons(ui, port); }
                     });
+                    if compact_actions {
+                        crate::buttons::bar(ui, 24.0, |ui| self.steam_page_buttons(ui, port));
+                    }
                     if port.reading() { ui.spinner(); ui.label(port.status()); }
                     let snapshot = &project["lastRemoteSnapshot"];
                     let snapshot_id = snapshot["steamAppId"].as_u64().or_else(|| snapshot.pointer("/appId/value").and_then(serde_json::Value::as_u64)).or_else(|| snapshot["appId"].as_u64());
@@ -208,6 +225,24 @@ impl Desktop {
                 }
             });
         });
+    }
+
+    fn steam_page_buttons(&mut self, ui: &mut egui::Ui, port: &dyn EditorPort) {
+        let enabled = achimeld_core::SteamAppId::new(port.editor().document().app_id()).is_ok()
+            && !port.reading()
+            && !port.synchronizing()
+            && !port.browser_profile_busy();
+        for (label, page) in [
+            ("Open achievements", SteamPage::Achievements),
+            ("Open stats", SteamPage::Stats),
+        ] {
+            if ui
+                .add_enabled(enabled, crate::buttons::Button::new(label).bar())
+                .clicked()
+            {
+                self.request(UiRequest::OpenSteamPage(page));
+            }
+        }
     }
 
     fn sync_game_banner(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {

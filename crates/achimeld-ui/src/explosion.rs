@@ -48,12 +48,18 @@ fn settings_action_bar(
     presets: bool,
     mask: Option<&mut MaskControl<'_>>,
 ) {
-    let count = 6 + usize::from(presets) + usize::from(mask.is_some());
+    let count = 4 * usize::from(presets) + usize::from(mask.is_some());
+    if count == 0 {
+        buttons::bar(ui, 24.0, |ui| {
+            let width = (ui.available_width() / 4.0).min(ui.spacing().interact_size.y);
+            toolbar_actions(ui, port, layer, width);
+        });
+        return;
+    }
     buttons::bar(ui, 24.0, |ui| {
         let pixels_per_point = ui.ctx().pixels_per_point();
-        let width = ((ui.available_width() / count as f32 * pixels_per_point).floor()
-            / pixels_per_point)
-            .min(ui.spacing().interact_size.y);
+        let width =
+            (ui.available_width() / count as f32 * pixels_per_point).floor() / pixels_per_point;
         ui.spacing_mut().button_padding.x = ((width - 20.0) / 2.0)
             .floor()
             .max(0.0)
@@ -69,7 +75,18 @@ fn settings_action_bar(
                 achimeld_application::effect_presets::EffectKind::Explosion,
                 width,
             );
+            crate::effect_explorer::quick_load_controls(
+                ui,
+                port,
+                layer,
+                achimeld_application::effect_presets::EffectKind::Explosion,
+                width,
+            );
+            shared_seed_actions(ui, port, layer, width);
         }
+    });
+    buttons::bar(ui, 24.0, |ui| {
+        let width = ui.available_width() / 4.0;
         toolbar_actions(ui, port, layer, width);
     });
 }
@@ -86,7 +103,11 @@ fn action_button(
     let image = glyph(ui.ctx(), key, bytes);
     let response = ui.add(
         Button::new(image)
-            .id(egui::Id::new((key, layer["id"].as_str().unwrap_or(""))))
+            .id(layer_button_id(
+                ui,
+                layer,
+                egui::Id::new((key, layer["id"].as_str().unwrap_or(""))),
+            ))
             .selected(selected)
             .bar()
             .min_size(Vec2::new(width, ui.spacing().interact_size.y))
@@ -101,6 +122,15 @@ fn action_button(
         )
     });
     response.on_hover_text(label)
+}
+
+fn layer_button_id(ui: &egui::Ui, layer: &Value, id: egui::Id) -> egui::Id {
+    let window = egui::LayerId::new(egui::Order::Middle, construction_window_id(layer));
+    if ui.layer_id() == window {
+        id.with("construction")
+    } else {
+        id
+    }
 }
 
 fn toolbar_actions(ui: &mut egui::Ui, port: &mut dyn EditorPort, layer: &mut Value, width: f32) {
@@ -127,33 +157,12 @@ fn toolbar_actions(ui: &mut egui::Ui, port: &mut dyn EditorPort, layer: &mut Val
             }
             port.finish_group();
     }
-    if action_button(
-        ui,
-        layer,
-        "explosion-randomize",
-        "Randomize",
-        include_bytes!("../assets/toolbar/art-refresh.rgba"),
-        width,
-        false,
-    )
-    .clicked()
-    {
-        settings["seed"] =
-            json!(u32::from_str_radix(&achimeld_application::new_id()[..8], 16).unwrap_or(1));
-        port.finish_group();
-    }
     for (key, label, bytes, setting) in [
         (
             "explosion-invert-colors",
             "Invert colors",
             include_bytes!("../assets/toolbar/layer-contrast.rgba").as_slice(),
             "invertColors",
-        ),
-        (
-            "explosion-seed-per-achievement",
-            "Different seed for each achievement",
-            include_bytes!("../assets/toolbar/explosion-seed-per-achievement.rgba").as_slice(),
-            "differentSeedPerInstance",
         ),
         (
             "explosion-cover-canvas",
@@ -170,6 +179,51 @@ fn toolbar_actions(ui: &mut egui::Ui, port: &mut dyn EditorPort, layer: &mut Val
     }
     bottom_curve_picker(ui, port, layer, &mut settings, width);
     if settings != initial {
+        layer["explosion"] = settings;
+    }
+}
+
+fn shared_seed_actions(
+    ui: &mut egui::Ui,
+    port: &mut dyn EditorPort,
+    layer: &mut Value,
+    width: f32,
+) {
+    let Ok(parsed) = ExplosionSettings::from_value(&layer["explosion"]) else {
+        return;
+    };
+    let mut settings = json!(parsed);
+    if action_button(
+        ui,
+        layer,
+        "explosion-randomize",
+        "Randomize",
+        include_bytes!("../assets/toolbar/art-refresh.rgba"),
+        width,
+        false,
+    )
+    .clicked()
+    {
+        settings["seed"] =
+            json!(u32::from_str_radix(&achimeld_application::new_id()[..8], 16).unwrap_or(1));
+        port.finish_group();
+    }
+    let selected = settings["differentSeedPerInstance"] == true;
+    if action_button(
+        ui,
+        layer,
+        "explosion-seed-per-achievement",
+        "Different seed for each achievement",
+        include_bytes!("../assets/toolbar/explosion-seed-per-achievement.rgba"),
+        width,
+        selected,
+    )
+    .clicked()
+    {
+        settings["differentSeedPerInstance"] = json!(!selected);
+        port.finish_group();
+    }
+    if settings != json!(parsed) {
         layer["explosion"] = settings;
     }
 }
@@ -207,10 +261,11 @@ fn bottom_curve_picker(
     let response = ui
         .add(
             Button::new(image)
-                .id(egui::Id::new((
-                    "explosion-bottom-curve",
-                    layer["id"].as_str().unwrap_or(""),
-                )))
+                .id(layer_button_id(
+                    ui,
+                    layer,
+                    egui::Id::new(("explosion-bottom-curve", layer["id"].as_str().unwrap_or(""))),
+                ))
                 .bar()
                 .min_size(Vec2::new(width, ui.spacing().interact_size.y))
                 .image_tint_follows_text_color(true),
@@ -229,11 +284,15 @@ fn bottom_curve_picker(
             if ui
                 .add(
                     Button::new((image, name))
-                        .id(egui::Id::new((
-                            "explosion-bottom-curve-option",
-                            layer["id"].as_str().unwrap_or(""),
-                            name,
-                        )))
+                        .id(layer_button_id(
+                            ui,
+                            layer,
+                            egui::Id::new((
+                                "explosion-bottom-curve-option",
+                                layer["id"].as_str().unwrap_or(""),
+                                name,
+                            )),
+                        ))
                         .selected(current == name)
                         .image_tint_follows_text_color(true)
                         .bar()
@@ -254,6 +313,45 @@ pub(crate) fn body_properties(
     port: &mut dyn EditorPort,
     layer: &mut Value,
     instance: &str,
+) {
+    body_properties_inner(ui, port, layer, instance, false);
+    let window_id = construction_window_id(layer);
+    if ui
+        .ctx()
+        .data(|data| data.get_temp::<bool>(window_id).unwrap_or(false))
+    {
+        let mut open = true;
+        egui::Window::new("Explosion construction")
+            .id(window_id)
+            .open(&mut open)
+            .resizable(true)
+            .default_size(Vec2::new(760.0, 620.0))
+            .show(ui.ctx(), |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    settings_action_bar(ui, port, layer, true, None);
+                    body_properties_inner(ui, port, layer, instance, true);
+                    ui.separator();
+                    ui.strong("Whole effect transform");
+                    crate::layers::transform_ui(ui, layer);
+                });
+            });
+        ui.ctx().data_mut(|data| data.insert_temp(window_id, open));
+    }
+}
+
+pub(crate) fn construction_window_id(layer: &Value) -> egui::Id {
+    egui::Id::new((
+        "explosion-construction-window",
+        layer["id"].as_str().unwrap_or(""),
+    ))
+}
+
+fn body_properties_inner(
+    ui: &mut egui::Ui,
+    port: &mut dyn EditorPort,
+    layer: &mut Value,
+    instance: &str,
+    expanded: bool,
 ) {
     let Ok(parsed) = ExplosionSettings::from_value(&layer["explosion"]) else {
         ui.label("Invalid explosion settings");
@@ -303,7 +401,7 @@ pub(crate) fn body_properties(
         .show_unindented(ui, |ui| {
             sliders::range(
                 ui,
-                "Brightness variation",
+                "Brightness",
                 &mut settings,
                 "brightnessMin",
                 "brightnessMax",
@@ -316,10 +414,14 @@ pub(crate) fn body_properties(
                     if ui
                         .add(
                             Button::new("Use deltoid")
-                                .id(egui::Id::new((
-                                    "explosion-use-deltoid",
-                                    layer["id"].as_str().unwrap_or(""),
-                                )))
+                                .id(layer_button_id(
+                                    ui,
+                                    layer,
+                                    egui::Id::new((
+                                        "explosion-use-deltoid",
+                                        layer["id"].as_str().unwrap_or(""),
+                                    )),
+                                ))
                                 .bar()
                                 .min_size(Vec2::new(
                                     ui.available_width(),
@@ -340,7 +442,7 @@ pub(crate) fn body_properties(
                     "Deltoid → Ellipse",
                     shape,
                     "ellipse",
-                    0.0..=1.0,
+                    -1.0..=1.0,
                     false,
                     100.0,
                 );
@@ -373,7 +475,7 @@ pub(crate) fn body_properties(
                         100.0,
                         "%",
                     ),
-                    ("Offset", "offsetMin", "offsetMax", -1.5..=1.5, 100.0, "%"),
+                    ("Offset", "offsetMin", "offsetMax", -10.0..=10.0, 100.0, "%"),
                     (
                         "Sharpness",
                         "sharpnessMin",
@@ -389,7 +491,7 @@ pub(crate) fn body_properties(
             }
         });
     if let Ok(parsed) = ExplosionSettings::from_value(&settings) {
-        construction_preview(ui, port, &parsed, instance);
+        construction_preview(ui, port, layer, &parsed, instance, expanded);
     }
     ui.strong("Explosion gradient overlay");
     crate::layers::gradient_presets(ui, port, &mut settings["gradient"]);
@@ -423,13 +525,33 @@ pub(crate) fn body_properties(
 fn construction_preview(
     ui: &mut egui::Ui,
     port: &mut dyn EditorPort,
+    layer: &Value,
     settings: &ExplosionSettings,
     instance: &str,
+    expanded: bool,
 ) {
     egui::CollapsingHeader::new("Construction").show(ui, |ui| {
+        if !expanded {
+            buttons::bar(ui, 24.0, |ui| {
+                if ui
+                    .add(
+                        Button::new("Open construction editor")
+                            .bar()
+                            .min_size(Vec2::new(
+                                ui.available_width(),
+                                buttons::bar_height(ui, 24.0),
+                            )),
+                    )
+                    .clicked()
+                {
+                    ui.ctx()
+                        .data_mut(|data| data.insert_temp(construction_window_id(layer), true));
+                }
+            });
+        }
         ui.weak("Phase 1: rectangle → Phase 2: polar");
         let layout = layout(settings, instance);
-        let width = ui.available_width().min(280.0);
+        let width = ui.available_width().max(1.0);
         let height = width / layout.aspect as f32;
         let (rect, _) = ui.allocate_exact_size(Vec2::new(width, height), egui::Sense::hover());
         crate::gradient::checker(ui, rect);

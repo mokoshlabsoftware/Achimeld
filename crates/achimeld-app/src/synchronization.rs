@@ -375,7 +375,7 @@ impl Pending {
                 Ok(())
             };
             let result = if handshake_only {
-                handshake(&document, &stop, &progress, &mut stage).map(|()| document)
+                handshake(&destination, &document, &stop, &progress, &mut stage)
             } else {
                 run(
                     &destination,
@@ -475,18 +475,42 @@ fn connect_steam(
 }
 
 fn handshake(
+    path: &Path,
     document: &Document,
     stop: &Cancellation,
     progress: &dyn Fn(Event) -> Result<(), String>,
     stage: &mut &'static str,
-) -> Result<(), String> {
+) -> Result<Document, String> {
     let app_id = SteamAppId::new(document.app_id()).map_err(|e| e.to_string())?;
     let mut reader = connect_steam(app_id, stop, progress, stage)?;
     stop.check().map_err(|e| e.to_string())?;
+    *stage = "downloading the game banner";
+    progress(Event::Progress("Downloading the Steam game banner…".into()))?;
+    let encoded = reader.read_game_banner(app_id).map_err(|e| e.to_string())?;
+    stop.check().map_err(|e| e.to_string())?;
+    let mut result = document.clone();
+    let mut store = ProjectStore::new();
+    if store.load(path)? != *document {
+        return Err("The project changed on disk; reopen it before validating".into());
+    }
+    if let Some(banner) = retain_game_banner(
+        &mut store,
+        path,
+        document,
+        encoded.map_or(Value::Null, Value::String),
+    )? {
+        progress(Event::Banner(Box::new(banner.clone())))?;
+        result = banner;
+    } else {
+        progress(Event::Progress(
+            "Steam game banner unavailable; connection validation continues".into(),
+        ))?;
+    }
     close_steam(&mut reader, progress, stage)?;
     progress(Event::Progress(
         "Steam connection validated. Choose Synchronize to prepare a review.".into(),
-    ))
+    ))?;
+    Ok(result)
 }
 
 fn close_steam(
@@ -530,50 +554,6 @@ fn run(
     Err("Steam kept changing during import; validate again".into())
 }
 
-fn automatic_imports(review: &Value) -> Vec<(String, String)> {
-    review["rows"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|row| {
-            matches!(row["kind"].as_str(), Some("Stat" | "Achievement"))
-                && (matches!(row["state"].as_str(), Some("SteamOnly" | "RenamedOnSteam"))
-                    || row["kind"] == "Stat" && row["state"] == "SteamChanged")
-                && row["actions"]
-                    .as_array()
-                    .is_some_and(|actions| actions.iter().any(|action| action == "Import"))
-        })
-        .filter_map(|row| Some((row["key"].as_str()?.into(), "Import".into())))
-        .collect()
-}
-
-fn automatic_upload_choices(review: &Value, reconciliation: bool) -> Option<Vec<(String, String)>> {
-    let rows = review["rows"].as_array()?;
-    if reconciliation
-        || rows.iter().any(|row| {
-            matches!(
-                row["state"].as_str(),
-                Some("Conflict" | "ArtworkUnavailable")
-            ) || row["uploadError"].as_str().is_some()
-        })
-    {
-        return None;
-    }
-    rows.iter()
-        .map(|row| {
-            let action = row["defaultAction"].as_str()?;
-            if !row["actions"]
-                .as_array()?
-                .iter()
-                .any(|allowed| allowed == action)
-            {
-                return None;
-            }
-            Some((row["key"].as_str()?.to_owned(), action.to_owned()))
-        })
-        .collect()
-}
-
 fn run_once(
     path: &Path,
     document: Document,
@@ -603,17 +583,31 @@ fn run_once(
     );
     let journal_path = root.join(format!("{project_key}.json"));
     let reconciliation = journal_path.exists();
-    // Declare icon candidates without rendering. The frozen document is rendered
-    // only when the receiver reaches that icon's upload step.
-    let hashes: serde_json::Map<String, Value> = document
-        .synchronized_entities(EntityKind::Achievement)
-        .filter_map(|entity| {
-            Some((
-                entity["apiName"].as_str()?.to_owned(),
-                json!({"achieved":"", "unachieved":"", "deferred":true}),
-            ))
-        })
-        .collect();
+    // Hash the rendered pixels before review so an artwork-only edit is visible
+    // and unchanged icons are not offered as uploads.
+    *stage = "comparing achievement artwork";
+    let mut hashes = serde_json::Map::new();
+    for entity in document.synchronized_entities(EntityKind::Achievement) {
+        stop.check().map_err(|e| e.to_string())?;
+        let (Some(name), Some(id)) = (entity["apiName"].as_str(), entity["id"].as_str()) else {
+            continue;
+        };
+        progress(Event::Progress(format!("Comparing icon · {name}")))?;
+        if let Ok(pair) = render_cancellable(&document, id, None, assets, &|| stop.check().is_err())
+        {
+            let digest = |image: image::RgbaImage| -> Result<String, String> {
+                let mut bytes = Cursor::new(Vec::new());
+                image
+                    .write_to(&mut bytes, image::ImageFormat::Png)
+                    .map_err(|e| e.to_string())?;
+                Ok(format!("{:x}", Sha256::digest(bytes.into_inner())))
+            };
+            hashes.insert(
+                name.to_owned(),
+                json!({"achieved":digest(pair.achieved)?,"unachieved":digest(pair.unachieved)?}),
+            );
+        }
+    }
     let mut reader = connect_steam(app_id, stop, progress, stage)?;
     *stage = "reading Steamworks configuration";
     progress(Event::Progress(
@@ -652,21 +646,11 @@ fn run_once(
         .as_str()
         .ok_or("Invalid synchronization review")?
         .to_owned();
-    let imports = automatic_imports(&review);
-    let imported = !imports.is_empty();
     let has_changes = review["rows"]
         .as_array()
         .is_some_and(|rows| rows.iter().any(|row| row["state"] != "InSync"));
-    let choices = if imported {
-        progress(Event::Progress(format!(
-            "Importing {} Steam entries into the project…",
-            imports.len()
-        )))?;
-        imports
-    } else if !has_changes {
+    let choices = if !has_changes {
         Vec::new()
-    } else if let Some(choices) = automatic_upload_choices(&review, reconciliation) {
-        choices
     } else {
         for (kind, field) in [("Stat", "steamStats"), ("Achievement", "steamAchievements")] {
             review[field] = json!(
@@ -682,7 +666,7 @@ fn run_once(
         progress(Event::Review(review))?;
         *stage = "waiting for review approval";
         progress(Event::Progress(
-            "Steam entries are in the project · review remaining uploads or conflicts".into(),
+            "Review the proposed Steam changes before synchronizing".into(),
         ))?;
         loop {
             stop.check().map_err(|e| e.to_string())?;
@@ -697,6 +681,7 @@ fn run_once(
             }
         }
     };
+    let imported = choices.iter().any(|(_, action)| action == "Import");
     let choices: Vec<_> = choices
         .into_iter()
         .map(|(key, action)| json!({"key":key,"action":action}))
@@ -706,9 +691,6 @@ fn run_once(
         .begin_sync(token.clone(), json!(choices))
         .map_err(|e| e.to_string())?;
     let steps = steps.as_array().ok_or("Invalid synchronization steps")?;
-    if imported && steps.iter().any(|step| step["action"] != "Import") {
-        return Err("Automatic Steam import returned an upload step".into());
-    }
     reader
         .require_sync_budget(steps.len())
         .map_err(|e| e.to_string())?;
@@ -1056,23 +1038,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn automatic_upload_uses_only_allowed_defaults_and_pauses_for_conflicts_or_recovery() {
-        let mut review = json!({"rows":[{"key":"Stat:SCORE","state":"LocalOnly","defaultAction":"Upload","actions":["Skip","Upload"]}]});
-        assert_eq!(
-            automatic_upload_choices(&review, false),
-            Some(vec![("Stat:SCORE".into(), "Upload".into())])
-        );
-        assert!(automatic_upload_choices(&review, true).is_none());
-        for state in ["Conflict", "ArtworkUnavailable"] {
-            review["rows"][0]["state"] = json!(state);
-            assert!(automatic_upload_choices(&review, false).is_none());
-        }
-        review["rows"][0]["state"] = json!("LocalOnly");
-        review["rows"][0]["actions"] = json!(["Skip"]);
-        assert!(automatic_upload_choices(&review, false).is_none());
-    }
-
-    #[test]
     fn verified_deletion_clears_only_matching_history_and_pending_rename() {
         for kind in ["Achievement", "Stat"] {
             for status in ["Deleted", "AlreadyAbsent"] {
@@ -1118,26 +1083,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn automatic_import_never_selects_uploads_conflicts_or_icons() {
-        let review = json!({"rows":[
-            {"kind":"Stat","key":"Stat:NEW","state":"SteamOnly","actions":["Skip","Import"]},
-            {"kind":"Achievement","key":"Achievement:RENAMED","state":"RenamedOnSteam","actions":["Skip","Import"]},
-            {"kind":"Stat","key":"Stat:UPDATED","state":"SteamChanged","actions":["Skip","Import","Upload"]},
-            {"kind":"Stat","key":"Stat:CONFLICT","state":"Conflict","actions":["Skip","Import","Upload"]},
-            {"kind":"Stat","key":"Stat:LOCAL","state":"LocalChanged","actions":["Skip","Import","Upload"]},
-            {"kind":"Icon","key":"Icon:NEW","state":"SteamChanged","actions":["Skip","Upload"]},
-            {"kind":"Stat","key":"Stat:FORGED","state":"SteamOnly","actions":["Skip","Upload"]}
-        ]});
-        assert_eq!(
-            automatic_imports(&review),
-            vec![
-                ("Stat:NEW".into(), "Import".into()),
-                ("Achievement:RENAMED".into(), "Import".into()),
-                ("Stat:UPDATED".into(), "Import".into())
-            ]
-        );
-    }
     #[test]
     fn validated_banner_is_owned_portable_and_preserves_identity_when_refreshed() {
         let root = crate::test_output::root().join(format!("sync-banner-{}", new_id()));

@@ -29,6 +29,15 @@ pub(crate) fn title_menu(
 pub(crate) fn title_menu_bar<const N: usize>(
     ui: &mut egui::Ui,
     labels: [&str; N],
+    content: impl FnMut(usize, &mut egui::Ui),
+) -> [egui::Response; N] {
+    title_menu_bar_requested(ui, labels, None, content)
+}
+
+pub(crate) fn title_menu_bar_requested<const N: usize>(
+    ui: &mut egui::Ui,
+    labels: [&str; N],
+    requested: Option<&str>,
     mut content: impl FnMut(usize, &mut egui::Ui),
 ) -> [egui::Response; N] {
     // Allocate every heading before showing any popup: switching must work in
@@ -40,6 +49,14 @@ pub(crate) fn title_menu_bar<const N: usize>(
                 .square_corners(),
         )
     });
+    if let Some(index) = requested.and_then(|name| {
+        ["File", "Edit", "Tools", "Windows", "Help"]
+            .iter()
+            .position(|label| *label == name)
+    }) && let Some(response) = responses.get(index)
+    {
+        egui::Popup::open_id(ui.ctx(), egui::Popup::default_response_id(response));
+    }
     let open = responses.iter().position(|response| {
         egui::Popup::is_id_open(ui.ctx(), egui::Popup::default_response_id(response))
     });

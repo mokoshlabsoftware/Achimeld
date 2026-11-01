@@ -395,6 +395,13 @@ pub(crate) fn editor(ui: &mut egui::Ui, gradient: &mut Value) {
         }
     });
 
+    let mut selected_color = rgba(&stops[state.selected]);
+    let mut alpha = f64::from(selected_color[3]) * 100.0 / 255.0;
+    if crate::sliders::value_slider(ui, "Stop alpha", &mut alpha, 0.0..=100.0, "%", 0) {
+        selected_color[3] = (alpha * 255.0 / 100.0).round() as u8;
+        set_color(&mut stops[state.selected], selected_color);
+    }
+
     // The movable editor keeps its position while editing different stops.
     let color_id = id.with("color");
     if let Some(index) = state.color.filter(|&i| i < stops.len()) {

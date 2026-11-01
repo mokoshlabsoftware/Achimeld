@@ -1,5 +1,62 @@
 use super::*;
 
+#[test]
+fn construction_window_opens_without_editing_the_layer() {
+    let mut fixture = Fixture::new();
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut layer = crate::layer_palette::new_layer("Explosion");
+    let original = layer.clone();
+    let window_id = crate::explosion::construction_window_id(&layer);
+    ctx.data_mut(|data| data.insert_temp(window_id, true));
+    let mut labels = String::new();
+    let mut output = ctx.run_ui(
+        egui::RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(
+                egui::Pos2::ZERO,
+                egui::vec2(1200.0, 900.0),
+            )),
+            ..Default::default()
+        },
+        |ui| {
+            theme::apply(ui.ctx(), &Preferences::default());
+            ui.set_style(ui.ctx().global_style());
+            crate::explosion::properties(ui, &mut fixture, &mut layer, "test");
+        },
+    );
+    for shape in &output.shapes {
+        text_shapes(&shape.shape, &mut labels);
+    }
+    output.textures_delta.clear();
+    assert!(ctx.data(|data| data.get_temp::<bool>(window_id).unwrap_or(false)));
+    assert!(
+        labels
+            .lines()
+            .any(|line| crate::fields::label_matches(line, "Shape"))
+    );
+    assert_eq!(layer, original);
+}
+
+#[test]
+fn new_explosion_layers_use_the_bundled_default_recipe() {
+    let layer = crate::layer_palette::new_layer("Explosion");
+    let source: Value =
+        serde_json::from_slice(include_bytes!("../assets/default-explosion.achexplosions"))
+            .unwrap();
+    assert_eq!(source["presets"][0]["name"], "boom");
+    let preset = &source["presets"][0]["layer"];
+    assert_eq!(layer["explosion"], preset["explosion"]);
+    assert_eq!(layer["explosion"]["brightness"], 1.848);
+    assert_eq!(layer["explosion"]["bottomCurve"], "Quadratic");
+    assert_eq!(layer["explosion"]["deltoid"]["bottomHeightMin"], 0.0);
+    achimeld_application::explosion::ExplosionSettings::from_value(&layer["explosion"]).unwrap();
+    assert_ne!(layer["id"], preset["id"]);
+    assert_ne!(
+        layer["id"],
+        crate::layer_palette::new_layer("Explosion")["id"]
+    );
+}
+
 fn text_shapes(shape: &egui::Shape, text: &mut String) {
     match shape {
         egui::Shape::Text(s) => {
@@ -56,7 +113,7 @@ fn explosion_inspector_preserves_sparse_records_and_switches_to_a_count_range() 
     );
     for label in [
         "Base brightness",
-        "B. Variation",
+        "Brightness",
         "Shape X",
         "Shape Y",
         "D. → Ellipse",
@@ -442,7 +499,7 @@ fn shape_keeps_double_sliders_and_starts_flush_with_the_main_panel() {
         .iter()
         .find_map(|s| match &s.shape {
             egui::Shape::Text(text)
-                if crate::fields::label_matches(text.galley.text(), "B. Variation") =>
+                if crate::fields::label_matches(text.galley.text(), "Brightness") =>
             {
                 Some(text.pos.x)
             }
@@ -450,8 +507,8 @@ fn shape_keeps_double_sliders_and_starts_flush_with_the_main_panel() {
         })
         .expect("Original Shape brightness range label");
     assert!(
-        (label - left).abs() < 1.0,
-        "Shape is indented: {label} vs {left}"
+        (label - left - 24.0).abs() < 1.0,
+        "Brightness label should follow the range mode action: {label} vs {left}"
     );
     let handles = output
         .shapes

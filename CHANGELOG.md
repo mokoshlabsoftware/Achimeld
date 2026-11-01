@@ -2,6 +2,238 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.34.0 (2026-11-01)
+
+- Prepare verified Achimeld installer and source publication
+
+## 0.2.33.23 (2026-11-01)
+
+- Allow verified installer delivery through an explicitly selected GitHub release
+
+## 0.2.33.22 (2026-11-01)
+
+- Expand explosion shape controls and expose gradient stop alpha
+
+## 0.2.33.21 (2026-11-01)
+
+- Use square corners for all preset Explorer and collection panels
+
+## 0.2.33.20 (2026-11-01)
+
+- Use the supplied boom recipe for new explosion layers
+
+## 0.2.33.19 (2026-11-01)
+
+- Unify effect preset controls and add quick load, Explorer drafts, shape presets, and gradient presets
+
+## 0.2.33.18 (2026-11-01)
+
+- Open a larger Explosion construction editor and resize its preview with the Properties panel
+
+## 0.2.33.17 (2026-11-01)
+
+- Add project-saved icon export choices for selection, PNG or JPG, naming, and folder
+
+## 0.2.33.16 (2026-11-01)
+
+- Use the supplied MagicDust preset for new particle layers and the built-in library
+
+## 0.2.33.15 (2026-11-01)
+
+- Make the particle range mode trigger smaller, icon-based, and left-aligned with its label
+
+## 0.2.33.14 (2026-11-01)
+
+- Resize and center the particle spawn diagram with its editing tab
+
+## 0.2.33.13 (2026-11-01)
+
+- Download the Steam game banner during connection validation
+
+## 0.2.33.12 (2026-11-01)
+
+- Use the supplied Anime Effect recipe for new explosion layers
+
+## 0.2.33.11 (2026-11-01)
+
+- Hide 3D object creation and remove the bundled 3D style preset
+
+## 0.2.33.10 (2026-11-01)
+
+- Match effect export prompts to the app style and allow replacing collections
+
+## 0.2.33.9 (2026-11-01)
+
+- Control Steam validation, reviewed synchronization and title menus from the local MCP server
+
+## 0.2.33.8 (2026-11-01)
+
+- Open project Steam achievements and stats in the dedicated browser
+
+## 0.2.33.7 (2026-11-01)
+
+- Keep explosion and particle previews beside their editing controls
+
+## 0.2.33.6 (2026-11-01)
+
+- Restore selectable Steam sync review and detect artwork-only achievement updates
+
+## 0.2.33.5 (2026-11-01)
+
+- Remove the drag tooltip from the layer panel header
+
+## 0.2.33.4 (2026-11-01)
+
+- Verify installer SHA-256 against the published source record after language selection
+
+## 0.2.33.3 (2026-11-01)
+
+- Show the working version at 50% alpha on the loading screen
+
+## 0.2.33.2 (2026-10-30)
+
+- Add the Achimeld Wiki link to the Help menu
+
+## 0.2.33.1 (2026-10-30)
+
+- Keep welcome updates scrollable with visible scrolling and separators between dates
+
+## 0.2.33.0 (2026-10-30)
+
+- Synchronize installer language generation with the application
+
+## 0.2.32.1 (2026-10-30)
+
+- Include Hungarian and Turkish in installer language generation
+
+## 0.2.32.0 (2026-10-30)
+
+- Fix compact UI layouts, nested mask menus and translation catalog
+
+## 0.2.31.1 (2026-10-30)
+
+- Keep compact effect controls and mask rows within their panels and preserve nested menu choices
+
+## 0.2.31.0 (2026-10-30)
+
+- Fix source formatting required by installer audit
+
+## 0.2.30.1 (2026-10-30)
+
+- Apply required source formatting so audited installer builds can proceed
+
+## 0.2.30.0 (2026-10-30)
+
+- Record wiki readiness review and validate screenshot manifests
+
+## 0.2.29.27 (2026-10-30)
+
+- Reserve wiki screenshot space so section links stay aligned while images load
+
+## 0.2.29.26 (2026-10-30)
+
+- Audit wiki publication readiness, reconcile article identities and validate all screenshot manifests
+
+## 0.2.29.25 (2026-10-30)
+
+- Keep Properties panel width stable when selecting controls and remove its redundant heading
+
+## 0.2.29.24 (2026-10-30)
+
+- Show the full Achimeld logo, version and date above startup change bullets with an Ok button
+
+## 0.2.29.23 (2026-10-30)
+
+- Unify explosion and particle preset file saving and library import controls
+
+## 0.2.29.22 (2026-10-30)
+
+- Use the supplied anime effect as the default for new explosion layers
+
+## 0.2.29.21 (2026-10-30)
+
+- Add a compact toggle between single-value and double-ended range sliders
+
+## 0.2.29.20 (2026-10-30)
+
+- Highlight the selected knob cell with a subtle fill instead of a ring around the dial
+
+## 0.2.29.19 (2026-10-30)
+
+- Square color selector corners and outline the speech bubble pointer
+
+## 0.2.29.18 (2026-10-30)
+
+- Illustrate supplying a General Image and identifying input slot ID 0 in the wiki
+
+## 0.2.29.17 (2026-10-30)
+
+- Illustrate adding a simple particle overlay in the first-achievement wiki tutorial
+
+## 0.2.29.16 (2026-10-30)
+
+- Start new particle layers with the supplied Light start effect.
+
+## 0.2.29.15 (2026-10-30)
+
+- Fit particle toolbar icons to the panel and group count, size, shape and spawn controls into rotary knob rows.
+
+## 0.2.29.14 (2026-10-30)
+
+- Illustrate creating an achievement from the canvas context menu in the wiki
+
+## 0.2.29.13 (2026-10-30)
+
+- Add an illustrated folder-mask artwork example to the wiki
+
+## 0.2.29.12 (2026-10-30)
+
+- Illustrate image-drop achievements and opening Icon properties in the first-achievement wiki guide
+
+## 0.2.29.11 (2026-10-30)
+
+- Fix freezing when opening folder and layer effects with Windows accessibility
+
+## 0.2.29.10 (2026-10-30)
+
+- Place shape scale beside compact X and Y size controls
+
+## 0.2.29.9 (2026-10-30)
+
+- Make mask channel controls square with channel colors and an invert icon
+
+## 0.2.29.8 (2026-10-30)
+
+- Explain blank-card and image-drop achievement creation in the wiki
+
+## 0.2.29.7 (2026-10-30)
+
+- Add the Achimeld Wiki link to the repository README
+
+## 0.2.29.6 (2026-10-30)
+
+- Integrate versioned wiki with website navigation and search
+
+## 0.2.29.5 (2026-10-30)
+
+- Add wiki reference drafts for art tools and application workflows
+
+## 0.2.29.4 (2026-10-30)
+
+- Add wiki investigation records, screenshot checklist and core guide drafts
+
+## 0.2.29.3 (2026-10-30)
+
+- Show changes since the last acknowledged version at startup
+
+## 0.2.29.2 (2026-10-30)
+
+- Track wiki maintenance impact and documented application versions
+
+## 0.2.29.1 (2026-10-30)
+
+- Add Hungarian and Turkish interface translations with complete catalogs and font coverage checks
+
 ## 0.2.29.0 (2026-10-29)
 
 - Move particle icon decoding out of the runtime UI

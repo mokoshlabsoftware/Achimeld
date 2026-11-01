@@ -3,10 +3,10 @@ using System.Text.Json;
 
 namespace Achimeld.ReadWorker;
 
-internal enum ReadOperation { Start, Authenticate, AuthenticationState, Navigate, ReadConfiguration, Stop, NetworkSelfTest }
-internal readonly record struct ReadAction(ReadOperation Operation, uint AppId = 0, bool Hold = false)
+internal enum ReadOperation { Start, Authenticate, AuthenticationState, Navigate, BrowserOpen, ReadConfiguration, ReadGameBanner, Stop, NetworkSelfTest }
+internal readonly record struct ReadAction(ReadOperation Operation, uint AppId = 0, bool Hold = false, bool Stats = false)
 {
-    internal string Route => $"https://partner.steamgames.com/apps/achievements/{AppId.ToString(CultureInfo.InvariantCulture)}";
+    internal string Route => $"https://partner.steamgames.com/apps/{(Stats ? "stats" : "achievements")}/{AppId.ToString(CultureInfo.InvariantCulture)}";
 }
 
 // SECURITY(SEC-READ-001): Receiving-boundary policy, independent of the Rust API.
@@ -30,13 +30,15 @@ internal sealed class ReadOnlyPolicy
             "stop" when arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.Stop),
             "authenticate" when started && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.Authenticate),
             "authenticationState" when started && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.AuthenticationState),
-            "navigate" when started => new(ReadOperation.Navigate, NavigationApp(arguments)),
+            "navigate" when started => NavigationAction(arguments),
+            "browserOpen" when started && approvedAppId is not null && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.BrowserOpen),
             "readConfiguration" when started => new(ReadOperation.ReadConfiguration, ConfigurationApp(arguments)),
+            "readGameBanner" when started => new(ReadOperation.ReadGameBanner, ConfigurationApp(arguments)),
             "networkSelfTest" when !started && development && arguments.ValueKind is JsonValueKind.True or JsonValueKind.False =>
                 new(ReadOperation.NetworkSelfTest, Hold: arguments.GetBoolean()),
             _ => throw Rejected(),
         };
-        if (action.Operation == ReadOperation.ReadConfiguration && approvedAppId != action.AppId) throw Rejected();
+        if (action.Operation is ReadOperation.ReadConfiguration or ReadOperation.ReadGameBanner && approvedAppId != action.AppId) throw Rejected();
         if (action.Operation == ReadOperation.Navigate)
         {
             if (approvedAppId is uint pinned && pinned != action.AppId) throw Rejected();
@@ -46,16 +48,18 @@ internal sealed class ReadOnlyPolicy
         if (action.Operation == ReadOperation.Stop) stopped = true;
         return action;
     }
-    private static uint NavigationApp(JsonElement argument)
+    private static ReadAction NavigationAction(JsonElement argument)
     {
-        const string prefix = "https://partner.steamgames.com/apps/achievements/";
         if (argument.ValueKind != JsonValueKind.String) throw Rejected();
         string route = argument.GetString()!;
+        const string baseRoute = "https://partner.steamgames.com/apps/";
+        bool stats = route.StartsWith(baseRoute + "stats/", StringComparison.Ordinal);
+        string prefix = baseRoute + (stats ? "stats/" : "achievements/");
         if (!route.StartsWith(prefix, StringComparison.Ordinal)) throw Rejected();
         string suffix = route[prefix.Length..];
         if (!uint.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out uint id) || id == 0
             || suffix != id.ToString(CultureInfo.InvariantCulture)) throw Rejected();
-        return id;
+        return new(ReadOperation.Navigate, id, Stats: stats);
     }
     private static uint ConfigurationApp(JsonElement argument)
     {

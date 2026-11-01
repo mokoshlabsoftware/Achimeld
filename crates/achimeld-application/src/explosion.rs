@@ -33,7 +33,7 @@ impl BottomCurve {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct DeltoidSettings {
-    /// 0 = straight deltoid edges; 1 = an ellipse with the same overall bounds.
+    /// -1 = concave sides; 0 = straight deltoid edges; 1 = an ellipse.
     pub ellipse: f64,
     pub scale: f64,
     pub scale_min: f64,
@@ -72,7 +72,7 @@ impl Default for DeltoidSettings {
 impl DeltoidSettings {
     fn validate(&self) -> Result<(), String> {
         for (name, low, high, min, max) in [
-            ("Deltoid to ellipse", self.ellipse, self.ellipse, 0.0, 1.0),
+            ("Deltoid to ellipse", self.ellipse, self.ellipse, -1.0, 1.0),
             ("Deltoid global scale", self.scale, self.scale, 0.01, 2.0),
             (
                 "Deltoid random scale",
@@ -100,8 +100,8 @@ impl DeltoidSettings {
                 "Deltoid offset",
                 self.offset_min,
                 self.offset_max,
-                -1.5,
-                1.5,
+                -10.0,
+                10.0,
             ),
             (
                 "Deltoid sharpness",
@@ -429,6 +429,28 @@ impl Deltoid {
         if self.ellipse == 0.0 {
             return self.vertices().to_vec();
         }
+        if self.ellipse < 0.0 {
+            let mut points = Vec::with_capacity(64);
+            for (height, sign_x, sign_y, reverse) in [
+                (self.top_height, 1.0, -1.0, true),
+                (self.bottom_height, 1.0, 1.0, false),
+                (self.bottom_height, -1.0, 1.0, true),
+                (self.top_height, -1.0, -1.0, false),
+            ] {
+                for step in 0..16 {
+                    let t = if reverse {
+                        1.0 - f64::from(step) / 16.0
+                    } else {
+                        f64::from(step) / 16.0
+                    };
+                    points.push([
+                        self.x + sign_x * self.width * 0.5 * (1.0 - t).powf(1.0 - self.ellipse),
+                        0.5 + self.offset + sign_y * height * t,
+                    ]);
+                }
+            }
+            return points;
+        }
         let (shift, top, bottom, power) = self.rounded_profile();
         (0..32)
             .map(|i| {
@@ -627,7 +649,7 @@ mod tests {
             ),
             (1.0, 1.0, 0.0)
         );
-        for ellipse in [-0.1, 1.1] {
+        for ellipse in [-1.1, 1.1] {
             assert!(
                 ExplosionSettings::from_value(&json!({"deltoid":{"ellipse":ellipse}})).is_err()
             );
@@ -795,7 +817,8 @@ mod tests {
             ("scaleMin", json!(1.6)),
             ("scaleMax", json!(2.1)),
             ("widthMin", json!(-0.1)),
-            ("offsetMax", json!(1.6)),
+            ("offsetMin", json!(-10.1)),
+            ("offsetMax", json!(10.1)),
             ("sharpnessMax", json!(1.1)),
             ("unknown", json!(true)),
         ] {

@@ -38,6 +38,8 @@ Use direct, specific titles, messages, and action labels. The reference prompt h
 
 Application prompts are rendered inside Achimeld with its own fonts, colors, icons, and buttons. Standard Windows file/folder selection dialogs remain the picker format. Changing prompt presentation does not authorize new filesystem access, protocol operations, worker capabilities, or changes to validation and ownership. Preserve pending-action, Save/Discard/Cancel, undo, and error-retry behavior.
 
+File picker validation errors use this prompt format with Choose again and Cancel. Exporting an effect collection to an existing file uses a Replace effect collection prompt showing the filename and full path, with Replace, Choose again and Cancel. Escape cancels without replacing the file.
+
 Selecting **Validate** for a project without a saved file shows **Saved project required** with the message **You need to save your project before validating the Steamworks destination. Use File > Save, then select Validate again.** The single **Close** action and Escape dismiss the prompt. This error never opens a file picker, saves the project, or starts Steam validation; saving and retrying remain explicit user actions.
 
 ## Review

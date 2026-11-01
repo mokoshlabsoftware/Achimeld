@@ -1,0 +1,106 @@
+{
+  "format": "com.achimeld.effects",
+  "schemaVersion": 1,
+  "kind": "Explosion",
+  "presets": [
+    {
+      "id": "8fc9570d-c4ba-4bc0-a1a6-48d282f31205",
+      "name": "boom",
+      "kind": "Explosion",
+      "layer": {
+        "blendMode": "Normal",
+        "effects": [],
+        "explosion": {
+          "angularBlur": 0.0,
+          "aspectMax": 6.01,
+          "aspectMin": 5.0,
+          "bottomCurve": "Quadratic",
+          "bottomPower": 1.8,
+          "bottomStretch": 0.5,
+          "brightness": 1.848,
+          "brightnessMax": 1.77,
+          "brightnessMin": 1.77,
+          "count": 53,
+          "coverCanvas": true,
+          "deltoid": {
+            "bottomHeightMax": 0.0,
+            "bottomHeightMin": 0.0,
+            "ellipse": 0.0,
+            "offsetMax": 1.5,
+            "offsetMin": 1.0704106986522675,
+            "scale": 0.92,
+            "scaleMax": 1.7681890238076448,
+            "scaleMin": 1.6687455711886288,
+            "sharpnessMax": 0.0,
+            "sharpnessMin": 0.0,
+            "topHeightMax": 0.158,
+            "topHeightMin": 0.158,
+            "widthMax": 2.0,
+            "widthMin": 2.0
+          },
+          "differentSeedPerInstance": false,
+          "disableIn": false,
+          "disableOut": false,
+          "gradient": {
+            "angle": 90.0,
+            "kind": "SDF",
+            "stops": [
+              {
+                "colorHex": "#FF000000",
+                "offset": 0.0
+              },
+              {
+                "colorHex": "#FFFFFFFF",
+                "offset": 0.1539422869682312
+              }
+            ]
+          },
+          "in": {
+            "flip": false,
+            "heightMax": 0.45,
+            "heightMin": 0.2,
+            "offsetMax": 0.0,
+            "offsetMin": 0.0,
+            "scale": 1.0,
+            "scaleMax": 1.0,
+            "scaleMin": 1.0,
+            "sharpnessMax": 1.0,
+            "sharpnessMin": 0.8,
+            "widthMax": 0.35,
+            "widthMin": 0.12
+          },
+          "invertColors": false,
+          "out": {
+            "flip": false,
+            "heightMax": 0.45,
+            "heightMin": 0.2,
+            "offsetMax": 0.0,
+            "offsetMin": 0.0,
+            "scale": 1.0,
+            "scaleMax": 1.0,
+            "scaleMin": 1.0,
+            "sharpnessMax": 1.0,
+            "sharpnessMin": 0.8,
+            "widthMax": 0.35,
+            "widthMin": 0.12
+          },
+          "radialBlur": 0.0,
+          "regularity": 0.0,
+          "scaleMax": 1.07164,
+          "scaleMin": 1.07164,
+          "seed": 127653304,
+          "shapeX": 0.22,
+          "shapeY": 5.31
+        },
+        "id": "e5df97e2-d7d8-41d8-8721-83d4105987a6",
+        "kind": "Explosion",
+        "offsetX": 0.0,
+        "offsetY": 0.0,
+        "opacity": 1.0,
+        "rotation": 0.0,
+        "scale": 1.0,
+        "visible": true
+      }
+    }
+  ]
+}

@@ -121,6 +121,37 @@ impl EditorPort for ReviewPort {
 }
 
 #[test]
+fn artwork_only_review_can_be_unselected_and_reselected() {
+    let mut port = ReviewPort::new();
+    port.review["rows"] = json!([
+        {"key":"Achievement:COIN","kind":"Achievement","apiName":"COIN","state":"InSync","defaultAction":"Skip","actions":["Skip","Upload","Import"],"fields":[]},
+        {"key":"Icon:COIN","kind":"Icon","apiName":"COIN","state":"LocalChanged","defaultAction":"Upload","actions":["Skip","Upload"],"fields":[]}
+    ]);
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert_eq!(desktop.sync_selected_count(&port), 1);
+    click(
+        &ctx,
+        &mut desktop,
+        &mut port,
+        label_center(&labels, "Include"),
+    );
+    assert_eq!(desktop.sync_selected_count(&port), 0);
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    click(
+        &ctx,
+        &mut desktop,
+        &mut port,
+        label_center(&labels, "Use project"),
+    );
+    assert_eq!(desktop.sync_selected_count(&port), 1);
+    assert_eq!(desktop.sync_choices["Icon:COIN"], "Upload");
+}
+
+#[test]
 fn steam_panel_requires_current_session_validation_without_failure() {
     let mut port = ReviewPort::new();
     let desktop = Desktop::default();

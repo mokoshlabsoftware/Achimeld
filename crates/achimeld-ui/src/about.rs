@@ -10,12 +10,21 @@ pub(crate) enum HelpPage {
 }
 
 impl Desktop {
+    pub fn open_update_notes(&mut self, previous: Option<String>) {
+        self.about = true;
+        self.help_page = HelpPage::Changes;
+        self.update_notes = true;
+        self.update_from = previous;
+    }
+
     pub fn open_about(&mut self) {
+        self.update_notes = false;
         self.about = true;
         self.help_page = HelpPage::About;
     }
 
     pub fn open_change_log(&mut self) {
+        self.update_notes = false;
         self.about = true;
         self.help_page = HelpPage::Changes;
     }
@@ -44,23 +53,49 @@ impl Desktop {
                 let width = width.min((ctx.content_rect().width() - 32.0).max(0.0));
                 ui.set_width(width);
                 ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                let title = text(ctx, match self.help_page { HelpPage::About => "About", HelpPage::Changes => "Change log", HelpPage::ConnectMcp => "Connect MCP" });
-                let title = ui.painter().layout_no_wrap(
-                    title,
-                    egui::TextStyle::Heading.resolve(ui.style()),
-                    ui.visuals().text_color(),
-                );
-                let header_height = title.size().y.max(24.0) + 24.0;
-                let (header, _) = ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
-                let icon_id = egui::Id::new("help-brand-icon");
-                let icon = ctx.data(|data| data.get_temp::<egui::TextureHandle>(icon_id)).unwrap_or_else(|| {
-                    let icon = ctx.load_texture("help-brand", crate::chrome::brand_image(), egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)));
-                    ctx.data_mut(|data| data.insert_temp(icon_id, icon.clone()));
-                    icon
-                });
-                egui::Image::new((icon.id(), egui::Vec2::splat(24.0)))
-                    .paint_at(ui, egui::Rect::from_center_size(egui::pos2(header.left() + 36.0, header.center().y), egui::Vec2::splat(24.0)));
-                ui.painter().galley(header.center() - title.size() / 2.0, title, ui.visuals().text_color());
+                let header_height = if self.update_notes {
+                    egui::Frame::new().inner_margin(egui::Margin::symmetric(24, 20)).show(ui, |ui| {
+                        ui.set_width((width - 48.0).max(0.0));
+                        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                            let banner_id = egui::Id::new("about-banner");
+                            let banner = ctx.data(|data| data.get_temp::<egui::TextureHandle>(banner_id)).unwrap_or_else(|| {
+                                let color = egui::ColorImage::from_rgba_unmultiplied(
+                                    [734, 205], include_bytes!("../assets/about-banner.rgba"));
+                                let banner = ctx.load_texture("about-banner", color,
+                                    egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)));
+                                ctx.data_mut(|data| data.insert_temp(banner_id, banner.clone()));
+                                banner
+                            });
+                            let logo_width = ui.available_width();
+                            ui.image((banner.id(), egui::vec2(logo_width, logo_width * 205.0 / 734.0)));
+                            ui.add_space(8.0);
+                            let current = &crate::change_log::ENTRIES[0];
+                            centered(ui, format!("{} {}", text(ctx, "Version"), current.version));
+                            ui.add_space(8.0);
+                            centered(ui, current.date);
+                        });
+                    }).response.rect.height()
+                } else {
+                    let title = text(ctx, match self.help_page { HelpPage::About => "About", HelpPage::Changes => "Change log", HelpPage::ConnectMcp => "Connect MCP" });
+                    let title = ui.painter().layout(
+                        title,
+                        egui::TextStyle::Heading.resolve(ui.style()),
+                        ui.visuals().text_color(),
+                        (width - 112.0).max(1.0),
+                    );
+                    let header_height = title.size().y.max(24.0) + 24.0;
+                    let (header, _) = ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
+                    let icon_id = egui::Id::new("help-brand-icon");
+                    let icon = ctx.data(|data| data.get_temp::<egui::TextureHandle>(icon_id)).unwrap_or_else(|| {
+                        let icon = ctx.load_texture("help-brand", crate::chrome::brand_image(), egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)));
+                        ctx.data_mut(|data| data.insert_temp(icon_id, icon.clone()));
+                        icon
+                    });
+                    egui::Image::new((icon.id(), egui::Vec2::splat(24.0)))
+                        .paint_at(ui, egui::Rect::from_center_size(egui::pos2(header.left() + 36.0, header.center().y), egui::Vec2::splat(24.0)));
+                    ui.painter().galley(header.center() - title.size() / 2.0, title, ui.visuals().text_color());
+                    header_height
+                };
                 divider(ui);
                 let action_height = crate::buttons::bar_height(ui, 24.0);
                 let available_body = (ctx.content_rect().height() - header_height - action_height - 76.0).max(40.0);
@@ -72,7 +107,7 @@ impl Desktop {
                 egui::Frame::new().inner_margin(egui::Margin::symmetric(24, 20)).show(ui, |ui| {
                     ui.set_width((width - 48.0).max(0.0));
                     ui.spacing_mut().item_spacing.y = 8.0;
-                    egui::ScrollArea::vertical().id_salt(("help-body", self.help_page as u8)).max_height(body_height).show(ui, |ui| {
+                    egui::ScrollArea::vertical().id_salt(("help-body", self.help_page as u8)).max_height(body_height).scroll_bar_visibility(if self.update_notes { egui::scroll_area::ScrollBarVisibility::AlwaysVisible } else { egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded }).show(ui, |ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                             if self.help_page == HelpPage::About {
                                 let banner_id = egui::Id::new("about-banner");
@@ -86,11 +121,13 @@ impl Desktop {
                                 });
                                 let width = ui.available_width();
                                 ui.image((banner.id(), egui::vec2(width, width * 205.0 / 734.0)));
-                            } else {
+                            } else if !self.update_notes {
                                 ui.heading("Achimeld");
                             }
-                            centered(ui, format!("{} {}", text(ctx, "Version"), crate::change_log::current_version()));
-                            ui.add_space(4.0);
+                            if !self.update_notes {
+                                centered(ui, format!("{} {}", text(ctx, "Version"), crate::change_log::current_version()));
+                                ui.add_space(4.0);
+                            }
                             if self.help_page == HelpPage::About {
                                 centered(ui, text(ctx, "Abt000"));
                                 centered(ui, "Licensed under the Apache License, Version 2.0.");
@@ -110,13 +147,32 @@ impl Desktop {
                             } else if self.help_page == HelpPage::ConnectMcp {
                                 connect_mcp_body(ui);
                             } else {
-                                centered(ui, text(ctx, "Newest changes first. History starts with version tracking."));
-                                for entry in crate::change_log::ENTRIES.iter() {
-                                    ui.add_space(12.0);
-                                    ui.heading(entry.version);
-                                    centered(ui, entry.date);
+                                let entries = if self.update_notes {
+                                    crate::change_log::changes_since(self.update_from.as_deref())
+                                } else {
+                                    centered(ui, text(ctx, "Newest changes first. History starts with version tracking."));
+                                    crate::change_log::ENTRIES.as_slice()
+                                };
+                                let mut previous_date = None;
+                                for entry in entries {
+                                    if self.update_notes && previous_date.is_some_and(|date| date != entry.date) {
+                                        ui.add_space(8.0);
+                                        divider(ui);
+                                        ui.add_space(8.0);
+                                        centered(ui, entry.date);
+                                    }
+                                    previous_date = Some(entry.date);
+                                    if !self.update_notes {
+                                        ui.add_space(12.0);
+                                        ui.heading(entry.version);
+                                        centered(ui, entry.date);
+                                    }
                                     for change in &entry.changes {
-                                        centered(ui, *change);
+                                        if self.update_notes {
+                                            centered(ui, format!("• {change}"));
+                                        } else {
+                                            centered(ui, *change);
+                                        }
                                     }
                                 }
                             }
@@ -124,8 +180,8 @@ impl Desktop {
                     });
                 });
                 divider(ui);
-                if self.help_page == HelpPage::ConnectMcp {
-                    return ui.add_sized([width, action_height], Button::new(text(ctx, "Close")).bar()).clicked();
+                if self.help_page == HelpPage::ConnectMcp || self.update_notes {
+                    return ui.add_sized([width, action_height], Button::new(text(ctx, if self.update_notes { "StartupUpdateOkay" } else { "Close" })).bar()).clicked();
                 }
                 let labels = [
                     text(ctx, if self.help_page == HelpPage::About { "Change log" } else { "About" }),
@@ -149,6 +205,7 @@ impl Desktop {
             });
         if response.inner || keyboard_close {
             self.about = false;
+            self.update_notes = false;
             self.request(UiRequest::AboutDismissed);
         }
     }
@@ -216,5 +273,78 @@ fn connect_mcp_body(ui: &mut egui::Ui) {
         "If no editor appears, check that Achimeld is open and both processes use the same Windows account. Reconnect after changing the configuration.",
     ] {
         centered(ui, text(ui.ctx(), message));
+    }
+}
+
+#[cfg(test)]
+mod startup_tests {
+    use super::*;
+
+    fn collect_text(shape: &egui::Shape, labels: &mut Vec<String>) {
+        match shape {
+            egui::Shape::Text(text) => labels.push(text.galley.text().to_owned()),
+            egui::Shape::Vec(shapes) => {
+                for shape in shapes {
+                    collect_text(shape, labels);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn startup_update_notes_render_and_acknowledge_only_on_dismissal() {
+        for (width, scale) in [(1440.0, 1.0), (440.0, 1.5)] {
+            let ctx = egui::Context::default();
+            ctx.set_pixels_per_point(scale);
+            let mut desktop = Desktop::default();
+            desktop.open_update_notes(Some(crate::change_log::ENTRIES[2].version.to_owned()));
+            let input = |events| egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(width, 920.0),
+                )),
+                events,
+                ..Default::default()
+            };
+            let mut warmup = ctx.run_ui(input(vec![]), |ui| desktop.about_window(ui.ctx()));
+            warmup.textures_delta.clear();
+            let mut output = ctx.run_ui(input(vec![]), |ui| desktop.about_window(ui.ctx()));
+            output.textures_delta.clear();
+            let mut labels = Vec::new();
+            for shape in &output.shapes {
+                collect_text(&shape.shape, &mut labels);
+            }
+            let current = &crate::change_log::ENTRIES[0];
+            assert!(labels.iter().any(|label| label.contains(current.version)));
+            assert!(labels.iter().any(|label| label == "Ok"));
+            assert!(labels.iter().any(|label| label.starts_with("• ")));
+            assert!(
+                !labels
+                    .iter()
+                    .any(|label| label == "What changed" || label == "Close")
+            );
+            for entry in crate::change_log::ENTRIES.iter() {
+                assert!(!labels.iter().any(|label| label == entry.version));
+            }
+            assert!(desktop.about);
+            assert!(desktop.requests.is_empty());
+            let mut dismissed = ctx.run_ui(
+                input(vec![egui::Event::Key {
+                    key: egui::Key::Enter,
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                }]),
+                |ui| desktop.about_window(ui.ctx()),
+            );
+            dismissed.textures_delta.clear();
+            assert!(!desktop.about);
+            assert!(matches!(
+                desktop.requests.as_slice(),
+                [UiRequest::AboutDismissed]
+            ));
+        }
     }
 }

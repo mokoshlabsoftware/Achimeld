@@ -1,0 +1,662 @@
+{
+  "schemaVersion": 1,
+  "documentedTargetVersion": "0.2.29.3",
+  "sourceSnapshotSha256": "0ad76dec502bb2faf6f216a2a99f8a00b158c8611a421ef398aab14120fff3e7",
+  "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+  "contentRevision": null,
+  "publicationState": "not-published",
+  "articles": [
+    {
+      "id": "getting-started",
+      "locale": "en",
+      "path": "getting-started.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "phase-1-inventory.md",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "runtimeObservationVersion": "0.2.29.0",
+      "limitations": "Partial inspection only. Tutorial creation, saving, reopening, exporting, style application and newer startup behavior have not been exercised end to end.",
+      "screenshotVersion": "0.2.29.0"
+    },
+    {
+      "id": "first-achievement",
+      "locale": "en",
+      "path": "first-achievement.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "phase-1-inventory.md",
+        "screenshots/0.2.29.0/manifest.json",
+        "../editor-image-drops.md",
+        "screenshots/unversioned/manifest.json"
+      ],
+      "runtimeObservationVersion": "0.2.29.0",
+      "limitations": "Partial inspection only. Tutorial creation, saving, reopening, exporting, style application and newer startup behavior have not been exercised end to end.",
+      "screenshotVersion": null,
+      "contentSha256": "29bf46cfa54a3c022a07be0a519852481c39120b8234eb851b969d4e25a13e4f"
+    },
+    {
+      "id": "achievements-general",
+      "locale": "en",
+      "path": "achievements-general.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "phase-1-inventory.md",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "runtimeObservationVersion": "0.2.29.0",
+      "limitations": "Partial inspection only. Tutorial creation, saving, reopening, exporting, style application and newer startup behavior have not been exercised end to end.",
+      "screenshotVersion": "0.2.29.0"
+    },
+    {
+      "id": "general-images",
+      "locale": "en",
+      "path": "general-images.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "phase-1-inventory.md",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "runtimeObservationVersion": "0.2.29.0",
+      "limitations": "Partial inspection only. Tutorial creation, saving, reopening, exporting, style application and newer startup behavior have not been exercised end to end.",
+      "screenshotVersion": "0.2.29.0"
+    },
+    {
+      "id": "icon-editor",
+      "locale": "en",
+      "path": "icon-editor.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "phase-1-inventory.md",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "runtimeObservationVersion": "0.2.29.0",
+      "limitations": "Partial inspection only. Tutorial creation, saving, reopening, exporting, style application and newer startup behavior have not been exercised end to end.",
+      "screenshotVersion": "0.2.29.0",
+      "contentSha256": "0cb7774ab38aac02f11e555dea3e0da60ea4e075ba6b4f48e844cd7d16625fa4"
+    },
+    {
+      "id": "projects",
+      "locale": "en",
+      "path": "projects.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "phase-1-inventory.md",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "runtimeObservationVersion": "0.2.29.0",
+      "limitations": "Partial inspection only. Tutorial creation, saving, reopening, exporting, style application and newer startup behavior have not been exercised end to end.",
+      "screenshotVersion": "0.2.29.0"
+    },
+    {
+      "id": "icon-layers",
+      "locale": "en",
+      "path": "icon-layers.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/layers.rs",
+        "crates/achimeld-ui/src/layer_palette.rs",
+        "bridge/Achimeld.Core/IconRecipe.cs",
+        "crates/achimeld-ui/src/perlin.rs",
+        "crates/achimeld-ui/src/vignette.rs",
+        "docs/radial-blur.md"
+      ],
+      "contentSha256": "a44572a8c5b709e5e5b40b66a9120e2f5d3e943bc559d1377bc73c0d51a624a0",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": "0.2.29.0",
+      "screenshotVersion": "0.2.29.0",
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "icon-effects",
+      "locale": "en",
+      "path": "icon-effects.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/layers.rs",
+        "crates/achimeld-ui/src/layer_palette.rs",
+        "bridge/Achimeld.Core/IconRecipe.cs",
+        "crates/achimeld-ui/src/layer_effects.rs",
+        "docs/icon-spatial-effects.md",
+        "docs/effect-rows.md"
+      ],
+      "contentSha256": "f83c0c75d09416091bf11c8cd1270f6885adb734b4a4671941aff65be9d19062",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "masks",
+      "locale": "en",
+      "path": "masks.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/unversioned/manifest.json",
+        "../masks.md"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/masks.md",
+        "crates/achimeld-ui/src/layer_masks.rs",
+        "crates/achimeld-ui/src/layer_palette.rs"
+      ],
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending.",
+      "contentSha256": "64548737ec789729c21215018ca841320163d1c3af0a236e7c430ceb696a7c7b",
+      "screenshotVersion": null
+    },
+    {
+      "id": "gradients",
+      "locale": "en",
+      "path": "gradients.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/gradient-explorer.md",
+        "crates/achimeld-ui/src/gradient.rs",
+        "crates/achimeld-ui/src/layers.rs"
+      ],
+      "contentSha256": "d36c33d418b95dd67a47b278b738f0faa60545beeb33e3b7f76b5ce71af513be",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "particles",
+      "locale": "en",
+      "path": "particles.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "phase-5-verification.md"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/particle-layers.md",
+        "crates/achimeld-ui/src/particles.rs",
+        "crates/achimeld-ui/src/particle_sliders.rs",
+        "crates/achimeld-ui/src/particle_shapes.rs"
+      ],
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending.",
+      "contentSha256": "ca99f41490a19dee945a74851d24ea25f379a3b6ab1a3188fe91766e409e7650"
+    },
+    {
+      "id": "explosions",
+      "locale": "en",
+      "path": "explosions.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "phase-5-verification.md"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/explosion-layers.md",
+        "crates/achimeld-ui/src/explosion.rs"
+      ],
+      "contentSha256": "612398980690832472dad6bf3ea6e87c0787c3bc765a317c9e107505830e6c43",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "text-3d",
+      "locale": "en",
+      "path": "text-3d.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/3d-text-layers.md",
+        "crates/achimeld-ui/src/text3d.rs"
+      ],
+      "contentSha256": "b998d021a593ca6456c35865856c4acfff68306b9f1372d6efcbd28fa27e3ff6",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "artifacts-3d",
+      "locale": "en",
+      "path": "artifacts-3d.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/3d-artifact-layers.md",
+        "crates/achimeld-ui/src/artifact3d.rs"
+      ],
+      "contentSha256": "1223131bca2ca30560b7eba478e4eba876d2ba90dba10bd9e6f5c1647ce70ea4",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "styles",
+      "locale": "en",
+      "path": "styles.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/upper-application-bar.md",
+        "docs/style-banners.md",
+        "crates/achimeld-ui/src/style_viewer/layout.rs",
+        "crates/achimeld-ui/src/style_picker.rs"
+      ],
+      "contentSha256": "0296a7555c8ba45e484ed0ab4b664cb1f29a1d751d35191e84bf4a545a2aee04",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": "0.2.29.0",
+      "screenshotVersion": "0.2.29.0",
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "art-data-bank",
+      "locale": "en",
+      "path": "art-data-bank.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/art_bank.rs",
+        "docs/editor-image-drops.md",
+        "AGENTS.md"
+      ],
+      "contentSha256": "fd3623e40a55aa5a6995e1aa5a5396d0db6c4bc8577670a0ed694aaad34cdddc",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": "0.2.29.0",
+      "screenshotVersion": "0.2.29.0",
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "stats",
+      "locale": "en",
+      "path": "stats.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/inspector.rs",
+        "crates/achimeld-ui/src/achievement_general.rs",
+        "crates/achimeld-ui/src/sorting.rs",
+        "crates/achimeld-application/src/document.rs",
+        "crates/achimeld-application/src/automation.rs"
+      ],
+      "contentSha256": "45a256bed8a19beeb1b679be431d02e3a89c5e1687eceed3b125b000987a93bc",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": "0.2.29.0",
+      "screenshotVersion": "0.2.29.0",
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "localization",
+      "locale": "en",
+      "path": "localization.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/inspector.rs",
+        "crates/achimeld-application/src/translations.rs",
+        "docs/mcp-server.md"
+      ],
+      "contentSha256": "f0cdaccaaefa2bb1d4a348841b0be5680a80954a17955c68a7470b424fb801ec",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": "0.2.29.0",
+      "screenshotVersion": "0.2.29.0",
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "sync",
+      "locale": "en",
+      "path": "sync.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review",
+        "partial-runtime-observation"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json",
+        "screenshots/0.2.29.0/manifest.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/synchronization.rs",
+        "crates/achimeld-ui/src/synchronization_target.rs",
+        "docs/application-prompts.md"
+      ],
+      "contentSha256": "519f36b0d425b1db37f700e5eae2fd03560059a5abc3d5ba075b3b0b5fd860c7",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": "0.2.29.0",
+      "screenshotVersion": "0.2.29.0",
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "steam",
+      "locale": "en",
+      "path": "steam.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/steam.rs",
+        "docs/upper-application-bar.md",
+        "docs/application-prompts.md"
+      ],
+      "contentSha256": "ed7cf0f5df8afc88d231e0929a372763163989e4db9e7bcf86353e2513295e71",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "exports",
+      "locale": "en",
+      "path": "exports.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-app/src/icon_export.rs",
+        "crates/achimeld-ui/src/settings.rs",
+        "docs/mcp-server.md"
+      ],
+      "contentSha256": "87e56bcf261023310c0760ba2757abdff3f204b11282a7312622b1d7c24ea100",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "preferences",
+      "locale": "en",
+      "path": "preferences.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "crates/achimeld-ui/src/settings.rs",
+        "docs/preferences.md",
+        "docs/field-labels.md",
+        "docs/numeric-sliders.md"
+      ],
+      "contentSha256": "5592281c6a3ea26a26fd18ea18f28b9aa2412f0673a2465014bf89a6b7458172",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "troubleshooting",
+      "locale": "en",
+      "path": "troubleshooting.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "AGENTS.md",
+        "docs/update-notes.md",
+        "crates/achimeld-ui/src/terminal.rs",
+        "docs/application-prompts.md"
+      ],
+      "contentSha256": "e9ed61916ba03a667bc1293a190eb563f62a0e7cfcd23a61875c4f3618a45368",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    },
+    {
+      "id": "automation",
+      "locale": "en",
+      "path": "automation.md",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "lastReviewed": "2026-10-30",
+      "status": "Draft",
+      "verificationMethod": [
+        "source-review"
+      ],
+      "verificationEvidence": [
+        "source-evidence-phase3.json",
+        "reference-coverage.json"
+      ],
+      "sourceRevision": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceFiles": [
+        "docs/mcp-server.md",
+        "crates/achimeld-application/src/automation.rs"
+      ],
+      "contentSha256": "096b5189b3fd1dc315a2d6708924e767b2025f6ccd384d8fc3f0139a58bdc044",
+      "sourceEvidence": "source-evidence-phase3.json",
+      "runtimeObservationVersion": null,
+      "screenshotVersion": null,
+      "contentRevision": null,
+      "limitations": "Draft reference. Individual control behavior, before/after images, and complete live/runtime workflows remain pending."
+    }
+  ]
+}

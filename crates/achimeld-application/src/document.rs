@@ -284,6 +284,30 @@ impl Document {
         {
             return Err("Invalid Steam App ID".into());
         }
+        if let Some(settings) = self.project.get("iconExport") {
+            let folder = settings["folder"]
+                .as_str()
+                .ok_or("Invalid icon export folder")?;
+            if folder.len() > 4096
+                || (!folder.is_empty() && !std::path::Path::new(folder).is_absolute())
+            {
+                return Err("Invalid icon export folder".into());
+            }
+            if !matches!(settings["format"].as_str(), Some("Png" | "Jpeg"))
+                || !matches!(
+                    settings["naming"].as_str(),
+                    Some("ApiName" | "NumberedApiName")
+                )
+                || settings["excludedIds"].as_array().is_none_or(|ids| {
+                    ids.len() > 100_000
+                        || ids
+                            .iter()
+                            .any(|id| id.as_str().is_none_or(|s| !valid_id(s)))
+                })
+            {
+                return Err("Invalid icon export preferences".into());
+            }
+        }
         let mut all_ids = BTreeSet::new();
         if let Some(value) = self.project.get("styleViewerPreview") {
             serde_json::from_value::<crate::style_viewer::StyleViewerPreview>(value.clone())
@@ -737,6 +761,9 @@ impl Document {
                 if let Some(v) = assets {
                     self.project["assets"] = v.clone();
                 }
+            }
+            Command::IconExportSettings(settings) => {
+                self.project["iconExport"] = settings.clone();
             }
             Command::DuplicateArtwork {
                 atlas,
@@ -1204,6 +1231,7 @@ pub enum Command {
         atlas: Option<Value>,
         assets: Option<Value>,
     },
+    IconExportSettings(Value),
     DuplicateArtwork {
         atlas: bool,
         id: String,

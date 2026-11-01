@@ -53,10 +53,14 @@ icon, a complete wrapping localized name, a shaded 45-point dial and an editable
 number. Range settings retain independent Minimum and Maximum controls, constrained
 against crossing; at narrow widths the pair stacks inside its cell. The bank
 reflows by available width and configured font sizes without a label divider.
-Other property editors retain the default sliders.
+Particle properties also use the shared rotary bank: count and size form one pair, Shape X/Y a second pair, and Center X, Center Y and Edge form a spawn row. Size multiplies the original size range from 0x to 10x, with 1x centered. The two top pairs share a row at ordinary panel widths and reflow together when narrower. Other property editors retain the default sliders.
 Shape retains its original scalar and double-ended range sliders, including
 interval dragging. Its expanded content is flush with the parent panel, without
 an indentation or guide line. Gradient overlay controls retain their sliders too.
+
+Selected rotary controls highlight their surrounding square cell with a 10% Accent
+fill, including focus in the numeric editor. Selection does not add a ring around
+the dial. Hover retains its subtle cell fill.
 
 Dial shading, indicators, icons and states derive from Preferences > Colors
 (Panel, Window, Control, Primary text, Muted text and Accent). App style adds
@@ -87,6 +91,13 @@ The ordinary Opacity property row uses the standard label/track/number layout.
 Particle minimum/maximum controls retain two small solid handles and a draggable
 interval in [particle_sliders.rs](../crates/achimeld-ui/src/particle_sliders.rs).
 Their independent endpoints and interval movement are necessary semantics.
+Each double slider includes a small range-mode icon at the left edge of its
+label. Its button body occupies one fifth of the previous `1` button's area.
+Clicking it switches to a single handle at the interval midpoint. Single-handle
+edits set both endpoints together. Clicking the icon again restores the previous
+interval.
+This presentation choice is local to the control for the current UI session;
+external interval edits and undo remain authoritative.
 Gradient stops, curve points, color-selection surfaces, canvas gizmos, panel
 dividers and scrollbars are not scalar numeric knobs and retain their specific
 interactions. Standalone numeric entry fields do not all need to become sliders.

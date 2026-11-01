@@ -218,7 +218,7 @@ impl Desktop {
                 .frame(egui::Frame::new().fill(fill))
                 .show(root, |ui| {
                     ui.set_min_width(ui.available_width());
-                    self.inspector_panel_contents(ui, port);
+                    self.inspector_panel_bounded_contents(ui, port);
                 });
             self.inspector_panel.rect = Some(response.response.rect);
             self.inspector_panel.width = response.response.rect.width();
@@ -254,13 +254,24 @@ impl Desktop {
             self.inspector_panel.reset_size = false;
             if let Some(response) = window.show(root.ctx(), |ui| {
                 ui.set_min_size(ui.available_size());
-                self.inspector_panel_contents(ui, port);
+                self.inspector_panel_bounded_contents(ui, port);
             }) {
                 self.inspector_panel.rect = Some(response.response.rect);
                 self.inspector_panel.floating = Some(response.response.rect);
                 self.inspector_panel.width = response.response.rect.width();
             }
         }
+    }
+
+    fn inspector_panel_bounded_contents(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
+        // Content minimum widths must never feed back into the dock/window size.
+        // A separate child keeps layout measurements local; only the allocated
+        // viewport participates in the parent's sizing and divider interaction.
+        let rect = ui.available_rect_before_wrap();
+        let mut content = ui.new_child(egui::UiBuilder::new().max_rect(rect));
+        content.shrink_clip_rect(rect);
+        self.inspector_panel_contents(&mut content, port);
+        ui.allocate_rect(rect, egui::Sense::hover());
     }
 
     fn inspector_panel_contents(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
@@ -270,18 +281,14 @@ impl Desktop {
             |ui| {
                 let spacing = ui.spacing().item_spacing.y;
                 ui.spacing_mut().item_spacing.y = 0.0;
-                buttons::bar(ui, 24.0, |ui| {
+                {
+                    // Keep a narrow docking grip without a redundant heading row.
+                    let (rect, _) = ui.allocate_exact_size(
+                        egui::vec2(ui.available_width(), 4.0),
+                        egui::Sense::hover(),
+                    );
                     let response = ui
-                        .add(
-                            buttons::Button::new(crate::localization::text(ui.ctx(), "Properties"))
-                                .bar()
-                                .id(header_id())
-                                .sense(egui::Sense::click_and_drag())
-                                .min_size(egui::vec2(
-                                    ui.available_width(),
-                                    ui.spacing().interact_size.y,
-                                )),
-                        )
+                        .interact(rect, header_id(), egui::Sense::click_and_drag())
                         .on_hover_cursor(egui::CursorIcon::Grab)
                         .on_hover_text(
                             "Drag to float or dock on either side. Click for placement options.",
@@ -309,7 +316,7 @@ impl Desktop {
                             }
                         }
                     });
-                });
+                }
                 ui.add(egui::Separator::default().spacing(0.0));
                 ui.spacing_mut().item_spacing.y = spacing;
                 self.inspector(ui, port);

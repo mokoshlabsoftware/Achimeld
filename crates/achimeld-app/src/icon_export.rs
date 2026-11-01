@@ -33,14 +33,37 @@ pub fn export(
     cancelled: impl Fn() -> bool,
 ) -> Result<(), String> {
     document.validate()?;
-    let mut names = std::collections::BTreeSet::new();
-    let mut destinations = Vec::new();
-    for entity in document
+    let settings = &document.project()["iconExport"];
+    let jpeg = settings["format"] == "Jpeg";
+    let numbered = settings["naming"] == "NumberedApiName";
+    let excluded: std::collections::BTreeSet<&str> = settings["excludedIds"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|id| id.as_str())
+        .collect();
+    let selected: Vec<_> = document
         .entities(EntityKind::Achievement)
         .iter()
         .filter(|entity| !achimeld_application::art_images::is_art_image(entity))
-    {
+        .filter(|entity| {
+            entity["id"]
+                .as_str()
+                .is_some_and(|id| !excluded.contains(id))
+        })
+        .collect();
+    if selected.is_empty() {
+        return Err("Select at least one icon to export".into());
+    }
+    let mut names = std::collections::BTreeSet::new();
+    let mut destinations = Vec::new();
+    for (index, entity) in selected.iter().enumerate() {
         let api = entity["apiName"].as_str().ok_or("Missing API name")?;
+        let stem = if numbered {
+            format!("{:04}-{api}", index + 1)
+        } else {
+            api.to_owned()
+        };
         if api.contains(':')
             || api.starts_with('.')
             || api.ends_with('.')
@@ -76,7 +99,11 @@ pub fn export(
         {
             return Err(format!("{api} cannot be exported as a Windows filename"));
         }
-        for name in [format!("{api}.png"), format!("{api}-unachieved.png")] {
+        let extension = if jpeg { "jpg" } else { "png" };
+        for name in [
+            format!("{stem}.{extension}"),
+            format!("{stem}-unachieved.{extension}"),
+        ] {
             if !names.insert(name.to_ascii_lowercase()) || directory.join(&name).exists() {
                 return Err("Icon export filenames collide or already exist. Choose an empty output folder.".into());
             }
@@ -92,12 +119,7 @@ pub fn export(
         complete: false,
     };
     // Render and encode one achievement at a time. No image list grows with the project.
-    for (entity, pair) in document
-        .entities(EntityKind::Achievement)
-        .iter()
-        .filter(|entity| !achimeld_application::art_images::is_art_image(entity))
-        .zip(destinations.chunks(2))
-    {
+    for (entity, pair) in selected.into_iter().zip(destinations.chunks(2)) {
         if cancelled() {
             return Err("Icon export cancelled".into());
         }
@@ -119,9 +141,16 @@ pub fn export(
                 .map_err(|e| e.to_string())?;
             transaction.staged.push(path);
             let mut writer = BufWriter::new(file);
-            image
-                .write_to(&mut writer, image::ImageFormat::Png)
-                .map_err(|e| e.to_string())?;
+            if jpeg {
+                let rgb = image::DynamicImage::ImageRgba8((*image).clone()).to_rgb8();
+                image::DynamicImage::ImageRgb8(rgb)
+                    .write_to(&mut writer, image::ImageFormat::Jpeg)
+                    .map_err(|e| e.to_string())?;
+            } else {
+                image
+                    .write_to(&mut writer, image::ImageFormat::Png)
+                    .map_err(|e| e.to_string())?;
+            }
             writer.flush().map_err(|e| e.to_string())?;
             writer.get_ref().sync_all().map_err(|e| e.to_string())?;
         }
@@ -273,5 +302,35 @@ mod tests {
         let document = Document::from_parts(project, document.catalog().clone()).unwrap();
         assert!(export(&document, &directory.0, &mut Assets, || false).is_err());
         assert_eq!(fs::read_dir(&directory.0).unwrap().count(), 0);
+    }
+    #[test]
+    fn selected_numbered_jpeg_pair_uses_project_preferences() {
+        let directory = Directory::new();
+        let document = document();
+        let mut project = document.project().clone();
+        let excluded = project["achievements"][0]["id"].clone();
+        project["iconExport"] = serde_json::json!({
+            "folder": directory.0.to_string_lossy(),
+            "format": "Jpeg",
+            "naming": "NumberedApiName",
+            "excludedIds": [excluded]
+        });
+        let document = Document::from_parts(project, document.catalog().clone()).unwrap();
+        export(&document, &directory.0, &mut Assets, || false).unwrap();
+        let names: Vec<_> = fs::read_dir(&directory.0)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names.len(), 2);
+        assert!(
+            names
+                .iter()
+                .all(|name| name.starts_with("0001-") && name.ends_with(".jpg"))
+        );
+        for name in names {
+            let image = image::open(directory.0.join(name)).unwrap();
+            assert_eq!(image.width(), 512);
+            assert_eq!(image.height(), 512);
+        }
     }
 }

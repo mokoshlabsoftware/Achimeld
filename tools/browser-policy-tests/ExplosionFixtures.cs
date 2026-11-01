@@ -75,6 +75,10 @@ internal static class ExplosionFixtures
             Icon = new([IconLayer.FromGradient(sdf.Gradient)]) }] }).Any(issue => issue.Code == "achievement.icon.gradient.kind"),
             "SDF gradient accepted without an explosion distance field.");
         IconExplosionDeltoid shape = deltoid.Deltoid!;
+        Require(Validate(deltoid with { Deltoid = shape with { OffsetMin = -10, OffsetMax = 10 } }).Count == 0,
+            "Deltoid offset endpoints rejected.");
+        Require(Validate(deltoid with { Deltoid = shape with { Ellipse = -1 } }).Count == 0,
+            "Concave deltoid endpoint rejected.");
         IconExplosionStyle rounded = sdf with { Count = 512, CountMin = 500, ShapeX = 10, ShapeY = 3,
             Deltoid = shape with { Ellipse = .65 }, Brightness = .7, BrightnessMin = .2, BrightnessMax = 1.6, InvertColors = true };
         Require(new IconExplosionStyle().Brightness == 1 && new IconExplosionStyle().BrightnessMin == 1 &&
@@ -104,8 +108,9 @@ internal static class ExplosionFixtures
         foreach (IconExplosionDeltoid invalid in new[] { shape with { TopHeightMin = -.1 }, shape with { TopHeightMax = 1.1 },
             shape with { BottomHeightMin = .9 }, shape with { BottomHeightMax = double.NaN },
             shape with { Scale = 0 }, shape with { ScaleMin = 1.6 }, shape with { ScaleMax = 2.1 },
-            shape with { WidthMin = -.1 }, shape with { WidthMax = 2.1 }, shape with { OffsetMax = 1.6 },
-            shape with { SharpnessMin = 1.1 }, shape with { Ellipse = -.1 }, shape with { Ellipse = 1.1 },
+            shape with { WidthMin = -.1 }, shape with { WidthMax = 2.1 }, shape with { OffsetMin = -10.1 },
+            shape with { OffsetMax = 10.1 },
+            shape with { SharpnessMin = 1.1 }, shape with { Ellipse = -1.1 }, shape with { Ellipse = 1.1 },
             shape with { Ellipse = double.NaN } })
             Require(Validate(deltoid with { Deltoid = invalid }).Any(issue => issue.Code == "achievement.icon.explosion"), "Invalid deltoid accepted.");
         foreach (IconExplosionStyle invalid in new[] { settings with { Count = 0 }, settings with { Count = 513 },

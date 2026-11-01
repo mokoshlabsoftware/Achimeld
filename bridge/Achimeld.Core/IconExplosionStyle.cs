@@ -20,13 +20,13 @@ public sealed record IconExplosionDeltoid
     public double OffsetMax { get; init; }
     public double SharpnessMin { get; init; } = .8;
     public double SharpnessMax { get; init; } = 1;
-    public bool ValidParameters() => IconExplosionTriangle.Range(Ellipse, Ellipse, 0, 1) &&
+    public bool ValidParameters() => IconExplosionTriangle.Range(Ellipse, Ellipse, -1, 1) &&
         IconExplosionTriangle.Range(Scale, Scale, .01, 2) &&
         IconExplosionTriangle.Range(ScaleMin, ScaleMax, .01, 2) &&
         IconExplosionTriangle.Range(WidthMin, WidthMax, 0, 2) &&
         IconExplosionTriangle.Range(TopHeightMin, TopHeightMax, 0, 1) &&
         IconExplosionTriangle.Range(BottomHeightMin, BottomHeightMax, 0, 1) &&
-        IconExplosionTriangle.Range(OffsetMin, OffsetMax, -1.5, 1.5) &&
+        IconExplosionTriangle.Range(OffsetMin, OffsetMax, -10, 10) &&
         IconExplosionTriangle.Range(SharpnessMin, SharpnessMax, 0, 1);
     public string Fingerprint() => string.Join(",", new[] { Scale, ScaleMin, ScaleMax, WidthMin, WidthMax,
         TopHeightMin, TopHeightMax, BottomHeightMin, BottomHeightMax, OffsetMin, OffsetMax,

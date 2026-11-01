@@ -735,8 +735,7 @@ impl Desktop {
         };
         // Register the background before its controls, including the window's
         // top/side margins and the empty space around the subtitle and buttons.
-        ui.interact(header_rect, layers_panel_id().with("header"), Sense::drag())
-            .on_hover_text("Drag to move layers");
+        ui.interact(header_rect, layers_panel_id().with("header"), Sense::drag());
         let painter = ui
             .painter()
             .with_clip_rect(header_rect.intersect(ui.ctx().content_rect()));
@@ -3075,18 +3074,19 @@ pub(crate) fn new_layer(kind: &str) -> Value {
         layer["perlinNoise"] = crate::perlin::defaults();
     }
     if kind == "Particle" {
-        let settings = achimeld_application::particles::ParticleSettings {
-            seed: u32::from_str_radix(&new_id()[..8], 16).unwrap_or(1),
-            color_map: Some(Default::default()),
-            ..Default::default()
-        };
-        layer["particles"] = json!(settings);
+        achimeld_application::effect_presets::built_in_particles()[0]
+            .apply_to(&mut layer)
+            .expect("Default MagicDust particle preset applies to a new particle layer");
     }
     if kind == "Explosion" {
-        layer["explosion"] = json!(achimeld_application::explosion::ExplosionSettings {
-            seed: u32::from_str_radix(&new_id()[..8], 16).unwrap_or(1),
-            ..achimeld_application::explosion::ExplosionSettings::new_deltoid()
-        });
+        let presets = achimeld_application::effect_presets::decode(
+            achimeld_application::effect_presets::EffectKind::Explosion,
+            include_bytes!("../assets/default-explosion.achexplosions"),
+        )
+        .expect("Validated embedded default explosion preset");
+        presets[0]
+            .apply_to(&mut layer)
+            .expect("Default explosion preset applies to a new explosion layer");
     }
     layer
 }

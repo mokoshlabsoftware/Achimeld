@@ -289,6 +289,8 @@ pub struct Desktop {
     pub(crate) inspector_icons: Option<[egui::TextureHandle; 3]>,
     pub(crate) about: bool,
     pub(crate) help_page: crate::about::HelpPage,
+    pub(crate) update_notes: bool,
+    pub(crate) update_from: Option<String>,
     pub(crate) view: View,
     pub(crate) kind: EntityKind,
     pub(crate) selection: Vec<String>,
@@ -304,6 +306,8 @@ pub struct Desktop {
     pub(crate) camera_press_frame: Option<u64>,
     pub(crate) camera_motion: Option<crate::canvas::CameraMotion>,
     pub(crate) canvas_menu: Option<crate::canvas::CanvasMenu>,
+    automation_menu: Option<String>,
+    automation_close_menu: bool,
     pub(crate) icon_pan: Option<crate::canvas::IconPan>,
     pub(crate) node_drag: Option<NodeDrag>,
     pub(crate) selection_drag: Option<crate::canvas::SelectionDrag>,
@@ -314,7 +318,9 @@ pub struct Desktop {
     pub(crate) texture_bytes: usize,
     pub(crate) settings: bool,
     pub(crate) sort_open: bool,
+    pub(crate) icon_export_open: bool,
     pub(crate) gradient_explorer: crate::gradient_explorer::Explorer,
+    pub(crate) shape_explorer: crate::shape_explorer::Explorer,
     pub(crate) gradient_map_collection: crate::gradient_map_collection::Collection,
     pub(crate) effect_explorer: crate::effect_explorer::Explorer,
     pub(crate) style_viewer_ui: crate::style_viewer::ViewerUi,
@@ -362,6 +368,8 @@ impl Default for Desktop {
             steam_delete_review: false,
             steam_delete_fresh: false,
             sync_app_id_edit: None,
+            automation_menu: None,
+            automation_close_menu: false,
             brand_icon: None,
             preference_icons: None,
             history_icons: None,
@@ -369,6 +377,8 @@ impl Default for Desktop {
             inspector_icons: None,
             about: false,
             help_page: crate::about::HelpPage::About,
+            update_notes: false,
+            update_from: None,
             view: View::Achievements,
             kind: EntityKind::Achievement,
             selection: Vec::new(),
@@ -394,7 +404,9 @@ impl Default for Desktop {
             texture_bytes: 0,
             settings: false,
             sort_open: false,
+            icon_export_open: false,
             gradient_explorer: Default::default(),
+            shape_explorer: Default::default(),
             gradient_map_collection: Default::default(),
             effect_explorer: Default::default(),
             style_viewer_ui: Default::default(),
@@ -428,6 +440,149 @@ impl Default for Desktop {
     }
 }
 impl Desktop {
+    fn icon_export_window(&mut self, ctx: &egui::Context, port: &mut dyn EditorPort) {
+        if !self.icon_export_open {
+            return;
+        }
+        let mut open = true;
+        let mut settings = port.editor().document().project()["iconExport"].clone();
+        if !settings.is_object() {
+            settings = serde_json::json!({"folder":"", "format":"Png", "naming":"ApiName", "excludedIds":[]});
+        }
+        let original = settings.clone();
+        let mut choose_folder = false;
+        let mut export = false;
+        egui::Window::new("Export achievement icons")
+            .id(egui::Id::new("icon-export-window"))
+            .open(&mut open)
+            .collapsible(false)
+            .resizable(true)
+            .default_size([520.0, 480.0])
+            .show(ctx, |ui| {
+                ui.label("Choose icons");
+                ui.horizontal(|ui| {
+                    if ui.app_button("Select all").clicked() {
+                        settings["excludedIds"] = serde_json::json!([]);
+                    }
+                    if ui.app_button("Select none").clicked() {
+                        settings["excludedIds"] = serde_json::json!(
+                            port.editor()
+                                .document()
+                                .entities(EntityKind::Achievement)
+                                .iter()
+                                .filter(|e| !achimeld_application::art_images::is_art_image(e))
+                                .filter_map(|e| e["id"].as_str())
+                                .collect::<Vec<_>>()
+                        );
+                    }
+                });
+                egui::ScrollArea::vertical()
+                    .max_height(230.0)
+                    .show(ui, |ui| {
+                        for entity in port
+                            .editor()
+                            .document()
+                            .entities(EntityKind::Achievement)
+                            .iter()
+                            .filter(|e| !achimeld_application::art_images::is_art_image(e))
+                        {
+                            let Some(id) = entity["id"].as_str() else {
+                                continue;
+                            };
+                            let mut included = !settings["excludedIds"]
+                                .as_array()
+                                .is_some_and(|ids| ids.iter().any(|v| v == id));
+                            let label = entity["apiName"].as_str().unwrap_or("Unnamed icon");
+                            if ui.checkbox(&mut included, label).changed() {
+                                let ids = settings["excludedIds"]
+                                    .as_array_mut()
+                                    .expect("export exclusions");
+                                ids.retain(|value| value != id);
+                                if !included {
+                                    ids.push(serde_json::json!(id));
+                                }
+                            }
+                        }
+                    });
+                ui.separator();
+                ui.label("File format");
+                ui.horizontal(|ui| {
+                    for (label, value) in [("PNG", "Png"), ("JPG", "Jpeg")] {
+                        if ui.app_button(label).clicked() {
+                            settings["format"] = serde_json::json!(value);
+                        }
+                    }
+                    ui.label(settings["format"].as_str().unwrap_or("Png"));
+                });
+                ui.label("File naming");
+                ui.horizontal(|ui| {
+                    for (label, value) in [
+                        ("API name", "ApiName"),
+                        ("Number + API name", "NumberedApiName"),
+                    ] {
+                        if ui.app_button(label).clicked() {
+                            settings["naming"] = serde_json::json!(value);
+                        }
+                    }
+                });
+                ui.label(if settings["naming"] == "NumberedApiName" {
+                    "Example: 0001-ACHIEVEMENT_001.png"
+                } else {
+                    "Example: ACHIEVEMENT_001.png"
+                });
+                ui.separator();
+                ui.label(format!(
+                    "Folder: {}",
+                    settings["folder"]
+                        .as_str()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or("Choose a folder")
+                ));
+                ui.horizontal(|ui| {
+                    if ui.app_button("Choose folder…").clicked() {
+                        choose_folder = true;
+                    }
+                    let count = port
+                        .editor()
+                        .document()
+                        .entities(EntityKind::Achievement)
+                        .iter()
+                        .filter(|e| !achimeld_application::art_images::is_art_image(e))
+                        .filter(|e| {
+                            e["id"].as_str().is_some_and(|id| {
+                                !settings["excludedIds"]
+                                    .as_array()
+                                    .is_some_and(|ids| ids.iter().any(|v| v == id))
+                            })
+                        })
+                        .count();
+                    if ui
+                        .add_enabled(
+                            count > 0 && settings["folder"].as_str().is_some_and(|s| !s.is_empty()),
+                            crate::buttons::Button::new("Export"),
+                        )
+                        .clicked()
+                    {
+                        export = true;
+                    }
+                });
+            });
+        self.icon_export_open = open;
+        if settings != original {
+            self.apply(
+                port,
+                "Update icon export choices",
+                Command::IconExportSettings(settings),
+                None,
+            );
+        }
+        if choose_folder {
+            self.request(UiRequest::ChooseIconExportFolder);
+        }
+        if export {
+            self.request(UiRequest::ExportIcons);
+        }
+    }
     fn window_size_panel(&mut self, ctx: &egui::Context, enabled: bool) {
         let Some(draft) = &mut self.window_size else {
             return;
@@ -505,6 +660,18 @@ impl Desktop {
     pub fn automation_scene(&self) -> Value {
         serde_json::json!({"activeCanvas":match self.view { View::Achievements=>"Achievements",View::Stats=>"Stats",_=>"Other" },"selection":self.selection,"filter":self.filter,"camera":{"zoom":self.zoom,"offsetX":self.pan.x,"offsetY":self.pan.y}})
     }
+    pub fn automation_show_sync(&mut self) {
+        self.view = View::Sync;
+    }
+    pub fn automation_open_menu(&mut self, menu: &str) {
+        self.automation_menu = Some(menu.to_owned());
+        self.automation_close_menu = false;
+    }
+    pub fn automation_close_menu(&mut self) {
+        self.automation_menu = None;
+        self.automation_close_menu = true;
+        self.canvas_menu = None;
+    }
     pub fn automation_busy(&self) -> bool {
         self.about
             || self.style_rename.is_some()
@@ -516,6 +683,7 @@ impl Desktop {
             || self.sync_app_id_edit.is_some()
             || self.sort_open
             || self.gradient_explorer.open
+            || self.shape_explorer.open
             || self.effect_explorer.open
             || self.preferences.is_some()
             || self.source_picker.is_some()
@@ -732,9 +900,14 @@ impl Desktop {
                     ui.spacing_mut().item_spacing.x = 0.0;
                     let help = crate::localization::text(ui.ctx(), "Help");
                     let windows = crate::localization::text(ui.ctx(), "Windows");
-                    crate::chrome::title_menu_bar(
+                    if std::mem::take(&mut self.automation_close_menu) {
+                        egui::Popup::close_all(ui.ctx());
+                    }
+                    let requested_menu = self.automation_menu.take();
+                    crate::chrome::title_menu_bar_requested(
                         ui,
                         ["File", "Edit", "Tools", &windows, &help],
+                        requested_menu.as_deref(),
                         |index, ui| match index {
                             0 => {
                                 for (name, request) in [
@@ -766,6 +939,10 @@ impl Desktop {
                                         self.request(request);
                                         ui.close();
                                     }
+                                }
+                                if ui.app_button("Export achievement icons…").clicked() {
+                                    self.icon_export_open = true;
+                                    ui.close();
                                 }
                                 if ui
                                     .app_button(crate::localization::text(
@@ -873,7 +1050,6 @@ impl Desktop {
                                 for (label, request) in [
                                     ("Import atlas…", UiRequest::ImportAtlas),
                                     ("Import image…", UiRequest::ImportImage),
-                                    ("Export achievement icons…", UiRequest::ExportIcons),
                                     (
                                         "Export achievement translations…",
                                         UiRequest::ExportAchievementTranslations,
@@ -890,6 +1066,10 @@ impl Desktop {
                                         self.request(request);
                                         ui.close();
                                     }
+                                }
+                                if ui.app_button("Export achievement icons…").clicked() {
+                                    self.icon_export_open = true;
+                                    ui.close();
                                 }
                                 ui.separator();
                                 if ui
@@ -949,6 +1129,10 @@ impl Desktop {
                                     .clicked()
                                 {
                                     self.open_change_log();
+                                    ui.close();
+                                }
+                                if ui.app_button("Achimeld Wiki").clicked() {
+                                    self.request(UiRequest::OpenWiki);
                                     ui.close();
                                 }
                                 if ui
@@ -1292,6 +1476,7 @@ impl Desktop {
         self.inspector_dock_preview(&ctx, inspector_bounds);
         self.layers_window(&ctx, port, root.is_enabled());
         self.gradient_explorer_window(&ctx, port, root.is_enabled());
+        self.shape_explorer_window(&ctx, port, root.is_enabled());
         self.gradient_map_collection_window(&ctx, port, root.is_enabled());
         self.effect_explorer_window(&ctx, port, root.is_enabled());
         self.terminal
@@ -1307,6 +1492,7 @@ impl Desktop {
         self.sync_plan_window(&ctx, port);
         self.steam_delete_window(&ctx, port);
         self.sort_window(&ctx, port);
+        self.icon_export_window(&ctx, port);
         self.preferences_window(&ctx, port);
         self.about_window(&ctx);
         if root.is_enabled() {

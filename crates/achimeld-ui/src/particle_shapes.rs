@@ -2,7 +2,19 @@ use crate::buttons::{self, Button, UiButtonExt as _};
 use achimeld_application::particles::ParticleShape;
 use serde_json::{Value, json};
 
-pub(super) fn show(ui: &mut egui::Ui, value: &mut Value) {
+pub(super) fn show(
+    ui: &mut egui::Ui,
+    port: &mut dyn achimeld_application::EditorPort,
+    value: &mut Value,
+) {
+    let mut layer = json!({"kind":"Particle","particles":value.clone()});
+    crate::shape_explorer::controls(
+        ui,
+        port,
+        &mut layer,
+        achimeld_application::shape_presets::ShapeKind::Particle,
+    );
+    *value = layer["particles"].clone();
     let Ok(settings) = super::editable_settings(value) else {
         return;
     };
@@ -254,7 +266,7 @@ fn preset_name(parts: &Value) -> &'static str {
         _ => "Custom",
     }
 }
-fn shape_icon(ctx: &egui::Context, name: &str) -> egui::Image<'static> {
+pub(crate) fn shape_icon(ctx: &egui::Context, name: &str) -> egui::Image<'static> {
     let index = match name {
         "Triangle" => 1,
         "Square" => 2,

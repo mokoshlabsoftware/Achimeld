@@ -168,6 +168,7 @@ fn read_only(operation: &str) -> bool {
     matches!(
         operation,
         "get_scene"
+            | "get_synchronization"
             | "status"
             | "get_node"
             | "list_icon_styles"
@@ -455,7 +456,11 @@ impl Engine {
             ));
         }
         if host.dialog.is_some()
-            || host.synchronization.is_some()
+            || (host.synchronization.is_some()
+                && !matches!(
+                    request.operation.as_str(),
+                    "apply_synchronization" | "cancel_synchronization" | "close_menu"
+                ))
             || host.read.is_some()
             || host.art.is_some()
             || host.image_drop.is_some()
@@ -544,6 +549,91 @@ impl Engine {
                 Ok(
                     json!({"project":{"id":document.project()["projectId"],"displayName":document.project()["displayName"],"steamAppId":document.app_id()},"canvas":ui.automation_scene(),"achievements":edits::summaries(document,EntityKind::Achievement),"stats":edits::summaries(document,EntityKind::Stat),"assets":document.project()["assets"],"isDirty":host.editor.is_dirty(),"canUndo":host.editor.undo_label().is_some(),"canRedo":host.editor.redo_label().is_some(),"undoLabel":host.editor.undo_label(),"redoLabel":host.editor.redo_label()}),
                 )
+            }
+            "get_synchronization" => Ok(json!({
+                "verified": host.synchronization_verified(),
+                "active": host.synchronization.is_some(),
+                "error": host.synchronization_error(),
+                "review": host.synchronization_review(),
+                "status": host.status,
+                "steamAppId": host.editor.document().app_id(),
+            })),
+            "validate_steam" | "prepare_synchronization" => {
+                if host.store.path().is_none() {
+                    return Err("Save the project in the editor before validation".into());
+                }
+                if request.operation == "prepare_synchronization"
+                    && !host.synchronization_verified()
+                {
+                    return Err("Validate the Steam connection in this editor session first".into());
+                }
+                if request.operation == "validate_steam" {
+                    host.verified_sync = None;
+                }
+                host.request(UiRequest::PrepareSynchronization);
+                if let Some(error) = host.synchronization_error() {
+                    return Err(error.into());
+                }
+                ui.automation_show_sync();
+                Ok(json!({"started":true,"status":host.status}))
+            }
+            "apply_synchronization" => {
+                let review = host
+                    .synchronization_review()
+                    .ok_or("No synchronization review is ready")?;
+                if review["token"] != args["token"] {
+                    return Err("The synchronization review token changed".into());
+                }
+                if review["appId"].as_u64() != Some(u64::from(host.editor.document().app_id())) {
+                    return Err("The Steam destination changed; validate again".into());
+                }
+                let rows = review["rows"]
+                    .as_array()
+                    .ok_or("Invalid synchronization review")?;
+                let choices = args["choices"].as_array().ok_or("Missing choices")?;
+                if choices.len() != rows.len() {
+                    return Err("Supply exactly one choice for every review row".into());
+                }
+                let mut selected = std::collections::BTreeMap::new();
+                for choice in choices {
+                    let key = choice["key"].as_str().ok_or("Missing row key")?;
+                    let action = choice["action"].as_str().ok_or("Missing row action")?;
+                    let row = rows
+                        .iter()
+                        .find(|row| row["key"] == key)
+                        .ok_or("Unknown review row")?;
+                    if !row["actions"]
+                        .as_array()
+                        .is_some_and(|actions| actions.iter().any(|a| a == action))
+                    {
+                        return Err("Action is unavailable for this review row".into());
+                    }
+                    if selected.insert(key.to_owned(), action.to_owned()).is_some() {
+                        return Err("Duplicate review row choice".into());
+                    }
+                }
+                if selected.values().all(|action| action == "Skip") {
+                    return Err("Select at least one change to synchronize".into());
+                }
+                host.request(UiRequest::ApplySynchronization(
+                    selected.into_iter().collect(),
+                ));
+                Ok(json!({"started":true,"status":host.status}))
+            }
+            "cancel_synchronization" => {
+                if host.synchronization.is_none() {
+                    return Err("No synchronization is active".into());
+                }
+                host.request(UiRequest::CancelSynchronization);
+                Ok(json!({"cancelled":true}))
+            }
+            "open_menu" => {
+                ui.automation_open_menu(args["menu"].as_str().ok_or("Missing menu")?);
+                Ok(json!({"menu":args["menu"]}))
+            }
+            "close_menu" => {
+                ui.automation_close_menu();
+                Ok(json!({"closed":true}))
             }
             "status" => {
                 let document = host.editor.document();
@@ -1080,6 +1170,41 @@ mod tests {
         assert_eq!(result["steamSyncCount"], 1);
         assert_eq!(result["statCount"], 2);
         assert!(result.get("projectPath").is_none());
+    }
+    #[test]
+    fn mcp_menu_and_steam_controls_keep_editor_guards() {
+        let (mut host, mut ui, mut engine) = fixture();
+        engine.observe(&host, &ui);
+        let state = request(&host, &engine, "get_synchronization", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, state)["data"]["result"]["verified"],
+            false
+        );
+        let validate = request(&host, &engine, "validate_steam", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, validate)["success"],
+            false
+        );
+        let apply = request(
+            &host,
+            &engine,
+            "apply_synchronization",
+            json!({"token":"missing","choices":[{"key":"a","action":"Upload"}]}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, apply)["success"],
+            false
+        );
+        let open = request(&host, &engine, "open_menu", json!({"menu":"File"}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, open)["success"],
+            true
+        );
+        let close = request(&host, &engine, "close_menu", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, close)["success"],
+            true
+        );
     }
     #[test]
     fn selection_returns_the_destination_camera_and_global_style_import_is_one_undo_step() {

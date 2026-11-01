@@ -20,3 +20,25 @@ Installers and release tooling can consume this export from their selected sourc
 snapshot and place the resulting JSON beside generated package metadata outside
 the repository. The export does not install anything or establish package trust.
 Installer display and automatic package attachment are future integration work.
+
+## Startup changes prompt
+
+On launch, Achimeld compares its compiled CHANGELOG working version with the last
+acknowledged application version in the per-user APPDATA/Achimeld/rust-about-seen.json
+state file. This state is separate from project files, editable preferences and undo.
+
+A newer version opens an in-app prompt after startup settings dialogs. The header
+shows the full Achimeld logo, then the compiled version and date on separate lines.
+The body lists change bullets since the acknowledged version, including skipped
+updates, without individual version headings. Selecting Ok or
+pressing Enter/Escape acknowledges the current version using an atomic state write.
+An unsuccessful write leaves the version unacknowledged and reports the failure.
+
+The same version does not prompt again. Running an older build retains the newer
+acknowledgement, so downgrading does not erase the user's update baseline.
+Missing state, legacy boolean state or a baseline absent from the embedded history
+shows all recorded change bullets without inventing a range.
+Help > Change log remains available for the complete history.
+
+This records the last acknowledged version, not an installer upgrade source.
+A version that was never launched or acknowledged does not advance the baseline.

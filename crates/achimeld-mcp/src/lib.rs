@@ -1,4 +1,4 @@
-//! Achimeld's stdio MCP facade. No browser, process launch, or remote mutation tools.
+//! Achimeld's stdio MCP facade. Reviewed Steam draft changes stay in the supervised editor workflow.
 #![forbid(unsafe_code)]
 use base64::Engine;
 use serde::{Deserialize, Serialize};
@@ -45,6 +45,48 @@ pub fn tools() -> Vec<Value> {
         (
             "get_scene",
             "Read the open editor, projectId, revision, nodes, selection and undo state.",
+            "",
+            "",
+        ),
+        (
+            "get_synchronization",
+            "Read validation, activity, error and the current synchronization review. Review rows and token are required before applying changes.",
+            "",
+            "",
+        ),
+        (
+            "validate_steam",
+            "Check the saved project's Steam sign-in and destination through the supervised editor workflow. Returns when the check starts; poll get_synchronization for completion.",
+            "",
+            "",
+        ),
+        (
+            "prepare_synchronization",
+            "After validation in this editor session, save and prepare a fresh Steam review. Returns when preparation starts; poll get_synchronization.",
+            "",
+            "",
+        ),
+        (
+            "apply_synchronization",
+            "Apply explicit choices from the current review to the Steamworks draft. Supply the exact review token and one action for every row. Steamworks publication remains manual.",
+            "token choices",
+            "token:s choices:a",
+        ),
+        (
+            "cancel_synchronization",
+            "Cancel active validation or synchronization review.",
+            "",
+            "",
+        ),
+        (
+            "open_menu",
+            "Open a top title menu in the editor: File, Edit, Tools, Windows or Help.",
+            "menu",
+            "menu:s",
+        ),
+        (
+            "close_menu",
+            "Close the active menu or popup in the editor.",
             "",
             "",
         ),
@@ -199,6 +241,7 @@ pub fn tools() -> Vec<Value> {
             "list_instances"
                 | "status"
                 | "get_scene"
+                | "get_synchronization"
                 | "get_node"
                 | "list_icon_styles"
                 | "list_style_collections"
@@ -233,6 +276,12 @@ pub fn tools() -> Vec<Value> {
             }
             if key == "nodes" {
                 schema = json!({"type":"array","minItems":1,"maxItems":1000,"items":{"type":"object","additionalProperties":false,"required":["nodeId","column","row"],"properties":{"nodeId":{"type":"string"},"column":{"type":"integer"},"row":{"type":"integer"}}}});
+            }
+            if key == "menu" {
+                schema["enum"] = json!(["File", "Edit", "Tools", "Windows", "Help"]);
+            }
+            if key == "choices" {
+                schema = json!({"type":"array","minItems":1,"maxItems":1000,"items":{"type":"object","additionalProperties":false,"required":["key","action"],"properties":{"key":{"type":"string","maxLength":256},"action":{"type":"string","enum":["Upload","Import","Skip"]}}}});
             }
             if key == "stats" {
                 schema = json!({
@@ -1109,12 +1158,24 @@ mod tests {
         assert_eq!(responses[1]["result"]["protocolVersion"], "2025-11-25");
         assert_eq!(
             responses[2]["result"]["tools"].as_array().unwrap().len(),
-            28
+            35
         );
         assert_eq!(responses[3]["result"]["isError"], false);
     }
     #[test]
     fn schema_rejects_extra_authority_malformed_batches_and_invalid_enums() {
+        let base = json!({"processId":1,"projectId":"p","requestId":"r","expectedRevision":0});
+        let mut menu = base.clone();
+        menu["menu"] = json!("File");
+        assert!(validate_arguments("open_menu", &menu).is_ok());
+        menu["menu"] = json!("Developer");
+        assert!(validate_arguments("open_menu", &menu).is_err());
+        let mut apply = base.clone();
+        apply["token"] = json!("review");
+        apply["choices"] = json!([{"key":"a","action":"Upload"}]);
+        assert!(validate_arguments("apply_synchronization", &apply).is_ok());
+        apply["choices"] = json!([{"key":"a","action":"Delete"}]);
+        assert!(validate_arguments("apply_synchronization", &apply).is_err());
         assert!(
             validate_arguments(
                 "get_scene",
@@ -1123,7 +1184,6 @@ mod tests {
             .is_err()
         );
         assert!(validate_arguments("launch", &json!({})).is_err());
-        let base = json!({"processId":1,"projectId":"p","requestId":"r","expectedRevision":0});
         let mut args = base.clone();
         args["nodes"] = json!([]);
         assert!(validate_arguments("move_nodes", &args).is_err());

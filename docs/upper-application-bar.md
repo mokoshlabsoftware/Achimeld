@@ -55,7 +55,7 @@ closing. Successful verification in the current session retains the **Synchroniz
 attention stripes until the document changes; with no pending review it is
 disabled. An App ID with no remembered connection uses the primary **Validate**
 action. A connection remembered from a previous session uses the primary
-**Re-validate** action. Neither state adds a second button. Validation and synchronization failures remain
+**Re-validate** action. Neither state adds a second validation button. The Sync action row also offers Open achievements and Open stats for the project's fixed Steamworks pages; at narrow widths these move to a second fixed-height row. Validation and synchronization failures remain
 visible in the Sync view using the Error palette color, independently of general
 status updates, until another validation starts. Errors belong to the current
 editor session and Steam App ID and do not appear in another project.
@@ -87,7 +87,7 @@ The following lists describe the English labels and their order. Existing locali
 | Edit | Undo, optionally followed by its history label; Redo, optionally followed by its history label; Duplicate selection; Delete selection |
 | Tools | Gradient Explorer…; Style Viewer…; Art Data Bank; Import atlas…; Import image…; Export achievement icons…; Export achievement translations…; Import achievement translations… |
 | Windows | Set window size…; Reset layout |
-| Help | About; Change log |
+| Help | About; Change log; Achimeld Wiki; Connect MCP |
 
 Windows > Reset layout restores every floating window's default placement, including closed tools and movable color editors. It recenters Layers and clears its saved position, and returns Properties to its default right dock. Window contents, selections, drafts, open tools, layer split and canvas framing are preserved.
 

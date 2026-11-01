@@ -255,6 +255,12 @@ internal static class SynchronizationFixtures
         Check(portal.Writes == 1 && portal.Verifications > 0);
         var stable = await new SynchronizationSession(portal).PrepareAsync(iconRequest with { Project = result.GetProperty("project").Clone() }, 480);
         Check(stable.Rows.Single(r => r.Kind == "Icon").State == "InSync");
+        var changedArtwork = iconRequest with { Project = result.GetProperty("project").Clone(),
+            Icons = new() { ["ACH_WIN"] = new(new string('a', 64), hash) } };
+        var artworkReview = await new SynchronizationSession(portal).PrepareAsync(changedArtwork, 480);
+        Check(artworkReview.Rows.Single(r => r.Kind == "Icon").State == "LocalChanged" &&
+            artworkReview.Rows.Single(r => r.Kind == "Icon").DefaultAction == "Upload" &&
+            artworkReview.Rows.Single(r => r.Kind == "Achievement").State == stable.Rows.Single(r => r.Kind == "Achievement").State);
         Check(result.GetProperty("project").GetProperty("achievements")[0].GetProperty("icon").GetProperty("layers")[0].GetProperty("kind").GetString() == "Shape");
 
         // Imports retain only bytes matching the exact reviewed raw image identities.

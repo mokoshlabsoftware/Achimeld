@@ -169,13 +169,31 @@ pub(crate) fn row<R>(
     row_with_icon(ui, label, None, content)
 }
 
+pub(crate) fn row_with_leading_action<R>(
+    ui: &mut egui::Ui,
+    label: &str,
+    image: egui::Image<'_>,
+    hint: &str,
+    content: impl FnOnce(&mut egui::Ui, bool) -> R,
+) -> R {
+    row_impl(
+        ui,
+        label,
+        None,
+        Some((image, hint)),
+        false,
+        24.0,
+        |ui, _, clicked| content(ui, clicked),
+    )
+}
+
 pub(crate) fn row_with_icon<R>(
     ui: &mut egui::Ui,
     label: &str,
     icon: Option<(egui::Image<'_>, String)>,
     content: impl FnOnce(&mut egui::Ui) -> R,
 ) -> R {
-    row_impl(ui, label, icon, false, 24.0, |ui, _| content(ui))
+    row_impl(ui, label, icon, None, false, 24.0, |ui, _, _| content(ui))
 }
 
 pub(crate) fn row_with_min_control<R>(
@@ -184,13 +202,19 @@ pub(crate) fn row_with_min_control<R>(
     min_control_width: f32,
     content: impl FnOnce(&mut egui::Ui) -> R,
 ) -> R {
-    row_impl(ui, label, None, false, min_control_width, |ui, _| {
-        content(ui)
-    })
+    row_impl(
+        ui,
+        label,
+        None,
+        None,
+        false,
+        min_control_width,
+        |ui, _, _| content(ui),
+    )
 }
 
 pub(crate) fn checkbox(ui: &mut egui::Ui, label: &str, value: &mut bool) -> egui::Response {
-    row_impl(ui, label, None, true, 24.0, |ui, label| {
+    row_impl(ui, label, None, None, true, 24.0, |ui, label, _| {
         let mut response = ui.checkbox(value, "").labelled_by(label.id);
         if label.clicked() {
             *value = !*value;
@@ -204,9 +228,10 @@ fn row_impl<R>(
     ui: &mut egui::Ui,
     label: &str,
     icon: Option<(egui::Image<'_>, String)>,
+    leading_action: Option<(egui::Image<'_>, &str)>,
     clickable_label: bool,
     min_control_width: f32,
-    content: impl FnOnce(&mut egui::Ui, &egui::Response) -> R,
+    content: impl FnOnce(&mut egui::Ui, &egui::Response, bool) -> R,
 ) -> R {
     let rules = rules(ui.ctx());
     let fixed = has_fixed_width(ui);
@@ -219,7 +244,7 @@ fn row_impl<R>(
         .layout_no_wrap(full.clone(), font.clone(), ui.visuals().text_color())
         .size()
         .x;
-    let icon_width = if icon.is_some() {
+    let icon_width = if icon.is_some() || leading_action.is_some() {
         20.0 + ui.spacing().item_spacing.x
     } else {
         0.0
@@ -241,6 +266,7 @@ fn row_impl<R>(
     let response = ui.horizontal(|ui| {
         ui.set_width(width);
         let height = ui.spacing().interact_size.y;
+        let mut leading_action_clicked = false;
         let label = ui.allocate_ui_with_layout(
             egui::vec2(label_width, height),
             egui::Layout::left_to_right(egui::Align::Center),
@@ -256,6 +282,22 @@ fn row_impl<R>(
                 ui.set_clip_rect(clip);
                 if let Some((icon, hint)) = icon {
                     ui.add_sized([20.0, 20.0], icon).on_hover_text(hint);
+                }
+                if let Some((image, hint)) = leading_action {
+                    leading_action_clicked = ui
+                        .scope(|ui| {
+                            ui.spacing_mut().button_padding = egui::Vec2::ZERO;
+                            ui.add(
+                                crate::buttons::Button::new(
+                                    image.fit_to_exact_size(egui::vec2(8.0, 8.0)),
+                                )
+                                .min_size(egui::vec2(16.0, 20.0))
+                                .image_tint_follows_text_color(true),
+                            )
+                        })
+                        .inner
+                        .on_hover_text(crate::localization::text(ui.ctx(), hint))
+                        .clicked();
                 }
                 let text = egui::Label::new(egui::RichText::new(short).font(font))
                     .wrap_mode(if fixed {
@@ -277,7 +319,7 @@ fn row_impl<R>(
                 response.on_hover_text(&full).on_disabled_hover_text(full)
             },
         );
-        content(ui, &label.inner)
+        content(ui, &label.inner, leading_action_clicked)
     });
     if !fixed {
         divider(

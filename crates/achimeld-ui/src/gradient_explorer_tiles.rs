@@ -125,6 +125,7 @@ impl Explorer {
             .gradients()
             .iter()
             .filter(|g| g.name.to_lowercase().contains(&needle))
+            .cloned()
             .collect();
         let order: Vec<_> = presets.iter().map(|g| g.id.clone()).collect();
         self.selection.retain(|id| {
@@ -135,13 +136,21 @@ impl Explorer {
                     .is_some_and(|g| &g.id == id && !port.gradients().iter().any(|p| &p.id == id))
         });
         let width = (ui.available_width() - 16.0).max(1.0);
-        let minimum = (ui.text_style_height(&egui::TextStyle::Button) * 8.0).max(140.0);
+        let minimum = self.icon_size.max(24.0) as f32 + 60.0;
         let columns = (width / minimum).floor().max(1.0) as usize;
         let size = Vec2::new(
             width / columns as f32,
-            80.0 + ui.text_style_height(&egui::TextStyle::Button) * 2.0,
+            self.icon_size.max(24.0) as f32 + ui.text_style_height(&egui::TextStyle::Button) * 2.0,
         );
         let mut choose = None;
+        if let Some(unsaved) = &self.unsaved
+            && tile(ui, unsaved, self.selected.is_none(), size).clicked()
+            && self.save(port)
+        {
+            self.selected = None;
+            self.selection.clear();
+            self.draft = self.unsaved.clone();
+        }
         ui.scope(|ui| {
             ui.spacing_mut().item_spacing = Vec2::ZERO;
             egui::ScrollArea::vertical()
@@ -156,7 +165,7 @@ impl Explorer {
                                     tile(ui, preset, self.selection.contains(&preset.id), size);
                                 if response.clicked() {
                                     response.request_focus();
-                                    choose = Some(((*preset).clone(), ui.input(|i| i.modifiers)));
+                                    choose = Some((preset.clone(), ui.input(|i| i.modifiers)));
                                 }
                             }
                         });

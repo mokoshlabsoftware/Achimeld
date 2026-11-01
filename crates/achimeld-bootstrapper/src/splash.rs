@@ -13,10 +13,11 @@ use std::{
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
     Graphics::Gdi::{
-        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BLACKNESS, BeginPaint, DC_BRUSH, DIB_RGB_COLORS,
-        DT_CENTER, DT_VCENTER, DT_WORDBREAK, DrawTextW, EndPaint, FillRect, GetStockObject,
-        InvalidateRect, PAINTSTRUCT, PatBlt, SRCCOPY, SetBkMode, SetDCBrushColor, SetTextColor,
-        StretchDIBits, TRANSPARENT, UpdateWindow,
+        ANTIALIASED_QUALITY, BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BLACKNESS, BeginPaint,
+        CreateCompatibleDC, CreateDIBSection, CreateFontW, DC_BRUSH, DIB_RGB_COLORS, DT_CENTER,
+        DT_SINGLELINE, DT_VCENTER, DT_WORDBREAK, DeleteDC, DeleteObject, DrawTextW, EndPaint,
+        FillRect, GetStockObject, InvalidateRect, PAINTSTRUCT, PatBlt, SRCCOPY, SelectObject,
+        SetBkMode, SetDCBrushColor, SetTextColor, StretchDIBits, TRANSPARENT, UpdateWindow,
     },
     System::LibraryLoader::GetModuleHandleW,
     UI::WindowsAndMessaging::{
@@ -40,6 +41,107 @@ const LOADING_TRACK: RECT = RECT {
     bottom: HEIGHT - 12,
 };
 const LOADING_SEGMENT_WIDTH: i32 = 80;
+const VERSION_TOP: usize = 187;
+const VERSION_HEIGHT: usize = 28;
+
+fn working_version() -> &'static str {
+    include_str!("../../../CHANGELOG.md")
+        .lines()
+        .find_map(|line| line.strip_prefix("## "))
+        .and_then(|heading| heading.split_once(" ("))
+        .map(|(version, _)| version)
+        .expect("validated embedded change log version")
+}
+
+fn draw_version(pixels: &mut [u8]) {
+    let text: Vec<u16> = working_version().encode_utf16().chain([0]).collect();
+    let face: Vec<u16> = "Segoe UI\0".encode_utf16().collect();
+    let info = BITMAPINFO {
+        bmiHeader: BITMAPINFOHEADER {
+            biSize: size_of::<BITMAPINFOHEADER>() as u32,
+            biWidth: WIDTH,
+            biHeight: -(VERSION_HEIGHT as i32),
+            biPlanes: 1,
+            biBitCount: 32,
+            biCompression: BI_RGB,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    // GDI draws an antialiased white mask. Blend that mask into the splash's
+    // pixels so the version has actual 50% alpha over the artwork.
+    // SAFETY: All GDI objects are used and released on this splash thread.
+    unsafe {
+        let dc = CreateCompatibleDC(ptr::null_mut());
+        if dc.is_null() {
+            return;
+        }
+        let mut bits = ptr::null_mut();
+        let bitmap = CreateDIBSection(dc, &info, DIB_RGB_COLORS, &mut bits, ptr::null_mut(), 0);
+        if bitmap.is_null() || bits.is_null() {
+            if !bitmap.is_null() {
+                DeleteObject(bitmap);
+            }
+            DeleteDC(dc);
+            return;
+        }
+        let old_bitmap = SelectObject(dc, bitmap);
+        PatBlt(dc, 0, 0, WIDTH, VERSION_HEIGHT as i32, BLACKNESS);
+        let font = CreateFontW(
+            -17,
+            0,
+            0,
+            0,
+            400,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ANTIALIASED_QUALITY as u32,
+            0,
+            face.as_ptr(),
+        );
+        let old_font = if font.is_null() {
+            ptr::null_mut()
+        } else {
+            SelectObject(dc, font)
+        };
+        SetBkMode(dc, TRANSPARENT as i32);
+        SetTextColor(dc, 0x00FF_FFFF);
+        let mut rect = RECT {
+            left: 0,
+            top: 0,
+            right: WIDTH,
+            bottom: VERSION_HEIGHT as i32,
+        };
+        DrawTextW(
+            dc,
+            text.as_ptr(),
+            -1,
+            &mut rect,
+            DT_CENTER | DT_VCENTER | DT_SINGLELINE,
+        );
+        let mask =
+            std::slice::from_raw_parts(bits.cast::<u8>(), WIDTH as usize * VERSION_HEIGHT * 4);
+        for (index, source) in mask.chunks_exact(4).enumerate() {
+            let coverage = u16::from(source[0]);
+            let alpha = coverage.div_ceil(2);
+            let target = (VERSION_TOP * WIDTH as usize + index) * 4;
+            for channel in &mut pixels[target..target + 3] {
+                *channel = ((u16::from(*channel) * (255 - alpha) + 255 * alpha) / 255) as u8;
+            }
+        }
+        if !old_font.is_null() {
+            SelectObject(dc, old_font);
+            DeleteObject(font);
+        }
+        SelectObject(dc, old_bitmap);
+        DeleteObject(bitmap);
+        DeleteDC(dc);
+    }
+}
 
 struct Pixels(Vec<u8>);
 thread_local! {
@@ -128,6 +230,7 @@ fn show(shared: Arc<Shared>, ready: mpsc::SyncSender<()>) {
     for rgba in pixels.chunks_exact_mut(4) {
         rgba.swap(0, 2); // Windows DIB pixels are BGRA.
     }
+    draw_version(&mut pixels);
     PIXELS.with(|slot| *slot.borrow_mut() = Some(Pixels(pixels)));
     let class: Vec<u16> = "AchimeldStartupSplash\0".encode_utf16().collect();
     let title: Vec<u16> = "Achimeld\0".encode_utf16().collect();

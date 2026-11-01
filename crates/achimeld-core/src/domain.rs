@@ -147,7 +147,7 @@ pub const LANGUAGES: [&str; 7] = [
 ];
 
 /// Interface choices are independent of the versioned project/Steam text schema.
-pub const INTERFACE_LANGUAGES: [&str; 14] = [
+pub const INTERFACE_LANGUAGES: [&str; 16] = [
     "English",
     "Polish",
     "ChineseSimplified",
@@ -162,6 +162,8 @@ pub const INTERFACE_LANGUAGES: [&str; 14] = [
     "Dutch",
     "Russian",
     "Ukrainian",
+    "Hungarian",
+    "Turkish",
 ];
 
 #[cfg(test)]

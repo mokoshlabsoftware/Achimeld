@@ -1,0 +1,80 @@
+{
+  "format": "com.achimeld.effects",
+  "schemaVersion": 1,
+  "kind": "Particle",
+  "presets": [
+    {
+      "id": "a93c5111-cb1c-46d2-940b-c09f4a2138b2",
+      "name": "MagicDust",
+      "kind": "Particle",
+      "layer": {
+        "blendMode": "Screen",
+        "effects": [],
+        "id": "211ec2ea-7417-4561-a125-de0dc083d9b4",
+        "kind": "Particle",
+        "offsetX": 0.0,
+        "offsetY": 0.0,
+        "opacity": 1.0,
+        "particles": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "colorMode": "Particle",
+          "count": 170,
+          "differentSeedPerInstance": false,
+          "edgeBias": 0.5,
+          "gradient": {
+            "angle": 90.0,
+            "kind": "Radial",
+            "stops": [
+              {
+                "colorHex": "#FFFFFFFF",
+                "offset": 0.0
+              },
+              {
+                "colorHex": "#FF70FFC0",
+                "offset": 0.7938942313194275
+              },
+              {
+                "colorHex": "#00FF7040",
+                "offset": 1.0
+              }
+            ]
+          },
+          "innerRadius": 0.4,
+          "opacityMax": 1.0,
+          "opacityMin": 0.35,
+          "radius": 0.5329417344927787,
+          "radiusMin": 0.19208239018917084,
+          "regularity": 1.0,
+          "rotationMax": 0.0,
+          "rotationMin": 0.0,
+          "seed": 2109274073,
+          "shape": "Star",
+          "shapeX": 1.0,
+          "shapeY": 1.0,
+          "shapes": [
+            {
+              "innerRadius": 0.27925653755664825,
+              "innerRadiusMin": 0.1273369989357889,
+              "kind": "Star",
+              "offsetX": -0.01,
+              "offsetY": -0.02,
+              "operation": "Union",
+              "rotation": 0.0,
+              "scale": 0.46,
+              "vertexCount": 4
+            }
+          ],
+          "sizeMax": 48.5144614726305,
+          "sizeMin": 6.0,
+          "sizeScale": 1.0,
+          "softness": 0.04,
+          "vertexCount": 5
+        },
+        "rotation": 0.0,
+        "scale": 1.0,
+        "visible": true
+      }
+    }
+  ]
+}

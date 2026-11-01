@@ -289,8 +289,13 @@ pub(crate) fn window(
     ui.ctx().set_global_style(animated_style);
     let window_width =
         (ui.text_style_height(&egui::TextStyle::Body) * 22.0).max(256.0) * 0.5 + 24.0;
+    let border = Stroke::new(1.0, ui.visuals().window_stroke.color);
+    let mut frame =
+        egui::Frame::window(&ui.ctx().global_style()).corner_radius(egui::CornerRadius::ZERO);
+    frame.stroke = if attached { Stroke::NONE } else { border };
     let shown = egui::Window::new(crate::localization::text(ui.ctx(), title))
         .id(id)
+        .frame(frame)
         .order(egui::Order::Tooltip)
         .open(open)
         .fade_in(true)
@@ -336,6 +341,8 @@ pub(crate) fn window(
         } else {
             anchor.center_top()
         };
+        let painter = ui.ctx().layer_painter(shown.response.layer_id);
+        let mut outline = vec![rect.left_top(), rect.right_top()];
         if ui.clip_rect().contains(tip) {
             let x = if tip.x >= rect.center().x {
                 rect.right()
@@ -350,7 +357,20 @@ pub(crate) fn window(
                     ui.visuals().window_fill().gamma_multiply(opacity),
                     Stroke::NONE,
                 ));
+            if x == rect.right() {
+                outline.extend([Pos2::new(x, y - 10.0), tip, Pos2::new(x, y + 10.0)]);
+                outline.extend([rect.right_bottom(), rect.left_bottom()]);
+            } else {
+                outline.extend([rect.right_bottom(), rect.left_bottom()]);
+                outline.extend([Pos2::new(x, y + 10.0), tip, Pos2::new(x, y - 10.0)]);
+            }
+        } else {
+            outline.extend([rect.right_bottom(), rect.left_bottom()]);
         }
+        painter.add(egui::Shape::closed_line(
+            outline,
+            Stroke::new(border.width, border.color.gamma_multiply(opacity)),
+        ));
     }
     changed
 }

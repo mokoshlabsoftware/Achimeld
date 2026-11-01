@@ -160,7 +160,7 @@ impl NativeApp {
         let mut ui = achimeld_ui::Desktop::default();
         let about_pending = !host.about_seen && host.dialog.is_some();
         if !host.about_seen && !about_pending {
-            ui.open_about();
+            ui.open_update_notes(load_acknowledged_version().unwrap_or(None));
         }
         Self {
             diagnostics: crate::diagnostics::Monitor::new(),
@@ -195,7 +195,8 @@ impl eframe::App for NativeApp {
         }
         let dialog_open = self.host.dialog.is_some() || self.host.drop_picker_open();
         if !dialog_open && self.about_pending {
-            self.ui.open_about();
+            self.ui
+                .open_update_notes(load_acknowledged_version().unwrap_or(None));
             self.about_pending = false;
         }
         if !dialog_open {
@@ -238,6 +239,7 @@ struct PendingRead {
     receiver: mpsc::Receiver<Result<Value, String>>,
     project_id: String,
     app_id: u32,
+    page_only: bool,
     thread: Option<std::thread::JoinHandle<()>>,
 }
 struct PendingExport {
@@ -423,19 +425,29 @@ impl Host {
         {
             picker = picker.set_file_name(name);
         }
-        let folder = source
-            .as_deref()
-            .and_then(Path::parent)
-            .map(Path::to_path_buf)
-            .or_else(|| {
-                self.store
-                    .path()
-                    .and_then(Path::parent)
-                    .map(Path::to_path_buf)
-            })
-            .or_else(|| self.settings_folder().map(Path::to_path_buf))
-            .or_else(|| std::env::current_dir().ok())
-            .unwrap_or_else(|| PathBuf::from("C:\\"));
+        let folder = (if matches!(dialog, Dialog::Export) {
+            self.editor.document().project()["iconExport"]["folder"]
+                .as_str()
+                .filter(|s| !s.is_empty())
+                .map(PathBuf::from)
+        } else {
+            None
+        })
+        .or_else(|| {
+            source
+                .as_deref()
+                .and_then(Path::parent)
+                .map(Path::to_path_buf)
+        })
+        .or_else(|| {
+            self.store
+                .path()
+                .and_then(Path::parent)
+                .map(Path::to_path_buf)
+        })
+        .or_else(|| self.settings_folder().map(Path::to_path_buf))
+        .or_else(|| std::env::current_dir().ok())
+        .unwrap_or_else(|| PathBuf::from("C:\\"));
         let is_project_prompt = matches!(dialog, Dialog::Discard(_));
         let mut dialog = AppDialog::new(dialog, folder, picker);
         if is_project_prompt {
@@ -574,7 +586,16 @@ impl Host {
                 }
             }
             DialogResult::Export(Some(path)) => {
-                if let Err(error) = self.export_icons(path) {
+                let mut settings = self.editor.document().project()["iconExport"].clone();
+                if !settings.is_object() {
+                    settings = serde_json::json!({"folder":"", "format":"Png", "naming":"ApiName", "excludedIds":[]});
+                }
+                settings["folder"] = serde_json::json!(path.to_string_lossy());
+                if let Err(error) = self.execute(
+                    "Choose icon export folder",
+                    Command::IconExportSettings(settings),
+                    None,
+                ) {
                     self.status = crate::desktop::logged_status(error);
                 }
             }
@@ -831,11 +852,60 @@ impl Host {
             receiver,
             project_id,
             app_id: app_id.value(),
+            page_only: false,
             thread: Some(thread),
         });
         self.status = crate::desktop::logged_status(
             "Reading Steam · sign in manually in the dedicated browser if requested".into(),
         );
+        Ok(())
+    }
+    fn open_steam_page(&mut self, page: achimeld_application::SteamPage) -> Result<(), String> {
+        self.require_browser_idle()?;
+        let app_id = SteamAppId::new(self.editor.document().app_id()).map_err(|e| e.to_string())?;
+        let project_id = self.editor.document().project()["projectId"]
+            .as_str()
+            .unwrap_or("")
+            .to_owned();
+        let cancel = Cancellation::default();
+        let worker_cancel = cancel.clone();
+        let ctx = self.ctx.clone();
+        let (tx, receiver) = mpsc::sync_channel(1);
+        let thread = std::thread::spawn(move || {
+            let result = (|| {
+                let session = Session::connect().map_err(|e| e.to_string())?;
+                let mut reader = SteamReader::connect(session, worker_cancel.clone())
+                    .map_err(|e| e.to_string())?;
+                reader.start().map_err(|e| e.to_string())?;
+                reader
+                    .open_page(app_id, page == achimeld_application::SteamPage::Stats)
+                    .map_err(|e| e.to_string())?;
+                while reader.browser_open().map_err(|e| e.to_string())? {
+                    worker_cancel.check().map_err(|e| e.to_string())?;
+                    std::thread::sleep(Duration::from_secs(2));
+                }
+                Ok(Value::Null)
+            })();
+            let _ = tx.send(result);
+            ctx.request_repaint();
+        });
+        self.read = Some(PendingRead {
+            cancel,
+            receiver,
+            project_id,
+            app_id: app_id.value(),
+            page_only: true,
+            thread: Some(thread),
+        });
+        self.status = logged_status(format!(
+            "Opening Steam {} for App ID {}",
+            if page == achimeld_application::SteamPage::Stats {
+                "stats"
+            } else {
+                "achievements"
+            },
+            app_id.value()
+        ));
         Ok(())
     }
     fn start_synchronization(&mut self) -> Result<(), String> {
@@ -947,7 +1017,7 @@ impl Host {
                         }
                         pending.review = Some(review);
                         self.status = crate::desktop::logged_status(
-                            "Steam entries are in the project · review remaining uploads or conflicts".into(),
+                            "Review the proposed Steam changes before synchronizing".into(),
                         );
                     }
                     Ok(crate::synchronization::Event::Imported(document)) => {
@@ -1069,6 +1139,10 @@ impl Host {
             }
             if read.cancel.check().is_err() {
                 self.status = crate::desktop::logged_status("Steam read cancelled".into());
+                return;
+            }
+            if read.page_only {
+                self.report(result.map(|_| ()), "Steam browser closed");
                 return;
             }
             if self.editor.document().project()["projectId"].as_str() != Some(&read.project_id)
@@ -1788,6 +1862,7 @@ impl EditorPort for Host {
                     | UiRequest::ImportLayerImage { .. }
                     | UiRequest::OpenPreferences
                     | UiRequest::OpenLogFolder
+                    | UiRequest::OpenWiki
                     | UiRequest::LoadParticlePreset { .. }
                     | UiRequest::SaveParticlePreset(_)
                     | UiRequest::ImportGradients
@@ -1903,6 +1978,11 @@ impl EditorPort for Host {
                     self.status = crate::desktop::logged_status(e);
                 }
             }
+            UiRequest::OpenSteamPage(page) => {
+                if let Err(error) = self.open_steam_page(page) {
+                    self.status = logged_status(error);
+                }
+            }
             UiRequest::CancelRead => {
                 if let Some(read) = &self.read {
                     read.cancel.cancel();
@@ -2016,9 +2096,18 @@ impl EditorPort for Host {
                     self.status =
                         crate::desktop::logged_status("An icon export is already running".into());
                 } else {
-                    self.start_dialog(Dialog::Export);
+                    let folder = self.editor.document().project()["iconExport"]["folder"]
+                        .as_str()
+                        .unwrap_or("");
+                    if folder.is_empty() {
+                        self.status =
+                            crate::desktop::logged_status("Choose an icon export folder".into());
+                    } else if let Err(error) = self.export_icons(PathBuf::from(folder)) {
+                        self.status = crate::desktop::logged_status(error);
+                    }
                 }
             }
+            UiRequest::ChooseIconExportFolder => self.start_dialog(Dialog::Export),
             UiRequest::ExportAchievementTranslations | UiRequest::ImportAchievementTranslations => {
                 if self.translations.is_some() {
                     self.status = crate::desktop::logged_status(
@@ -2071,6 +2160,11 @@ impl EditorPort for Host {
                 }
             }
             UiRequest::OpenPreferences => {}
+            UiRequest::OpenWiki => {
+                if let Err(error) = browser_profile::open_wiki() {
+                    self.status = logged_status(error);
+                }
+            }
             UiRequest::OpenLogFolder => {
                 if let Err(error) = crate::diagnostics::open_folder() {
                     self.status = logged_status(error);
@@ -2104,7 +2198,7 @@ impl EditorPort for Host {
                         Ok(()) => self.about_seen = true,
                         Err(error) => {
                             self.status = crate::desktop::logged_status(format!(
-                                "Could not remember About dismissal: {error}"
+                                "Could not remember acknowledged application version: {error}"
                             ))
                         }
                     }
@@ -2215,6 +2309,18 @@ impl EditorPort for Host {
     }
     fn effect_presets(&self) -> &[achimeld_application::effect_presets::EffectPreset] {
         &self.editor_state.state.effect_presets
+    }
+    fn shape_presets(&self) -> &[achimeld_application::shape_presets::ShapePreset] {
+        &self.editor_state.state.shape_presets
+    }
+    fn save_shape_preset(
+        &mut self,
+        preset: achimeld_application::shape_presets::ShapePreset,
+    ) -> Result<(), String> {
+        self.editor_state.shape_preset(preset)
+    }
+    fn delete_shape_preset(&mut self, id: &str) -> Result<(), String> {
+        self.editor_state.delete_shape_preset(id)
     }
     fn save_effect_preset(
         &mut self,
@@ -2516,24 +2622,46 @@ fn load_about_seen() -> Result<bool, String> {
     load_about_seen_at(&about_state_path()?)
 }
 fn load_about_seen_at(path: &Path) -> Result<bool, String> {
+    Ok(!achimeld_ui::needs_update_notes(
+        load_acknowledged_version_at(path)?.as_deref(),
+    ))
+}
+fn load_acknowledged_version() -> Result<Option<String>, String> {
+    load_acknowledged_version_at(&about_state_path()?)
+}
+fn load_acknowledged_version_at(path: &Path) -> Result<Option<String>, String> {
     let file = match std::fs::File::open(path) {
         Ok(file) => file,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(error.to_string()),
     };
     let mut bytes = Vec::new();
-    file.take(65)
+    file.take(257)
         .read_to_end(&mut bytes)
         .map_err(|error| error.to_string())?;
-    if bytes.len() > 64 {
+    if bytes.len() > 256 {
         return Err("About state is too large".into());
     }
-    serde_json::from_slice(&bytes).map_err(|error| error.to_string())
+    let state: Value = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
+    // Legacy boolean acknowledgement cannot identify the previously run version.
+    if state.is_boolean() {
+        return Ok(None);
+    }
+    state
+        .get("lastAcknowledgedVersion")
+        .and_then(Value::as_str)
+        .filter(|version| version.len() <= 64)
+        .map(|version| Some(version.to_owned()))
+        .ok_or_else(|| "Invalid acknowledged application version state".into())
 }
 fn save_about_seen(path: &Path) -> Result<(), String> {
     std::fs::create_dir_all(path.parent().ok_or("Settings directory unavailable")?)
         .map_err(|error| error.to_string())?;
-    achimeld_persistence::project::write_atomic(path, b"true\n")
+    let bytes = serde_json::to_vec(&json!({
+        "lastAcknowledgedVersion": achimeld_ui::current_version()
+    }))
+    .map_err(|error| error.to_string())?;
+    achimeld_persistence::project::write_atomic(path, &bytes)
 }
 fn load_preferences_at(folder: &Path) -> Result<Preferences, String> {
     let path = folder.join("rust-preferences.json");
@@ -2638,9 +2766,20 @@ mod about_tests {
         // undo the first-launch acknowledgement.
         std::fs::write(root.join("rust-preferences.json"), b"{}").unwrap();
         assert!(load_about_seen_at(&path).unwrap());
+        assert_eq!(
+            load_acknowledged_version_at(&path).unwrap().as_deref(),
+            Some(achimeld_ui::current_version())
+        );
+        std::fs::write(&path, b"true").unwrap();
+        assert!(!load_about_seen_at(&path).unwrap());
+        assert_eq!(load_acknowledged_version_at(&path).unwrap(), None);
+        std::fs::write(&path, br#"{"lastAcknowledgedVersion":"0.0.0.0"}"#).unwrap();
+        assert!(!load_about_seen_at(&path).unwrap());
+        std::fs::write(&path, br#"{"lastAcknowledgedVersion":"4294967295.0.0.0"}"#).unwrap();
+        assert!(load_about_seen_at(&path).unwrap());
         std::fs::write(&path, b"invalid").unwrap();
         assert!(load_about_seen_at(&path).is_err());
-        std::fs::write(&path, [b' '; 65]).unwrap();
+        std::fs::write(&path, [b' '; 257]).unwrap();
         assert!(load_about_seen_at(&path).is_err());
         std::fs::remove_file(path).unwrap();
         std::fs::remove_file(root.join("rust-preferences.json")).unwrap();

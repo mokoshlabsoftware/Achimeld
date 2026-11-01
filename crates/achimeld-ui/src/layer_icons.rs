@@ -1,13 +1,13 @@
 //! Embedded, tintable layer symbols shared by the picker and adjustment rows.
 use egui::{TextureHandle, TextureId};
 
-pub(crate) const LAYERS: [&str; 13] = [
+pub(crate) const LAYERS: [&str; 12] = [
     "AtlasTile",
     "AchievementImage",
     "StandaloneImage",
     "Text",
     "Text3d",
-    "Artifact3d",
+    // "Artifact3d", // Hide 3D object creation while preserving existing recipes.
     "Solid",
     "Shape",
     "Particle",

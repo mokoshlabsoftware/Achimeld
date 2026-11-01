@@ -40,6 +40,7 @@ pub enum UiRequest {
     SaveProject,
     SaveProjectAs,
     ReadSteam,
+    OpenSteamPage(SteamPage),
     DeleteSteam(Vec<(EntityKind, String)>),
     CancelRead,
     PrepareSynchronization,
@@ -51,6 +52,7 @@ pub enum UiRequest {
     PreviewSynchronizationIcons(String),
     CancelExport,
     ExportIcons,
+    ChooseIconExportFolder,
     ExportAchievementTranslations,
     ImportAchievementTranslations,
     ImportAtlas,
@@ -92,6 +94,7 @@ pub enum UiRequest {
     OpenPreferences,
     /// Open only the host-owned diagnostic directory in Windows Explorer.
     OpenLogFolder,
+    OpenWiki,
     LoadParticlePreset {
         achievement_id: String,
         layer_id: String,
@@ -108,6 +111,12 @@ pub enum UiRequest {
     AboutDismissed,
     StyleViewer(crate::style_viewer::StyleViewerAction),
     Exit,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SteamPage {
+    Achievements,
+    Stats,
 }
 
 /// A temporary canvas composition. It never changes the document or its history.
@@ -271,6 +280,18 @@ pub trait EditorPort {
     }
     fn effect_presets(&self) -> &[crate::effect_presets::EffectPreset] {
         &[]
+    }
+    fn shape_presets(&self) -> &[crate::shape_presets::ShapePreset] {
+        &[]
+    }
+    fn save_shape_preset(
+        &mut self,
+        _preset: crate::shape_presets::ShapePreset,
+    ) -> Result<(), String> {
+        Err("Shape library unavailable".into())
+    }
+    fn delete_shape_preset(&mut self, _id: &str) -> Result<(), String> {
+        Err("Shape library unavailable".into())
     }
     fn save_effect_preset(
         &mut self,

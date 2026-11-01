@@ -3,13 +3,14 @@ use crate::{
     buttons::{self, Button},
 };
 use achimeld_application::{
-    EditorPort, UiRequest,
+    EditorPort,
     particles::{ParticleSettings, layout_for_instance, presets},
 };
 use egui::{Pos2, Sense, Stroke, Vec2};
 use serde_json::{Value, json};
 #[path = "particle_shapes.rs"]
 mod shapes;
+pub(crate) use shapes::shape_icon;
 #[path = "particle_sliders.rs"]
 pub(crate) mod sliders;
 
@@ -69,15 +70,39 @@ impl Desktop {
                     }
                 });
         });
-        sliders::scalar(
-            ui,
-            "Particle count",
-            &mut settings,
-            "count",
-            0.0..=512.0,
-            true,
-            1.0,
-        );
+        use crate::knobs::{Parameter as P, bank};
+        let preferences = port.preferences().clone();
+        let defaults = json!(ParticleSettings::default());
+        let basic = [
+            P::new("Particle count", "count", 0.0..=512.0, 1).integer(),
+            P::new("Size", "sizeScale", 0.0..=10.0, 2).multiplier(),
+        ];
+        let shape = [
+            P::new("Shape X", "shapeX", 1.0..=10.0, 3).multiplier(),
+            P::new("Shape Y", "shapeY", 1.0..=10.0, 4).multiplier(),
+        ];
+        let pair_width = 156.0 * (preferences.knob_value_size / 10.0).max(1.0);
+        if ui.available_width() >= pair_width * 2.0 + 8.0 {
+            ui.columns(2, |columns| {
+                bank(
+                    &mut columns[0],
+                    &preferences,
+                    &mut settings,
+                    &defaults,
+                    &basic,
+                );
+                bank(
+                    &mut columns[1],
+                    &preferences,
+                    &mut settings,
+                    &defaults,
+                    &shape,
+                );
+            });
+        } else {
+            bank(ui, &preferences, &mut settings, &defaults, &basic);
+            bank(ui, &preferences, &mut settings, &defaults, &shape);
+        }
         let mut seed = settings["seed"].as_u64().unwrap_or(1) as u32;
         if seed_input(ui, &mut seed).changed() {
             settings["seed"] = json!(seed);
@@ -109,12 +134,6 @@ impl Desktop {
         {
             settings["rotationMin"] = json!(0.0);
             settings["rotationMax"] = json!(0.0);
-        }
-        for (label, key) in [("Shape X", "shapeX"), ("Shape Y", "shapeY")] {
-            let mut value = settings[key].as_f64().unwrap_or(1.0);
-            if crate::sliders::value_slider(ui, label, &mut value, 1.0..=10.0, "×", 2) {
-                settings[key] = json!(value);
-            }
         }
         sliders::range(
             ui,
@@ -155,22 +174,16 @@ impl Desktop {
             .as_f64()
             .or(project["atlas"]["outputSize"].as_f64())
             .unwrap_or(512.0);
-        if ui.available_width() >= 460.0 {
-            ui.columns(2, |columns| {
-                spawn_controls(
-                    &mut columns[0],
-                    &mut settings,
-                    (width / height) as f32,
-                    &achievement,
-                );
-                shapes::show(&mut columns[1], &mut settings);
-            });
-        } else {
-            spawn_controls(ui, &mut settings, (width / height) as f32, &achievement);
-            egui::CollapsingHeader::new("Particle shapes")
-                .default_open(true)
-                .show(ui, |ui| shapes::show(ui, &mut settings));
-        }
+        spawn_controls(
+            ui,
+            &mut settings,
+            (width / height) as f32,
+            &achievement,
+            &preferences,
+        );
+        egui::CollapsingHeader::new("Particle shapes")
+            .default_open(true)
+            .show(ui, |ui| shapes::show(ui, port, &mut settings));
         ui.strong("Particle gradient");
         buttons::bar(ui, 24.0, |ui| {
             let is_2d = settings["colorMap"].is_object();
@@ -339,7 +352,7 @@ pub(crate) fn action_bar(
     ui: &mut egui::Ui,
     port: &mut dyn EditorPort,
     layer: &mut Value,
-    achievement: &str,
+    _achievement: &str,
     explorer: bool,
     mask: Option<&mut crate::explosion::MaskControl<'_>>,
 ) {
@@ -349,9 +362,9 @@ pub(crate) fn action_bar(
     };
     let mut settings = json!(parsed);
     let initial = settings.clone();
-    let count = if explorer { 2 } else { 5 } + usize::from(mask.is_some());
+    let count = if explorer { 2 } else { 4 } + usize::from(mask.is_some());
     buttons::bar(ui, 24.0, |ui| {
-        let width = (ui.available_width() / count as f32).min(ui.spacing().interact_size.y);
+        let width = ui.available_width() / count as f32;
         ui.spacing_mut().button_padding.x = ((width - 20.0) / 2.0)
             .max(0.0)
             .min(ui.spacing().button_padding.x);
@@ -366,22 +379,19 @@ pub(crate) fn action_bar(
                 achimeld_application::effect_presets::EffectKind::Particle,
                 width,
             );
+            crate::effect_explorer::quick_load_controls(
+                ui,
+                port,
+                layer,
+                achimeld_application::effect_presets::EffectKind::Particle,
+                width,
+            );
             // A library preset may have replaced the complete recipe.
             if let Ok(parsed) = editable_settings(&layer["particles"]) {
                 settings = json!(parsed);
             }
         }
         for (key, label, bytes) in [
-            (
-                "particle-load",
-                "Load effect…",
-                include_bytes!("../assets/toolbar/style-set-load.rgba").as_slice(),
-            ),
-            (
-                "particle-save",
-                "Save effect…",
-                include_bytes!("../assets/toolbar/style-set-save.rgba").as_slice(),
-            ),
             (
                 "particle-random",
                 "Randomize",
@@ -393,9 +403,6 @@ pub(crate) fn action_bar(
                 include_bytes!("../assets/toolbar/explosion-seed-per-achievement.rgba").as_slice(),
             ),
         ] {
-            if explorer && matches!(key, "particle-load" | "particle-save") {
-                continue;
-            }
             let selected = key == "particle-seed-per-achievement"
                 && settings["differentSeedPerInstance"] == true;
             let response = ui.add(
@@ -416,16 +423,6 @@ pub(crate) fn action_bar(
             });
             if response.on_hover_text(label).clicked() {
                 match key {
-                    "particle-load" => {
-                        port.finish_group();
-                        port.request(UiRequest::LoadParticlePreset {
-                            achievement_id: achievement.to_owned(),
-                            layer_id: layer["id"].as_str().unwrap_or("").to_owned(),
-                        });
-                    }
-                    "particle-save" => {
-                        port.request(UiRequest::SaveParticlePreset(settings.clone()))
-                    }
                     "particle-random" => {
                         settings["seed"] = json!(
                             u32::from_str_radix(&achimeld_application::new_id()[..8], 16)
@@ -453,11 +450,27 @@ pub(crate) fn seed_input(ui: &mut egui::Ui, seed: &mut u32) -> egui::Response {
     })
 }
 
-fn spawn_controls(ui: &mut egui::Ui, settings: &mut Value, aspect: f32, instance: &str) {
+fn spawn_controls(
+    ui: &mut egui::Ui,
+    settings: &mut Value,
+    aspect: f32,
+    instance: &str,
+    preferences: &achimeld_application::Preferences,
+) {
     ui.strong("Spawn area");
     spawn_gizmo(ui, settings, aspect, instance);
-    sliders::scalar(ui, "Center X", settings, "centerX", 0.0..=1.0, false, 100.0);
-    sliders::scalar(ui, "Center Y", settings, "centerY", 0.0..=1.0, false, 100.0);
+    use crate::knobs::{Parameter as P, bank};
+    bank(
+        ui,
+        preferences,
+        settings,
+        &json!(ParticleSettings::default()),
+        &[
+            P::new("Center X", "centerX", 0.0..=1.0, 3).percent(),
+            P::new("Center Y", "centerY", 0.0..=1.0, 4).percent(),
+            P::new("Edge", "edgeBias", 0.0..=1.0, 6).percent(),
+        ],
+    );
     sliders::range(
         ui,
         "Spawn radius",
@@ -467,15 +480,6 @@ fn spawn_controls(ui: &mut egui::Ui, settings: &mut Value, aspect: f32, instance
         0.0..=1.0,
         100.0,
         "%",
-    );
-    sliders::scalar(
-        ui,
-        "Center → Circle edge",
-        settings,
-        "edgeBias",
-        0.0..=1.0,
-        false,
-        100.0,
     );
 }
 pub(crate) fn glyph(
@@ -506,9 +510,8 @@ pub(crate) fn spawn_gizmo(
 ) -> egui::Response {
     ui.weak("Drag to move the spawn center");
     let aspect = aspect.clamp(0.1, 10.0);
-    let scale = (ui.available_width().min(240.0) / aspect).min(170.0);
-    let (rect, response) =
-        ui.allocate_exact_size(egui::vec2(scale * aspect, scale), Sense::click_and_drag());
+    let side = ui.available_width();
+    let (rect, response) = ui.allocate_exact_size(Vec2::splat(side), Sense::click_and_drag());
     ui.painter()
         .rect_filled(rect, 0.0, ui.visuals().extreme_bg_color);
     if (response.clicked() || response.dragged())

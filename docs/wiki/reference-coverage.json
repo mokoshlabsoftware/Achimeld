@@ -1,0 +1,440 @@
+{
+  "schemaVersion": 1,
+  "documentedVersion": "0.2.29.3",
+  "sourceReviewDate": "2026-10-30",
+  "status": "Draft reference coverage, not full runtime acceptance",
+  "layers": [
+    {
+      "kind": "AtlasTile",
+      "articleId": "icon-layers",
+      "section": "Image sources",
+      "controls": [
+        "atlas",
+        "tile index",
+        "general-image atlas link",
+        "transform"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "StandaloneImage",
+      "articleId": "icon-layers",
+      "section": "Image sources",
+      "controls": [
+        "image picker",
+        "image reference",
+        "transform"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "SteamImportedArtwork",
+      "articleId": "icon-layers",
+      "section": "Image sources",
+      "controls": [
+        "special import workflow",
+        "image reference"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "AchievementImage",
+      "articleId": "general-images",
+      "section": "",
+      "controls": [
+        "General Image slot",
+        "source list",
+        "transform"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Text",
+      "articleId": "icon-layers",
+      "section": "Text",
+      "controls": [
+        "entered/value-linked source",
+        "font",
+        "size",
+        "color",
+        "alignment"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Solid",
+      "articleId": "icon-layers",
+      "section": "Solid and Shape",
+      "controls": [
+        "fill color"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Gradient",
+      "articleId": "gradients",
+      "section": "Edit a one dimensional gradient",
+      "controls": [
+        "kind",
+        "angle",
+        "stops",
+        "presets",
+        "opacity"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "SdfVignette",
+      "articleId": "icon-layers",
+      "section": "Gradient and SDF vignette",
+      "controls": [
+        "invert",
+        "color/map fill",
+        "roundness",
+        "inset",
+        "softness"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Folder",
+      "articleId": "icon-layers",
+      "section": "Folder and Reference mask",
+      "controls": [
+        "tree grouping",
+        "visibility",
+        "mask",
+        "opacity",
+        "blend"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Shape",
+      "articleId": "icon-layers",
+      "section": "Solid and Shape",
+      "controls": [
+        "kind",
+        "fill",
+        "width",
+        "height",
+        "inner radius",
+        "vertices",
+        "angle",
+        "shape transform copy/paste"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Curves",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "graph",
+        "histogram",
+        "point input/output",
+        "add/remove point"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Contrast",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "brightness",
+        "contrast"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "HueSaturation",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "hue",
+        "saturation",
+        "lightness"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "SelectiveColor",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "color range",
+        "cyan",
+        "magenta",
+        "yellow",
+        "black"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "GradientOverlay",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "input channel",
+        "gradient",
+        "presets"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "UnsharpMask",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "amount",
+        "radius",
+        "threshold"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "PerlinNoise",
+      "articleId": "icon-layers",
+      "section": "Procedural artwork",
+      "controls": [
+        "seed",
+        "frequency",
+        "octaves",
+        "detail strength",
+        "frequency spacing",
+        "octave switches",
+        "gradient"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Text3d",
+      "articleId": "text-3d",
+      "section": "",
+      "controls": [
+        "text source",
+        "font",
+        "geometry",
+        "XYZ transforms",
+        "camera",
+        "materials",
+        "lighting",
+        "output"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Particle",
+      "articleId": "particles",
+      "section": "",
+      "controls": [
+        "count",
+        "seed",
+        "variation ranges",
+        "spawn",
+        "regularity",
+        "shape composite",
+        "2D map",
+        "preset IO",
+        "per-achievement seed"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Explosion",
+      "articleId": "explosions",
+      "section": "",
+      "controls": [
+        "count/range",
+        "seed",
+        "regularity",
+        "shape ranges",
+        "fill curve",
+        "scale",
+        "brightness",
+        "blur",
+        "gradient",
+        "presets"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "Artifact3d",
+      "articleId": "artifacts-3d",
+      "section": "",
+      "controls": [
+        "parts",
+        "primitive parameters",
+        "XYZ transforms",
+        "materials",
+        "camera",
+        "lighting",
+        "output"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "RadialBlur",
+      "articleId": "icon-layers",
+      "section": "Adjustments",
+      "controls": [
+        "radial blur",
+        "angular blur"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    },
+    {
+      "kind": "MaskReference",
+      "articleId": "masks",
+      "section": "Share a mask through a live reference",
+      "controls": [
+        "source layer",
+        "inversion/reference relationship"
+      ],
+      "coverage": "draft-explanation",
+      "runtimeVerification": "pending",
+      "illustration": "see screenshot-checklist.md"
+    }
+  ],
+  "effects": [
+    {
+      "kind": "ColorOverlay",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "Outline",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "Shadow",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "InnerLight",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "BoxBlur",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "GradientOverlay",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "Skew",
+      "articleId": "icon-effects",
+      "section": "Spatial effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "Perspective",
+      "articleId": "icon-effects",
+      "section": "Spatial effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "Pinch",
+      "articleId": "icon-effects",
+      "section": "Spatial effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "LensBlur",
+      "articleId": "icon-effects",
+      "section": "Spatial effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    },
+    {
+      "kind": "OuterLight",
+      "articleId": "icon-effects",
+      "section": "Appearance effects",
+      "coverage": "draft-control-table",
+      "runtimeVerification": "pending",
+      "illustration": "pending"
+    }
+  ],
+  "remainingWork": [
+    "Individual lexical candidate classification is incomplete.",
+    "Not every control state or exact parameter limit has runtime acceptance.",
+    "Before/after illustrations remain on the screenshot checklist.",
+    "Live Steam acceptance and historical impact reconciliation remain pending."
+  ]
+}

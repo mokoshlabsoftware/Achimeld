@@ -119,7 +119,7 @@ impl SteamReader {
             WORKER_CALL_TIMEOUT
         };
         // Polling uses the separate authentication state-change log below.
-        let report = operation != "authenticationState";
+        let report = operation != "authenticationState" && operation != "browserOpen";
         if report {
             log::info!(
                 "Worker {operation}: started · call {} · transport deadline {} ms",
@@ -219,7 +219,13 @@ impl SteamReader {
         self.call(ReadCommand::AuthenticationState)
     }
     pub fn open_app(&mut self, app_id: SteamAppId) -> Result<(), SecurityError> {
-        self.boolean(ReadCommand::Navigate(app_id))
+        self.boolean(ReadCommand::Navigate(app_id, false))
+    }
+    pub fn open_page(&mut self, app_id: SteamAppId, stats: bool) -> Result<(), SecurityError> {
+        self.boolean(ReadCommand::Navigate(app_id, stats))
+    }
+    pub fn browser_open(&mut self) -> Result<bool, SecurityError> {
+        self.call(ReadCommand::BrowserOpen)
     }
     pub fn read_snapshot(&mut self, app_id: SteamAppId) -> Result<Snapshot, SecurityError> {
         let document: ManagedPageDocument = self.call(ReadCommand::ReadConfiguration(app_id))?;
@@ -228,6 +234,12 @@ impl SteamReader {
             self.fail_closed();
         }
         result
+    }
+    pub fn read_game_banner(
+        &mut self,
+        app_id: SteamAppId,
+    ) -> Result<Option<String>, SecurityError> {
+        self.call(ReadCommand::ReadGameBanner(app_id))
     }
     pub fn prepare_sync(
         &mut self,

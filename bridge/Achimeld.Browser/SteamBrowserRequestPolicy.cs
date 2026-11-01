@@ -221,7 +221,9 @@ public sealed class SteamBrowserRequestPolicy
             if (method != "GET") return false;
             if (partner && string.IsNullOrEmpty(uri.Query))
             {
-                if (navigation && ((phase == Phase.Authentication && path == "/") || (pinned is not null && path == $"/apps/achievements/{pinned}"))) return true;
+                if (navigation && ((phase == Phase.Authentication && path == "/") ||
+                    (pinned is not null && (path == $"/apps/achievements/{pinned}" ||
+                        ((phase is Phase.Authentication or Phase.Read) && path == $"/apps/stats/{pinned}"))))) return true;
                 if (!navigation && pinned is not null && (path == $"/apps/fetchstats/{pinned}" || path == $"/apps/fetchachievements/{pinned}" || path == $"/apps/getachievementcounts/{pinned}")) return true;
             }
             if (navigation || resourceType is not ("script" or "stylesheet" or "image" or "font")) return false;

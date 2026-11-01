@@ -4,7 +4,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const MAX_BYTES: usize = 16 * 1024 * 1024;
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub(crate) struct State {
     pub layout: LayerLayout,
@@ -13,11 +13,58 @@ pub(crate) struct State {
     pub gradients: Vec<GradientPreset>,
     pub gradient_maps: Vec<achimeld_application::gradient_map::GradientMapPreset>,
     pub effect_presets: Vec<achimeld_application::effect_presets::EffectPreset>,
+    built_in_particles_initialized: bool,
+    pub shape_presets: Vec<achimeld_application::shape_presets::ShapePreset>,
+}
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            layout: LayerLayout::default(),
+            styles: Vec::new(),
+            style_collections: Vec::new(),
+            gradients: Vec::new(),
+            gradient_maps: Vec::new(),
+            effect_presets: achimeld_application::effect_presets::built_in_particles(),
+            built_in_particles_initialized: false,
+            shape_presets: Vec::new(),
+        }
+    }
 }
 impl State {
+    fn include_built_in_particles(&mut self) {
+        if self.built_in_particles_initialized {
+            return;
+        }
+        for preset in achimeld_application::effect_presets::built_in_particles() {
+            if !self
+                .effect_presets
+                .iter()
+                .any(|existing| existing.id == preset.id)
+                && self
+                    .effect_presets
+                    .iter()
+                    .filter(|p| p.kind == preset.kind)
+                    .count()
+                    < achimeld_application::effect_presets::MAX_PRESETS
+            {
+                self.effect_presets.push(preset);
+            }
+        }
+        self.built_in_particles_initialized = true;
+    }
     fn validate(&self) -> Result<(), String> {
         self.layout.validate()?;
         achimeld_application::effect_presets::validate_library(&self.effect_presets)?;
+        if self.shape_presets.len() > 256 {
+            return Err("Too many shape presets".into());
+        }
+        let mut shape_ids = std::collections::BTreeSet::new();
+        for preset in &self.shape_presets {
+            preset.validate()?;
+            if !shape_ids.insert(&preset.id) {
+                return Err("Duplicate shape preset identity".into());
+            }
+        }
         if self.gradients.len() > 512 {
             return Err("Too many gradient presets".into());
         }
@@ -112,6 +159,7 @@ impl EditorState {
                 }
             }
         }
+        state.include_built_in_particles();
         state.validate()?;
         Ok(Self {
             state,
@@ -122,11 +170,14 @@ impl EditorState {
     pub fn new(path: Option<PathBuf>) -> Self {
         let loaded = path.as_deref().map_or_else(|| Ok(State::default()), load);
         match loaded {
-            Ok(state) => Self {
-                state,
-                path,
-                load_error: None,
-            },
+            Ok(mut state) => {
+                state.include_built_in_particles();
+                Self {
+                    state,
+                    path,
+                    load_error: None,
+                }
+            }
             Err(error) => Self {
                 state: State::default(),
                 path,
@@ -204,6 +255,28 @@ impl EditorState {
         }
         self.save(state)
     }
+    pub fn shape_preset(
+        &mut self,
+        preset: achimeld_application::shape_presets::ShapePreset,
+    ) -> Result<(), String> {
+        preset.validate()?;
+        let mut state = self.state.clone();
+        if let Some(old) = state
+            .shape_presets
+            .iter_mut()
+            .find(|old| old.id == preset.id)
+        {
+            *old = preset;
+        } else {
+            state.shape_presets.push(preset);
+        }
+        self.save(state)
+    }
+    pub fn delete_shape_preset(&mut self, id: &str) -> Result<(), String> {
+        let mut state = self.state.clone();
+        state.shape_presets.retain(|preset| preset.id != id);
+        self.save(state)
+    }
     pub fn import_effects(
         &mut self,
         mut presets: Vec<achimeld_application::effect_presets::EffectPreset>,
@@ -266,6 +339,64 @@ fn load(path: &Path) -> Result<State, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shape_presets_persist_and_reject_invalid_replacements() {
+        let path = root().join(format!(
+            "shape-presets-{}.json",
+            achimeld_application::new_id()
+        ));
+        let mut state = EditorState::open(path.clone()).unwrap();
+        let preset = achimeld_application::shape_presets::ShapePreset::from_layer(
+            achimeld_application::shape_presets::ShapeKind::Layer,
+            &serde_json::json!({"kind":"Shape","shape":{"kind":"Star","colorHex":"#FFABCDEF","scaleX":0.5,"scaleY":0.5,"vertexCount":5,"innerRadius":0.5}}),
+            "Saved star".into(),
+        ).unwrap();
+        state.shape_preset(preset.clone()).unwrap();
+        assert!(
+            EditorState::open(path.clone())
+                .unwrap()
+                .state
+                .shape_presets
+                .contains(&preset)
+        );
+        let mut invalid = preset.clone();
+        invalid.shape["vertexCount"] = serde_json::json!(1000);
+        assert!(state.shape_preset(invalid).is_err());
+        assert!(
+            EditorState::open(path)
+                .unwrap()
+                .state
+                .shape_presets
+                .contains(&preset)
+        );
+    }
+    #[test]
+    fn existing_editor_library_gains_magic_dust_without_losing_saved_presets() {
+        let root = root();
+        let path = root.join(format!(
+            "particle-default-{}.json",
+            achimeld_application::new_id()
+        ));
+        let saved = achimeld_application::effect_presets::EffectPreset::from_layer(
+            achimeld_application::effect_presets::EffectKind::Particle,
+            &serde_json::json!({}),
+            "Saved effect".into(),
+        )
+        .unwrap();
+        let mut old_state = serde_json::to_value(State::default()).unwrap();
+        old_state["effectPresets"] = serde_json::json!([saved]);
+        std::fs::write(&path, serde_json::to_vec(&old_state).unwrap()).unwrap();
+        let mut loaded = EditorState::open(path.clone()).unwrap();
+        assert_eq!(loaded.state.effect_presets.len(), 2);
+        assert_eq!(loaded.state.effect_presets[0], saved);
+        assert_eq!(loaded.state.effect_presets[1].name, "MagicDust");
+        let built_in_id = loaded.state.effect_presets[1].id.clone();
+        loaded.delete_effect(&built_in_id).unwrap();
+        assert_eq!(
+            EditorState::open(path).unwrap().state.effect_presets,
+            vec![saved]
+        );
+    }
     #[test]
     fn legacy_gradients_and_styles_migrate_to_distinct_rust_state_without_changing_originals() {
         let root = root();

@@ -228,7 +228,9 @@ impl Desktop {
                             .min_size(egui::Vec2::splat(height))
                             .image_tint_follows_text_color(texture.is_none()),
                         );
-                        channels(ui, owner);
+                        let channel_width =
+                            ((ui.available_width() - height).max(0.0) / 5.0).min(height);
+                        channels(ui, owner, channel_width);
                         let label = ui.add(
                             crate::buttons::Button::new("")
                                 .id(layer_control_id(
@@ -261,18 +263,32 @@ impl Desktop {
     }
 }
 
-pub(crate) fn channels(ui: &mut egui::Ui, owner: &mut Value) {
+pub(crate) fn channels(ui: &mut egui::Ui, owner: &mut Value, width: f32) {
     let mut selected: [bool; 4] = std::array::from_fn(|i| {
         owner["maskChannels"][i]
             .as_bool()
             .unwrap_or(owner["maskMode"] == "Luminance" || i == 3)
     });
+    let size = crate::layer_toolbar::HEIGHT;
+    let colors = [
+        egui::Color32::from_rgb(240, 80, 80),
+        egui::Color32::from_rgb(80, 210, 110),
+        egui::Color32::from_rgb(90, 155, 255),
+        ui.visuals().text_color(),
+    ];
     for (i, label) in ["R", "G", "B", "A"].iter().enumerate() {
+        let body = if selected[i] {
+            ui.visuals().selection.bg_fill
+        } else {
+            ui.visuals().panel_fill
+        };
         if ui
             .add(
                 crate::buttons::Button::new(*label)
                     .bar()
-                    .selected(selected[i]),
+                    .selected(selected[i])
+                    .min_size(egui::vec2(width, size))
+                    .resting_colors(body, colors[i]),
             )
             .clicked()
         {
@@ -281,12 +297,37 @@ pub(crate) fn channels(ui: &mut egui::Ui, owner: &mut Value) {
         }
     }
     let inverted = owner["maskInvert"].as_bool().unwrap_or(false);
-    if ui
-        .add(
-            crate::buttons::Button::new(crate::localization::text(ui.ctx(), "Invert mask"))
-                .bar()
-                .selected(inverted),
+    let response = ui.add(
+        crate::buttons::Button::new(egui::Atoms::default())
+            .bar()
+            .min_size(egui::vec2(width, size))
+            .selected(inverted),
+    );
+    let style = if inverted {
+        crate::buttons::ButtonStyle::Accent
+    } else {
+        crate::buttons::ButtonStyle::Standard
+    };
+    let (body, ink) = crate::buttons::colors(ui, &response, style);
+    let rect = egui::Rect::from_center_size(response.rect.center(), egui::Vec2::splat(18.0));
+    // A split positive/negative square represents mask inversion.
+    ui.painter().rect_filled(rect, 0.0, ink);
+    ui.painter().rect_filled(
+        egui::Rect::from_min_max(rect.center_top(), rect.max),
+        0.0,
+        body,
+    );
+    let invert_label = crate::localization::text(ui.ctx(), "Invert mask");
+    response.widget_info(|| {
+        egui::WidgetInfo::selected(
+            egui::WidgetType::Button,
+            response.enabled(),
+            inverted,
+            &invert_label,
         )
+    });
+    if response
+        .on_hover_text(crate::localization::text(ui.ctx(), "Invert mask"))
         .clicked()
     {
         owner["maskInvert"] = json!(!inverted);

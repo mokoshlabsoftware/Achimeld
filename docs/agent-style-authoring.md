@@ -82,12 +82,12 @@ ordinary projects or edit arbitrary files.
 
 ## Native 3D cup and defaults
 
-The **Preview objects** collection contains the editable achievement cup made with
-the existing `Artifact3d` Cup preset. Inspect it with `get_icon_style`; its bowl,
-base, stem and handles remain ordinary editable parts. Clone it and adjust part
-materials, camera rotation and lighting, then `export_style_preview` to produce a
-transparent PNG with Achimeld's renderer. No external mesh or image generator is
-required. Preview exports default to 512 × 512; each dimension is bounded to 1024.
+The default **Preview objects** collection is no longer bundled. Existing collections
+with an `Artifact3d` cup can still be inspected with `get_icon_style`; its bowl,
+base, stem and handles remain ordinary editable parts. Adjust part materials,
+camera rotation and lighting, then `export_style_preview` to produce a transparent
+PNG with Achimeld's renderer. No external mesh or image generator is required.
+Preview exports default to 512 × 512; each dimension is bounded to 1024.
 
 Style Viewer uses the embedded cup PNG as fallback artwork for empty preview
 recipes. Explicit image slots override the fallback; clearing slots remains

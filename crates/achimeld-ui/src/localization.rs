@@ -61,6 +61,25 @@ mod tests {
         let records = achimeld_core::csv::records(include_str!("../assets/strings.csv")).unwrap();
         assert_eq!(&records[0][2..], achimeld_core::INTERFACE_LANGUAGES);
         assert!(records.iter().all(|row| row.len() == records[0].len()));
+        for name in ["Hungarian", "Turkish"] {
+            let column = achimeld_core::INTERFACE_LANGUAGES
+                .iter()
+                .position(|entry| *entry == name)
+                .unwrap()
+                + 2;
+            for row in records.iter().skip(1) {
+                assert!(
+                    !row[column].trim().is_empty(),
+                    "Missing {name} translation: {}",
+                    row[0]
+                );
+                assert!(
+                    !row[column].contains(['\u{2013}', '\u{2014}', '\u{2015}']),
+                    "Prohibited long dash: {name}/{}",
+                    row[0]
+                );
+            }
+        }
         let ctx = egui::Context::default();
         for (name, file) in [
             ("German", "Datei"),
@@ -70,6 +89,8 @@ mod tests {
             ("Dutch", "Bestand"),
             ("Russian", "Файл"),
             ("Ukrainian", "Файл"),
+            ("Hungarian", "Fájl"),
+            ("Turkish", "Dosya"),
         ] {
             language(&ctx, name);
             assert_eq!(text(&ctx, "FIMENU"), file);

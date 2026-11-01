@@ -134,7 +134,9 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 
         SteamAppId appId = new(appIds[0]);
         SteamworksUrlGuard.EnsureAllowed(uri, appId);
-        if (uri.AbsoluteUri != $"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}" && !_requestPolicy.AllowsDraftNavigation(uri))
+        if (uri.AbsoluteUri != $"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}" &&
+            uri.AbsoluteUri != $"{SteamworksUrlGuard.AllowedOrigin}/apps/stats/{appId.Value}" &&
+            !_requestPolicy.AllowsDraftNavigation(uri))
             throw new InvalidDataException("Browser navigation route rejected.");
         _requestPolicy.PinApp(appId.Value);
         DiagnosticStage = "navigation.popup-check";
@@ -148,10 +150,13 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
         DiagnosticStage = "navigation.final-popup-check";
         await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
         DiagnosticStage = "navigation.login-prompt";
-        if (uri.AbsoluteUri == $"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}")
+        if (uri.AbsoluteUri == $"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}" ||
+            uri.AbsoluteUri == $"{SteamworksUrlGuard.AllowedOrigin}/apps/stats/{appId.Value}")
             await SteamLoginPrompt.OpenIfNeededAsync(page, uri).ConfigureAwait(false);
         DiagnosticStage = "navigation.complete";
     }
+
+    public bool BrowserOpen() => _page is { IsClosed: false } && _context?.Browser is { IsConnected: true };
 
     public async Task<ManagedPageDocument> ReadDocumentAsync()
     {

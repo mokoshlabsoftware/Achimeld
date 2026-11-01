@@ -1,6 +1,60 @@
 use super::*;
 use crate::inspector_panel::Placement;
 
+#[test]
+fn selecting_layer_controls_keeps_dock_width_and_divider_still_resizes() {
+    for extra_pass in [false, true] {
+        let mut h = Harness::new(extra_pass, EntityKind::Achievement);
+        let entity = h
+            .fixture
+            .editor
+            .document()
+            .entities(EntityKind::Achievement)[0]
+            .clone();
+        let id = entity["id"].as_str().unwrap().to_owned();
+        let width = h.desktop.inspector_panel.rect.unwrap().width();
+        h.desktop.selection = vec![id.clone()];
+        assert!(h.fixture.preferences().layer_properties_in_sidebar);
+        for kind in ["Explosion", "Particle", "Shape", "Text3d"] {
+            let layer = crate::layer_palette::new_layer(kind);
+            h.desktop.selected_layer = Some(layer["id"].as_str().unwrap().to_owned());
+            let mut draft = entity.clone();
+            draft["icon"]["layers"] = json!([layer]);
+            h.desktop.entity_drafts.insert(
+                id.clone(),
+                desktop::EntityDraft {
+                    base: entity.clone(),
+                    value: draft,
+                    error: String::new(),
+                },
+            );
+            for tab in [
+                desktop::InspectorTab::Icon,
+                desktop::InspectorTab::General,
+                desktop::InspectorTab::Icon,
+            ] {
+                h.desktop.inspector_tab = tab;
+                for _ in 0..3 {
+                    h.frame(vec![], true);
+                    assert!(
+                        (h.desktop.inspector_panel.rect.unwrap().width() - width).abs() < 1.0,
+                        "{kind}"
+                    );
+                }
+            }
+        }
+        let rect = h.desktop.inspector_panel.rect.unwrap();
+        let edge = egui::pos2(rect.left() + 1.0, rect.center().y);
+        h.frame(vec![egui::Event::PointerMoved(edge)], true);
+        h.frame(vec![Harness::button(edge, true)], true);
+        let target = edge - egui::vec2(100.0, 0.0);
+        h.frame(vec![egui::Event::PointerMoved(target)], true);
+        h.frame(vec![Harness::button(target, false)], true);
+        h.frame(vec![], true);
+        assert!(h.desktop.inspector_panel.rect.unwrap().width() > width + 80.0);
+    }
+}
+
 struct Harness {
     ctx: egui::Context,
     desktop: Desktop,

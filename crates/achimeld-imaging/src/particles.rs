@@ -48,6 +48,9 @@ pub(crate) fn render(
         if cancelled() {
             return Err("Icon rendering cancelled".into());
         }
+        if particle.diameter == 0.0 {
+            continue;
+        }
         let varied: Vec<_> = components
             .iter()
             .enumerate()

@@ -32,8 +32,30 @@ pub(crate) static ENTRIES: LazyLock<Vec<Entry>> = LazyLock::new(|| {
     entries
 });
 
-pub(crate) fn current_version() -> &'static str {
+pub fn current_version() -> &'static str {
     ENTRIES.first().expect("current working version").version
+}
+
+fn version_numbers(value: &str) -> Option<[u32; 4]> {
+    let parts: Vec<u32> = value
+        .split('.')
+        .map(str::parse)
+        .collect::<Result<_, _>>()
+        .ok()?;
+    parts.try_into().ok()
+}
+
+/// A newer acknowledged version is retained when running an older build.
+pub fn needs_update_notes(previous: Option<&str>) -> bool {
+    previous.and_then(version_numbers).is_none_or(|previous| {
+        previous < version_numbers(current_version()).expect("validated current version")
+    })
+}
+
+pub(crate) fn changes_since(previous: Option<&str>) -> &'static [Entry] {
+    let end =
+        previous.and_then(|version| ENTRIES.iter().position(|entry| entry.version == version));
+    &ENTRIES[..end.unwrap_or(ENTRIES.len())]
 }
 
 /// The same compiled identity is used by the visible chrome and native window.
@@ -45,6 +67,19 @@ pub fn window_title() -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_notes_include_skipped_versions_and_handle_unknown_baselines() {
+        assert!(!needs_update_notes(Some(current_version())));
+        assert!(!needs_update_notes(Some("4294967295.0.0.0")));
+        assert!(needs_update_notes(None));
+        assert!(needs_update_notes(Some("invalid")));
+        assert!(changes_since(Some(current_version())).is_empty());
+        let previous = ENTRIES[2].version;
+        assert_eq!(changes_since(Some(previous)).len(), 2);
+        assert_eq!(changes_since(Some("unknown")).len(), ENTRIES.len());
+        assert_eq!(changes_since(None).len(), ENTRIES.len());
+    }
 
     #[test]
     fn embedded_history_has_four_part_versions_and_dated_changes_newest_first() {

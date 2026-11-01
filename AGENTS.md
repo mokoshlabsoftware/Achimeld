@@ -86,19 +86,24 @@ mirror GitLab history or copy `private/`, credentials, or signing secrets. Unsaf
 or generated tracked inputs must stop publication, not be silently excluded.
 Preserve uncommitted changes in either checkout.
 
-**Distribution contract: open-source code, paid ready-made installers.** GitLab
-stores development source (including `private/`); GitHub stores public source.
-Neither service may host compiled installers or application packages, whether in
-Git, LFS, release assets, package registries, CI artifacts, Pages, or disguised
-archives. Source artwork, build recipes and automatic source-code archives are
-allowed. Text-only CI audit evidence is allowed; compiled build outputs are not.
+**Distribution contract: open-source code with a requested GitHub installer release.**
+GitLab stores development source (including `private/`); GitHub stores public
+source. For a release explicitly selected with `-GitHubInstaller -SkipLemonSqueezy`,
+GitHub may host only its verified promoted setup file as a release asset. Neither
+service may receive compiled packages in Git, LFS, package registries, CI artifacts,
+Pages, or disguised archives. GitLab must not host installer release assets.
+Source artwork, build recipes, automatic source-code archives and text-only CI
+audit evidence are allowed.
 
 **Lemon Squeezy delivery is explicitly authorized.** Publish.bat delivers the
-verified promoted installer after successful source publication. The standalone
+verified promoted installer after successful source publication unless explicitly
+skipped. `-GitHubInstaller -SkipLemonSqueezy` delivers that installer to the matching
+GitHub release instead. The standalone
 private/Upload-LemonSqueezy.bat retries delivery without rebuilding. Target product,
 store and test/live mode are pinned in private/lemon-product.json; never activate
 sales or switch modes automatically. BuildOnly and quick builds do not upload.
-Never use GitHub/GitLab as an installer host or fallback download location.
+Use GitHub as an installer host only for the explicitly selected verified release
+asset route. Never use GitLab or an unverified fallback download location.
 
 Generated installers, packages, build outputs and audit evidence belong under
 `C:\Projects\AchimeldBuild`, outside both repositories. Build from a clean selected
@@ -124,8 +129,8 @@ must not remain there. Never use unfinished setup files or binaries in source ch
 The operating guide is `private/PUBLISHING.md`. Keep it current when changing
 publishing, authentication, export policy, storage, delivery, or failure recovery.
 Run `private/Test-Publishing.ps1` after changing these boundaries. Its source-only
-release helper accepts no assets; never restore installer arguments or an upload
-command to the GitHub publisher. Check existing remote downloads separately when
+release helper accepts no assets at creation; the explicit GitHub installer route
+uploads only the verified promoted file after source publication. Check existing remote downloads separately when
 repairing a distribution mistake, while preserving source and provenance records.
 
 # Working versions and change history
@@ -145,6 +150,14 @@ Disk-space cleanup of generated test outputs, build artifacts, old packages and 
 Before creating each new repository commit, run `build/Update-Version.ps1 -Kind Commit -Summary '<commit summary>'` once and include `CHANGELOG.md` in that commit. This increments the third component and resets the fourth to zero; for example `0.1.0.3` becomes `0.1.1.0`. A cancelled/failed commit must reuse its pending version entry on retry. Amending the same commit does not advance the commit counter. This rule does not authorize creating commits unless the task calls for one. Change the first two components only for an explicitly chosen release series.
 
 Version updates must be serialized across agents: reread the newest entry immediately before updating, retain other agents' entries, and resolve duplicates before committing. Run `build/Update-Version.ps1 -Kind Check` to validate the history. Each dated entry uses a concise, user-facing single-line bullet under `## major.minor.commit.change (YYYY-MM-DD)`, newest first. Keep the Help history read-only and available offline without new filesystem or worker authority.
+
+# Wiki maintenance
+
+Read [Wiki maintenance and version coverage](docs/wiki-maintenance.md) for every software change. Root [CHANGELOG.md](CHANGELOG.md) remains the authoritative software change list and working-version source. The companion register maps actual assigned change versions to affected wiki articles, required text/screenshots/examples and verification/publication status.
+
+Update that register in the same work as each completed change, or record a specific no-impact reason. Commit-only entries may reference their included changes. Keep unavailable website work Pending; do not mark it published or silently omit it.
+
+The wiki must retain its documented application version, each article's last verified version and screenshot versions. Advance these only after relevant review and verification, never by copying the newest application version automatically. Follow the register's metadata and publication contract when implementing the website.
 
 # Graphical responsiveness
 

@@ -10,8 +10,9 @@ public static class SteamLoginPrompt
     public static async Task OpenIfNeededAsync(IPage page, Uri destination)
     {
         IReadOnlyList<uint> ids = SteamworksUrlGuard.ExtractAppIds(destination);
-        if (ids.Count != 1 || ids[0] == 0 || destination.AbsoluteUri !=
-            $"https://partner.steamgames.com/apps/achievements/{ids[0].ToString(CultureInfo.InvariantCulture)}")
+        if (ids.Count != 1 || ids[0] == 0 ||
+            (destination.AbsoluteUri != $"https://partner.steamgames.com/apps/achievements/{ids[0].ToString(CultureInfo.InvariantCulture)}" &&
+             destination.AbsoluteUri != $"https://partner.steamgames.com/apps/stats/{ids[0].ToString(CultureInfo.InvariantCulture)}"))
             throw new InvalidDataException("Authentication destination rejected.");
         if (page.Url != "https://partner.steamgames.com/" ||
             !await page.Locator("#login_btn_signin").IsVisibleAsync().ConfigureAwait(false)) return;

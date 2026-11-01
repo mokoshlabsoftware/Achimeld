@@ -6,24 +6,9 @@ pub(super) fn export(
     presets: &[EffectPreset],
     path: &Path,
 ) -> Result<(), String> {
-    use std::io::Write;
     let bytes = effect_presets::encode(kind, presets)?;
-    let temporary = path
-        .parent()
-        .ok_or("Choose an export folder")?
-        .join(format!(".achimeld-effects-{}.tmp", new_id()));
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&temporary)
-        .map_err(|e| e.to_string())?;
-    let result = file.write_all(&bytes).and_then(|()| file.sync_all());
-    drop(file);
-    let result = result
-        .and_then(|()| std::fs::hard_link(&temporary, path))
-        .map_err(|e| format!("Could not export effects; choose an unused filename: {e}"));
-    let _ = std::fs::remove_file(&temporary);
-    result
+    achimeld_persistence::project::write_atomic(path, &bytes)
+        .map_err(|e| format!("Could not export effects: {e}"))
 }
 impl Host {
     pub(super) fn import_effects(&mut self, kind: EffectKind, path: &Path) -> Result<(), String> {
@@ -196,8 +181,13 @@ mod tests {
             let exported = root.join(format!("library.{}", kind.extension()));
             export(kind, std::slice::from_ref(&preset), &exported).unwrap();
             let original = std::fs::read(&exported).unwrap();
-            assert!(export(kind, &[], &exported).is_err());
-            assert_eq!(std::fs::read(&exported).unwrap(), original);
+            export(kind, &[], &exported).unwrap();
+            assert_eq!(
+                std::fs::read(&exported).unwrap(),
+                effect_presets::encode(kind, &[]).unwrap()
+            );
+            assert_ne!(std::fs::read(&exported).unwrap(), original);
+            export(kind, std::slice::from_ref(&preset), &exported).unwrap();
             host.import_effects(kind, &exported).unwrap();
             let imported = host.effect_presets().last().unwrap();
             assert_eq!(imported.layer, preset.layer);

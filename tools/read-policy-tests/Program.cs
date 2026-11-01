@@ -15,21 +15,33 @@ foreach (string operation in new[] { "applyOperation", "downloadArtwork", "compa
 foreach (string route in new[] { "http://partner.steamgames.com/apps/achievements/480", "https://partner.steamgames.com.evil/apps/achievements/480",
     "https://partner.steamgames.com/apps/publishing/480", "https://partner.steamgames.com/apps/achievements/0480",
     "https://partner.steamgames.com/apps/achievements/480?x=1", "https://partner.steamgames.com/apps/achievements/480/",
-    "https://partner.steamgames.com/apps/achievements/0", "https://user@partner.steamgames.com/apps/achievements/480" })
+    "https://partner.steamgames.com/apps/achievements/0", "https://user@partner.steamgames.com/apps/achievements/480",
+    "https://partner.steamgames.com/apps/stats/0480", "https://partner.steamgames.com/apps/stats/480?x=1",
+    "https://partner.steamgames.com/apps/stats/481/" })
     Reject(Started(), "navigate", JsonSerializer.Serialize(route));
 Reject(new(), "networkSelfTest", "true");
 Reject(new(), "navigate", "\"https://partner.steamgames.com/apps/achievements/480\"");
 Reject(Started(), "start", "null");
 Reject(Started(), "stop", "{}");
 Reject(Started(), "readConfiguration", "{\"value\":480}");
+Reject(Started(), "readGameBanner", "{\"value\":480}");
+Reject(Started(), "browserOpen", "null");
 var pinned = Started();
 try { pinned.RequireSynchronizationApp(); throw new Exception("Unpinned synchronization accepted"); } catch (InvalidDataException) { cases++; }
 pinned.Validate("navigate", Json("\"https://partner.steamgames.com/apps/achievements/480\""), false);
+if (pinned.Validate("navigate", Json("\"https://partner.steamgames.com/apps/stats/480\""), false).Route !=
+    "https://partner.steamgames.com/apps/stats/480") throw new Exception("Stats route changed"); cases++;
+if (pinned.Validate("browserOpen", Json("null"), false).Operation != ReadOperation.BrowserOpen) throw new Exception("Browser status rejected"); cases++;
 if (pinned.RequireSynchronizationApp() != 480) throw new Exception("Synchronization App ID pin lost"); cases++;
 if (pinned.Validate("readConfiguration", Json("{\"value\":480}"), false).AppId != 480) throw new Exception("Pin lost"); cases++;
+if (pinned.Validate("readGameBanner", Json("{\"value\":480}"), false).Operation != ReadOperation.ReadGameBanner) throw new Exception("Pinned banner read rejected"); cases++;
 Reject(pinned, "navigate", "\"https://partner.steamgames.com/apps/achievements/481\"");
+Reject(pinned, "navigate", "\"https://partner.steamgames.com/apps/stats/481\"");
 foreach (string argument in new[] { "{\"value\":481}", "{\"value\":0}", "{\"value\":480,\"extra\":1}", "{\"value\":480,\"value\":481}", "{\"value\":\"480\"}" })
+{
     Reject(pinned, "readConfiguration", argument);
+    Reject(pinned, "readGameBanner", argument);
+}
 pinned.Validate("stop", Json("null"), false);
 try { pinned.RequireSynchronizationApp(); throw new Exception("Stopped synchronization accepted"); } catch (InvalidDataException) { cases++; }
 Reject(pinned, "start", "null");

@@ -96,6 +96,38 @@ fn contains_id(value: &Value, id: &str) -> bool {
     }
 }
 
+// This command accepts no caller-provided URL, executable, or arguments.
+pub(super) fn open_wiki() -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let url: Vec<u16> = "https://achimeld.com/wiki/"
+            .encode_utf16()
+            .chain(Some(0))
+            .collect();
+        let verb: Vec<u16> = "open".encode_utf16().chain(Some(0)).collect();
+        // SAFETY: Live NUL-terminated strings identify a fixed HTTPS documentation
+        // URL. No executable path or arguments are accepted.
+        let result = unsafe {
+            windows_sys::Win32::UI::Shell::ShellExecuteW(
+                std::ptr::null_mut(),
+                verb.as_ptr(),
+                url.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null(),
+                1,
+            )
+        };
+        if result as isize <= 32 {
+            return Err("Windows could not open the Achimeld Wiki".into());
+        }
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        Err("Opening the Achimeld Wiki requires Windows".into())
+    }
+}
+
 pub(super) fn open_folder() -> Result<(), String> {
     let session = Session::connect().map_err(|error| error.to_string())?;
     let directory = &session.status().profile_directory;

@@ -633,6 +633,15 @@ pub(crate) fn menu_popup_with_behavior<R>(
     content: impl FnOnce(&mut Ui) -> R,
 ) -> Option<R> {
     let inner = if egui::containers::menu::is_in_menu(ui) {
+        let id = egui::containers::menu::SubMenu::id_from_widget_id(response.id);
+        let open =
+            egui::containers::menu::MenuState::from_ui(ui, |state, _| state.open_item == Some(id));
+        if !open
+            && !response.clicked()
+            && !(response.hovered() && ui.input(|input| input.pointer.delta() != egui::Vec2::ZERO))
+        {
+            return None;
+        }
         egui::containers::menu::SubMenu::new().show(ui, response, |ui| {
             if !response.enabled() {
                 ui.disable();

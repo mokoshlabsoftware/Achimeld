@@ -62,6 +62,35 @@ impl CompiledDeltoid {
         )
     }
     fn distance(&self, px: f64, py: f64) -> f64 {
+        if self.power < 1.0 {
+            // Match the construction outline's 16 segments per side. Negative
+            // morph pulls each side inward while retaining both tips and waist.
+            let height = if py < 0.0 { self.top } else { self.bottom };
+            if height <= 0.0 {
+                return px.hypot(py);
+            }
+            let exponent = 2.0 - self.power;
+            let mut closest = f64::INFINITY;
+            for step in 0..16 {
+                let t0 = f64::from(step) / 16.0;
+                let t1 = f64::from(step + 1) / 16.0;
+                let x0 = self.half_width * (1.0 - t0).powf(exponent);
+                let x1 = self.half_width * (1.0 - t1).powf(exponent);
+                let y0 = height * t0;
+                let y1 = height * t1;
+                let dx = x1 - x0;
+                let dy = y1 - y0;
+                let along =
+                    (((px - x0) * dx + (py.abs() - y0) * dy) / (dx * dx + dy * dy)).clamp(0.0, 1.0);
+                closest = closest.min((px - x0 - along * dx).hypot(py.abs() - y0 - along * dy));
+            }
+            if (self.top == 0.0 || self.bottom == 0.0) && px <= self.half_width {
+                closest = closest.min(py.abs());
+            }
+            let t = py.abs() / height;
+            let inside = t <= 1.0 && px <= self.half_width * (1.0 - t).powf(exponent);
+            return if inside { -closest } else { closest };
+        }
         if self.power > 1.0 {
             // The p-norm outline rounds continuously from a kite to an ellipse.
             // Normalize its implicit field by the local gradient for an SDF
@@ -174,8 +203,13 @@ impl Strip {
                     power,
                     top_edge_squared: (d.width / 2.0).powi(2) + d.top_height.powi(2),
                     bottom_edge_squared: (d.width / 2.0).powi(2) + d.bottom_height.powi(2),
-                    inradius: deltoid_radius * (1.0 - d.ellipse)
-                        + (d.width / 2.0).min((d.top_height + d.bottom_height) / 2.0) * d.ellipse,
+                    inradius: if d.ellipse < 0.0 {
+                        deltoid_radius
+                    } else {
+                        deltoid_radius * (1.0 - d.ellipse)
+                            + (d.width / 2.0).min((d.top_height + d.bottom_height) / 2.0)
+                                * d.ellipse
+                    },
                     feather: ((1.0 - d.sharpness)
                         * d.width.min(d.top_height + d.bottom_height)
                         * 0.3)
@@ -303,7 +337,9 @@ impl Strip {
                     + deltoids
                         .iter()
                         .map(|&index| {
-                            if self.deltoids[index].power > 1.0 {
+                            if self.deltoids[index].power < 1.0 {
+                                48
+                            } else if self.deltoids[index].power > 1.0 {
                                 8
                             } else {
                                 3
@@ -645,6 +681,22 @@ mod tests {
         assert!(settings.validate().is_err());
     }
     #[test]
+    fn explosion_gradient_stop_alpha_controls_sdf_and_spatial_output() {
+        let mut settings = ExplosionSettings::new_deltoid();
+        for kind in ["SDF", "Radial"] {
+            settings.gradient = serde_json::json!({"kind":kind,"stops":[
+                {"offset":0,"colorHex":"#FFFFFFFF"},
+                {"offset":1,"colorHex":"#FFFFFFFF"}
+            ]});
+            let opaque = render(&serde_json::json!(settings), "alpha", 96, 96, &|| false).unwrap();
+            settings.gradient["stops"][0]["colorHex"] = serde_json::json!("#00FFFFFF");
+            settings.gradient["stops"][1]["colorHex"] = serde_json::json!("#00FFFFFF");
+            let clear = render(&serde_json::json!(settings), "alpha", 96, 96, &|| false).unwrap();
+            assert!(opaque.pixels().any(|p| p[3] > 0), "{kind}");
+            assert!(clear.pixels().all(|p| p[3] == 0), "{kind}");
+        }
+    }
+    #[test]
     fn explosion_construction_blur_has_independent_axes_seam_and_zero_identity() {
         let mut settings = ExplosionSettings {
             count: 1,
@@ -706,7 +758,7 @@ mod tests {
             shape.bottom_height_max = bottom;
             shape.sharpness_min = 1.0;
             shape.sharpness_max = 1.0;
-            for morph in [0.0, 0.25, 0.5, 0.75, 1.0] {
+            for morph in [-1.0, -0.5, 0.0, 0.25, 0.5, 0.75, 1.0] {
                 settings.deltoid.as_mut().unwrap().ellipse = morph;
                 let strip = Strip::new(&settings, "shape", 1024.0);
                 let sampled = &strip.layout.deltoids[0];
@@ -741,6 +793,10 @@ mod tests {
                     }
                 }
                 assert!(shape.distance(0.0, (shape.bottom - shape.top) * 0.5) < 0.0);
+                if morph < 0.0 && top > 0.0 {
+                    let y = -shape.top * 0.5;
+                    assert!(shape.distance(shape.half_width * 0.5, y) > 0.0);
+                }
                 if morph == 1.0 {
                     assert!((shape.radius_top - shape.radius_bottom).abs() < 1e-12);
                     let (alpha, input) = shape.sample(

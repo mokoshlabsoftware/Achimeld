@@ -175,7 +175,11 @@ pub(crate) fn bank(
     }
     let available = ui.available_width().max(1.0);
     let min_cell = (76.0 * (p.knob_value_size / 10.0).max(1.0)).min(available);
-    let columns = ((available + 4.0) / (min_cell + 4.0)).floor().max(1.0) as usize;
+    let slots: usize = params
+        .iter()
+        .map(|p| if p.high.is_some() { 2 } else { 1 })
+        .sum();
+    let columns = (((available + 4.0) / (min_cell + 4.0)).floor().max(1.0) as usize).min(slots);
     let cell = (available - 4.0 * (columns - 1) as f32) / columns as f32;
     let font = FontId::proportional(p.knob_label_size);
     let titles: Vec<_> = params
@@ -260,7 +264,7 @@ pub(crate) fn bank(
         let mut child = ui.new_child(egui::UiBuilder::new().id_salt(s.key).max_rect(rect));
         let hover = ui.rect_contains_pointer(rect);
         let panel = theme::color(p, "Panel");
-        child.painter().rect_filled(
+        let background = child.painter().rect_filled(
             rect,
             0.0,
             if hover {
@@ -269,6 +273,7 @@ pub(crate) fn bank(
                 panel
             },
         );
+        let mut selected = false;
         // A range's icon and common name share the first header row; endpoint
         // names use the second. This keeps ordinary cells compact below values.
         let range_header_height = title.size().y.max(16.0);
@@ -366,6 +371,7 @@ pub(crate) fn bank(
                     s.bounds.clone()
                 },
             );
+            selected |= response.enabled() && response.has_focus();
             let mut changed = response.changed();
             let number_rect = Rect::from_center_size(
                 Pos2::new(
@@ -392,6 +398,7 @@ pub(crate) fn bank(
                     .max_decimals(s.decimals)
                     .suffix(s.suffix),
             );
+            selected |= number.enabled() && number.has_focus();
             number.widget_info(|| egui::WidgetInfo::slider(number.enabled(), display, &accessible));
             if number.changed() && display.is_finite() {
                 value = display / s.factor;
@@ -418,6 +425,16 @@ pub(crate) fn bank(
                     },
                 );
             }
+        }
+        if selected {
+            child.painter().set(
+                background,
+                egui::Shape::rect_filled(
+                    rect,
+                    0.0,
+                    theme::mix(panel, theme::color(p, "Accent"), 0.10),
+                ),
+            );
         }
     }
 }
@@ -626,9 +643,5 @@ fn rotary(
         [c + direction * 6.0 * scale, c + direction * 11.5 * scale],
         Stroke::new(2.5 * scale, tint(text)),
     );
-    if r.has_focus() {
-        ui.painter()
-            .circle_stroke(c, 22.0 * scale, Stroke::new(1.0, tint(accent)));
-    }
     r.on_hover_text(format!("{label}\n{}{}", if key == "regularity" { "0: equal spacing; 1: fully random.\n" } else { "" }, "Drag up/right to increase. Shift: fine adjustment. Click to focus for wheel and arrow keys. Double-click or Delete: reset."))
 }

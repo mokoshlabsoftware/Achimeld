@@ -1,6 +1,6 @@
 //! Themed prompts. Filesystem enumeration stays in the supervised host.
 use achimeld_application::UiRequest;
-use achimeld_ui::buttons::{Button, ButtonStyle, UiButtonExt as _};
+use achimeld_ui::buttons::Button;
 use eframe::egui;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
@@ -237,6 +237,7 @@ pub(crate) struct AppDialog {
     folder: PathBuf,
     picker: rfd::FileDialog,
     pending: Option<mpsc::Receiver<Option<PathBuf>>>,
+    replace_target: Option<PathBuf>,
     error: Option<String>,
 }
 impl AppDialog {
@@ -247,6 +248,7 @@ impl AppDialog {
             folder,
             picker,
             pending: None,
+            replace_target: None,
             error: None,
         }
     }
@@ -354,7 +356,13 @@ impl AppDialog {
                     Ok(Some(path)) => {
                         self.pending = None;
                         match validate_target(&kind, path) {
-                            Ok(path) => return Some(kind.finish(Some(path), SaveChoice::Save)),
+                            Ok(path) => {
+                                if matches!(kind, Dialog::EffectsExport(..)) && path.exists() {
+                                    self.replace_target = Some(path);
+                                } else {
+                                    return Some(kind.finish(Some(path), SaveChoice::Save));
+                                }
+                            }
                             Err(error) => self.error = Some(error),
                         }
                     }
@@ -364,43 +372,53 @@ impl AppDialog {
                     }
                     Err(mpsc::TryRecvError::Empty) => {}
                 }
-            } else if self.error.is_none() {
+            } else if self.error.is_none() && self.replace_target.is_none() {
                 self.start_picker(&kind, ctx);
             }
-            if self.error.is_none() {
+            if self.error.is_none() && self.replace_target.is_none() {
                 self.kind = Some(kind);
                 return None;
             }
         }
         let mut choice = None;
-        let frame = if self.error.is_some() {
-            egui::Frame::popup(&ctx.global_style()).inner_margin(24)
-        } else {
-            egui::Frame::popup(&ctx.global_style())
-                .fill(egui::Color32::BLACK)
-                .inner_margin(0)
-                .corner_radius(0)
-        };
+        let frame = egui::Frame::popup(&ctx.global_style())
+            .fill(egui::Color32::BLACK)
+            .inner_margin(0)
+            .corner_radius(0);
         let response = egui::Modal::new(egui::Id::new("app-dialog"))
             .frame(frame)
             .show(ctx, |ui| {
                 if let Some(error) = &self.error {
-                    ui.set_width(420.0);
-                    ui.heading(kind.title());
-                    ui.add_space(8.0);
-                    ui.label(error);
-                    ui.add_space(16.0);
-                    ui.horizontal(|ui| {
-                        if ui.app_button("Cancel").clicked() {
-                            choice = Some(SaveChoice::Cancel);
-                        }
-                        if ui
-                            .add(Button::new("Choose again…").style(ButtonStyle::Accent))
-                            .clicked()
-                        {
-                            self.error = None;
-                        }
-                    });
+                    choice = app_prompt(
+                        ui,
+                        kind.title(),
+                        error,
+                        None,
+                        &[
+                            ("Choose again", PromptIcon::Save, SaveChoice::Discard),
+                            ("Cancel", PromptIcon::Cancel, SaveChoice::Cancel),
+                        ],
+                    );
+                } else if let Some(path) = &self.replace_target {
+                    let file = PromptProject {
+                        name: path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .into_owned(),
+                        path: Some(path.clone()),
+                    };
+                    choice = app_prompt(
+                        ui,
+                        "Replace effect collection",
+                        "Replace this file with the exported collection?",
+                        Some(&file),
+                        &[
+                            ("Replace", PromptIcon::Save, SaveChoice::Save),
+                            ("Choose again", PromptIcon::Discard, SaveChoice::Discard),
+                            ("Cancel", PromptIcon::Cancel, SaveChoice::Cancel),
+                        ],
+                    );
                 } else if matches!(kind, Dialog::DeleteBrowserProfile | Dialog::ForgetSteamValidation) {
                     let message = if matches!(kind, Dialog::DeleteBrowserProfile) {
                         "Delete Achimeld's Chromium profile, including its saved Steam sign-in and browser data? You will need to sign in again. Your Steam account and project will remain."
@@ -432,7 +450,19 @@ impl AppDialog {
             choice = Some(SaveChoice::Cancel);
         }
         if let Some(choice) = choice {
-            Some(kind.finish(None, choice))
+            if matches!(choice, SaveChoice::Discard)
+                && (self.error.is_some() || self.replace_target.is_some())
+            {
+                self.error = None;
+                self.replace_target = None;
+                self.kind = Some(kind);
+                return None;
+            }
+            let path = self
+                .replace_target
+                .take()
+                .filter(|_| matches!(choice, SaveChoice::Save));
+            Some(kind.finish(path, choice))
         } else {
             self.kind = Some(kind);
             None
@@ -704,10 +734,13 @@ fn validate_target(kind: &Dialog, mut path: PathBuf) -> Result<PathBuf, String> 
         if !path.parent().is_some_and(Path::is_dir) {
             return Err("Choose an existing destination folder".into());
         }
-        if path.exists() && !matches!(kind, Dialog::ParticleSave(_)) {
+        if path.exists() && !matches!(kind, Dialog::ParticleSave(_) | Dialog::EffectsExport(..)) {
             return Err(
                 "Choose an unused filename. Save the open project with Save to update it.".into(),
             );
+        }
+        if path.exists() && !path.is_file() {
+            return Err("Choose a file, not a folder".into());
         }
         if matches!(kind, Dialog::Save(_) | Dialog::ViewerSave { .. }) {
             let csv = path.with_file_name(format!(
@@ -881,12 +914,23 @@ mod tests {
         std::fs::write(folder.join("translated.csv"), b"preserve").unwrap();
         assert!(target(&Dialog::ImportTranslations, "translated.csv").is_ok());
         assert!(target(&Dialog::ExportTranslations, "translated.csv").is_err());
+        let effects = Dialog::EffectsExport(
+            achimeld_application::effect_presets::EffectKind::Explosion,
+            Vec::new(),
+        );
+        std::fs::write(folder.join("used.achexplosions"), b"preserve").unwrap();
+        assert!(target(&effects, "used.achexplosions").is_ok());
+        assert_eq!(
+            std::fs::read(folder.join("used.achexplosions")).unwrap(),
+            b"preserve"
+        );
         assert!(validate_target(&Dialog::Export, folder.clone()).is_ok());
         assert!(target(&Dialog::SettingsFolder, "missing").is_err());
         for name in [
             "used.achv",
             "translated.csv",
             "unused.achimeld.localization.csv",
+            "used.achexplosions",
         ] {
             std::fs::remove_file(folder.join(name)).unwrap();
         }

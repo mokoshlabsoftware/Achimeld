@@ -199,9 +199,25 @@ pub fn decode(kind: EffectKind, bytes: &[u8]) -> Result<Vec<EffectPreset>, Strin
     Ok(collection.presets)
 }
 
+pub fn built_in_particles() -> Vec<EffectPreset> {
+    decode(
+        EffectKind::Particle,
+        include_bytes!("../assets/default-magic-dust.achparticles"),
+    )
+    .expect("Validated embedded MagicDust particle collection")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn embedded_magic_dust_is_a_valid_particle_collection() {
+        let presets = built_in_particles();
+        assert_eq!(presets.len(), 1);
+        assert_eq!(presets[0].name, "MagicDust");
+        assert_eq!(presets[0].layer["blendMode"], "Screen");
+        assert_eq!(presets[0].layer["particles"]["count"], 170);
+    }
     #[test]
     fn procedural_collections_embed_gradients_maps_shapes_and_layer_properties() {
         for kind in [EffectKind::Explosion, EffectKind::Particle] {

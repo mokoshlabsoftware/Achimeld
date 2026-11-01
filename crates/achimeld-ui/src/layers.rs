@@ -225,6 +225,12 @@ impl Desktop {
                     if !layer["shape"].is_object() {
                         layer["shape"] = json!({"kind":"Rectangle","colorHex":layer["solidColorHex"],"scaleX":0.5,"scaleY":0.5,"vertexCount":5,"innerRadius":0.5});
                     }
+                    crate::shape_explorer::controls(
+                        ui,
+                        port,
+                        layer,
+                        achimeld_application::shape_presets::ShapeKind::Layer,
+                    );
                     choice(
                         ui,
                         "Shape",
@@ -233,36 +239,10 @@ impl Desktop {
                         &["Rectangle", "Sphere", "Polygon", "Star"],
                     );
                     color(ui, "Fill color", &mut layer["shape"], "colorHex");
-                    if ui.available_width() >= 300.0 {
-                        ui.columns(2, |columns| {
-                            number(
-                                &mut columns[0],
-                                "Width",
-                                &mut layer["shape"],
-                                "scaleX",
-                                0.01..=2.0,
-                                0.01,
-                            );
-                            number(
-                                &mut columns[1],
-                                "Height",
-                                &mut layer["shape"],
-                                "scaleY",
-                                0.01..=2.0,
-                                0.01,
-                            );
-                        });
-                    } else {
-                        number(ui, "Width", &mut layer["shape"], "scaleX", 0.01..=2.0, 0.01);
-                        number(
-                            ui,
-                            "Height",
-                            &mut layer["shape"],
-                            "scaleY",
-                            0.01..=2.0,
-                            0.01,
-                        );
-                    }
+                    crate::fields::row(ui, "Scale", |ui| {
+                        compact_number(ui, layer, "scale", 0.01, 10.0, 0.01, true);
+                    });
+                    shape_dimensions(ui, &mut layer["shape"]);
                     number(
                         ui,
                         "Inner radius",
@@ -540,6 +520,31 @@ fn reference_choice(
         };
     }
 }
+fn shape_dimensions(ui: &mut egui::Ui, shape: &mut Value) {
+    let heading = crate::localization::text(ui.ctx(), "Size");
+    ui.label(
+        egui::RichText::new(heading)
+            .small()
+            .color(ui.visuals().text_color().gamma_multiply(0.5)),
+    );
+    // Keep complete axis/control pairs together. Narrow panels use two rows.
+    let pair_width = 100.0_f32.max(ui.text_style_height(&egui::TextStyle::Body) * 6.0);
+    if ui.available_width() >= pair_width * 2.0 + ui.spacing().item_spacing.x {
+        ui.horizontal(|ui| {
+            for (axis, key, description) in [("X", "scaleX", "Width"), ("Y", "scaleY", "Height")] {
+                ui.push_id(key, |ui| {
+                    ui.label(axis)
+                        .on_hover_text(crate::localization::text(ui.ctx(), description));
+                    compact_number(ui, shape, key, 0.01, 2.0, 0.01, false);
+                });
+            }
+        });
+    } else {
+        number(ui, "Width", shape, "scaleX", 0.01..=2.0, 0.01);
+        number(ui, "Height", shape, "scaleY", 0.01..=2.0, 0.01);
+    }
+}
+
 pub(crate) fn opacity(ui: &mut egui::Ui, value: &mut Value) {
     let mut percent = value["opacity"].as_f64().unwrap_or(1.0) * 100.0;
     if crate::sliders::value_slider(ui, "Opacity", &mut percent, 0.0..=100.0, "%", 0) {
@@ -555,7 +560,7 @@ pub(crate) fn transform_ui(ui: &mut egui::Ui, layer: &mut Value) {
         ("Angle", "rotation", -360.0, 360.0, 1.0, false),
     ]
     .into_iter()
-    .filter(|(_, key, ..)| !explosion || *key != "scale")
+    .filter(|(_, key, ..)| !(explosion || layer["kind"] == "Shape") || *key != "scale")
     .collect();
     for (label, key, min, max, speed, percent) in fields {
         crate::fields::row(ui, label, |ui| {
@@ -884,51 +889,77 @@ fn spatial_number(
     }
 }
 pub(crate) fn gradient_presets(ui: &mut egui::Ui, port: &mut dyn EditorPort, gradient: &mut Value) {
-    ui.app_menu_button("Gradient presets", |ui| {
-        if ui.app_button("Gradient Explorer…").clicked() {
-            crate::gradient_explorer::request(ui.ctx());
-            ui.close();
-        }
-        let mut selected = None;
-        for preset in port.gradients() {
-            if ui.app_button(&preset.name).clicked() {
-                selected = Some(preset.stops.clone());
-            }
-        }
-        if let Some(stops) = selected {
+    let target = ui.id().with("gradient-preset-controls");
+    let pending = ui.ctx().data_mut(|data| {
+        let id = egui::Id::new("apply-gradient-preset");
+        let pending = data.get_temp::<(egui::Id, Vec<achimeld_application::GradientStop>)>(id);
+        data.remove::<(egui::Id, Vec<achimeld_application::GradientStop>)>(id);
+        pending
+    });
+    if let Some((id, stops)) = pending {
+        if id == target {
             gradient["stops"] = json!(stops);
-            ui.close();
+        } else {
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(egui::Id::new("apply-gradient-preset"), (id, stops))
+            });
         }
-        ui.separator();
-        let name_id = ui.id().with("gradient-preset-name");
-        let mut name = ui
-            .ctx()
-            .data_mut(|data| data.get_temp::<String>(name_id))
-            .unwrap_or_default();
-        ui.add(egui::TextEdit::singleline(&mut name).hint_text("Preset name"));
+    }
+    crate::buttons::bar(ui, 24.0, |ui| {
+        let width = ui.available_width() / 2.0;
+        let folder = crate::particles::glyph(
+            ui.ctx(),
+            "gradient-explorer-open",
+            include_bytes!("../assets/toolbar/layer-folder.rgba"),
+        );
         if ui
-            .add_enabled(
-                !name.trim().is_empty(),
-                crate::buttons::Button::new("Save gradient preset"),
+            .add_sized(
+                [width, ui.spacing().interact_size.y],
+                crate::buttons::Button::new(folder)
+                    .bar()
+                    .image_tint_follows_text_color(true),
             )
+            .on_hover_text("Open Gradient Explorer")
             .clicked()
         {
-            let stops = serde_json::from_value(gradient["stops"].clone());
-            let result = stops.map_err(|e| e.to_string()).and_then(|stops| {
-                port.save_gradient(achimeld_application::GradientPreset {
-                    id: achimeld_application::new_id(),
-                    name: name.trim().into(),
-                    stops,
-                })
-            });
-            match result {
-                Ok(()) => ui.close(),
-                Err(error) => {
-                    ui.colored_label(egui::Color32::LIGHT_RED, error);
+            crate::gradient_explorer::request_source(ui.ctx(), gradient.clone(), target);
+        }
+        let load = crate::particles::glyph(
+            ui.ctx(),
+            "gradient-quick-load",
+            include_bytes!("../assets/toolbar/style-set-load.rgba"),
+        );
+        let response = ui
+            .add_sized(
+                [width, ui.spacing().interact_size.y],
+                crate::buttons::Button::new(load)
+                    .bar()
+                    .image_tint_follows_text_color(true),
+            )
+            .on_hover_text("Quick load gradient");
+        let mut chosen = None;
+        crate::buttons::menu_popup(ui, &response, |ui| {
+            for preset in port.gradients() {
+                let icon = crate::gradient_explorer::preset_icon(ui.ctx(), preset, 28.0);
+                if ui
+                    .add(
+                        crate::buttons::Button::new((icon, preset.name.as_str()))
+                            .bar()
+                            .min_size(egui::vec2(ui.available_width(), 32.0)),
+                    )
+                    .clicked()
+                {
+                    chosen = Some(preset.stops.clone());
+                    ui.close();
                 }
             }
+            if port.gradients().is_empty() {
+                ui.weak("No saved gradients");
+            }
+        });
+        if let Some(stops) = chosen {
+            gradient["stops"] = json!(stops);
         }
-        ui.ctx().data_mut(|data| data.insert_temp(name_id, name));
     });
 }
 pub(crate) fn gradient_ui(ui: &mut egui::Ui, gradient: &mut Value) {

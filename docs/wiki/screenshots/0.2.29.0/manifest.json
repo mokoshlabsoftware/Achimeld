@@ -1,0 +1,143 @@
+[
+  {
+    "file": "01-icon-layer-editor.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "articleIds": [
+      "icon-editor",
+      "icon-layers"
+    ],
+    "notes": "Existing example composition with text, gradient overlay, vignette, particles, General Image, explosion and gradient.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "02-achievement-general.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "achievements-general",
+      "general-images"
+    ],
+    "notes": "Template and resolved name, API name, General Image slot 0, linked stat, unlock value 100.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "03-stats-overview.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "stats",
+      "getting-started"
+    ],
+    "notes": "Example project stat canvas with 17 Int stats.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "04-stat-general.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "stats",
+      "achievements-general"
+    ],
+    "notes": "UltraClickUsedTimes Int stat and optional numeric configuration.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "05-sync-saved-state.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "sync",
+      "steam"
+    ],
+    "notes": "Saved snapshot requires re-validation. No live Steam operation was started; screenshot includes demo game banner.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "06-art-data-bank.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "art-data-bank",
+      "general-images"
+    ],
+    "notes": "General images bank showing source artwork separately from composed achievement icons.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "07-style-viewer.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "styles"
+    ],
+    "notes": "Project and built-in style banners with the retained layer stack; preview selection still needs a separate capture.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "08-achievements-overview.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "getting-started",
+      "achievements-general"
+    ],
+    "notes": "Fit all shows 20 ordinary achievements plus a separate style helper node; do not equate canvas node count with Steam count.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "09-localization-template.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "localization",
+      "achievements-general"
+    ],
+    "notes": "English templates retain {0}; display-name and description previews resolve to 100.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "10-icon-text-link.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "icon-editor",
+      "icon-layers",
+      "achievements-general"
+    ],
+    "notes": "Text layer is linked to unlock value; ordinary text source is disabled and chain source is selected.",
+    "status": "captured, publication review pending"
+  },
+  {
+    "file": "11-general-image-layer.jpg",
+    "applicationVersion": "0.2.29.0",
+    "windowTitle": "Achimeld 0.2.29.0",
+    "width": 1536,
+    "height": 832,
+    "articleIds": [
+      "general-images",
+      "icon-editor"
+    ],
+    "notes": "General Image layer resolves slot ID 0 and applies its own 80 percent scale independently of the source image.",
+    "status": "captured, publication review pending"
+  }
+]

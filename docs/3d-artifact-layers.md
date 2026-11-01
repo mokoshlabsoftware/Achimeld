@@ -1,6 +1,6 @@
 # 3D artifact layers
 
-Add **3D artifact** in the layer picker. It starts with an editable person. **Artifact preset > Replace with preset…** replaces its parts with Person, Cup, Shield, Sword or Potion. Undo restores the previous collection. Presets contain ordinary parts, with no baked artwork or hidden preset geometry.
+3D artifact creation is currently hidden from the layer picker, and the default 3D object style is no longer bundled. Existing 3D artifact layers remain editable. **Artifact preset > Replace with preset…** replaces their parts with Person, Cup, Shield, Sword or Potion. Undo restores the previous collection. Presets contain ordinary parts, with no baked artwork or hidden preset geometry.
 
 The parts list supports adding, selecting, renaming, hiding, duplicating, reordering and removing up to 64 parts. Every part has independent X/Y/Z size, position and rotation, material color, Matte/Glossy/Unlit shading and glossy roughness. The artifact has its own position and three-axis angle, perspective/orthographic camera and lighting, following the 3D text camera convention. X points right, Y up and Z toward the camera. Dimensions use the 512-unit icon design space.
 

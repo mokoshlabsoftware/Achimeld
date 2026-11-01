@@ -1,7 +1,7 @@
 //! Named effect libraries share complete, embedded settings; I/O stays in the host.
 use crate::{
     Desktop,
-    buttons::{self, Button, UiButtonExt as _},
+    buttons::{self, Button},
 };
 use achimeld_application::{
     EditorPort, UiRequest,
@@ -15,14 +15,72 @@ struct Request {
     kind: EffectKind,
     source: Option<Value>,
 }
+const APPLY: &str = "apply-effect-preset";
+fn preset_icon(ctx: &egui::Context, preset: &EffectPreset, size: f32) -> egui::Image<'static> {
+    let id = egui::Id::new(("effect-preset-icon", &preset.id));
+    if let Some((layer, texture)) =
+        ctx.data(|data| data.get_temp::<(Value, egui::TextureHandle)>(id))
+        && layer == preset.layer
+    {
+        return egui::Image::new((texture.id(), egui::Vec2::splat(size)));
+    }
+    let stops = preset.layer[preset.kind.settings_key()]["gradient"]["stops"].as_array();
+    let colors: Vec<_> = stops
+        .into_iter()
+        .flatten()
+        .filter_map(|stop| stop["colorHex"].as_str())
+        .filter_map(|hex| {
+            let hex = hex.trim_start_matches('#');
+            let rgb = hex.get(hex.len().checked_sub(6)?..)?;
+            u32::from_str_radix(rgb, 16).ok()
+        })
+        .collect();
+    let low = colors.first().copied().unwrap_or(0x334455);
+    let high = colors.last().copied().unwrap_or(0xFFFFFF);
+    let mut rgba = vec![0u8; 64 * 64 * 4];
+    for y in 0..64 {
+        for x in 0..64 {
+            let dx = (x as f32 - 31.5) / 31.5;
+            let dy = (y as f32 - 31.5) / 31.5;
+            let radius = (dx * dx + dy * dy).sqrt();
+            let limit = if preset.kind == EffectKind::Explosion {
+                0.64 + 0.28 * (dy.atan2(dx) * 9.0).cos().abs()
+            } else {
+                0.78
+            };
+            if radius > limit {
+                continue;
+            }
+            let t = (1.0 - radius / limit).clamp(0.0, 1.0);
+            let index = (y * 64 + x) * 4;
+            for channel in 0..3 {
+                let shift = 16 - channel * 8;
+                let a = ((low >> shift) & 255) as f32;
+                let b = ((high >> shift) & 255) as f32;
+                rgba[index + channel] = (a * (1.0 - t) + b * t) as u8;
+            }
+            rgba[index + 3] = ((limit - radius) * 255.0 * 8.0).min(255.0) as u8;
+        }
+    }
+    let texture = ctx.load_texture(
+        format!("effect-icon-{}", preset.id),
+        egui::ColorImage::from_rgba_unmultiplied([64, 64], &rgba),
+        egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
+    );
+    ctx.data_mut(|data| data.insert_temp(id, (preset.layer.clone(), texture.clone())));
+    egui::Image::new((texture.id(), egui::Vec2::splat(size)))
+}
 #[derive(Default)]
 pub(crate) struct Explorer {
     pub open: bool,
     kind: Option<EffectKind>,
     selected: Option<String>,
     draft: Option<EffectPreset>,
+    unsaved: Option<EffectPreset>,
+    target_layer: Option<String>,
     removed: Option<EffectPreset>,
     filter: String,
+    icon_size: f64,
     error: Option<String>,
     texture: Option<(String, egui::TextureHandle)>,
 }
@@ -36,74 +94,104 @@ pub(crate) fn preset_icon_controls(
     kind: EffectKind,
     width: f32,
 ) {
-    preset_menu(ui, port, layer, kind, Some(width));
+    let pending = ui.ctx().data_mut(|d| {
+        let id = egui::Id::new(APPLY);
+        let pending = d.get_temp::<(String, EffectPreset)>(id);
+        d.remove::<(String, EffectPreset)>(id);
+        pending
+    });
+    if let Some((id, preset)) = pending {
+        if layer["id"].as_str() == Some(&id) {
+            port.finish_group();
+            if let Err(error) = preset.apply_to(layer) {
+                ui.colored_label(ui.visuals().error_fg_color, error);
+            }
+        } else {
+            ui.ctx()
+                .data_mut(|d| d.insert_temp(egui::Id::new(APPLY), (id, preset)));
+        }
+    }
+    let label = format!("Open {}", kind.title());
+    let image = crate::particles::glyph(
+        ui.ctx(),
+        "effect-presets",
+        include_bytes!("../assets/toolbar/layer-folder.rgba"),
+    );
+    let response = ui.add_sized(
+        [width, ui.spacing().interact_size.y],
+        Button::new(image)
+            .id(ui.make_persistent_id(("effect-presets", layer["id"].as_str().unwrap_or(""))))
+            .bar()
+            .image_tint_follows_text_color(true),
+    );
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, response.enabled(), &label)
+    });
+    if response.on_hover_text(label).clicked() {
+        request(ui.ctx(), kind, Some(layer.clone()));
+    }
 }
-fn preset_menu(
+pub(crate) fn quick_load_controls(
     ui: &mut egui::Ui,
     port: &mut dyn EditorPort,
     layer: &mut Value,
     kind: EffectKind,
-    width: Option<f32>,
+    width: f32,
 ) {
-    let mut apply = None;
-    let mut error = None;
-    let title = if ui.available_width() < 210.0 {
-        "Presets".to_owned()
-    } else {
-        format!("{} presets", kind.layer_kind())
-    };
-    let label = format!("{} presets", kind.layer_kind());
-    let button = if let Some(width) = width {
-        let image = crate::particles::glyph(
-            ui.ctx(),
-            "effect-presets",
-            include_bytes!("../assets/toolbar/layer-folder.rgba"),
-        );
+    let image = crate::particles::glyph(
+        ui.ctx(),
+        "effect-quick-load",
+        include_bytes!("../assets/toolbar/style-set-load.rgba"),
+    );
+    let response = ui.add_sized(
+        [width, ui.spacing().interact_size.y],
         Button::new(image)
-            .id(egui::Id::new((
-                "effect-presets",
-                layer["id"].as_str().unwrap_or(""),
-            )))
+            .id(ui.make_persistent_id(("effect-quick-load", layer["id"].as_str().unwrap_or(""))))
             .bar()
-            .min_size(egui::vec2(width, ui.spacing().interact_size.y))
-            .image_tint_follows_text_color(true)
-    } else {
-        Button::new(title).style(buttons::ButtonStyle::Quiet)
-    };
-    let response = buttons::menu(ui, button, |ui| {
-        if ui.app_button(format!("{}…", kind.title())).clicked() {
-            request(ui.ctx(), kind, Some(layer.clone()));
-            ui.close();
-        }
-        if ui.app_button("Save current as preset").clicked() {
-            let name = layer["displayName"]
-                .as_str()
-                .filter(|s| !s.trim().is_empty())
-                .unwrap_or(kind.layer_kind())
-                .to_owned();
-            error = EffectPreset::from_layer(kind, layer, name)
-                .and_then(|p| port.save_effect_preset(p))
-                .err();
-            ui.close();
-        }
-        for preset in port.effect_presets().iter().filter(|p| p.kind == kind) {
-            if ui.app_button(&preset.name).clicked() {
-                apply = Some(preset.clone());
+            .image_tint_follows_text_color(true),
+    );
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(
+            egui::WidgetType::Button,
+            response.enabled(),
+            "Quick load preset",
+        )
+    });
+    let response = response.on_hover_text("Quick load preset");
+    let mut chosen = None;
+    buttons::menu_popup(ui, &response, |ui| {
+        for preset in port
+            .effect_presets()
+            .iter()
+            .filter(|preset| preset.kind == kind)
+        {
+            let icon = preset_icon(ui.ctx(), preset, 28.0);
+            if ui
+                .add(
+                    Button::new((icon, preset.name.as_str()))
+                        .bar()
+                        .min_size(egui::vec2(ui.available_width(), 32.0))
+                        .image_tint_follows_text_color(true),
+                )
+                .clicked()
+            {
+                chosen = Some(preset.clone());
                 ui.close();
             }
         }
-    })
-    .response;
-    response.widget_info(|| {
-        egui::WidgetInfo::labeled(egui::WidgetType::Button, response.enabled(), &label)
+        if port
+            .effect_presets()
+            .iter()
+            .all(|preset| preset.kind != kind)
+        {
+            ui.weak("No saved presets");
+        }
     });
-    response.on_hover_text(label);
-    if let Some(preset) = apply {
+    if let Some(preset) = chosen {
         port.finish_group();
-        error = preset.apply_to(layer).err();
-    }
-    if let Some(error) = error {
-        ui.colored_label(ui.visuals().error_fg_color, error);
+        if let Err(error) = preset.apply_to(layer) {
+            ui.colored_label(ui.visuals().error_fg_color, error);
+        }
     }
 }
 impl Explorer {
@@ -116,12 +204,16 @@ impl Explorer {
                 .selected
                 .as_ref()
                 .and_then(|id| port.effect_presets().iter().find(|preset| &preset.id == id))
-                .cloned();
+                .cloned()
+                .or_else(|| self.unsaved.clone());
             self.error = None;
             self.texture = None;
         }
     }
     pub(crate) fn save(&mut self, port: &mut dyn EditorPort) -> bool {
+        if self.selected.is_none() {
+            return true;
+        }
         let Some(draft) = &self.draft else {
             return true;
         };
@@ -147,7 +239,8 @@ impl Explorer {
         let name = format!("New {}", kind.layer_kind().to_lowercase());
         match EffectPreset::from_layer(kind, &layer, name) {
             Ok(preset) => {
-                self.selected = Some(preset.id.clone());
+                self.selected = None;
+                self.unsaved = Some(preset.clone());
                 self.draft = Some(preset);
                 self.error = None;
             }
@@ -155,9 +248,40 @@ impl Explorer {
         }
     }
     fn contents(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
+        // Keep the preview visible while the settings pane scrolls. The narrow
+        // layout is retained for compact test surfaces and very small windows.
+        if ui.available_width() < 700.0 {
+            self.controls(ui, port);
+            self.preview(ui, port, ui.available_width().min(220.0));
+            return;
+        }
+        let preview_width = (ui.available_width() * 0.36).clamp(240.0, 340.0);
+        let height = ui.available_height();
+        let controls_width =
+            (ui.available_width() - preview_width - ui.spacing().item_spacing.x - 20.0).max(1.0);
+        ui.horizontal_top(|ui| {
+            let (preview_rect, _) =
+                ui.allocate_exact_size(egui::vec2(preview_width, height), egui::Sense::hover());
+            ui.separator();
+            ui.allocate_ui_with_layout(
+                egui::vec2(controls_width, height),
+                egui::Layout::top_down(egui::Align::Min),
+                |ui| {
+                    egui::ScrollArea::vertical()
+                        .id_salt("effect-explorer-controls")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| self.controls(ui, port));
+                },
+            );
+            // Draw after the controls so a changed value appears in this frame.
+            self.preview_at(ui, port, preview_rect);
+        });
+    }
+
+    fn controls(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
         let kind = self.kind.unwrap_or(EffectKind::Explosion);
         buttons::bar(ui, 24.0, |ui| {
-            let width = ui.available_width() / 4.0;
+            let width = ui.available_width() / 2.0;
             if crate::gradient_explorer::action(
                 ui,
                 "New",
@@ -175,6 +299,9 @@ impl Explorer {
             {
                 port.request(UiRequest::ImportEffects(kind));
             }
+        });
+        buttons::bar(ui, 24.0, |ui| {
+            let width = ui.available_width() / 2.0;
             if crate::gradient_explorer::action(
                 ui,
                 "Export selected…",
@@ -216,12 +343,22 @@ impl Explorer {
                 .hint_text("Find presets")
                 .desired_width(ui.available_width()),
         );
+        let mut size =
+            serde_json::json!({"size": if self.icon_size < 24.0 { 40.0 } else { self.icon_size }});
+        crate::knobs::bank(
+            ui,
+            port.preferences(),
+            &mut size,
+            &serde_json::json!({"size":40.0}),
+            &[crate::knobs::Parameter::new("Icon size", "size", 24.0..=96.0, 0).integer()],
+        );
+        self.icon_size = size["size"].as_f64().unwrap_or(40.0).clamp(24.0, 96.0);
         let needle = self.filter.to_lowercase();
         let presets: Vec<_> = port
             .effect_presets()
             .iter()
             .filter(|p| p.kind == kind && p.name.to_lowercase().contains(&needle))
-            .map(|p| (p.id.clone(), p.name.clone()))
+            .cloned()
             .collect();
         let mut choose = None;
         egui::ScrollArea::vertical()
@@ -239,27 +376,58 @@ impl Explorer {
                     }
                 ));
                 ui.spacing_mut().item_spacing.y = 0.0;
-                for (id, name) in presets {
+                let icon = self
+                    .unsaved
+                    .as_ref()
+                    .map(|preset| preset_icon(ui.ctx(), preset, self.icon_size as f32))
+                    .unwrap_or_else(|| {
+                        crate::particles::glyph(
+                            ui.ctx(),
+                            "effect-unsaved-icon",
+                            include_bytes!("../assets/toolbar/layer-folder.rgba"),
+                        )
+                    });
+                if ui
+                    .add_sized(
+                        [ui.available_width(), self.icon_size as f32 + 8.0],
+                        Button::selectable(self.selected.is_none(), (icon, "Unsaved changes"))
+                            .bar(),
+                    )
+                    .clicked()
+                {
+                    choose = Some(String::new());
+                }
+                for preset in presets {
+                    let icon = preset_icon(ui.ctx(), &preset, self.icon_size as f32);
                     if ui
                         .add_sized(
-                            [ui.available_width(), buttons::bar_height(ui, 24.0)],
-                            Button::selectable(self.selected.as_deref() == Some(&id), &name).bar(),
+                            [ui.available_width(), self.icon_size as f32 + 8.0],
+                            Button::selectable(
+                                self.selected.as_deref() == Some(&preset.id),
+                                (icon, &preset.name),
+                            )
+                            .bar(),
                         )
                         .clicked()
                     {
-                        choose = Some(id);
+                        choose = Some(preset.id);
                     }
                 }
             });
         if let Some(id) = choose
             && self.save(port)
-            && let Some(preset) = port.effect_presets().iter().find(|p| p.id == id).cloned()
         {
-            self.selected = Some(preset.id.clone());
-            self.draft = Some(preset);
+            if id.is_empty() {
+                self.selected = None;
+                self.draft = self.unsaved.clone();
+            } else if let Some(preset) = port.effect_presets().iter().find(|p| p.id == id).cloned()
+            {
+                self.selected = Some(preset.id.clone());
+                self.draft = Some(preset);
+            }
         }
         buttons::bar(ui, 24.0, |ui| {
-            let width = ui.available_width() / 4.0;
+            let width = ui.available_width() / 5.0;
             if crate::gradient_explorer::action(
                 ui,
                 "Save preset",
@@ -269,7 +437,40 @@ impl Explorer {
             )
             .clicked()
             {
-                self.save(port);
+                if self.selected.is_none() {
+                    if let Some(draft) = &self.draft {
+                        let mut preset = draft.clone();
+                        preset.id = achimeld_application::new_id();
+                        match preset
+                            .validate()
+                            .and_then(|()| port.save_effect_preset(preset.clone()))
+                        {
+                            Ok(()) => {
+                                self.selected = Some(preset.id.clone());
+                                self.draft = Some(preset);
+                                self.error = None;
+                            }
+                            Err(error) => self.error = Some(error),
+                        }
+                    }
+                } else {
+                    self.save(port);
+                }
+            }
+            if crate::gradient_explorer::action(
+                ui,
+                "Apply to layer",
+                "copy",
+                width,
+                self.target_layer.is_some() && self.draft.is_some(),
+            )
+            .clicked()
+                && self.save(port)
+                && let (Some(id), Some(preset)) = (&self.target_layer, &self.draft)
+            {
+                ui.ctx().data_mut(|d| {
+                    d.insert_temp(egui::Id::new(APPLY), (id.clone(), preset.clone()))
+                });
             }
             if crate::gradient_explorer::action(
                 ui,
@@ -305,7 +506,7 @@ impl Explorer {
                 match port.delete_effect_preset(id) {
                     Ok(()) => {
                         self.removed = original;
-                        self.draft = None;
+                        self.draft = self.unsaved.clone();
                         self.selected = None;
                         self.error = None;
                     }
@@ -341,34 +542,6 @@ impl Explorer {
                         .desired_width(ui.available_width()),
                 );
             });
-            if let Some(preview) = port.effect_preview(draft)
-                && self
-                    .texture
-                    .as_ref()
-                    .is_none_or(|(fingerprint, _)| fingerprint != &preview.fingerprint)
-            {
-                let image = egui::ColorImage::from_rgba_unmultiplied(
-                    [preview.width, preview.height],
-                    &preview.rgba,
-                );
-                let texture = ui.ctx().load_texture(
-                    "effect-explorer-preview",
-                    image,
-                    egui::TextureOptions::LINEAR
-                        .with_mipmap_mode(Some(egui::TextureFilter::Linear)),
-                );
-                self.texture = Some((preview.fingerprint, texture));
-            }
-            if let Some((_, texture)) = &self.texture {
-                let edge = ui.available_width().min(220.0);
-                let (rect, _) =
-                    ui.allocate_exact_size(egui::Vec2::splat(edge), egui::Sense::hover());
-                crate::gradient::checker(ui, rect);
-                egui::Image::new((texture.id(), rect.size())).paint_at(ui, rect);
-            }
-            if let Some(error) = port.effect_preview_error() {
-                ui.colored_label(ui.visuals().error_fg_color, error);
-            }
             ui.weak("Gradient and color map data are stored with this preset.");
             crate::inspector::boolean(ui, "Visible", &mut draft.layer, "visible");
             crate::inspector::number(ui, "Opacity", &mut draft.layer, "opacity", 0.0..=1.0, 0.01);
@@ -387,11 +560,62 @@ impl Explorer {
             });
             crate::layers::effects_ui(ui, &mut draft.layer);
         }
+        if self.selected.is_none() {
+            self.unsaved = self.draft.clone();
+        }
         if let Some(error) = &self.error {
             ui.colored_label(ui.visuals().error_fg_color, error);
         }
         ui.weak(port.status());
         ui.weak("Choose saved presets from the matching layer's presets menu.");
+    }
+
+    fn update_preview(&mut self, ui: &egui::Ui, port: &mut dyn EditorPort) {
+        let Some(draft) = &self.draft else {
+            self.texture = None;
+            return;
+        };
+        if let Some(preview) = port.effect_preview(draft)
+            && self
+                .texture
+                .as_ref()
+                .is_none_or(|(fingerprint, _)| fingerprint != &preview.fingerprint)
+        {
+            let image = egui::ColorImage::from_rgba_unmultiplied(
+                [preview.width, preview.height],
+                &preview.rgba,
+            );
+            let texture = ui.ctx().load_texture(
+                "effect-explorer-preview",
+                image,
+                egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
+            );
+            self.texture = Some((preview.fingerprint, texture));
+        }
+    }
+
+    fn preview_at(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort, area: egui::Rect) {
+        self.update_preview(ui, port);
+        if let Some((_, texture)) = &self.texture {
+            let edge = area.width().min(area.height()).min(340.0);
+            let rect = egui::Rect::from_center_size(area.center(), egui::Vec2::splat(edge));
+            crate::gradient::checker(ui, rect);
+            egui::Image::new((texture.id(), rect.size())).paint_at(ui, rect);
+        }
+        if let Some(error) = port.effect_preview_error() {
+            ui.painter().text(
+                area.left_bottom() - egui::vec2(0.0, 8.0),
+                egui::Align2::LEFT_BOTTOM,
+                error,
+                egui::TextStyle::Body.resolve(ui.style()),
+                ui.visuals().error_fg_color,
+            );
+        }
+    }
+
+    fn preview(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort, edge: f32) {
+        let (rect, _) = ui.allocate_exact_size(egui::Vec2::splat(edge), egui::Sense::hover());
+        self.preview_at(ui, port, rect);
     }
 }
 impl Desktop {
@@ -417,33 +641,31 @@ impl Desktop {
             explorer.kind = Some(request.kind);
             explorer.open = true;
             if let Some(source) = request.source {
+                explorer.target_layer = source["id"].as_str().map(str::to_owned);
                 explorer.create(request.kind, Some(source));
+            } else {
+                explorer.target_layer = None;
             }
         }
         if explorer.open {
             let kind = explorer.kind.unwrap_or(EffectKind::Explosion);
             if explorer.draft.is_none() {
-                if let Some(preset) = port.effect_presets().iter().find(|p| p.kind == kind) {
-                    explorer.selected = Some(preset.id.clone());
-                    explorer.draft = Some(preset.clone());
-                } else {
-                    explorer.create(kind, None);
-                }
+                explorer.create(kind, None);
             }
             let mut open = true;
             egui::Window::new(kind.title())
                 .id(egui::Id::new("effect-explorer-window"))
+                .frame(
+                    egui::Frame::window(&ctx.global_style())
+                        .corner_radius(egui::CornerRadius::ZERO),
+                )
                 .open(&mut open)
                 .default_pos([34.0, 60.0])
-                .default_size([660.0, 700.0])
-                .min_width(360.0)
+                .default_size([960.0, 700.0])
+                .min_width(700.0)
                 .collapsible(false)
                 .enabled(enabled)
-                .show(ctx, |ui| {
-                    egui::ScrollArea::vertical()
-                        .id_salt("effect-explorer-body")
-                        .show(ui, |ui| explorer.contents(ui, port));
-                });
+                .show(ctx, |ui| explorer.contents(ui, port));
             explorer.open = open || !explorer.save(port);
         }
         self.effect_explorer = explorer;

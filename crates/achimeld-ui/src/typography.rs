@@ -203,7 +203,9 @@ mod tests {
         output.textures_delta.clear();
     }
 
-    const SAMPLES: [(&str, &str); 4] = [
+    const SAMPLES: [(&str, &str); 6] = [
+        ("Hungarian", "Magyar Árvíztűrő tükörfúrógép ŐŰőű"),
+        ("Turkish", "Türkçe İı Şş Ğğ Çç Öö Üü"),
         ("Korean", "한국어 업적 통계 설정 한글"),
         ("ChineseSimplified", "简体中文 成就 统计 设置 骨 直"),
         ("ChineseTraditional", "繁體中文 成就 統計 設定 骨 直"),
@@ -214,13 +216,14 @@ mod tests {
     fn bundled_noto_covers_cjk_catalogs_and_mixed_text_in_every_ui_family() {
         let records = achimeld_core::csv::records(include_str!("../assets/strings.csv")).unwrap();
         for with_windows_fonts in [false, true] {
-            let ctx = Context::default();
-            if with_windows_fonts {
-                crate::tests::configure_test_fonts(&ctx);
-            } else {
-                configure_fonts(&ctx, None);
-            }
             for (language, _) in SAMPLES {
+                // Each language gets a fresh atlas, including languages sharing a font face.
+                let ctx = Context::default();
+                if with_windows_fonts {
+                    crate::tests::configure_test_fonts(&ctx);
+                } else {
+                    configure_fonts(&ctx, None);
+                }
                 ensure_fonts(&ctx, language);
                 let column = achimeld_core::INTERFACE_LANGUAGES
                     .iter()
@@ -293,6 +296,8 @@ mod tests {
             .data(|data| data.get_temp::<FontState>(egui::Id::new(FONT_STATE)))
             .unwrap();
         for (language, index) in [
+            ("Hungarian", 2),
+            ("Turkish", 2),
             ("Korean", 1),
             ("ChineseTraditional", 3),
             ("Japanese", 0),

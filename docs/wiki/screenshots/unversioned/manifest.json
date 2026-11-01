@@ -1,0 +1,58 @@
+[
+  {
+    "file": "image-drop-icon-properties.png",
+    "applicationVersion": null,
+    "articleIds": [
+      "first-achievement"
+    ],
+    "notes": "User-provided on 2026-10-30. Image-drop result with Properties > Icon, General Images ID 0 and a General Image layer. Cropped screenshot does not show the compiled application version.",
+    "width": 1353,
+    "height": 652,
+    "status": "User-confirmed workflow; application version unverified"
+  },
+  {
+    "file": "folder-artwork-star-mask.png",
+    "applicationVersion": null,
+    "articleIds": [
+      "masks"
+    ],
+    "notes": "User-provided on 2026-10-30 as an example of artwork inside a folder with a folder mask. Star-shaped result and open folder fx menu. Application version not visible.",
+    "width": 1402,
+    "height": 824,
+    "status": "User-confirmed example; application version unverified"
+  },
+  {
+    "file": "create-achievement-context-menu.png",
+    "applicationVersion": null,
+    "articleIds": [
+      "first-achievement"
+    ],
+    "notes": "User-provided on 2026-10-30. Empty Achievements canvas context menu with Create achievement highlighted. Application version not visible.",
+    "width": 508,
+    "height": 352,
+    "status": "User-confirmed workflow; application version unverified"
+  },
+  {
+    "file": "add-particles-layer.png",
+    "applicationVersion": null,
+    "articleIds": [
+      "first-achievement",
+      "particles"
+    ],
+    "width": 1179,
+    "height": 879,
+    "notes": "User-provided on 2026-10-30. Particles above General Image, Screen blending, and Create layer menu with Particles highlighted. Application version not visible.",
+    "status": "User-confirmed example; application version unverified"
+  },
+  {
+    "file": "supply-general-image.png",
+    "applicationVersion": null,
+    "articleIds": [
+      "first-achievement"
+    ],
+    "width": 653,
+    "height": 691,
+    "notes": "User-provided on 2026-10-30 for Supply a General Image. General tab selected, General images input ID 0, Standalone image tooltip. Application version not visible.",
+    "status": "User-confirmed screenshot; application version unverified"
+  }
+]

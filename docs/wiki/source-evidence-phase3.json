@@ -1,0 +1,302 @@
+{
+  "documentedFeatureVersion": "0.2.29.3",
+  "schemaVersion": 1,
+  "sourceReviewWorkingVersion": "0.2.29.4",
+  "articleSources": {
+    "icon-layers": [
+      "crates/achimeld-ui/src/layers.rs",
+      "crates/achimeld-ui/src/layer_palette.rs",
+      "bridge/Achimeld.Core/IconRecipe.cs",
+      "crates/achimeld-ui/src/perlin.rs",
+      "crates/achimeld-ui/src/vignette.rs",
+      "docs/radial-blur.md"
+    ],
+    "icon-effects": [
+      "crates/achimeld-ui/src/layers.rs",
+      "crates/achimeld-ui/src/layer_palette.rs",
+      "bridge/Achimeld.Core/IconRecipe.cs",
+      "crates/achimeld-ui/src/layer_effects.rs",
+      "docs/icon-spatial-effects.md",
+      "docs/effect-rows.md"
+    ],
+    "masks": [
+      "docs/masks.md",
+      "crates/achimeld-ui/src/layer_masks.rs",
+      "crates/achimeld-ui/src/layer_palette.rs"
+    ],
+    "gradients": [
+      "docs/gradient-explorer.md",
+      "crates/achimeld-ui/src/gradient.rs",
+      "crates/achimeld-ui/src/layers.rs"
+    ],
+    "particles": [
+      "docs/particle-layers.md",
+      "crates/achimeld-ui/src/particles.rs",
+      "crates/achimeld-ui/src/particle_sliders.rs",
+      "crates/achimeld-ui/src/particle_shapes.rs"
+    ],
+    "explosions": [
+      "docs/explosion-layers.md",
+      "crates/achimeld-ui/src/explosion.rs"
+    ],
+    "text-3d": [
+      "docs/3d-text-layers.md",
+      "crates/achimeld-ui/src/text3d.rs"
+    ],
+    "artifacts-3d": [
+      "docs/3d-artifact-layers.md",
+      "crates/achimeld-ui/src/artifact3d.rs"
+    ],
+    "styles": [
+      "docs/upper-application-bar.md",
+      "docs/style-banners.md",
+      "crates/achimeld-ui/src/style_viewer/layout.rs",
+      "crates/achimeld-ui/src/style_picker.rs"
+    ],
+    "art-data-bank": [
+      "crates/achimeld-ui/src/art_bank.rs",
+      "docs/editor-image-drops.md",
+      "AGENTS.md"
+    ],
+    "stats": [
+      "crates/achimeld-ui/src/inspector.rs",
+      "crates/achimeld-ui/src/achievement_general.rs",
+      "crates/achimeld-ui/src/sorting.rs",
+      "crates/achimeld-application/src/document.rs",
+      "crates/achimeld-application/src/automation.rs"
+    ],
+    "localization": [
+      "crates/achimeld-ui/src/inspector.rs",
+      "crates/achimeld-application/src/translations.rs",
+      "docs/mcp-server.md"
+    ],
+    "sync": [
+      "crates/achimeld-ui/src/synchronization.rs",
+      "crates/achimeld-ui/src/synchronization_target.rs",
+      "docs/application-prompts.md"
+    ],
+    "steam": [
+      "crates/achimeld-ui/src/steam.rs",
+      "docs/upper-application-bar.md",
+      "docs/application-prompts.md"
+    ],
+    "exports": [
+      "crates/achimeld-app/src/icon_export.rs",
+      "crates/achimeld-ui/src/settings.rs",
+      "docs/mcp-server.md"
+    ],
+    "preferences": [
+      "crates/achimeld-ui/src/settings.rs",
+      "docs/preferences.md",
+      "docs/field-labels.md",
+      "docs/numeric-sliders.md"
+    ],
+    "troubleshooting": [
+      "AGENTS.md",
+      "docs/update-notes.md",
+      "crates/achimeld-ui/src/terminal.rs",
+      "docs/application-prompts.md"
+    ],
+    "automation": [
+      "docs/mcp-server.md",
+      "crates/achimeld-application/src/automation.rs"
+    ]
+  },
+  "method": "Source documentation and property-editor review; runtime acceptance remains scoped to prior captures",
+  "date": "2026-10-30",
+  "files": [
+    {
+      "sha256": "92c37446848219bebaae7a7cc5124175645672ed4259976d8676f2e6e91de42f",
+      "path": "AGENTS.md"
+    },
+    {
+      "sha256": "27ac68c823f1920d8d3b33728d8edb458a73869211876f4df0ffb764f1e28dc3",
+      "path": "bridge/Achimeld.Core/IconRecipe.cs"
+    },
+    {
+      "sha256": "80291fcef00430a4414f9d030b399d50d75e298ef3104ded6b62bbf69050d219",
+      "path": "crates/achimeld-app/src/icon_export.rs"
+    },
+    {
+      "sha256": "851d10ebec9637c5abb54bba9074b1d9b4b8b47b9a653198dc9fecb105e03b78",
+      "path": "crates/achimeld-application/src/automation.rs"
+    },
+    {
+      "sha256": "419f0bf3ef9e83db6a0999405296765a97797c6e13484e4a1486d2d4dae013ed",
+      "path": "crates/achimeld-application/src/document.rs"
+    },
+    {
+      "sha256": "062c1e212950a8f20c5de06a888c1c2f493c4587bdfdee7681bed71a2ef02d52",
+      "path": "crates/achimeld-application/src/translations.rs"
+    },
+    {
+      "sha256": "5d4072191d593ae777697103d1075028d88061e1cb22a153b7031455ead58dae",
+      "path": "crates/achimeld-ui/src/achievement_general.rs"
+    },
+    {
+      "sha256": "5ea40180e89dcb88f970ac0a4920bf345323ac4b53b36b6fc02bc2e11a9ea86a",
+      "path": "crates/achimeld-ui/src/art_bank.rs"
+    },
+    {
+      "sha256": "066d07e2612f9e8e22aa7c8aee2977a62cf7d546068c2dbd325680942b8227e2",
+      "path": "crates/achimeld-ui/src/artifact3d.rs"
+    },
+    {
+      "sha256": "81c5e112aea49148637e0b948771237aadfd740ba1b664b3eceb5bd53b2f0b9b",
+      "path": "crates/achimeld-ui/src/explosion.rs"
+    },
+    {
+      "sha256": "1efde546fe9af772b0a20263160a667ffd7c9f3419ac2aaf61aa993b0fdbb628",
+      "path": "crates/achimeld-ui/src/gradient.rs"
+    },
+    {
+      "sha256": "239b11701ae553a69b5ed11591d5959b527c2c1ee219537165c2de8082d5cb34",
+      "path": "crates/achimeld-ui/src/inspector.rs"
+    },
+    {
+      "sha256": "d5649ea8d2fddf7b26171a4799677d81eacdd16c3a97506c1e8e620dfe5deb0f",
+      "path": "crates/achimeld-ui/src/layer_effects.rs"
+    },
+    {
+      "sha256": "850fc272423656b4eb298e29c1b167cd835bf21d4c644f885cb34a25b91e43ea",
+      "path": "crates/achimeld-ui/src/layer_masks.rs"
+    },
+    {
+      "sha256": "16fbe6ebff82d903fcc00bf1cc44ee805de902b05b7679843d36092faba457f1",
+      "path": "crates/achimeld-ui/src/layer_palette.rs"
+    },
+    {
+      "sha256": "c8ef46b3f0388019c916240c11fad0ae6ccc81cdfefd22f7ae5d7934c3b4eb3b",
+      "path": "crates/achimeld-ui/src/layers.rs"
+    },
+    {
+      "sha256": "df085c5780bd12149828f2e513de046b5899644bdab78440997c2253f86027d1",
+      "path": "crates/achimeld-ui/src/particle_shapes.rs"
+    },
+    {
+      "sha256": "583a45b313b6f1d16e8ee3077d1d306d9975276ff7fd9bfcaccecb3fc97f9ec6",
+      "path": "crates/achimeld-ui/src/particle_sliders.rs"
+    },
+    {
+      "sha256": "c17c5449c735f3ac51277df6e0e1ecb3aebcbc6b606fe2a6bacd9855ce11b950",
+      "path": "crates/achimeld-ui/src/particles.rs"
+    },
+    {
+      "sha256": "4b0742ba9cf07f08480ff007840ee11c13ad394fc02a7c58de2c2f3726fcd2d1",
+      "path": "crates/achimeld-ui/src/perlin.rs"
+    },
+    {
+      "sha256": "ae4c210f0a9a90e7660bce77d6b6bb4af714855633c0cf1c8d9df10430fcd655",
+      "path": "crates/achimeld-ui/src/settings.rs"
+    },
+    {
+      "sha256": "4a373f3753757e66ec190ef0ae1744cf6b59e2edcc3e477795e3928309d4b346",
+      "path": "crates/achimeld-ui/src/sorting.rs"
+    },
+    {
+      "sha256": "68aeb03d0e9f5e91bfa92a797154f0adb908596e00cfeda8c7ebb72d50431c4a",
+      "path": "crates/achimeld-ui/src/steam.rs"
+    },
+    {
+      "sha256": "5aaa45e2cecc748203b78e114c4a7c7bfca9b8d230bd3f161cccc12f0cbd0dcc",
+      "path": "crates/achimeld-ui/src/style_picker.rs"
+    },
+    {
+      "sha256": "ba6d1b09383a9c7f962cef175b098bf78b6ad4a27d2faa9977a4916997a9f3b6",
+      "path": "crates/achimeld-ui/src/style_viewer/layout.rs"
+    },
+    {
+      "sha256": "c091cea5522b30f22355a6005138b020ed95b47f86cf0a8cab4a370fc2b6fe71",
+      "path": "crates/achimeld-ui/src/synchronization_target.rs"
+    },
+    {
+      "sha256": "975d389ce2303e445277db5557e4ca89af051fe6d2f886fb018a6d4a320b7d6d",
+      "path": "crates/achimeld-ui/src/synchronization.rs"
+    },
+    {
+      "sha256": "7d15c6cb6c1c66f2f0a7fd6b02a4b61d800b76763ff5c4f23db58cb76eb16dac",
+      "path": "crates/achimeld-ui/src/terminal.rs"
+    },
+    {
+      "sha256": "e8ca935175f359a0b0f24502c8f748867650225f51a2c49271c15956ace6fa4d",
+      "path": "crates/achimeld-ui/src/text3d.rs"
+    },
+    {
+      "sha256": "bd1a61cdd26b0d455d39ccbaaf521f05474956a4f8949df7a3c2523561f94db5",
+      "path": "crates/achimeld-ui/src/vignette.rs"
+    },
+    {
+      "sha256": "f69850dc44a075fb209bd9759ff324361a2ddd459883642151d3061be577fa5f",
+      "path": "docs/3d-artifact-layers.md"
+    },
+    {
+      "sha256": "a1189709de39bcfcc8228bfd635e74874ed280d670bd314ffaf2af5677ee0dcf",
+      "path": "docs/3d-text-layers.md"
+    },
+    {
+      "sha256": "6dcc79d95f6b1067b1525beb31307e940b827df32e3a5fb956a8799db1b730df",
+      "path": "docs/application-prompts.md"
+    },
+    {
+      "sha256": "05c1754a0e62c10a611b598c7d7393a4619432812993d26728c8db123eaaf73c",
+      "path": "docs/editor-image-drops.md"
+    },
+    {
+      "sha256": "d6c9811d04671d8749fa358f072dbd2cb9e506cedf566cd711e8f4d79995b11a",
+      "path": "docs/effect-rows.md"
+    },
+    {
+      "sha256": "c4b5f5dd5da84dfdbf63f44f25e6029e5c98ec89e179c1c56adcae4061e437d3",
+      "path": "docs/explosion-layers.md"
+    },
+    {
+      "sha256": "ed648ddcfd8560410ad40f4125d258feded202aa897f368c11f868261abfcfe5",
+      "path": "docs/field-labels.md"
+    },
+    {
+      "sha256": "3890a310f8d504904c14dce84bd8b5f46a02df484e46d6b7932273ed06d49943",
+      "path": "docs/gradient-explorer.md"
+    },
+    {
+      "sha256": "afceffdc055410c71bb444df47f4c7d94a556139f93b3885b30635963fcd55d1",
+      "path": "docs/icon-spatial-effects.md"
+    },
+    {
+      "sha256": "ce7ae216011bf3abe0fd3113aa12bee0dfb37b9b7bfef87888b500bca98d3f0e",
+      "path": "docs/masks.md"
+    },
+    {
+      "sha256": "e529bc3ebae7d3463009cc566bfda88710230e1a111b28bdbce9e6a4fa9a5f2c",
+      "path": "docs/mcp-server.md"
+    },
+    {
+      "sha256": "b35604daa89ad90b4a819e8c193e3ad1751363ae3a6c8f594c41dc8df2720c15",
+      "path": "docs/numeric-sliders.md"
+    },
+    {
+      "sha256": "fc24c82d58420da3c1e034371f854d10aca60f8805462709f843434f6f66c32f",
+      "path": "docs/particle-layers.md"
+    },
+    {
+      "sha256": "8f2d2673bb03d76204afc7af02726b3b41d63c3c2ca3507826377fe55605dbe4",
+      "path": "docs/preferences.md"
+    },
+    {
+      "sha256": "918e8358b33b3596f218d502bc290e64763a66b873a4bb4de56deaa13cac7678",
+      "path": "docs/radial-blur.md"
+    },
+    {
+      "sha256": "fe41eb705282b14727d60753a1a408353ff1d8cad551953783dcfbb23cf8a45f",
+      "path": "docs/style-banners.md"
+    },
+    {
+      "sha256": "84bae4086763a01714addd5c5f9537d1c07dee5ab4404dca944a1d9756e50a3a",
+      "path": "docs/update-notes.md"
+    },
+    {
+      "sha256": "ed741b2d9d781a89adc780f10b0ba8da6c6c7c4de473fc4dc247c135376f34d9",
+      "path": "docs/upper-application-bar.md"
+    }
+  ],
+  "sourceCommit": "38566bf2b805b09882fb5dc0dc4888c30a794ed6"
+}

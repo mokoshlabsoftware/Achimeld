@@ -189,15 +189,16 @@ impl Desktop {
                                         "Drag to change effect order"
                                     )
                                 ));
+                            // Accessibility builds widget info while holding the context lock.
+                            // Resolve translations before entering that callback.
+                            let accessible_name =
+                                crate::localization::text(ui.ctx(), layer_palette::label(&kind));
                             row.widget_info(|| {
                                 egui::WidgetInfo::selected(
                                     egui::WidgetType::Button,
                                     row.enabled(),
                                     self.layer_palette.selected_effect.as_ref() == Some(id),
-                                    crate::localization::text(
-                                        ui.ctx(),
-                                        layer_palette::label(&kind),
-                                    ),
+                                    &accessible_name,
                                 )
                             });
                             rects.push(row.rect);
@@ -243,11 +244,12 @@ impl Desktop {
                                 );
                             let (_, ink) =
                                 buttons::colors(ui, &delete, buttons::ButtonStyle::Quiet);
+                            let delete_label = crate::localization::text(ui.ctx(), "Delete effect");
                             delete.widget_info(|| {
                                 egui::WidgetInfo::labeled(
                                     egui::WidgetType::Button,
                                     delete.enabled(),
-                                    crate::localization::text(ui.ctx(), "Delete effect"),
+                                    &delete_label,
                                 )
                             });
                             icons::paint(

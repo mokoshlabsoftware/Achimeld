@@ -131,7 +131,6 @@ fn mask_context_picker_creates_any_source_kind_and_undo_restores_previous_source
             "PerlinNoise",
             "Shape",
             "Text",
-            "Artifact3d",
             "Folder",
             "Contrast",
             "MaskReference",
@@ -281,7 +280,10 @@ fn right_click_mask_references_layers_and_folders_with_one_undo() {
                     .iter()
                     .find(|l| l["kind"] == "MaskReference")
                     .unwrap();
-                assert_eq!(reference["maskSourceLayerId"], source);
+                assert_eq!(
+                    reference["maskSourceLayerId"], source,
+                    "passes={passes} kind={kind} from_target={from_target} layers={layers:?}"
+                );
                 assert_eq!(
                     layers.iter().find(|l| l["id"] == target).unwrap()["maskLayerId"],
                     reference["id"]

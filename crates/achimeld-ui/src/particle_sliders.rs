@@ -48,46 +48,80 @@ pub(crate) fn range(
 ) {
     let mut high = settings[max_key].as_f64().unwrap_or(*bounds.end());
     let mut low = settings[min_key].as_f64().unwrap_or(high);
-    crate::inspector::field(ui, label, 170.0, |ui| {
-        let text = if factor == 100.0 || bounds.end() - bounds.start() > 10.0 {
-            format!("{:.0}-{:.0}{suffix}", low * factor, high * factor)
-        } else {
-            format!("{:.2}-{:.2}{suffix}", low * factor, high * factor)
-        };
-        let text_width = ui
-            .painter()
-            .layout_no_wrap(
-                text.clone(),
-                egui::TextStyle::Monospace.resolve(ui.style()),
-                ui.visuals().text_color(),
-            )
-            .size()
-            .x;
-        let changed = if ui.available_width() >= text_width + ui.spacing().item_spacing.x + 60.0 {
-            ui.horizontal(|ui| {
-                let width = ui.available_width() - text_width - ui.spacing().item_spacing.x;
-                let changed =
-                    range_track(ui, label, &mut low, &mut high, bounds.clone(), width).changed();
-                ui.label(egui::RichText::new(&text).monospace());
-                changed
-            })
-            .inner
-        } else {
-            ui.vertical(|ui| {
-                let width = ui.available_width();
-                let changed =
-                    range_track(ui, label, &mut low, &mut high, bounds.clone(), width).changed();
-                ui.add(egui::Label::new(egui::RichText::new(&text).monospace().weak()).truncate())
+    let icon = crate::particles::glyph(
+        ui.ctx(),
+        "particle-range-mode",
+        include_bytes!("../assets/toolbar/explosion-range.rgba"),
+    );
+    crate::fields::row_with_leading_action(
+        ui,
+        label,
+        icon,
+        "Switch between one and two range handles",
+        |ui, toggle_clicked| {
+            let readout = |low: f64, high: f64| {
+                if factor == 100.0 || bounds.end() - bounds.start() > 10.0 {
+                    format!("{:.0}-{:.0}{suffix}", low * factor, high * factor)
+                } else {
+                    format!("{:.2}-{:.2}{suffix}", low * factor, high * factor)
+                }
+            };
+            let text = readout(low, high);
+            let text_width = ui
+                .painter()
+                .layout_no_wrap(
+                    text.clone(),
+                    egui::TextStyle::Monospace.resolve(ui.style()),
+                    ui.visuals().text_color(),
+                )
+                .size()
+                .x;
+            let changed = if ui.available_width() >= text_width + ui.spacing().item_spacing.x + 60.0
+            {
+                ui.horizontal(|ui| {
+                    let width = ui.available_width() - text_width - ui.spacing().item_spacing.x;
+                    let changed = range_track(
+                        ui,
+                        label,
+                        &mut low,
+                        &mut high,
+                        bounds.clone(),
+                        width,
+                        toggle_clicked,
+                    )
+                    .changed();
+                    ui.label(egui::RichText::new(readout(low, high)).monospace());
+                    changed
+                })
+                .inner
+            } else {
+                ui.vertical(|ui| {
+                    let width = ui.available_width();
+                    let changed = range_track(
+                        ui,
+                        label,
+                        &mut low,
+                        &mut high,
+                        bounds.clone(),
+                        width,
+                        toggle_clicked,
+                    )
+                    .changed();
+                    let text = readout(low, high);
+                    ui.add(
+                        egui::Label::new(egui::RichText::new(&text).monospace().weak()).truncate(),
+                    )
                     .on_hover_text(&text);
-                changed
-            })
-            .inner
-        };
-        if changed {
-            settings[min_key] = json!(low);
-            settings[max_key] = json!(high);
-        }
-    });
+                    changed
+                })
+                .inner
+            };
+            if changed {
+                settings[min_key] = json!(low);
+                settings[max_key] = json!(high);
+            }
+        },
+    );
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -134,6 +168,53 @@ fn shift_range(low: f64, high: f64, delta: f64, min: f64, max: f64) -> (f64, f64
 }
 
 pub(crate) fn range_track(
+    ui: &mut egui::Ui,
+    label: &str,
+    low: &mut f64,
+    high: &mut f64,
+    bounds: std::ops::RangeInclusive<f64>,
+    width: f32,
+    toggle_clicked: bool,
+) -> Response {
+    let id = ui.next_auto_id().with("single-range-mode");
+    let mut saved = ui.ctx().data(|data| data.get_temp::<(f64, f64)>(id));
+    if *low != *high {
+        saved = None;
+    }
+    let mut switched = false;
+    if toggle_clicked {
+        if let Some(pair) = saved.take() {
+            (*low, *high) = pair;
+        } else {
+            saved = Some((*low, *high));
+            *low += (*high - *low) / 2.0;
+            *high = *low;
+        }
+        switched = true;
+    }
+    let mut response = if saved.is_some() {
+        let response = crate::sliders::range_track(ui, low, bounds, width);
+        if response.changed() {
+            *high = *low;
+        }
+        response
+    } else {
+        double_range_track(ui, label, low, high, bounds, width)
+    };
+    ui.ctx().data_mut(|data| {
+        if let Some(pair) = saved {
+            data.insert_temp(id, pair);
+        } else {
+            data.remove::<(f64, f64)>(id);
+        }
+    });
+    if switched {
+        response.mark_changed();
+    }
+    response
+}
+
+fn double_range_track(
     ui: &mut egui::Ui,
     label: &str,
     low: &mut f64,
@@ -296,7 +377,15 @@ mod tests {
         let mut low = 0.0;
         let mut high = 0.0;
         let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
-            super::range_track(ui, "Collapsed", &mut low, &mut high, 0.0..=0.0, 100.0);
+            super::range_track(
+                ui,
+                "Collapsed",
+                &mut low,
+                &mut high,
+                0.0..=0.0,
+                100.0,
+                false,
+            );
         });
         for shape in &output.shapes {
             assert!(shape.shape.visual_bounding_rect().is_finite());
@@ -319,6 +408,8 @@ mod tests {
         low: f64,
         high: f64,
         enabled: bool,
+        toggle: bool,
+        toggle_once: bool,
         rect: egui::Rect,
     }
 
@@ -329,6 +420,8 @@ mod tests {
                 low,
                 high,
                 enabled: true,
+                toggle: false,
+                toggle_once: false,
                 rect: egui::Rect::NOTHING,
             };
             slider.frame(vec![]);
@@ -337,6 +430,8 @@ mod tests {
 
         fn frame(&mut self, events: Vec<egui::Event>) -> (egui::Response, egui::FullOutput) {
             let mut response = None;
+            let toggle_once = self.toggle_once;
+            self.toggle_once = false;
             let mut output = self.ctx.run_ui(
                 egui::RawInput {
                     screen_rect: Some(egui::Rect::from_min_size(
@@ -348,14 +443,26 @@ mod tests {
                 },
                 |ui| {
                     ui.add_enabled_ui(self.enabled, |ui| {
-                        response = Some(super::range_track(
-                            ui,
-                            "Size",
-                            &mut self.low,
-                            &mut self.high,
-                            0.0..=200.0,
-                            240.0,
-                        ));
+                        response = Some(if self.toggle {
+                            super::range_track(
+                                ui,
+                                "Size",
+                                &mut self.low,
+                                &mut self.high,
+                                0.0..=200.0,
+                                240.0,
+                                toggle_once,
+                            )
+                        } else {
+                            super::double_range_track(
+                                ui,
+                                "Size",
+                                &mut self.low,
+                                &mut self.high,
+                                0.0..=200.0,
+                                240.0,
+                            )
+                        });
                     });
                 },
             );
@@ -395,6 +502,19 @@ mod tests {
             assert!((self.low - low).abs() < 0.0001, "{} != {low}", self.low);
             assert!((self.high - high).abs() < 0.0001, "{} != {high}", self.high);
         }
+    }
+
+    #[test]
+    fn toggle_collapses_and_restores_interval() {
+        let mut slider = Slider::new(40.0, 100.0);
+        slider.toggle = true;
+        slider.frame(vec![]);
+        slider.toggle_once = true;
+        assert!(slider.frame(vec![]).0.changed());
+        slider.assert_range(70.0, 70.0);
+        slider.toggle_once = true;
+        assert!(slider.frame(vec![]).0.changed());
+        slider.assert_range(40.0, 100.0);
     }
 
     #[test]

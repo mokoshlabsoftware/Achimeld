@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn artifact3d_inspector_preserves_recipes_and_fits_narrow_widths() {
-        assert!(crate::layer_icons::LAYERS.contains(&"Artifact3d"));
+        assert!(!crate::layer_icons::LAYERS.contains(&"Artifact3d"));
         let layer = crate::layer_palette::new_layer("Artifact3d");
         assert_eq!(layer["displayName"], "3D artifact");
         for (width, font_size) in [

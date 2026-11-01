@@ -1,6 +1,23 @@
 use super::*;
 
 #[test]
+fn new_particle_layers_use_the_magic_dust_recipe() {
+    let layer = crate::layer_palette::new_layer("Particle");
+    let settings =
+        achimeld_application::particles::ParticleSettings::from_value(&layer["particles"]).unwrap();
+    assert_eq!(settings.count, 170);
+    assert_eq!(settings.seed, 2109274073);
+    assert_eq!(settings.shapes[0].kind, "Star");
+    assert_eq!(settings.edge_bias, 0.5);
+    assert_eq!(settings.size_scale, 1.0);
+    assert!(settings.color_map.is_none());
+    assert_eq!(layer["blendMode"], "Screen");
+    let built_in = achimeld_application::effect_presets::built_in_particles();
+    assert_eq!(built_in[0].name, "MagicDust");
+    assert_eq!(layer["particles"], built_in[0].layer["particles"]);
+}
+
+#[test]
 fn particle_seed_input_accepts_the_full_unsigned_seed_range() {
     let ctx = egui::Context::default();
     configure_test_fonts(&ctx);
@@ -290,6 +307,36 @@ fn particle_globals_precede_shape_editor_and_star_inner_radius_has_two_handles()
 }
 
 #[test]
+fn particle_spawn_gizmo_fills_and_centers_in_the_inspector_width() {
+    for width in [220.0, 420.0, 700.0] {
+        for aspect in [1.0, 2.0] {
+            let ctx = egui::Context::default();
+            configure_test_fonts(&ctx);
+            let mut value = json!(achimeld_application::particles::ParticleSettings::default());
+            let mut available = egui::Rect::NOTHING;
+            let mut gizmo = egui::Rect::NOTHING;
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(width, 900.0),
+                    )),
+                    ..Default::default()
+                },
+                |ui| {
+                    available = ui.available_rect_before_wrap();
+                    gizmo = crate::particles::spawn_gizmo(ui, &mut value, aspect, "instance").rect;
+                },
+            );
+            output.textures_delta.clear();
+            assert!((gizmo.width() - available.width()).abs() < 0.1);
+            assert!((gizmo.height() - gizmo.width()).abs() < 0.1);
+            assert!((gizmo.center().x - available.center().x).abs() < 0.1);
+        }
+    }
+}
+
+#[test]
 fn particle_spawn_gizmo_edits_center_in_layer_space_at_multiple_scales() {
     for scale in [1.0, 1.5, 2.0] {
         let ctx = egui::Context::default();
@@ -302,12 +349,13 @@ fn particle_spawn_gizmo_edits_center_in_layer_space_at_multiple_scales() {
                 egui::RawInput {
                     screen_rect: Some(egui::Rect::from_min_size(
                         egui::Pos2::ZERO,
-                        egui::vec2(420.0, 300.0),
+                        egui::vec2(420.0, 900.0),
                     )),
                     events,
                     ..Default::default()
                 },
                 |ui| {
+                    ui.set_width(420.0);
                     rect = crate::particles::spawn_gizmo(ui, &mut value, 2.0, "instance").rect;
                 },
             );
@@ -331,7 +379,11 @@ fn particle_spawn_gizmo_edits_center_in_layer_space_at_multiple_scales() {
             pressed: false,
             modifiers: egui::Modifiers::NONE,
         }]);
-        assert!((value["centerX"].as_f64().unwrap() - 0.75).abs() < 0.01);
+        assert!(
+            (value["centerX"].as_f64().unwrap() - 0.75).abs() < 0.01,
+            "scale={scale}, centerX={}, rect={rect:?}, point={point:?}",
+            value["centerX"]
+        );
         assert!((value["centerY"].as_f64().unwrap() - 0.25).abs() < 0.01);
     }
 }

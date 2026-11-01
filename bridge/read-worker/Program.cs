@@ -146,8 +146,11 @@ static async Task<object> ExecuteAsync(ReadAction action, PlaywrightChromeDriver
         case ReadOperation.Authenticate: await driver.NavigateForAuthenticationAsync(); return true;
         case ReadOperation.AuthenticationState: return await driver.ReadAuthenticationStateAsync();
         case ReadOperation.Navigate: await driver.NavigateAsync(new Uri(action.Route)); return true;
+        case ReadOperation.BrowserOpen: return driver.BrowserOpen();
         case ReadOperation.ReadConfiguration:
             return PortalDocumentSanitizer.ForTransport(await driver.ReadCompleteConfigurationAsync(new SteamAppId(action.AppId)));
+        case ReadOperation.ReadGameBanner:
+            return (object?)await driver.ReadGameBannerAsync(action.AppId) ?? JsonSerializer.SerializeToElement<object?>(null);
         case ReadOperation.Stop: await driver.StopAsync(); return true;
         case ReadOperation.NetworkSelfTest: return await NetworkProbeAsync(action.Hold, driver, session, cancellationToken);
         default: throw new InvalidDataException("Read session command rejected.");

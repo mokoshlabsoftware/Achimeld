@@ -1,0 +1,2517 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-10-30",
+  "targetVersion": "0.2.29.3",
+  "currentSourceVersion": "0.2.29.27",
+  "publicationReady": false,
+  "errors": [],
+  "counts": {
+    "articles": 24,
+    "drafts": 24,
+    "fullyRuntimeVerified": 0,
+    "screenshots": 16,
+    "unversionedScreenshots": 5,
+    "checklistCaptured": 11,
+    "checklistPending": 103,
+    "layerKinds": 23,
+    "effectKinds": 11,
+    "changedEvidenceFiles": 9,
+    "articleHashMismatches": 0,
+    "historyEntries": 288,
+    "historyWithoutImpactRow": 262
+  },
+  "releaseGates": [
+    "Complete runtime acceptance of tutorial creation, save/reopen and desktop export in an isolated demonstration project.",
+    "Review changed source evidence and applicable changes; record a decision for every history entry before advancing reviewed-through.",
+    "Finish per-control reference review and required illustrations; draft coverage does not establish complete feature coverage.",
+    "Verify Steam and Sync with a suitable demonstration game and account; do not apply live changes as a documentation check.",
+    "Confirm production hosting and deploy the accepted website revision, verify public routes, then publish the GitHub README wiki link."
+  ],
+  "articles": [
+    {
+      "id": "getting-started",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "7c4d710d2a2ed97b1eeba10e0d064380395ab7fbcb36a0d4c99829a7811250d9",
+      "recordedContentHashMatches": null,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/08-achievements-overview.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "first-achievement",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "29bf46cfa54a3c022a07be0a519852481c39120b8234eb851b969d4e25a13e4f",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/unversioned/create-achievement-context-menu.png",
+        "screenshots/unversioned/image-drop-icon-properties.png",
+        "screenshots/unversioned/supply-general-image.png",
+        "screenshots/unversioned/add-particles-layer.png"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "achievements-general",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "f5316fddd7a8c84d6c058287b8618ecf2756a0b4a41a974b793857a794465864",
+      "recordedContentHashMatches": null,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/02-achievement-general.jpg",
+        "screenshots/0.2.29.0/09-localization-template.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "general-images",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "9ac537e53999e73368a40de4cc15717329d5946efc7868a88dd2d33501702421",
+      "recordedContentHashMatches": null,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/11-general-image-layer.jpg",
+        "screenshots/0.2.29.0/06-art-data-bank.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "icon-editor",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "0cb7774ab38aac02f11e555dea3e0da60ea4e075ba6b4f48e844cd7d16625fa4",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/10-icon-text-link.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "projects",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "f14da1f70b0f4761ed7a9b3ed10217d7a60a96209e7a84e9bd578c3139f7c078",
+      "recordedContentHashMatches": null,
+      "changedEvidence": [],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "icon-layers",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "a44572a8c5b709e5e5b40b66a9120e2f5d3e943bc559d1377bc73c0d51a624a0",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "crates/achimeld-ui/src/layers.rs",
+        "crates/achimeld-ui/src/layer_palette.rs"
+      ],
+      "screenshots": [
+        "screenshots/0.2.29.0/10-icon-text-link.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "icon-effects",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "f83c0c75d09416091bf11c8cd1270f6885adb734b4a4671941aff65be9d19062",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "crates/achimeld-ui/src/layers.rs",
+        "crates/achimeld-ui/src/layer_palette.rs",
+        "crates/achimeld-ui/src/layer_effects.rs"
+      ],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "masks",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "64548737ec789729c21215018ca841320163d1c3af0a236e7c430ceb696a7c7b",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "crates/achimeld-ui/src/layer_masks.rs",
+        "crates/achimeld-ui/src/layer_palette.rs"
+      ],
+      "screenshots": [
+        "screenshots/unversioned/folder-artwork-star-mask.png"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "gradients",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "d36c33d418b95dd67a47b278b738f0faa60545beeb33e3b7f76b5ce71af513be",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "crates/achimeld-ui/src/layers.rs"
+      ],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "particles",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "ca99f41490a19dee945a74851d24ea25f379a3b6ab1a3188fe91766e409e7650",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "crates/achimeld-ui/src/particles.rs",
+        "crates/achimeld-ui/src/particle_sliders.rs"
+      ],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "explosions",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "612398980690832472dad6bf3ea6e87c0787c3bc765a317c9e107505830e6c43",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "crates/achimeld-ui/src/explosion.rs"
+      ],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "text-3d",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "b998d021a593ca6456c35865856c4acfff68306b9f1372d6efcbd28fa27e3ff6",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "artifacts-3d",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "1223131bca2ca30560b7eba478e4eba876d2ba90dba10bd9e6f5c1647ce70ea4",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "styles",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "0296a7555c8ba45e484ed0ab4b664cb1f29a1d751d35191e84bf4a545a2aee04",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/07-style-viewer.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "art-data-bank",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "fd3623e40a55aa5a6995e1aa5a5396d0db6c4bc8577670a0ed694aaad34cdddc",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/06-art-data-bank.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "stats",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "45a256bed8a19beeb1b679be431d02e3a89c5e1687eceed3b125b000987a93bc",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/04-stat-general.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "localization",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "f0cdaccaaefa2bb1d4a348841b0be5680a80954a17955c68a7470b424fb801ec",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/09-localization-template.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "sync",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "519f36b0d425b1db37f700e5eae2fd03560059a5abc3d5ba075b3b0b5fd860c7",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [
+        "screenshots/0.2.29.0/05-sync-saved-state.jpg"
+      ],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "steam",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "ed7cf0f5df8afc88d231e0929a372763163989e4db9e7bcf86353e2513295e71",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "exports",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "87e56bcf261023310c0760ba2757abdff3f204b11282a7312622b1d7c24ea100",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "preferences",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "5592281c6a3ea26a26fd18ea18f28b9aa2412f0673a2465014bf89a6b7458172",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "docs/numeric-sliders.md"
+      ],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "troubleshooting",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "e9ed61916ba03a667bc1293a190eb563f62a0e7cfcd23a61875c4f3618a45368",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [
+        "docs/update-notes.md"
+      ],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    },
+    {
+      "id": "automation",
+      "status": "Draft",
+      "documentedVersion": "0.2.29.3",
+      "lastVerifiedVersion": null,
+      "contentSha256": "096b5189b3fd1dc315a2d6708924e767b2025f6ccd384d8fc3f0139a58bdc044",
+      "recordedContentHashMatches": true,
+      "changedEvidence": [],
+      "screenshots": [],
+      "needsRuntimeAcceptance": true
+    }
+  ],
+  "changedSources": [
+    "crates/achimeld-ui/src/explosion.rs",
+    "crates/achimeld-ui/src/layer_effects.rs",
+    "crates/achimeld-ui/src/layer_masks.rs",
+    "crates/achimeld-ui/src/layer_palette.rs",
+    "crates/achimeld-ui/src/layers.rs",
+    "crates/achimeld-ui/src/particle_sliders.rs",
+    "crates/achimeld-ui/src/particles.rs",
+    "docs/numeric-sliders.md",
+    "docs/update-notes.md"
+  ],
+  "screenshots": [
+    {
+      "path": "screenshots/0.2.29.0/01-icon-layer-editor.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "icon-editor",
+        "icon-layers"
+      ],
+      "sha256": "3005272fca8e7917ee6b3e6337e131397bbed6624dd032749bf1e0e8416fe2cf"
+    },
+    {
+      "path": "screenshots/0.2.29.0/02-achievement-general.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "achievements-general",
+        "general-images"
+      ],
+      "sha256": "7cb7ab4670a05b1673f1643265db4f54a6038835642446ef74ee659944a443a9"
+    },
+    {
+      "path": "screenshots/0.2.29.0/03-stats-overview.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "stats",
+        "getting-started"
+      ],
+      "sha256": "c580d5a52a37640947ca366e9d0ece655cc7240537ba4a3168705c6e6418a1ae"
+    },
+    {
+      "path": "screenshots/0.2.29.0/04-stat-general.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "stats",
+        "achievements-general"
+      ],
+      "sha256": "43d0e753993c9307cc989966a660ce51ff6c69a11244182d15607b5c5d8a7b42"
+    },
+    {
+      "path": "screenshots/0.2.29.0/05-sync-saved-state.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "sync",
+        "steam"
+      ],
+      "sha256": "c3adc18153282268faf3e210da47aed63a087ecf367e968746da2c252d8c40a9"
+    },
+    {
+      "path": "screenshots/0.2.29.0/06-art-data-bank.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "art-data-bank",
+        "general-images"
+      ],
+      "sha256": "2adefff260fec1033a55aa7d89a250e0397da4dd65c07e89eb75810f333f6610"
+    },
+    {
+      "path": "screenshots/0.2.29.0/07-style-viewer.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "styles"
+      ],
+      "sha256": "c65eb41862aa332ba5796f208e0b2cc813ee7d6bc113c3844f209d51d3764f05"
+    },
+    {
+      "path": "screenshots/0.2.29.0/08-achievements-overview.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "getting-started",
+        "achievements-general"
+      ],
+      "sha256": "9af9b710cd7659814bcf9b4ce79badf19c1822416037ab1aa8585fdcfa0fd855"
+    },
+    {
+      "path": "screenshots/0.2.29.0/09-localization-template.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "localization",
+        "achievements-general"
+      ],
+      "sha256": "665436cc850e73f3b8f6b8cf0422876ce1bd09da0cc75df31dc4de0a14be8f80"
+    },
+    {
+      "path": "screenshots/0.2.29.0/10-icon-text-link.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "icon-editor",
+        "icon-layers",
+        "achievements-general"
+      ],
+      "sha256": "a788380f22f63f734e3db129dd9b60327eebe115c4986d3aae71e5d596f0de09"
+    },
+    {
+      "path": "screenshots/0.2.29.0/11-general-image-layer.jpg",
+      "applicationVersion": "0.2.29.0",
+      "articleIds": [
+        "general-images",
+        "icon-editor"
+      ],
+      "sha256": "ff31f02d6168ad3aa35176dd24ba8443b0e46cb19fcee1037549687b672a2eba"
+    },
+    {
+      "path": "screenshots/unversioned/image-drop-icon-properties.png",
+      "applicationVersion": null,
+      "articleIds": [
+        "first-achievement"
+      ],
+      "sha256": "e74c99050e467b04b8d5535616eef74bdf63c84416bc35878f83f1f7da852710"
+    },
+    {
+      "path": "screenshots/unversioned/folder-artwork-star-mask.png",
+      "applicationVersion": null,
+      "articleIds": [
+        "masks"
+      ],
+      "sha256": "745bf17e6b5c6dea13a9c2855b8af79371604dc5c4712e9cd89fc0231f5eb615"
+    },
+    {
+      "path": "screenshots/unversioned/create-achievement-context-menu.png",
+      "applicationVersion": null,
+      "articleIds": [
+        "first-achievement"
+      ],
+      "sha256": "dcb78040aaadaa82526470cb8d130ad0a9ee0638d6e0cce8b54be41a8b0deee6"
+    },
+    {
+      "path": "screenshots/unversioned/add-particles-layer.png",
+      "applicationVersion": null,
+      "articleIds": [
+        "first-achievement",
+        "particles"
+      ],
+      "sha256": "112340b888f66e7ebbbae4c23b17db3eeab7d6c757b5c43fb0850d35b9cffc5f"
+    },
+    {
+      "path": "screenshots/unversioned/supply-general-image.png",
+      "applicationVersion": null,
+      "articleIds": [
+        "first-achievement"
+      ],
+      "sha256": "2643d14e23e45c4b875b956617d5149f81051f39abfb847889df3f6dfb293ab1"
+    }
+  ],
+  "changes": [
+    {
+      "version": "0.2.29.27",
+      "summary": "Reserve wiki screenshot space so section links stay aligned while images load",
+      "afterTarget": true,
+      "articleIds": "Website wiki renderer, all illustrated articles",
+      "impactState": "Verified locally; publication pending"
+    },
+    {
+      "version": "0.2.29.26",
+      "summary": "Audit wiki publication readiness, reconcile article identities and validate all screenshot manifests",
+      "afterTarget": true,
+      "articleIds": "all-sections, particles, explosions",
+      "impactState": "In progress"
+    },
+    {
+      "version": "0.2.29.25",
+      "summary": "Keep Properties panel width stable when selecting controls and remove its redundant heading",
+      "afterTarget": true,
+      "articleIds": "icon-editor, preferences",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.24",
+      "summary": "Show the full Achimeld logo, version and date above startup change bullets with an Ok button",
+      "afterTarget": true,
+      "articleIds": "getting-started, troubleshooting",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.23",
+      "summary": "Unify explosion and particle preset file saving and library import controls",
+      "afterTarget": true,
+      "articleIds": "particles, explosions",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.22",
+      "summary": "Use the supplied anime effect as the default for new explosion layers",
+      "afterTarget": true,
+      "articleIds": "explosions, icon-layers",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.21",
+      "summary": "Add a compact toggle between single-value and double-ended range sliders",
+      "afterTarget": true,
+      "articleIds": "icon-editor, particles, icon-layers",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.20",
+      "summary": "Highlight the selected knob cell with a subtle fill instead of a ring around the dial",
+      "afterTarget": true,
+      "articleIds": "icon-editor, particles, explosions, preferences",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.19",
+      "summary": "Square color selector corners and outline the speech bubble pointer",
+      "afterTarget": true,
+      "articleIds": "gradients, icon-editor",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.18",
+      "summary": "Illustrate supplying a General Image and identifying input slot ID 0 in the wiki",
+      "afterTarget": true,
+      "articleIds": "first-achievement",
+      "impactState": "Verified locally; publication pending"
+    },
+    {
+      "version": "0.2.29.17",
+      "summary": "Illustrate adding a simple particle overlay in the first-achievement wiki tutorial",
+      "afterTarget": true,
+      "articleIds": "first-achievement, particles",
+      "impactState": "Drafted; local checks pending; publication pending"
+    },
+    {
+      "version": "0.2.29.16",
+      "summary": "Start new particle layers with the supplied Light start effect.",
+      "afterTarget": true,
+      "articleIds": "particles, icon-layers",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.15",
+      "summary": "Fit particle toolbar icons to the panel and group count, size, shape and spawn controls into rotary knob rows.",
+      "afterTarget": true,
+      "articleIds": "particles",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.14",
+      "summary": "Illustrate creating an achievement from the canvas context menu in the wiki",
+      "afterTarget": true,
+      "articleIds": "first-achievement",
+      "impactState": "Verified locally; publication pending"
+    },
+    {
+      "version": "0.2.29.13",
+      "summary": "Add an illustrated folder-mask artwork example to the wiki",
+      "afterTarget": true,
+      "articleIds": "masks, first-achievement, icon-editor",
+      "impactState": "Verified locally; publication pending"
+    },
+    {
+      "version": "0.2.29.12",
+      "summary": "Illustrate image-drop achievements and opening Icon properties in the first-achievement wiki guide",
+      "afterTarget": true,
+      "articleIds": "first-achievement",
+      "impactState": "Verified locally; publication pending"
+    },
+    {
+      "version": "0.2.29.11",
+      "summary": "Fix freezing when opening folder and layer effects with Windows accessibility",
+      "afterTarget": true,
+      "articleIds": "troubleshooting, icon-effects, masks",
+      "impactState": "Not needed"
+    },
+    {
+      "version": "0.2.29.10",
+      "summary": "Place shape scale beside compact X and Y size controls",
+      "afterTarget": true,
+      "articleIds": "icon-layers",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.9",
+      "summary": "Make mask channel controls square with channel colors and an invert icon",
+      "afterTarget": true,
+      "articleIds": "masks",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.8",
+      "summary": "Explain blank-card and image-drop achievement creation in the wiki",
+      "afterTarget": true,
+      "articleIds": "first-achievement",
+      "impactState": "Verified"
+    },
+    {
+      "version": "0.2.29.7",
+      "summary": "Add the Achimeld Wiki link to the repository README",
+      "afterTarget": true,
+      "articleIds": "README wiki link",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.6",
+      "summary": "Integrate versioned wiki with website navigation and search",
+      "afterTarget": true,
+      "articleIds": "Website wiki integration",
+      "impactState": "Verified"
+    },
+    {
+      "version": "0.2.29.5",
+      "summary": "Add wiki reference drafts for art tools and application workflows",
+      "afterTarget": true,
+      "articleIds": "Phase 3 reference articles",
+      "impactState": "In progress"
+    },
+    {
+      "version": "0.2.29.4",
+      "summary": "Add wiki investigation records, screenshot checklist and core guide drafts",
+      "afterTarget": true,
+      "articleIds": "getting-started, first-achievement, achievements-general, general-images, icon-editor, projects",
+      "impactState": "In progress"
+    },
+    {
+      "version": "0.2.29.3",
+      "summary": "Show changes since the last acknowledged version at startup",
+      "afterTarget": false,
+      "articleIds": "getting-started, troubleshooting",
+      "impactState": "Pending"
+    },
+    {
+      "version": "0.2.29.2",
+      "summary": "Track wiki maintenance impact and documented application versions",
+      "afterTarget": false,
+      "articleIds": "wiki-maintenance",
+      "impactState": "Not needed"
+    },
+    {
+      "version": "0.2.29.1",
+      "summary": "Add Hungarian and Turkish interface translations with complete catalogs and font coverage checks",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.29.0",
+      "summary": "Move particle icon decoding out of the runtime UI",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.28.1",
+      "summary": "Prepare bundled particle icons at build time to preserve UI authority boundaries",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.28.0",
+      "summary": "Fix compact effect row regression blocking publication",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.27.1",
+      "summary": "Keep compact effect selection regression compatible with icon-only rows",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.27.0",
+      "summary": "Fix worker cleanup handle validation blocking publication",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.36",
+      "summary": "Reject invalid worker cleanup Job handles before Windows enumeration",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.35",
+      "summary": "Store runtime text logs in Public Documents and rotate them safely while readers are open",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.34",
+      "summary": "Finish successful Steam operations while browser cleanup continues safely in the background",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.33",
+      "summary": "Recover Steam browser cleanup automatically without requiring an application restart",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.32",
+      "summary": "Start Steam uploads automatically, render icons when needed, and derive locked artwork from the current icon",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.31",
+      "summary": "Confirm all owned Steam browser processes exit before reopening and report cleanup failures",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.30",
+      "summary": "Keep Steam progress movable while editing artwork, preserve local edits, and show elapsed time in the console font",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.29",
+      "summary": "Repair stale Steam synchronization history after deletion and report specific safe synchronization failure reasons",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.28",
+      "summary": "Use Consolas consistently in integer and decimal fields throughout the application",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.27",
+      "summary": "Center Steam operation progress in a prominent window with larger text and an elapsed timer for validation, deletion, reading and synchronization.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.26",
+      "summary": "Keep unrelated icon previews sharp and preserve their render work when editing or rerolling one icon",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.25",
+      "summary": "Restore unindented Shape sliders and smooth and compact the main Explosion knobs",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.24",
+      "summary": "Swap the Random and Mask controls in icon layer rows",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.23",
+      "summary": "Log Steam workflow stages, browser cleanup, verified step timings and deletion totals",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.22",
+      "summary": "Replace Explosion sliders with responsive themed knob banks, configurable small fonts and subtle label-divider grips",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.21",
+      "summary": "Use normal resting, hover and focus styling for the Steam deletion confirmation button",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.20",
+      "summary": "Add separate Mark all and Clear marks controls to Steam achievements and stats",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.19",
+      "summary": "Fix Steam achievement and stat deletion routes and finish validation when browser shutdown stalls",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.18",
+      "summary": "Recover rejected edits from the upper bar, preserve saving, and reject non-finite numeric control changes",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.17",
+      "summary": "Center Explosion Shape X and Shape Y sliders at 1x, with 0x on the left and 10x on the right.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.16",
+      "summary": "Align layer rows, make mask, random and blend buttons transparent at rest, and move the mask icon before random.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.15",
+      "summary": "Show an animated white radar glow on the style banner while edits affect all style instances.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.14",
+      "summary": "Fix compact layer controls, repeated mask actions, passive image selection changes, and particle icon texture limits.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.13",
+      "summary": "Edit gradient stops and 2D points with compact animated color windows, connected pointers, and direct stop gestures.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.12",
+      "summary": "Simplify particle shape controls by removing redundant headings and showing the current shape in the preset selector.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.11",
+      "summary": "Fix Rust source formatting that blocked the publishing audit",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.10",
+      "summary": "Show per-achievement random seed toggles on particle and explosion layer rows and use the normal cursor on layer toolbar actions",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.9",
+      "summary": "Add nine blend modes including Color, with generated icons and live previews",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.8",
+      "summary": "Keep particle controls available for invalid transforms and constrain particle slider edits",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.7",
+      "summary": "Add a visible mask inversion toggle beside the RGBA channel buttons.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.6",
+      "summary": "Add visible layer mask controls, RGBA channel selection, automatic General image references, and matching blend and opacity heights.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.5",
+      "summary": "Show pending achievement and stat API renames with revert, and rename verified Steam records in place during sync.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.4",
+      "summary": "Separate mask actions from other layer menu commands.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.3",
+      "summary": "Delete reviewed Steam entries with fresh checks, skip missing entries and return control to the app after completion or failure.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.2",
+      "summary": "Require current-session Steam validation before opening the Steam panel and return to Sync when validation expires.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.1",
+      "summary": "Highlight Delete on Steam with the marked entry color when entries are marked for deletion.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.26.0",
+      "summary": "Fix the Steam delete action lint error blocking publication.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.17",
+      "summary": "Fix the Steam delete action lint error blocking publication.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.16",
+      "summary": "Arrange Steam achievements and stats in responsive columns with wider margins and scrollbar clearance.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.15",
+      "summary": "Align Steam and Sync action bars with Art Data Bank and distinguish primary actions with a thin square outline.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.14",
+      "summary": "Add confirmed, undoable forgetting of Steam validation, cached snapshots and unused game banners.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.13",
+      "summary": "Add browser profile folder access and confirmed profile deletion to Sync and Steam.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.12",
+      "summary": "Keep Steam sign-in active while its page redirects after authentication.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.11",
+      "summary": "Allow Steam sign-in requests, open the login form for the selected game, and retain safe failure details.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.10",
+      "summary": "Prevent development packages from reusing stale compiled files after source snapshot changes.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.9",
+      "summary": "Make Steam validation a lightweight sign-in handshake before preparing synchronization artwork.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.8",
+      "summary": "Remove the publisher identity sentence from the installer information page.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.7",
+      "summary": "Restore filled installer maintenance buttons with centered artwork while retaining selection, Next and double-click actions.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.6",
+      "summary": "Close idle development connectors after Build and Run and before installer package replacement",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.5",
+      "summary": "Allow bounded Steam audio and video requests and report safe browser request failure details.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.4",
+      "summary": "Assign newly saved icon styles immediately and offer to continue editing the icon or its shared style.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.3",
+      "summary": "Keep the installer unpacking animation moving and allow cancellation during decompression.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.2",
+      "summary": "Select an installer maintenance option with one click and continue with Next or a double click.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.1",
+      "summary": "Close Setup completely after a language handoff so hidden installer processes do not remain.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.25.0",
+      "summary": "Require re-validation after a previous Steam session, and name the installation an update removes.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.24.2",
+      "summary": "Show a previous Steam session as its own access state, with a half-grey partner banner and re-validation before synchronization.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.24.1",
+      "summary": "On update, the installation folder page names the previous installation and says it will be removed while its settings remain.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.24.0",
+      "summary": "Shrink the filter and hide toolbar labels so a narrower window does not cover the field.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.23.1",
+      "summary": "Shrink the filter and hide toolbar labels so a narrower window does not cover the field.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.23.0",
+      "summary": "Review Steam deletion marks and the synchronization plan before changes are applied.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.12",
+      "summary": "Steam achievements and stats can be marked for deletion, and synchronization lists the planned actions before it runs.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.11",
+      "summary": "Add stats in bulk from a JSON list or a plain name list through MCP.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.10",
+      "summary": "State editor uptime, the open project, achievement nodes, Steam-synced nodes, and stats in the MCP handshake.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.9",
+      "summary": "Show the Achimeld mark on the left of the title bar and the name and version on the right, and hide the save status.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.8",
+      "summary": "Advertise the orange Achimeld logo as the MCP server icon.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.7",
+      "summary": "Make the Connect MCP window larger so the setup instructions fit without scrolling.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.6",
+      "summary": "Show the specific installation failure reason on the Setup error page, including when Achimeld is still running.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.5",
+      "summary": "Prevent a second Achimeld installer from running while another setup is active.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.4",
+      "summary": "Bring installer language selection and uninstall progress above other windows when they open.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.3",
+      "summary": "Show the Achimeld logo and installer version in the opening language window.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.2",
+      "summary": "Keep the installer taskbar icon visible by loading its embedded logo and preserving icons when loading fails.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.1",
+      "summary": "Add persistent diagnostics for opening effects and rendering outlines and outer glows.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.22.0",
+      "summary": "Include the animated startup loading bar in the diagnostic build.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.21.0",
+      "summary": "Add visible build identity and persistent runtime crash diagnostics.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.20.3",
+      "summary": "Keep live runtime logs in Windows AppData, retain prior runtime evidence and capture local crash and hang dumps.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.20.2",
+      "summary": "Show the working version in the top bar and native window title.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.20.1",
+      "summary": "Show an animated loading bar at the bottom of the startup screen.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.20.0",
+      "summary": "Make installer completion and recovery consistently use the install folder.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.6",
+      "summary": "Show the final installer destination and centralize verified installer handoff and temporary-copy cleanup.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.5",
+      "summary": "Fix installer Back navigation to reopen language selection and report handoff failures.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.4",
+      "summary": "Fix updates from registered installation folders and make setup failure logs accessible.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.3",
+      "summary": "Show startup loading progress after language selection and restore installer icons and foreground visibility.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.2",
+      "summary": "Center installer maintenance content, enlarge action buttons with icons above labels, and raise the loading display.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.1",
+      "summary": "Center installer loading labels and progress bar in the available space.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.19.0",
+      "summary": "Fix installer progress rendering and preparation navigation",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.18.1",
+      "summary": "Restore visible orange installer progress, keep navigation out of preparation, and place cancellation in the footer.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.18.0",
+      "summary": "Update transparent application icons and center installer radio indicators",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.17.2",
+      "summary": "Keep installer radio-button rings and selected centers aligned at every display scale.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.17.1",
+      "summary": "Use transparent orange application icons and the supplied white glyph throughout the app.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.17.0",
+      "summary": "Replace opaque installer branding with the transparent orange glyph",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.16.1",
+      "summary": "Use the supplied transparent orange glyph for the installer logo and Windows icon.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.16.0",
+      "summary": "Finish installer maintenance controls and automatic close after removal",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.15.1",
+      "summary": "Close Setup after uninstall, add Repair/Update/Uninstall icons, join navigation buttons, and use orange progress bars.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.15.0",
+      "summary": "Use the native Windows installation record for maintenance and removal checks",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.14.1",
+      "summary": "Detect installed folders from the Windows uninstall record and verify complete policy removal.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.14.0",
+      "summary": "Make installer license selection clear in dark mode.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.13.1",
+      "summary": "Show a centered solid selection dot in the installer license radio buttons while preserving keyboard selection.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.13.0",
+      "summary": "Preserve readable installer agreement text in dark mode.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.12.1",
+      "summary": "Keep the centered installer agreement readable in dark mode by preserving themed text rendering.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.12.0",
+      "summary": "Fix installer document layout and guard uninstall records, with installed removal acceptance checks.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.11.3",
+      "summary": "Center installer agreement text and restore visible scrollbars and wrapping on document pages.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.11.2",
+      "summary": "Reject broken legacy uninstall records and add real installed removal checks for files, shortcuts and network policy.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.11.1",
+      "summary": "Bring the installer wizard to the foreground when it first opens after language selection.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.11.0",
+      "summary": "Unify installer output and reuse fresh builds before compilation.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.15",
+      "summary": "Keep one versioned installer in the install folder, reuse unchanged builds, and replace the previous installer only after success.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.14",
+      "summary": "Add named Achimeld uninstall shortcuts, preserve the installation on cancellation or cleanup failure, and validate maintenance uninstall paths.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.13",
+      "summary": "Fix the installer welcome Back button caption in every language and use Powrót in Polish.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.12",
+      "summary": "Remove the redundant existing-folder confirmation when installing, updating or repairing Achimeld.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.11",
+      "summary": "Replace long dashes throughout app and installer translations and explicitly prohibit them in user-facing text.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.10",
+      "summary": "Restore the white transparent Achimeld symbol in the title bar while keeping the orange application icon elsewhere.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.9",
+      "summary": "Add matching folder and document icons to the Open log folder and View logs buttons in Preferences.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.8",
+      "summary": "Replace the installer welcome artwork with the supplied logo-free image, preserving its dimensions.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.7",
+      "summary": "Use the supplied orange Achimeld icon for the application, dialogs, installer, Windows shortcuts and installed-app listing.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.6",
+      "summary": "Show an Already running notice and close duplicate desktop launches while preserving the existing session.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.5",
+      "summary": "Expose live and previous-session logs in Preferences and Terminal, retry logging failures, and record effect rendering and stalled interface work.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.4",
+      "summary": "Fixed Windows installed-app and shortcut icon paths for default and custom installation folders.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.3",
+      "summary": "Reworked Style Viewer with current-project folders, name filtering, editable project layers, protected built-ins, style options, JSON exchange and zoomable previews.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.2",
+      "summary": "Enlarged the installer header logo while preserving its proportions and spacing beside page text.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.1",
+      "summary": "Updated the installer welcome screen with a bold Steam achievements heading and clearer feature description.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.10.0",
+      "summary": "Separate manual publishing sign-in from browser automation",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.9.1",
+      "summary": "Use a normal Edge window for manual Google sign-in before installer uploads",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.9.0",
+      "summary": "Add versioned Lemon Squeezy installer delivery and standalone upload",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.8.1",
+      "summary": "Automate verified Lemon Squeezy installer delivery with versioned filenames and an upload-only launcher",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.8.0",
+      "summary": "Automate safe GitLab source synchronization during publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.7.1",
+      "summary": "Push committed source to GitLab automatically before publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.7.0",
+      "summary": "Fix publishing checks for gradient collection and inspector width",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.21",
+      "summary": "Keep inspector tabs within the selected panel width at fractional display scales",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.20",
+      "summary": "Fix the 2D gradient collection code check that blocked publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.19",
+      "summary": "Close background editor connectors when the last Achimeld window closes so package files no longer block builds",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.18",
+      "summary": "Name the bootstrapper console and explain startup, app monitoring, and shutdown",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.17",
+      "summary": "Add saved 2D gradient collection and 1D or 2D particle gradient picker",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.16",
+      "summary": "Move 2D gradient point editing into a selection panel with shared color actions",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.15",
+      "summary": "Keep color panels above Layers and group color channels at the bottom",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.14",
+      "summary": "Add 2D gradient point actions and simpler selection controls",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.13",
+      "summary": "Make it easy to keep particles upright with a zero rotation range",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.12",
+      "summary": "Describe bootstrapper security in the console and show a smaller logo-only loading screen",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.11",
+      "summary": "Show file counts and verification phases while capturing build source",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.10",
+      "summary": "Keep development builds stable while source edits continue and detect in-use packages before compiling",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.9",
+      "summary": "Identify the Achimeld loading screen as the Achimeld Bootstrapper",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.8",
+      "summary": "Display the supplied Achimeld banner at the top of Help About",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.7",
+      "summary": "Show the Achimeld loading artwork while the supervised editor starts and hide the launcher console for desktop launches",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.6",
+      "summary": "Add a movable window size panel and allow Terminal to extend beyond the app bounds",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.5",
+      "summary": "Show the orange Achimeld artwork first and the existing editor image on the installer completion page",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.4",
+      "summary": "Display styles as gapless artwork-backed banners with overlaid names and remove the internal Icon Banner caption.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.3",
+      "summary": "Standardize numeric knobs on the compact layer-properties slider and document application-wide usage and opacity exceptions.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.2",
+      "summary": "Reorganize Style Viewer into adjustable banners, a sharp size-controlled preview, and artwork inputs; prevent thumbnail rendering from cancelling style previews.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.1",
+      "summary": "Document Lemon Squeezy test installer delivery and pending store activation",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.6.0",
+      "summary": "Present Achimeld purpose, screenshots and installer options on GitHub",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.5.1",
+      "summary": "Explain Achimeld for game developers with screenshots and installer availability",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.5.0",
+      "summary": "Enforce source-only GitHub releases and keep paid installers local",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.4.1",
+      "summary": "Keep paid installers local and publish all non-private source without installer downloads",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.4.0",
+      "summary": "Use plain versioned GitHub release labels",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.3.1",
+      "summary": "Use plain versioned release names without preview labels",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.3.0",
+      "summary": "Update text-source layout regression for two buttons",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.2.2",
+      "summary": "Validate both text-source buttons across narrow layouts and display scales",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.2.1",
+      "summary": "Stretch Properties tabs across the sidebar width",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.2.0",
+      "summary": "Fix installer recipe compilation",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.1.1",
+      "summary": "Fix installer compilation of installation-folder text",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.1.0",
+      "summary": "Fix publication authentication and complete approved source exports",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.30",
+      "summary": "Include required build helpers and original toolbar artwork in public releases",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.29",
+      "summary": "Keep dragged canvas nodes attached to the pointer while zooming",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.28",
+      "summary": "Add mutually exclusive entered-text and achievement-link source buttons for 2D and 3D text.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.27",
+      "summary": "Allow empty English names and descriptions while editing and saving projects; bound inline validation text.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.26",
+      "summary": "Recover missing publishing sign-in through browser login",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.25",
+      "summary": "Document GitHub sign-in troubleshooting for publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.24",
+      "summary": "Check GitHub sign-in before starting publication",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.23",
+      "summary": "Point the desktop shortcut directly to the current local test build and remove installation options from generated launchers.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.22",
+      "summary": "Fix installer source authentication and release formatting checks",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.21",
+      "summary": "Use one fixed Achimeld installation and remove previous protected builds during installer upgrades.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.20",
+      "summary": "Keep Build and Run in current build output and require separate installation for ready builds.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.19",
+      "summary": "Register installed packages in Windows with a policy-aware uninstaller",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.18",
+      "summary": "Show existing protected installations before setup and detect duplicate packages before extraction.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.17",
+      "summary": "Show a separate animated loading bar during final package verification and protected installation.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.16",
+      "summary": "Give the installation folder a dedicated review page and always show the installation summary before installing.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.15",
+      "summary": "Preserve installer header artwork proportions instead of squeezing the wordmark into a square.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.14",
+      "summary": "Show cumulative installer build time in minutes and seconds throughout the build",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.13",
+      "summary": "Remember validated Steam App IDs after reopening projects and stop repeated validation cues",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.12",
+      "summary": "Prevent overlapping development builds from locking the package signing tool",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.11",
+      "summary": "Show detailed source capture and verification progress during installer creation",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.10",
+      "summary": "Build installers from isolated source snapshots so ongoing edits cannot invalidate the build",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.9",
+      "summary": "Add a quick local installer build that skips test suites and allows uncommitted source",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.8",
+      "summary": "Stop installer builds on early validation errors and remove an unnecessary storage-check tool dependency",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.7",
+      "summary": "Show installer build stages, file progress, live output and elapsed time",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.6",
+      "summary": "Reuse verified current installers when building or publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.5",
+      "summary": "Add a local installer build shortcut without GitHub publication",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.4",
+      "summary": "Make version improvement notes available as structured data for update explanations",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.3",
+      "summary": "Document the GitHub PuTTY key location and SSH publishing option.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.2",
+      "summary": "Keep the current published installer in the build root install folder.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.1",
+      "summary": "Add Help > Connect MCP with installation-specific setup instructions and copyable client configuration",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.2.0.0",
+      "summary": "Start the 0.2 release series.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.14",
+      "summary": "Distinguish saved Steam snapshots from failed validation attempts and show their saved check time",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.13",
+      "summary": "Use the supplied achievement artwork in the installer welcome and completion panels.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.12",
+      "summary": "Keep concurrent application diagnostics in the shared log folder and distinguish blocked browser request types",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.11",
+      "summary": "Document the shared installed-app log location and live bug investigation workflow",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.10",
+      "summary": "Offer an optional desktop shortcut and explain how to pin Achimeld to the Windows taskbar",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.9",
+      "summary": "Offer an optional normal-user Achimeld launch when closing the completed installer",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.8",
+      "summary": "Present the installer as Achimeld and explain background installation and bootstrapper safeguards",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.7",
+      "summary": "Explain the Steam Partner browser connection and distinguish local login sessions from project data in installer notes",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.6",
+      "summary": "Use a dark installer with a product introduction, Apache license acceptance, and Mokosh Labs installation folders",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.5",
+      "summary": "License Achimeld under Apache 2.0 and include the license in Help, setup and public source.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.4",
+      "summary": "Document the complete private publishing setup and recovery workflow in a dedicated guide",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.3",
+      "summary": "Provide one fixed location for the latest published installer with verified checksums and source identity",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.2",
+      "summary": "Record the permanent public GitHub checkout and synchronize it after publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.1",
+      "summary": "Automatically resize oversized toolbar PNG icons to 128 pixels before builds with smooth antialiased filtering; retain original artwork.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.4.0",
+      "summary": "Publish through the authenticated GitHub CLI connection",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.3.1",
+      "summary": "Reuse GitHub CLI sign-in for publishing without SSH passphrase prompts",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.3.0",
+      "summary": "Support the dedicated GitLab SSH connection for publishing",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.2.1",
+      "summary": "Use the separate GitLab SSH key while preserving GitHub publishing authentication",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.2.0",
+      "summary": "Add GitLab-only installer publishing and public release snapshots",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.22",
+      "summary": "Fix publishing startup with installed tools and pin the GitHub SSH host identity",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.21",
+      "summary": "Add GitLab-only publishing tools for self-extracting development installers and public GitHub release snapshots",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.20",
+      "summary": "Add a desktop build-guide shortcut alongside the build-and-run and app-only shortcuts.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.19",
+      "summary": "Keep the build shortcut usable after deleting generated outputs and clarify which build folders are disposable.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.18",
+      "summary": "Preserve application diagnostics between runs with a previous-run backup and panic locations.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.17",
+      "summary": "Add the golden trophy as built-in artwork and the default Style Viewer preview image.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.16",
+      "summary": "Remove the extra validation button and keep Steam operation errors visible in red in the Sync view.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.15",
+      "summary": "Discover current Steam game banners from store metadata instead of relying on an obsolete artwork address.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.14",
+      "summary": "Show retired achievements on black with dimmed text and generated status icons that fade with canvas labels.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.13",
+      "summary": "Show full property labels whenever they fit, use smaller regular text and extend the label divider with a centered three-dot grip.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.12",
+      "summary": "Add scrollable and clearable Terminal output, optional automatic visibility and detailed Steam failure timing.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.11",
+      "summary": "Retain completed Steam validation, stop attention stripes and explain unavailable game banners.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.10",
+      "summary": "Keep inspected browser processes tracked through shutdown without repeating failing image queries.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.9",
+      "summary": "Add a reusable UI recipe covering controls, layout, localization, preferences and responsive previews.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.8",
+      "summary": "Explain Steam navigation interruptions and connection failures during project validation.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.7",
+      "summary": "Keep Terminal closed during Steam validation and open it only from Tools.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.6",
+      "summary": "Identify files changed during a build and explain when to retry source archiving and compilation.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.5",
+      "summary": "Outline the selected artwork or mask thumbnail so the active sublayer is clear.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.4",
+      "summary": "Allow masks on every layer with nested editing, undoable right-click references, and simplified layer properties.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.3",
+      "summary": "Add opt-in achievement style collections, MCP style authoring and native 3D cup previews.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.2",
+      "summary": "Preserve imported locked artwork and verified icon comparisons, and display saved Steam counts correctly.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.1",
+      "summary": "Import existing Steam entries automatically during validation and simplify synchronization review.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.1.0",
+      "summary": "Syncing with Steam",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.24",
+      "summary": "Complete guarded Steam editor creation and record reads with clear failure logs and import-first reviews.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.23",
+      "summary": "Keep value-linked icon text blank until an unlock value is assigned.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.22",
+      "summary": "Accept current artwork metadata during synchronization and verify preserved retired data before saving.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.21",
+      "summary": "Keep retired achievements locally and import Steam renames as new cards with owned artwork.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.20",
+      "summary": "Allow Chromium teardown to finish before checking exited process identity.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.19",
+      "summary": "Keep synchronization running when Chromium child processes exit while retaining live-process identity checks.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.18",
+      "summary": "Allow the pinned Steam App ID achievement-count read so validation can finish loading.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.17",
+      "summary": "Support Steamworks script bundle names and open the selected app directly during validation.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.16",
+      "summary": "Fix Steam browser access to its supervised local broker and identify blocked request and network stages.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.15",
+      "summary": "Fix Steam validation startup by safely replacing restored browser tabs while networking is disabled.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.14",
+      "summary": "Add a selectable application Terminal and show Steam validation stages and failure reasons.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.13",
+      "summary": "Keep Steam validation browser cleanup inside supervised processes without opening a failing terminal window.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.12",
+      "summary": "Show a saved-project error before Steam validation instead of opening the Save dialog.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.11",
+      "summary": "Move Steam setup guidance to Validate after entering an App ID and add a generated validation icon.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.10",
+      "summary": "Guide Steam setup through App ID, validation and synchronization with animated button cues and a saved game banner.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.9",
+      "summary": "Keep icon style nodes and art images local and exclude them from achievement counts, automatic naming and synchronization.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.8",
+      "summary": "Keep complete field labels in fixed forms and document when UI abbreviations are allowed.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.7",
+      "summary": "Show separate empty-canvas guidance for achievements and stats.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.6",
+      "summary": "Validate the Steam synchronization destination before applying changes and edit the Steam App ID from Sync.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.5",
+      "summary": "Add General settings to icon style nodes for the displayed unlock value and linked project style.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.4",
+      "summary": "Make unused Layers window surfaces draggable and add Windows > Reset layout to recover floating windows.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.3",
+      "summary": "Highlight the fx button with a subtle fill when a layer has effects.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.2",
+      "summary": "Remove stale generated test outputs and old build copies while retaining current packages and audit evidence.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    },
+    {
+      "version": "0.1.0.1",
+      "summary": "Show the current four-part working version in Help > About. Add Help > Change log with dated, embedded change history available offline. Add agent rules and an update helper: completed changes increment the fourth number; new commits increment the third number and reset the fourth.",
+      "afterTarget": false,
+      "articleIds": null,
+      "impactState": "Historical impact review pending"
+    }
+  ]
+}

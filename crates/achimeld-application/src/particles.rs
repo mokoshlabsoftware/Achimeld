@@ -40,6 +40,7 @@ pub struct ParticleSettings {
     pub radius: f64,
     pub radius_min: f64,
     pub edge_bias: f64,
+    pub size_scale: f64,
     pub size_min: f64,
     pub size_max: f64,
     pub rotation_min: f64,
@@ -73,6 +74,7 @@ impl Default for ParticleSettings {
             radius: 0.42,
             radius_min: 0.0,
             edge_bias: 0.5,
+            size_scale: 1.0,
             size_min: 8.0,
             size_max: 40.0,
             rotation_min: -180.0,
@@ -150,6 +152,7 @@ impl ParticleSettings {
             ("Shape X", self.shape_x, 1.0, 10.0),
             ("Shape Y", self.shape_y, 1.0, 10.0),
             ("Regularity", self.regularity, 0.0, 1.0),
+            ("Size scale", self.size_scale, 0.0, 10.0),
             ("Minimum size", self.size_min, 1.0, 512.0),
             ("Maximum size", self.size_max, 1.0, 512.0),
             ("Minimum rotation", self.rotation_min, -360.0, 360.0),
@@ -303,7 +306,8 @@ pub fn layout_for_instance(
             Particle {
                 x: settings.center_x + angle.cos() * radius / aspect.max(1.0),
                 y: settings.center_y + angle.sin() * radius * aspect.min(1.0),
-                diameter: settings.size_min + random() * (settings.size_max - settings.size_min),
+                diameter: (settings.size_min + random() * (settings.size_max - settings.size_min))
+                    * settings.size_scale,
                 rotation: settings.rotation_min
                     + random() * (settings.rotation_max - settings.rotation_min),
                 opacity: settings.opacity_min
@@ -407,6 +411,28 @@ impl ParticlePreset {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn particle_size_multiplier_preserves_layout_and_legacy_defaults() {
+        let mut legacy = json!(ParticleSettings::default());
+        legacy.as_object_mut().unwrap().remove("sizeScale");
+        let mut settings = ParticleSettings::from_value(&legacy).unwrap();
+        assert_eq!(settings.size_scale, 1.0);
+        let original = layout_for_instance(&settings, 1.0, "test");
+        for scale in [0.0, 1.0, 10.0] {
+            settings.size_scale = scale;
+            settings.validate().unwrap();
+            let scaled = layout_for_instance(&settings, 1.0, "test");
+            for (before, after) in original.iter().zip(scaled) {
+                assert_eq!(before.x, after.x);
+                assert_eq!(before.y, after.y);
+                assert_eq!(before.rotation, after.rotation);
+                assert_eq!(before.diameter * scale, after.diameter);
+            }
+        }
+        settings.size_scale = 10.1;
+        assert!(settings.validate().is_err());
+    }
 
     #[test]
     fn particle_layout_is_stable_bounded_and_respects_distribution_and_aspect() {

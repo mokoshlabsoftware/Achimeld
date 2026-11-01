@@ -1,0 +1,59 @@
+{
+  "format": "com.achimeld.particles",
+  "schemaVersion": 1,
+  "particles": {
+    "count": 180,
+    "seed": 1405558110,
+    "differentSeedPerInstance": false,
+    "shape": "Sphere",
+    "shapes": [
+      {
+        "kind": "Star",
+        "operation": "Union",
+        "scale": 0.65,
+        "offsetX": -0.7,
+        "offsetY": 0.0,
+        "rotation": 0.0,
+        "vertexCount": 5,
+        "innerRadius": 0.45
+      }
+    ],
+    "vertexCount": 6,
+    "innerRadius": 0.45,
+    "shapeX": 1.0,
+    "shapeY": 1.0,
+    "regularity": 1.0,
+    "centerX": 0.5,
+    "centerY": 0.5,
+    "radius": 0.42,
+    "radiusMin": 0.0,
+    "edgeBias": 0.58,
+    "sizeMin": 8.0,
+    "sizeMax": 53.29748483374715,
+    "rotationMin": -180.0,
+    "rotationMax": 180.0,
+    "opacityMin": 0.35,
+    "opacityMax": 1.0,
+    "softness": 0.3,
+    "softnessMin": 0.3,
+    "colorMode": "Particle",
+    "gradient": {
+      "angle": 90.0,
+      "kind": "Radial",
+      "stops": [
+        {
+          "colorHex": "#00FF7040",
+          "offset": 0.0
+        },
+        {
+          "colorHex": "#FFDFF6FF",
+          "offset": 0.09957962483167648
+        },
+        {
+          "colorHex": "#FFFFFFFF",
+          "offset": 1.0
+        }
+      ]
+    }
+  }
+}

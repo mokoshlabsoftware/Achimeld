@@ -151,7 +151,7 @@ impl Collection {
             ui.push_id(&draft.id, |ui| {
                 crate::gradient_map::editor(ui, &mut draft.map)
             });
-            if ui.add(Button::new("Save 2D gradient")).clicked() {
+            if ui.add(Button::new("Save 2D gradient").bar()).clicked() {
                 self.save(port);
             }
         } else {
@@ -192,6 +192,7 @@ impl Desktop {
         let mut open = true;
         egui::Window::new("2D Gradient Collection")
             .id(egui::Id::new("2d-gradient-collection-window"))
+            .frame(egui::Frame::window(&ctx.global_style()).corner_radius(egui::CornerRadius::ZERO))
             .open(&mut open)
             .default_size([640.0, 620.0])
             .min_width(480.0)

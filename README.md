@@ -7,7 +7,7 @@ descriptions, translations, stats and icon artwork together in a local project,
 with a visual workspace for designing the whole collection. Review changes and
 synchronize with Steam Partner as your game evolves.
 
-[Website](https://achimeld.com/) · [Get Achimeld](https://achimeld.com/#packages) · [Discord](https://discord.gg/bRSXsjZmU) · [Build from source](#for-developers)
+[Website](https://achimeld.com/) · [Wiki](https://achimeld.com/wiki/) · [Get Achimeld](https://achimeld.com/#packages) · [Discord](https://discord.gg/bRSXsjZmU) · [Build from source](#for-developers)
 
 ## What you can do
 
@@ -36,11 +36,11 @@ installer and helps fund development.
 | Option | What you get | How to get it |
 | --- | --- | --- |
 | **Free — build it yourself** | Source code and build tools. You compile the application on Windows. | Clone or download this repository, then follow the [build guide below](#for-developers). |
-| **$10 USD supporter package — coming soon** | A ready-made Windows installer, with the same core toolkit. | Visit [achimeld.com](https://achimeld.com/#packages) for installer availability and the purchase link when checkout opens. |
+| **$5 supporter package — coming soon** | A ready-made Windows installer, with the same core toolkit. | Visit [achimeld.com](https://achimeld.com/#packages) for installer availability and the purchase link when checkout opens. |
 
 **The supporter checkout is not live yet.** The website currently shows the
-installer as coming soon. GitHub releases contain source code; installers are not
-hosted on GitHub or GitLab.
+installer as coming soon. A verified installer may also be attached to a GitHub
+release when explicitly requested; GitLab does not host installers.
 
 ## Screenshots
 

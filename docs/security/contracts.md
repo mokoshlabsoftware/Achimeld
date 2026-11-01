@@ -2,8 +2,11 @@
 
 ## Steam sign-in and validation handshake
 
-Validation only opens the pinned Steamworks destination, waits for sign-in, reopens
-that destination and checks authentication again. It does not render upload icons,
+Validation opens the pinned Steamworks destination, waits for sign-in, reopens
+that destination and checks authentication again. It then requests only the pinned
+app's public game banner through the supervised, cookie-free download policy and
+retains valid artwork in the host-owned Art Data Bank. An unavailable banner does
+not fail connection validation. Validation does not render upload icons,
 prepare a synchronization plan, import remote entries or write a synchronization
 result. Successful validation is bound to the editor session and revision. A later
 Synchronize action prepares a fresh receiver-owned plan and automatically selects
@@ -67,6 +70,10 @@ error yields `Unknown` until the existing sign-in deadline. Other errors remain 
 the driver checks supervision, request-policy health and unexpected pages again after
 the observation. Only this read is deferred, never a write or synchronization operation.
 Chromium fixtures navigate repeatedly during polling and separately reject a closed page.
+The Sync view can open only the exact Achievements or Stats page for its current nonzero
+Steam App ID in the supervised Chromium session. Both routes are checked again at the
+receiving policy and browser request policy; no URL is supplied by the UI. The session
+ends when the owned browser window closes. This navigation does not grant draft writes.
 
 Sync and Steam expose the same profile-folder and profile-deletion controls. Opening
 the folder uses the supervisor-authenticated fixed profile path, validates reparse

@@ -1,13 +1,13 @@
 # Reviewed Steam synchronization implementation audit
 
-## Deferred icon uploads and process cleanup (2026-10-29)
+The host now renders and hashes each synchronized achievement's icon pair during preparation. The receiver compares those hashes with the saved baseline and fresh Steam icon identity, so an artwork-only edit appears as a separate Icon upload while unchanged icons remain in sync. Proposed imports and uploads wait for the user's row selection and confirmation. The worker still pins selected PNG bytes and verifies Steam read-back at execution. This source and fixture check does not establish live Steam compatibility.
 
-The host now follows the user's Synchronize action through fresh comparison and
-default uploads automatically. Conflicts and uncertain-outcome recovery still
-pause for review; destination identity and revision remain checked without the
-extra App ID checkbox. Per-row Skip/Upload controls are removed from ordinary
-rows. Conflict choices remain explicit. The progress window stays active during
-the automatic flow and names the current definition or icon and step count.
+## Previous deferred icon flow and process cleanup (2026-10-29)
+
+This earlier flow followed Synchronize with default uploads automatically and
+paused for review only on conflicts or uncertain-outcome recovery. It removed
+ordinary per-row choices. The current reviewed flow described above supersedes
+that behavior.
 
 SEC-SYNC-001: optional deferred icon candidates carry no PNG hashes at preparation.
 They authorize only the receiver's selected next icon step. The host renders that

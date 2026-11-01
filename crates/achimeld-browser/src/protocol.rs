@@ -9,8 +9,10 @@ pub(crate) enum ReadCommand {
     Start,
     Authenticate,
     AuthenticationState,
-    Navigate(SteamAppId),
+    Navigate(SteamAppId, bool),
+    BrowserOpen,
     ReadConfiguration(SteamAppId),
+    ReadGameBanner(SteamAppId),
     DeleteSteam {
         project: Value,
         targets: Value,
@@ -48,16 +50,19 @@ impl ReadCommand {
             Self::Start => ("start", Value::Null),
             Self::Authenticate => ("authenticate", Value::Null),
             Self::AuthenticationState => ("authenticationState", Value::Null),
-            Self::Navigate(id) => (
+            Self::Navigate(id, stats) => (
                 "navigate",
                 Value::String(format!(
-                    "https://partner.steamgames.com/apps/achievements/{}",
+                    "https://partner.steamgames.com/apps/{}/{}",
+                    if stats { "stats" } else { "achievements" },
                     id.value()
                 )),
             ),
+            Self::BrowserOpen => ("browserOpen", Value::Null),
             Self::ReadConfiguration(id) => {
                 ("readConfiguration", serde_json::json!({"value":id.value()}))
             }
+            Self::ReadGameBanner(id) => ("readGameBanner", serde_json::json!({"value":id.value()})),
             Self::PrepareSync {
                 project,
                 catalog,
@@ -530,11 +535,20 @@ mod tests {
         let read = ReadCommand::ReadConfiguration(id).request("request".into());
         assert_eq!(read.operation, "readConfiguration");
         assert_eq!(read.arguments, serde_json::json!({"value":480}));
+        let banner = ReadCommand::ReadGameBanner(id).request("request".into());
+        assert_eq!(banner.operation, "readGameBanner");
+        assert_eq!(banner.arguments, serde_json::json!({"value":480}));
         assert_eq!(
-            ReadCommand::Navigate(id)
+            ReadCommand::Navigate(id, false)
                 .request("request".into())
                 .arguments,
             "https://partner.steamgames.com/apps/achievements/480"
+        );
+        assert_eq!(
+            ReadCommand::Navigate(id, true)
+                .request("request".into())
+                .arguments,
+            "https://partner.steamgames.com/apps/stats/480"
         );
     }
 

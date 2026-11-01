@@ -4,6 +4,7 @@ use serde_json::json;
 struct Library {
     editor: achimeld_application::Editor,
     presets: Vec<EffectPreset>,
+    requests: Vec<UiRequest>,
     preview: Option<achimeld_application::Preview>,
 }
 impl EditorPort for Library {
@@ -30,7 +31,9 @@ impl EditorPort for Library {
     fn redo(&mut self) {
         self.editor.redo();
     }
-    fn request(&mut self, _: UiRequest) {}
+    fn request(&mut self, request: UiRequest) {
+        self.requests.push(request);
+    }
     fn status(&self) -> &str {
         "Ready"
     }
@@ -218,10 +221,14 @@ fn procedural_explorers_save_embedded_gradients_separately_and_keep_invalid_draf
     for kind in [EffectKind::Explosion, EffectKind::Particle] {
         explorer.kind = Some(kind);
         explorer.create(kind, None);
+        assert!(explorer.selected.is_none());
+        assert!(explorer.save(&mut library));
+        assert!(!library.presets.iter().any(|preset| preset.kind == kind));
         let draft = explorer.draft.as_mut().unwrap();
         draft.name = format!("Custom {}", kind.layer_kind());
         draft.layer[kind.settings_key()]["gradient"]["stops"][0]["colorHex"] = json!("#50123456");
         let saved = draft.clone();
+        explorer.selected = Some(saved.id.clone());
         assert!(explorer.save(&mut library));
         explorer.draft.as_mut().unwrap().name.clear();
         assert!(!explorer.save(&mut library));
@@ -239,7 +246,7 @@ fn procedural_explorers_save_embedded_gradients_separately_and_keep_invalid_draf
 #[test]
 fn procedural_explorers_render_compact_panels_without_changing_drafts() {
     for kind in [EffectKind::Explosion, EffectKind::Particle] {
-        for (width, font) in [(360.0, 13.0), (440.0, 22.0), (660.0, 13.0)] {
+        for (width, font) in [(360.0, 13.0), (440.0, 22.0), (660.0, 13.0), (900.0, 13.0)] {
             let ctx = egui::Context::default();
             crate::configure_fonts(&ctx, Default::default());
             let mut library = Library::default();
