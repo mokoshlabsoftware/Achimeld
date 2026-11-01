@@ -2,6 +2,14 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.2.35.0 (2026-11-01)
+
+- Restore source-only GitHub publication policy
+
+## 0.2.34.1 (2026-11-01)
+
+- Restore source-only GitHub releases and remove installer upload option
+
 ## 0.2.34.0 (2026-11-01)
 
 - Prepare verified Achimeld installer and source publication

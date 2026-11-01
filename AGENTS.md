@@ -86,24 +86,19 @@ mirror GitLab history or copy `private/`, credentials, or signing secrets. Unsaf
 or generated tracked inputs must stop publication, not be silently excluded.
 Preserve uncommitted changes in either checkout.
 
-**Distribution contract: open-source code with a requested GitHub installer release.**
-GitLab stores development source (including `private/`); GitHub stores public
-source. For a release explicitly selected with `-GitHubInstaller -SkipLemonSqueezy`,
-GitHub may host only its verified promoted setup file as a release asset. Neither
-service may receive compiled packages in Git, LFS, package registries, CI artifacts,
-Pages, or disguised archives. GitLab must not host installer release assets.
-Source artwork, build recipes, automatic source-code archives and text-only CI
-audit evidence are allowed.
+**Distribution contract: open-source code, paid ready-made installers.** GitLab
+stores development source (including `private/`); GitHub stores public source.
+Neither service may host compiled installers or application packages, whether in
+Git, LFS, release assets, package registries, CI artifacts, Pages, or disguised
+archives. Source artwork, build recipes and automatic source-code archives are
+allowed. Text-only CI audit evidence is allowed; compiled build outputs are not.
 
 **Lemon Squeezy delivery is explicitly authorized.** Publish.bat delivers the
-verified promoted installer after successful source publication unless explicitly
-skipped. `-GitHubInstaller -SkipLemonSqueezy` delivers that installer to the matching
-GitHub release instead. The standalone
+verified promoted installer after successful source publication. The standalone
 private/Upload-LemonSqueezy.bat retries delivery without rebuilding. Target product,
 store and test/live mode are pinned in private/lemon-product.json; never activate
 sales or switch modes automatically. BuildOnly and quick builds do not upload.
-Use GitHub as an installer host only for the explicitly selected verified release
-asset route. Never use GitLab or an unverified fallback download location.
+Never use GitHub/GitLab as an installer host or fallback download location.
 
 Generated installers, packages, build outputs and audit evidence belong under
 `C:\Projects\AchimeldBuild`, outside both repositories. Build from a clean selected
@@ -129,8 +124,8 @@ must not remain there. Never use unfinished setup files or binaries in source ch
 The operating guide is `private/PUBLISHING.md`. Keep it current when changing
 publishing, authentication, export policy, storage, delivery, or failure recovery.
 Run `private/Test-Publishing.ps1` after changing these boundaries. Its source-only
-release helper accepts no assets at creation; the explicit GitHub installer route
-uploads only the verified promoted file after source publication. Check existing remote downloads separately when
+release helper accepts no assets; never restore installer arguments or an upload
+command to the GitHub publisher. Check existing remote downloads separately when
 repairing a distribution mistake, while preserving source and provenance records.
 
 # Working versions and change history

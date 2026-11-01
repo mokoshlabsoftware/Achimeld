@@ -39,8 +39,8 @@ installer and helps fund development.
 | **$5 supporter package — coming soon** | A ready-made Windows installer, with the same core toolkit. | Visit [achimeld.com](https://achimeld.com/#packages) for installer availability and the purchase link when checkout opens. |
 
 **The supporter checkout is not live yet.** The website currently shows the
-installer as coming soon. A verified installer may also be attached to a GitHub
-release when explicitly requested; GitLab does not host installers.
+installer as coming soon. GitHub releases contain source code; installers are not
+hosted on GitHub or GitLab.
 
 ## Screenshots
 

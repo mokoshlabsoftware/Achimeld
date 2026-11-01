@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "workingVersion": "0.2.34.0",
-  "gitlabSourceCommit": "7b288ba640d6d2615db9aefaec814f02a956d860",
-  "packageManifestSha256": "4507ba26732db982438725aae005c43736a91c7d5cfc2797b2ba4866b77b71e7",
-  "verifierSha256": "c1f470c0eb00fcad4c02f34e782abe76c9de26fb421e5728cbea93e096c4eed8",
-  "installerSha256": "e6f26dac2bc10be982454118889e18b9c20481914c676ada8c22b687d72ac933",
+  "workingVersion": "0.2.35.0",
+  "gitlabSourceCommit": "e0dd3677afcdd0e737dd1505f7d1706f58e8aa16",
+  "packageManifestSha256": "3383bec0066b14595ca1a3880441e09d6c54e9b049c0838c49066e53ce5a9215",
+  "verifierSha256": "8a3aa90261083a8745f6abc99fa9ce077d3ec143a00886f0d110296d78221042",
+  "installerSha256": "1ceb0c9fb51860b3cc1c9153c10303fd0207bc6ff3699c4f071597ef15c80dd7",
   "packageMode": "development",
   "files": [
     {
@@ -29,11 +29,11 @@
     },
     {
       "path": "AGENTS.md",
-      "sha256": "d6e8e614238df506c66dad3c1d0d4763cfa7ccd980e7b432479835c8f3092b97"
+      "sha256": "766a6cad166191e2b2dec777f167b0820610b260e28908e3d1319144807e54e8"
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "e49633d94e721a8d208b62a4766f76fdd692b10926f2f67b554c35985c35aef8"
+      "sha256": "88e389c8b4a6aba7268c40e952d2f332fdf7acac52bbb237326c5290c5004ca7"
     },
     {
       "path": "Cargo.lock",
@@ -53,7 +53,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "98510561b02309641016901763b0d441dbf518d50e9c6782b37e5b454bfa8618"
+      "sha256": "3a34e8027a567489846f71a651eb3a4897f48d8bb22014b59d87b2a8a857bdf6"
     },
     {
       "path": "ROADMAP.md",
@@ -4001,7 +4001,7 @@
     },
     {
       "path": "docs/wiki-maintenance.md",
-      "sha256": "43d037da616314f0196deab249212e53b4679d69ebaa1bfb33fc4de2690991c6"
+      "sha256": "66ec39dbc7b207bc5ff40c09131dbfe044068d1d2da81fb63ad9957888887952"
     },
     {
       "path": "docs/wiki/README.md",
