@@ -156,9 +156,38 @@ static async Task<object> ExecuteAsync(ReadAction action, PlaywrightChromeDriver
         case ReadOperation.ReadGameBanner:
             return await driver.ReadGameDetailsAsync(action.AppId);
         case ReadOperation.Stop: return true;
+        case ReadOperation.CheckPublicVersion: return await CheckPublicVersionAsync(session, cancellationToken);
         case ReadOperation.NetworkSelfTest: return await NetworkProbeAsync(action.Hold, driver, session, cancellationToken);
         default: throw new InvalidDataException("Read session command rejected.");
     }
+}
+
+static async Task<string> CheckPublicVersionAsync(SupervisionSession session, CancellationToken cancellationToken)
+{
+    using var handler = new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false,
+        UseProxy = true, Proxy = new WebProxy($"http://127.0.0.1:{session.Status.ProxyPort}") { BypassProxyOnLocal = false } };
+    using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(8) };
+    using var request = new HttpRequestMessage(HttpMethod.Get,
+        "https://api.github.com/repos/mokoshlabsoftware/Achimeld/releases/latest");
+    request.Headers.UserAgent.ParseAdd("Achimeld-Version-Check");
+    request.Headers.Accept.ParseAdd("application/vnd.github+json");
+    using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+    response.EnsureSuccessStatusCode();
+    if (response.Content.Headers.ContentLength is > 16384) throw new InvalidDataException("Release metadata too large.");
+    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+    using var bounded = new MemoryStream();
+    byte[] buffer = new byte[4096];
+    int count;
+    while ((count = await stream.ReadAsync(buffer, cancellationToken)) != 0)
+    {
+        if (bounded.Length + count > 16384) throw new InvalidDataException("Release metadata too large.");
+        bounded.Write(buffer, 0, count);
+    }
+    using var document = JsonDocument.Parse(bounded.ToArray());
+    string? tag = document.RootElement.GetProperty("tag_name").GetString();
+    if (tag is null || tag.Length > 44 || !System.Text.RegularExpressions.Regex.IsMatch(tag, @"^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant))
+        throw new InvalidDataException("Invalid public release version.");
+    return tag[1..];
 }
 
 static async Task<object> NetworkProbeAsync(bool hold, PlaywrightChromeDriver driver,

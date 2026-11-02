@@ -212,6 +212,9 @@ impl SteamReader {
     pub fn start(&mut self) -> Result<(), SecurityError> {
         self.boolean(ReadCommand::Start)
     }
+    pub fn check_public_version(&mut self) -> Result<String, SecurityError> {
+        self.call(ReadCommand::CheckPublicVersion)
+    }
     pub fn authenticate(&mut self) -> Result<(), SecurityError> {
         self.boolean(ReadCommand::Authenticate)
     }

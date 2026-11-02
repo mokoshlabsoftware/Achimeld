@@ -260,6 +260,8 @@ fn status_data(host: &Host, ui: &achimeld_ui::Desktop) -> Value {
         "isDirty": host.editor.is_dirty(),
         "validationVerified": host.synchronization_verified(),
         "synchronizationActive": host.synchronization.is_some(),
+        "browserProfileDeletionActive": host.browser_profile.is_some(),
+        "status": host.status,
         "synchronizationReviewReady": host.synchronization_review().is_some(),
         "canvas": ui.automation_scene()["activeCanvas"],
         "achievementCount": document.entities(EntityKind::Achievement).len(),
@@ -744,6 +746,7 @@ impl Engine {
                         | "open_project"
                         | "reload_project"
                         | "forget_steam_validation"
+                        | "delete_browser_profile"
                         | "apply_steam_deletion"
                         | "validate_steam"
                         | "prepare_synchronization"
@@ -754,6 +757,7 @@ impl Engine {
                     request.operation.as_str(),
                     "cancel_steam_read" | "close_editor"
                 ))
+            || host.browser_profile.is_some()
             || host.art.is_some()
             || host.image_drop.is_some()
             || !host.art_queue.is_empty()
@@ -1088,6 +1092,7 @@ impl Engine {
                 Ok(json!({
                     "verified": host.synchronization_verified(),
                     "active": host.synchronization.is_some(),
+                    "browserProfileDeletionActive": host.browser_profile.is_some(),
                     "error": host.synchronization_error(),
                     "review": review,
                     "status": host.status,
@@ -1100,6 +1105,13 @@ impl Engine {
                     "Steam validation forgotten. Save the project to keep this change.".into(),
                 );
                 Ok(json!({"forgotten":true,"saved":false}))
+            }
+            "delete_browser_profile" => {
+                if args["confirmDeletion"] != true {
+                    return Err("Explicit confirmDeletion=true is required".into());
+                }
+                host.delete_browser_profile()?;
+                Ok(json!({"started":true,"status":host.status}))
             }
             "review_steam_deletion" => steam_deletion_review(host, args),
             "apply_steam_deletion" => {
@@ -1883,6 +1895,19 @@ mod tests {
         assert_eq!(forgotten["success"], true);
         assert_eq!(forgotten["data"]["result"]["saved"], false);
         assert_eq!(host.editor.undo_label(), Some("Forget Steam validation"));
+        let delete = request(
+            &host,
+            &engine,
+            "delete_browser_profile",
+            json!({"confirmDeletion":true}),
+        );
+        let (_sender, receiver) = mpsc::sync_channel(1);
+        host.browser_profile = Some(receiver);
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, delete)["errorCode"],
+            "editor_busy"
+        );
+        host.browser_profile = None;
         let cancel = request(&host, &engine, "cancel_steam_read", json!({}));
         assert_eq!(
             dispatch(&mut engine, &mut host, &mut ui, cancel)["success"],

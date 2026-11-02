@@ -4,6 +4,8 @@ Achimeld brings achievement definitions, stat definitions, icon design and revie
 
 Start by understanding three parts of an achievement: its settings describe what it is, its General Images supply reusable artwork, and its icon recipe builds the finished image.
 
+After installation, Setup's finish screen offers **Launch Achimeld** and **Connect MCP**. Connect MCP opens instructions and a copyable JSON configuration for connecting an MCP client to the installed application. You can also open these instructions later from Help > Connect MCP in Achimeld. Open Achimeld before connecting the client.
+
 ## Find your way around
 
 | View | What you use it for |

@@ -2,6 +2,34 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.4.0 (2026-11-02)
+
+- Publish Steam, MCP, installer and delivery improvements
+
+## 0.3.3.6 (2026-11-02)
+
+- Keep offline audit preview checks stable under test load
+
+## 0.3.3.5 (2026-11-02)
+
+- Offer verified assisted Gumroad installer replacement
+
+## 0.3.3.4 (2026-11-02)
+
+- Notify once when a newer public GitHub release is available
+
+## 0.3.3.3 (2026-11-02)
+
+- Show MCP connection instructions from the installer finish screen
+
+## 0.3.3.2 (2026-11-02)
+
+- Group MCP permissions with a sensitive command folder
+
+## 0.3.3.1 (2026-11-02)
+
+- Delete the dedicated Steam browser profile through MCP
+
 ## 0.3.3.0 (2026-11-02)
 
 - Commit Steam audit fixes, MCP controls and bulk achievement import

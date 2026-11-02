@@ -23,6 +23,7 @@ pub fn allowed_host(host: &str) -> bool {
     matches!(
         host.as_str(),
         "partner.steamgames.com"
+            | "api.github.com"
             | "store.steampowered.com"
             | "login.steampowered.com"
             | "api.steampowered.com"
@@ -133,6 +134,8 @@ mod tests {
     }
     #[test]
     fn bounded_connect_only() {
+        assert!(allowed_host("api.github.com"));
+        assert!(!allowed_host("api.github.com.evil.test"));
         assert_eq!(
             connect_host(b"CONNECT api.steampowered.com:443 HTTP/1.1\r\n\r\n").unwrap(),
             "api.steampowered.com"

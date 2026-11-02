@@ -115,6 +115,12 @@ pub fn tools() -> Vec<Value> {
             "",
         ),
         (
+            "delete_browser_profile",
+            "Delete Achimeld's dedicated Chromium profile and saved Steam sign-in through the supervised editor. Requires confirmDeletion=true. The Steam account and project remain; poll get_synchronization for completion.",
+            "confirmDeletion",
+            "confirmDeletion:b",
+        ),
+        (
             "review_steam_deletion",
             "Review exact achievement or stat targets from the current verified Steam snapshot and receive a token bound to this editor session, revision, App ID, snapshot and target list.",
             "targets",
@@ -1402,7 +1408,7 @@ mod tests {
         assert_eq!(responses[1]["result"]["protocolVersion"], "2025-11-25");
         assert_eq!(
             responses[2]["result"]["tools"].as_array().unwrap().len(),
-            55
+            56
         );
         assert_eq!(responses[3]["result"]["isError"], false);
     }
@@ -1423,6 +1429,11 @@ mod tests {
         project["path"] = json!(r"C:\Projects\example.achv");
         assert!(validate_arguments("open_project", &project).is_ok());
         assert!(validate_arguments("forget_steam_validation", &base).is_ok());
+        let mut profile = base.clone();
+        profile["confirmDeletion"] = json!(true);
+        assert!(validate_arguments("delete_browser_profile", &profile).is_ok());
+        profile["confirmDeletion"] = json!(false);
+        assert!(validate_arguments("delete_browser_profile", &profile).is_err());
         assert!(validate_arguments("save_project", &base).is_ok());
         let mut settings = base.clone();
         settings["appId"] = json!(4873800);

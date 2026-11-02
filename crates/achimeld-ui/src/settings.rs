@@ -605,7 +605,7 @@ fn mcp_command_preferences(
     preferences: &mut achimeld_application::Preferences,
 ) {
     ui.heading("MCP commands");
-    ui.label("Every command is allowed by default. Turn off a command to reject it for local MCP clients after you save Preferences.");
+    ui.label("Every command is allowed by default. Use a folder switch or an individual command to change access after you save Preferences.");
     let commands = port.mcp_commands();
     ui.label(format!(
         "{} of {} allowed",
@@ -625,23 +625,124 @@ fn mcp_command_preferences(
     ui.add(egui::TextEdit::singleline(&mut filter).hint_text("Filter commands"));
     ui.data_mut(|data| data.insert_temp(filter_id, filter.clone()));
     let needle = filter.to_ascii_lowercase();
-    for (name, description) in commands {
-        if !name.contains(needle.as_str())
-            && !description.to_ascii_lowercase().contains(needle.as_str())
-        {
+    for group in [
+        "Sensitive",
+        "Steam",
+        "Projects",
+        "Achievements and stats",
+        "Artwork and styles",
+        "Translations",
+        "Editor controls",
+        "Discovery",
+    ] {
+        let group_commands: Vec<_> = commands
+            .iter()
+            .filter(|(name, _)| mcp_command_group(name) == group)
+            .collect();
+        let entries: Vec<_> = group_commands
+            .iter()
+            .copied()
+            .filter(|(name, description)| {
+                group.to_ascii_lowercase().contains(&needle)
+                    || name.contains(needle.as_str())
+                    || description.to_ascii_lowercase().contains(needle.as_str())
+            })
+            .collect();
+        if entries.is_empty() {
             continue;
         }
-        let mut allowed = preferences.mcp_allows(name);
-        if crate::fields::checkbox(ui, name, &mut allowed)
-            .on_hover_text(description)
-            .changed()
-        {
-            if allowed {
-                preferences.mcp_disabled_commands.remove(name);
-            } else {
-                preferences.mcp_disabled_commands.insert(name.clone());
-            }
+        let heading = if group == "Sensitive" {
+            egui::RichText::new(format!("{group} ({})", group_commands.len()))
+                .color(crate::theme::color(preferences, "Error"))
+        } else {
+            egui::RichText::new(format!("{group} ({})", group_commands.len()))
+        };
+        egui::CollapsingHeader::new(heading)
+            .id_salt(("mcp-command-group", group))
+            .default_open(group == "Sensitive")
+            .show(ui, |ui| {
+                let mut all_allowed = group_commands
+                    .iter()
+                    .all(|(name, _)| preferences.mcp_allows(name));
+                if crate::fields::checkbox(ui, "Allow entire folder", &mut all_allowed).changed() {
+                    for (name, _) in &group_commands {
+                        if all_allowed {
+                            preferences.mcp_disabled_commands.remove(name);
+                        } else {
+                            preferences.mcp_disabled_commands.insert((*name).clone());
+                        }
+                    }
+                }
+                for (name, description) in entries {
+                    let mut allowed = preferences.mcp_allows(name);
+                    if crate::fields::checkbox(ui, name, &mut allowed)
+                        .on_hover_text(description)
+                        .changed()
+                    {
+                        if allowed {
+                            preferences.mcp_disabled_commands.remove(name);
+                        } else {
+                            preferences.mcp_disabled_commands.insert(name.clone());
+                        }
+                    }
+                }
+            });
+    }
+}
+
+fn mcp_command_group(name: &str) -> &'static str {
+    match name {
+        "delete_browser_profile"
+        | "forget_steam_validation"
+        | "review_steam_deletion"
+        | "apply_steam_deletion" => "Sensitive",
+        "get_synchronization"
+        | "get_remote_icon_metadata"
+        | "validate_steam"
+        | "prepare_synchronization"
+        | "apply_synchronization"
+        | "cancel_synchronization"
+        | "open_steam_page"
+        | "cancel_steam_read" => "Steam",
+        "list_recent_projects"
+        | "open_recent_project"
+        | "open_project"
+        | "reload_project"
+        | "save_project"
+        | "set_project_settings" => "Projects",
+        "create_achievement"
+        | "create_stat"
+        | "create_stats"
+        | "update_node"
+        | "move_nodes"
+        | "select_node"
+        | "configure_stat"
+        | "link_achievement_stat" => "Achievements and stats",
+        "review_achievement_image_folder"
+        | "import_achievement_images"
+        | "get_node"
+        | "list_icon_styles"
+        | "list_style_collections"
+        | "get_icon_style"
+        | "export_style_preview"
+        | "create_style_collection"
+        | "create_icon_style"
+        | "import_icon_style"
+        | "export_style_collection"
+        | "list_effect_presets"
+        | "apply_effect_preset"
+        | "close_effect_explorer"
+        | "add_general_image"
+        | "apply_icon_style"
+        | "export_achievement_icons" => "Artwork and styles",
+        "get_achievement_translations"
+        | "export_achievement_translations"
+        | "import_achievement_translations" => "Translations",
+        "acknowledge_modal" | "open_menu" | "close_menu" | "close_editor" | "undo" | "redo" => {
+            "Editor controls"
         }
+        "list_instances" | "status" | "get_editor_health" | "get_scene" => "Discovery",
+        _ => "Editor controls",
     }
 }
 
@@ -710,4 +811,26 @@ fn preference_action(ui: &mut egui::Ui, label: &str) -> egui::Response {
         )
     })
     .inner
+}
+
+#[cfg(test)]
+mod mcp_command_group_tests {
+    use super::mcp_command_group;
+
+    #[test]
+    fn sensitive_operations_stay_together() {
+        for operation in [
+            "delete_browser_profile",
+            "forget_steam_validation",
+            "review_steam_deletion",
+            "apply_steam_deletion",
+        ] {
+            assert_eq!(mcp_command_group(operation), "Sensitive");
+        }
+        assert_eq!(mcp_command_group("validate_steam"), "Steam");
+        assert_eq!(
+            mcp_command_group("create_achievement"),
+            "Achievements and stats"
+        );
+    }
 }

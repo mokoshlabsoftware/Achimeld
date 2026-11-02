@@ -12,7 +12,7 @@ use achimeld_security::{cancellation::Cancellation, supervision::Session};
 use eframe::egui;
 use image::RgbaImage;
 use serde_json::{Value, json};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::{
@@ -28,6 +28,12 @@ mod gradients;
 mod image_drop;
 mod particles;
 mod style_viewer;
+mod version_check;
+
+enum StartupNotice {
+    LocalChanges,
+    PublicUpdate(String),
+}
 
 fn logged_status(message: String) -> String {
     achimeld_application::diagnostics::record("INFO", "application", &message);
@@ -237,7 +243,8 @@ struct NativeApp {
     ui: achimeld_ui::Desktop,
     host: Host,
     health: mpsc::Receiver<()>,
-    about_pending: bool,
+    public_version: mpsc::Receiver<Result<String, String>>,
+    startup_notices: VecDeque<StartupNotice>,
 }
 impl NativeApp {
     fn new(cc: &eframe::CreationContext<'_>, health: mpsc::Receiver<()>) -> Self {
@@ -261,11 +268,12 @@ impl NativeApp {
         {
             host.start_dialog(Dialog::SettingsFolder);
         }
-        let mut ui = achimeld_ui::Desktop::default();
-        let about_pending = !host.about_seen && host.dialog.is_some();
-        if !host.about_seen && !about_pending {
-            ui.open_update_notes(load_acknowledged_version().unwrap_or(None));
+        let ui = achimeld_ui::Desktop::default();
+        let mut startup_notices = VecDeque::new();
+        if !host.about_seen {
+            startup_notices.push_back(StartupNotice::LocalChanges);
         }
+        let public_version = version_check::start(cc.egui_ctx.clone());
         Self {
             diagnostics: crate::diagnostics::Monitor::new(),
             diagnostic_warning: None,
@@ -274,7 +282,8 @@ impl NativeApp {
             ui,
             host,
             health,
-            about_pending,
+            public_version,
+            startup_notices,
         }
     }
 }
@@ -320,10 +329,41 @@ impl eframe::App for NativeApp {
         self.ui
             .file_drop_position(image_drop::native_drop_position(ui.ctx(), frame));
         let dialog_open = self.host.dialog.is_some() || self.host.drop_picker_open();
-        if !dialog_open && self.about_pending {
-            self.ui
-                .open_update_notes(load_acknowledged_version().unwrap_or(None));
-            self.about_pending = false;
+        if let Ok(result) = self.public_version.try_recv() {
+            match result {
+                Ok(version) if version_check::is_newer(&version) => {
+                    match version_check::has_seen(&version) {
+                        Ok(false) => self
+                            .startup_notices
+                            .push_back(StartupNotice::PublicUpdate(version)),
+                        Ok(true) => {}
+                        Err(error) => achimeld_application::diagnostics::record(
+                            "WARN",
+                            "application",
+                            &format!("Could not read public release acknowledgement: {error}"),
+                        ),
+                    }
+                }
+                Ok(_) => {}
+                Err(error) => achimeld_application::diagnostics::record(
+                    "INFO",
+                    "application",
+                    &format!("Public release check unavailable: {error}"),
+                ),
+            }
+        }
+        if !dialog_open
+            && !self.ui.help_open()
+            && let Some(notice) = self.startup_notices.pop_front()
+        {
+            match notice {
+                StartupNotice::LocalChanges => self
+                    .ui
+                    .open_update_notes(load_acknowledged_version().unwrap_or(None)),
+                StartupNotice::PublicUpdate(version) => {
+                    self.host.start_dialog(Dialog::PublicUpdate(version))
+                }
+            }
         }
         if dialog_open {
             ui.disable();
@@ -610,6 +650,15 @@ impl Host {
     }
     fn complete_dialog(&mut self, result: DialogResult) {
         match result {
+            DialogResult::PublicUpdate(version, open) => {
+                if let Err(error) = version_check::acknowledge(&version) {
+                    self.status =
+                        logged_status(format!("Could not remember public release notice: {error}"));
+                }
+                if open && let Err(error) = version_check::open_releases() {
+                    self.status = logged_status(error);
+                }
+            }
             DialogResult::EffectsImport(kind, Some(path)) => {
                 let result = self.import_effects(kind, &path);
                 self.report(result, "Effect collection imported");

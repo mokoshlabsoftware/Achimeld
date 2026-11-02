@@ -81,4 +81,6 @@ Preferences and Terminal after dismissal. A duplicate desktop launch shows
 and offers **Close**. Close or Escape exits only the new launch; the existing
 editor and its unsaved work remain untouched.
 
+The New version available startup prompt shows the newer public GitHub source release version. View on GitHub opens the fixed releases page in the system browser; Close and Escape dismiss it. Dismissal acknowledges that version for this Windows user. It enters the startup notice queue after local change notes and waits for other application prompts to finish.
+
 Check the rendered prompt at ordinary and increased display scales: black header and body, a left-aligned header icon with an independently centered title, a centered wrapped message, a gray action row with no gaps, and legible hover/focus/disabled states. Verify cancellation and the existing action paths after changing behavior. The existing native prompt screenshot fixture is `desktop::dialog_tests::native_app_prompt_screenshot`; set `ACHIMELD_SCREENSHOT_VALIDATION` to preview the saved-project error. Generated screenshots belong in the external build output tree.

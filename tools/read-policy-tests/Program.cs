@@ -26,6 +26,14 @@ Reject(Started(), "stop", "{}");
 Reject(Started(), "readConfiguration", "{\"value\":480}");
 Reject(Started(), "readGameBanner", "{\"value\":480}");
 Reject(Started(), "browserOpen", "null");
+var release = new ReadOnlyPolicy();
+if (release.Validate("checkPublicVersion", Json("null"), false).Operation != ReadOperation.CheckPublicVersion)
+    throw new Exception("Fixed public release lookup rejected");
+cases++;
+Reject(new(), "checkPublicVersion", "{}");
+Reject(Started(), "checkPublicVersion", "null");
+release.Validate("stop", Json("null"), false);
+Reject(release, "checkPublicVersion", "null");
 var pinned = Started();
 try { pinned.RequireSynchronizationApp(); throw new Exception("Unpinned synchronization accepted"); } catch (InvalidDataException) { cases++; }
 pinned.Validate("navigate", Json("\"https://partner.steamgames.com/apps/achievements/480\""), false);

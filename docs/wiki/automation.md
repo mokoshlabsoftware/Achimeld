@@ -4,7 +4,7 @@ Achimeld's MCP connection lets a compatible client inspect and edit an already o
 
 ## Connect
 
-Open Achimeld normally, then use Help > Connect MCP for the executable path and configuration. The command is the verified Achimeld.exe with argument --mcp, running under the same Windows account as the desktop.
+Open Achimeld normally, then use Help > Connect MCP for the executable path and configuration. Setup's finish screen also offers Connect MCP beside Launch Achimeld, with the installed path and a copyable JSON configuration. The command is the verified Achimeld.exe with argument --mcp, running under the same Windows account as the desktop.
 
 The connector does not open the desktop. Validation and synchronization use the editor's supervised Steam browser workflow. Reconnect after reopening the editor. It exits shortly after no editor remains, so a stale connector may need restarting.
 
@@ -33,7 +33,7 @@ The initialization handshake includes structured editor facts. Status includes u
 | Icon output | export_achievement_icons |
 | History | undo, redo |
 | Style collections | list_style_collections, get_icon_style, create_style_collection, create_icon_style, export_style_preview, export_style_collection, import_icon_style |
-| Steam review | get_synchronization, get_remote_icon_metadata, validate_steam, prepare_synchronization, apply_synchronization, cancel_synchronization, forget_steam_validation, review_steam_deletion, apply_steam_deletion |
+| Steam review | get_synchronization, get_remote_icon_metadata, validate_steam, prepare_synchronization, apply_synchronization, cancel_synchronization, forget_steam_validation, delete_browser_profile, review_steam_deletion, apply_steam_deletion |
 | Title menus | open_menu, close_menu |
 | Notices | acknowledge_modal |
 | Editor lifecycle and supervised pages | open_recent_project, open_project, reload_project, save_project, close_editor, open_steam_page, cancel_steam_read |
@@ -70,6 +70,8 @@ During a prepared review, get_remote_icon_metadata returns one named achievement
 
 The general get_synchronization response keeps the review rows and token compact. Optional kind, state and case-insensitive API-name query arguments filter the returned rows; totalRows and returnedRows show the complete and filtered counts. Applying the review still requires choices for every row in the complete review. Ask for one achievement's remote image pair only when needed. forget_steam_validation clears the saved Steam snapshot and downloaded game banner as an undoable local edit, leaving authored entries and sync baselines intact; save_project persists it.
 
+delete_browser_profile requires confirmDeletion=true and removes Achimeld's dedicated Chromium profile, including its saved Steam sign-in. It leaves the Steam account and project intact. The command starts the supervised deletion; poll get_synchronization.browserProfileDeletionActive and status for completion. Finish active Steam work before deleting the profile, then validate again to sign in.
+
 For a deliberate draft deletion, call review_steam_deletion with exact Achievement or Stat API names. It requires a verified, complete Steam read and returns the matched rows and a token bound to the editor session and snapshot. Inspect those rows before calling apply_steam_deletion with the same targets, token and confirmDeletion true. The supervised worker deletes only those entries, reads Steam again and saves the verified project. Steamworks publication remains manual. A changed snapshot invalidates the review token.
 
 Synchronization performs one reviewed submission at a time. If an import exposes further differences, prepare a new review explicitly after completion.
@@ -88,5 +90,5 @@ Icon export differs from desktop export in formats, names and replacement behavi
 
 The connector can list the editor's recent projects, open one of those paths, or open another absolute local-drive .achv project without reparse points when the current document is clean. reload_project reopens the current saved path and explicitly discards unsaved changes when discardUnsaved is true; it resets the project session without closing the editor. save_project writes the current existing project path; Save As remains in the desktop. File destinations must follow the selected tool's local-path rules.
 
-Preferences > MCP lists every command. Each is allowed by default and can be disabled individually; Allow all resets the list. The editor enforces this policy for reads, writes, discovery and health. A blocked command returns a permission error. Connected local clients can edit the open project. Connect only clients you intend to give that local editing access.
+Preferences > MCP lists every command in themed folders. Each is allowed by default. A folder switch enables or disables every command in that folder, including commands hidden by the current filter; individual switches remain available. The red Sensitive folder contains browser profile deletion, forgetting Steam validation, and the reviewed Steam deletion commands. Allow all resets the list. Save Preferences to apply changes. The editor enforces this policy for reads, writes, discovery and health. A blocked command returns a permission error. Connected local clients can edit the open project. Connect only clients you intend to give that local editing access.
 

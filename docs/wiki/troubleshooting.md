@@ -36,6 +36,8 @@ Private crash diagnostics are separate from public text logs. They are local dia
 
 ## Version and startup notes
 
+At startup, Achimeld checks the latest public GitHub source release in the background. If its four-part version is newer than the running app, a New version available notice appears after other startup notices. Closing it or selecting View on GitHub acknowledges that public version, so it is shown once per new version. A failed or offline check does not interrupt editing; it can be retried on the next launch. The GitHub release contains source only. Ready-made installers are delivered separately.
+
 Help > About and Help > Change log identify the compiled four-part version. Match it to the version label on the wiki article and its screenshots.
 
 From source version 0.2.29.3, a newer launch shows What changed since the last acknowledged version, including skipped versions. Closing or Enter/Escape acknowledges the current version. The same version does not prompt again; a downgrade retains the newer baseline.

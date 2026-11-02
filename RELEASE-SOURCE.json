@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "workingVersion": "0.3.3.0",
-  "gitlabSourceCommit": "d5c9d219f404711cbb3461d3fcbc9085f5ba7f55",
-  "packageManifestSha256": "4fca6ad204b0efa347b375e5a85727ac8510ea33a82a0982cf12555d0332f5bb",
-  "verifierSha256": "08581b197c0774f35b1464509692dcb6962692ee70626500b55f19ea654677ff",
-  "installerSha256": "844812a768c4b37a755633aec03b2ae5d2b635cb8270840dc4d4e2207ca0fad9",
+  "workingVersion": "0.3.4.0",
+  "gitlabSourceCommit": "bd6e35f3731c89f013d3891a91222b91373deea8",
+  "packageManifestSha256": "b6364d90cc5a74ae33d06a0c059bd13a4f9b249cdcc5dd158cc82e6703024c39",
+  "verifierSha256": "07c9ee09ff5d0af03ba3b9f7e7fb25f183c9a763f00c08a1c387d5b537124d1b",
+  "installerSha256": "871d67994702bf022457c4e3594777a3a133aeaf7323ffae35e8c4854e9ee4e8",
   "packageMode": "development",
   "files": [
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "f7d11e1e370fe8cbcc94c41d2a57ba98225ed4307d229facfb1846b109c0c5bb"
+      "sha256": "a795a64dc90572946e64b4047b59081b59739d04f2793ae30e2d35624cb74f4b"
     },
     {
       "path": "Cargo.lock",
@@ -309,11 +309,11 @@
     },
     {
       "path": "bridge/read-worker/Program.cs",
-      "sha256": "7b1320f01ddcdec0a1f3c1c01f1f49296ca4d88e20211c20ead94f5ca650938b"
+      "sha256": "1532d716b5136b539b58f7d25c6c28ba86e600af566683ff310b4ca53a666158"
     },
     {
       "path": "bridge/read-worker/ReadOnlyPolicy.cs",
-      "sha256": "44b6153f55cd0b543f441a53746be4c4195071945166bb5f6fa9f063622cf41e"
+      "sha256": "58ceffad4f915fde6f2c64f7e4d75c0c652e92003fe1f816ab7dab3b02bc4abd"
     },
     {
       "path": "bridge/read-worker/ReadWorker.csproj",
@@ -333,7 +333,7 @@
     },
     {
       "path": "build/Audit.ps1",
-      "sha256": "9f512a02b70ddb47d73972d0d4b256da1333d07eb3e0c250aab7f9d489e5bfe1"
+      "sha256": "b3f6b79e5e49d30fae8c9064d009d11ac157288aa02a67bb4b07765b8e7b6518"
     },
     {
       "path": "build/BridgePackage.ps1",
@@ -557,7 +557,7 @@
     },
     {
       "path": "crates/achimeld-app/src/app_dialog.rs",
-      "sha256": "71c7de3651499804011a03aad2c58b4f93fe920bf92121ad8cb20a0aa3969130"
+      "sha256": "75d909f80b0d4e061b1425c5b671fadb292801ed5af2e76224a3e73ff9912519"
     },
     {
       "path": "crates/achimeld-app/src/art_bank.rs",
@@ -565,11 +565,11 @@
     },
     {
       "path": "crates/achimeld-app/src/desktop.rs",
-      "sha256": "9ef02d51821bab3fd189425c6dcd23d9d478ac24d5c84ee3c74195cd0e96d446"
+      "sha256": "3caf51e6b3d63d87ea5d0dce170365ea0fa5abb9d2f6469b758b91f0dcaf540b"
     },
     {
       "path": "crates/achimeld-app/src/desktop/automation.rs",
-      "sha256": "c79bb374797cb455fe6719d66869a4abcdd83929f9fce714c00258045062a9eb"
+      "sha256": "a299dd2650d5d939a0a7ecec6f667680ce52a63f64e624b615b793c05ccaea93"
     },
     {
       "path": "crates/achimeld-app/src/desktop/browser_profile.rs",
@@ -602,6 +602,10 @@
     {
       "path": "crates/achimeld-app/src/desktop/style_viewer/project.rs",
       "sha256": "ee323000fb9540914fa4e78bd4ac66127748b665104f3bee518dcda0f69cad2a"
+    },
+    {
+      "path": "crates/achimeld-app/src/desktop/version_check.rs",
+      "sha256": "0cb5e381e8c73ac2e7c7f83099bd0cbb7a5070d5b160cefd9cdc7f12ea67ee75"
     },
     {
       "path": "crates/achimeld-app/src/diagnostics.rs",
@@ -881,7 +885,7 @@
     },
     {
       "path": "crates/achimeld-bootstrapper/src/broker/policy.rs",
-      "sha256": "3ffd42ca30892d8f63ebb3f5a7e1625df694c2e569a9ea8e5b40252c98bf3325"
+      "sha256": "74f176f2996357718ba4d51097aec9b0a38c73142e07d0c637ef5deb811290b6"
     },
     {
       "path": "crates/achimeld-bootstrapper/src/broker/transport.rs",
@@ -981,7 +985,7 @@
     },
     {
       "path": "crates/achimeld-browser/src/protocol.rs",
-      "sha256": "3e5fd25027fe1f616ba60e16f43568bf1cdca70bd5b755d23b3612151b62ab36"
+      "sha256": "57af480e7b5277e6b864d8962f85e2775118915eb0542dc3865d7e8305976315"
     },
     {
       "path": "crates/achimeld-browser/src/snapshot.rs",
@@ -989,7 +993,7 @@
     },
     {
       "path": "crates/achimeld-browser/src/worker.rs",
-      "sha256": "c1cb96c715cdc66e4918340d82154c4eab0c271fef081c49bfa73e929c945f3f"
+      "sha256": "37f242f4fdb8eff217b07404598ff7910a653ef594057eded2011d92d42e2524"
     },
     {
       "path": "crates/achimeld-browser/tests/legacy_parity.rs",
@@ -1137,7 +1141,7 @@
     },
     {
       "path": "crates/achimeld-mcp/src/lib.rs",
-      "sha256": "823787a113422733c24a8752a4012db2c49942a3b99d75989114d363879c795c"
+      "sha256": "73c95999539e653e7fed288df2bde1e0905a10c448cc6879a4a9dd70306b3dcd"
     },
     {
       "path": "crates/achimeld-mcp/src/lifetime.rs",
@@ -1321,7 +1325,7 @@
     },
     {
       "path": "crates/achimeld-ui/assets/strings.csv",
-      "sha256": "ba95daf63209e37d3aec315e62fcecc0d3c2d045154e5f601ac57a6fd9e0be14"
+      "sha256": "0032181091022af55562947c85354837406f9664fe2c2cea0654500c3201ce7e"
     },
     {
       "path": "crates/achimeld-ui/assets/toolbar-originals/art-atlases.png",
@@ -3161,7 +3165,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/about.rs",
-      "sha256": "80c44e7970e243797faccf61b2b5bb8fdecf99835707dfdc558127337a7791b5"
+      "sha256": "eaeb00ac87f060f24cb491ad4ba6672d8f833cab6c0ddbcdf49241ebd022d2cc"
     },
     {
       "path": "crates/achimeld-ui/src/achievement_general.rs",
@@ -3473,7 +3477,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/settings.rs",
-      "sha256": "918ba6a36cbfcc15e477acaf577d08167b012037d9a71f7b069ebf3262595a1c"
+      "sha256": "d28d90394a7bb81de916936e0e31ec275178d44bc0465a13807bb66da319088b"
     },
     {
       "path": "crates/achimeld-ui/src/shape_explorer.rs",
@@ -3853,7 +3857,7 @@
     },
     {
       "path": "docs/application-prompts.md",
-      "sha256": "ec21c12bf34ef4fe0d2298ad3af8995453b329734f972896514b23833d5efa34"
+      "sha256": "f58c2520146f65ec2640153280bfef990d9f8429da57bf94277c2751e04b2c65"
     },
     {
       "path": "docs/desktop-rewrite.md",
@@ -3897,7 +3901,7 @@
     },
     {
       "path": "docs/mcp-server.md",
-      "sha256": "838c36b6b914346873e136fc7d4dcfb2616c0fd20b28982279d669b7bd410462"
+      "sha256": "06cd5de958b395701bbc0b7f8f2be8153faf8d19be442076a1a5f90ad05a7e26"
     },
     {
       "path": "docs/numeric-sliders.md",
@@ -3949,7 +3953,7 @@
     },
     {
       "path": "docs/security/contracts.md",
-      "sha256": "9bef6ec690d3516b40bf00d59dff1a5b48ba18cdbe472b865334c50e0cfc504d"
+      "sha256": "1984a6f190539b569f9029de2d9fccccbee585b1f3af4ed0282debc9c9bb2062"
     },
     {
       "path": "docs/security/dependency-exceptions.json",
@@ -3993,7 +3997,7 @@
     },
     {
       "path": "docs/security/steam-partner-mcp-live-audit-2026-11-02.md",
-      "sha256": "e12d2fd03d0ea936ad8f5493a59b98b6863f4509ff24102ea9beecb1655b7517"
+      "sha256": "5336a84d67929bd9e926a9e27f79b8a446769b11621979fcf7d7df1037674281"
     },
     {
       "path": "docs/security/synchronization-audit.md",
@@ -4025,7 +4029,7 @@
     },
     {
       "path": "docs/wiki-maintenance.md",
-      "sha256": "88821eaa616e7b338d3c0d9523ad16cd935233e29ce48f2ab085c033d1811e53"
+      "sha256": "3277c4c76a638876f4343f6eae68bfae9302da7c0bde6f997e7c55fd216a2007"
     },
     {
       "path": "docs/wiki/README.md",
@@ -4049,7 +4053,7 @@
     },
     {
       "path": "docs/wiki/automation.md",
-      "sha256": "f216223bad1aa287eb4e68b7823bc433f290a6e9aeb811c6b3eaa4801bce2ca7"
+      "sha256": "7cd460989fc03d5463a90b43cbdaa2c48975a05736d3301d5a7474e470494949"
     },
     {
       "path": "docs/wiki/explosions.md",
@@ -4069,7 +4073,7 @@
     },
     {
       "path": "docs/wiki/getting-started.md",
-      "sha256": "7c4d710d2a2ed97b1eeba10e0d064380395ab7fbcb36a0d4c99829a7811250d9"
+      "sha256": "2d0e4df679a0d82b4e2c26392c293d70d56779ca4d9995be28e4e7571fe37fc2"
     },
     {
       "path": "docs/wiki/gradients.md",
@@ -4233,7 +4237,7 @@
     },
     {
       "path": "docs/wiki/troubleshooting.md",
-      "sha256": "e9ed61916ba03a667bc1293a190eb563f62a0e7cfcd23a61875c4f3618a45368"
+      "sha256": "bac564b53a2781d57acad79cc54abbcf9ee985250719cf8747e5d3976f5a7a5a"
     },
     {
       "path": "installer/Export-SetupLog.ps1",
@@ -4397,7 +4401,7 @@
     },
     {
       "path": "tools/read-policy-tests/Program.cs",
-      "sha256": "8e775ceb0a81b8baf174ed0a8c0ec9defa543568cb86aebd9380821da49eacdb"
+      "sha256": "a4c1f5e998964e47ce54d224aff92be8165e711cfbfa68e94e08adb2ab9b72d0"
     },
     {
       "path": "tools/read-policy-tests/ReadPolicyTests.csproj",

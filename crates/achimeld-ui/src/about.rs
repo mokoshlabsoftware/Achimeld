@@ -10,6 +10,9 @@ pub(crate) enum HelpPage {
 }
 
 impl Desktop {
+    pub fn help_open(&self) -> bool {
+        self.about
+    }
     pub fn open_update_notes(&mut self, previous: Option<String>) {
         self.about = true;
         self.help_page = HelpPage::Changes;

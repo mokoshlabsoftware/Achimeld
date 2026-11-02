@@ -92,7 +92,9 @@ try {
     Run-Check 'installer-transaction' 'fixture' @('Test-InstallerTransaction.ps1') { & (Join-Path $PSScriptRoot 'Test-InstallerTransaction.ps1') }
     $lint = @('clippy','--workspace','--all-targets') + $locked + @('--','-D','warnings')
     Run-Check 'lint' 'source' $lint { & $rust -CargoArguments $lint }
-    $tests = @('test','--workspace') + $locked
+    # Bound parallel UI render fixtures so the five-second preview assertion
+    # measures rendering rather than contention from the entire test workspace.
+    $tests = @('test','--workspace') + $locked + @('--','--test-threads=4')
     Run-Check 'rust-tests' 'source' $tests { & $rust -CargoArguments $tests }
     Run-Check 'read-policy' 'source' @('dotnet','run','--project','tools/read-policy-tests','-c','Release') {
         & dotnet run --project tools/read-policy-tests/ReadPolicyTests.csproj -c Release

@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Achimeld.ReadWorker;
 
-internal enum ReadOperation { Start, Authenticate, AuthenticationState, Navigate, BrowserOpen, ReadConfiguration, ReadGameBanner, Stop, NetworkSelfTest }
+internal enum ReadOperation { Start, Authenticate, AuthenticationState, Navigate, BrowserOpen, ReadConfiguration, ReadGameBanner, CheckPublicVersion, Stop, NetworkSelfTest }
 internal readonly record struct ReadAction(ReadOperation Operation, uint AppId = 0, bool Hold = false, bool Stats = false)
 {
     internal string Route => $"https://partner.steamgames.com/apps/{(Stats ? "stats" : "achievements")}/{AppId.ToString(CultureInfo.InvariantCulture)}";
@@ -28,6 +28,7 @@ internal sealed class ReadOnlyPolicy
         {
             "start" when !started && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.Start),
             "stop" when arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.Stop),
+            "checkPublicVersion" when !started && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.CheckPublicVersion),
             "authenticate" when started && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.Authenticate),
             "authenticationState" when started && arguments.ValueKind == JsonValueKind.Null => new(ReadOperation.AuthenticationState),
             "navigate" when started => NavigationAction(arguments),

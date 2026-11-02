@@ -6,6 +6,7 @@ use serde_json::Value;
 /// Closed read and reviewed synchronization commands. The receiver independently
 /// enforces SEC-READ-001 and SEC-SYNC-001; generic mutations remain absent.
 pub(crate) enum ReadCommand {
+    CheckPublicVersion,
     Start,
     Authenticate,
     AuthenticationState,
@@ -43,6 +44,7 @@ pub(crate) enum ReadCommand {
 impl ReadCommand {
     pub(crate) fn request(self, request_id: String) -> WorkerRequest {
         let (operation, arguments) = match self {
+            Self::CheckPublicVersion => ("checkPublicVersion", Value::Null),
             Self::DeleteSteam { project, targets } => (
                 "deleteSteam",
                 serde_json::json!({"project":project,"targets":targets}),

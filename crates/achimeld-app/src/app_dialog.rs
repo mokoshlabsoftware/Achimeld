@@ -24,6 +24,7 @@ pub(crate) enum Dialog {
     Discard(UiRequest),
     SavedProjectRequired,
     DiagnosticFailure(String),
+    PublicUpdate(String),
     AlreadyRunning,
     DeleteBrowserProfile,
     ForgetSteamValidation,
@@ -70,6 +71,7 @@ pub(crate) enum Dialog {
 pub(crate) enum DialogResult {
     Discard(UiRequest, SaveChoice),
     Acknowledged,
+    PublicUpdate(String, bool),
     DeleteBrowserProfile(bool),
     ForgetSteamValidation(bool),
     Save(Option<UiRequest>, Option<PathBuf>),
@@ -128,6 +130,7 @@ impl Dialog {
             Self::Discard(_) => "Unsaved changes",
             Self::SavedProjectRequired => "Saved project required",
             Self::DiagnosticFailure(_) => "File logging unavailable",
+            Self::PublicUpdate(_) => "New version available",
             Self::AlreadyRunning => "Achimeld is already running",
             Self::DeleteBrowserProfile => "Delete browser profile",
             Self::ForgetSteamValidation => "Forget validation",
@@ -191,6 +194,9 @@ impl Dialog {
             Self::Discard(request) => DialogResult::Discard(request, choice),
             Self::SavedProjectRequired => DialogResult::Acknowledged,
             Self::DiagnosticFailure(_) => DialogResult::Acknowledged,
+            Self::PublicUpdate(version) => {
+                DialogResult::PublicUpdate(version, matches!(choice, SaveChoice::Save))
+            }
             Self::AlreadyRunning => DialogResult::Acknowledged,
             Self::DeleteBrowserProfile => {
                 DialogResult::DeleteBrowserProfile(matches!(choice, SaveChoice::Save))
@@ -363,6 +369,7 @@ impl AppDialog {
                 | Dialog::ViewerDiscard(_)
                 | Dialog::SavedProjectRequired
                 | Dialog::DiagnosticFailure(_)
+                | Dialog::PublicUpdate(_)
                 | Dialog::AlreadyRunning
                 | Dialog::DeleteBrowserProfile
                 | Dialog::ForgetSteamValidation
@@ -451,6 +458,11 @@ impl AppDialog {
                 } else if let Dialog::DiagnosticFailure(message) = &kind {
                     choice = app_prompt(ui, kind.title(), message, None,
                         &[("Close", PromptIcon::Cancel, SaveChoice::Cancel)]);
+                } else if let Dialog::PublicUpdate(version) = &kind {
+                    choice = app_prompt(ui, kind.title(),
+                        &format!("Achimeld {version} is available. See the public source release on GitHub. Ready-made installers are delivered separately."),
+                        None, &[("View on GitHub", PromptIcon::App, SaveChoice::Save),
+                            ("Close", PromptIcon::Cancel, SaveChoice::Cancel)]);
                 } else if matches!(kind, Dialog::SavedProjectRequired) {
                     choice = app_prompt(
                         ui,
@@ -727,7 +739,10 @@ fn app_prompt(
     ui.set_width(width);
     ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
 
-    let header_icon = if title == "Achimeld is already running" {
+    let header_icon = if matches!(
+        title,
+        "Achimeld is already running" | "New version available"
+    ) {
         PromptIcon::App
     } else if matches!(title, "Delete browser profile" | "Forget validation") {
         PromptIcon::Discard
