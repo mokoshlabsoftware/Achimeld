@@ -9,7 +9,8 @@ internal static class SteamIconHashReader
 
     internal static async Task<IReadOnlyDictionary<string, string>> ReadAsync(
         IEnumerable<string> urls,
-        Func<string, Task<byte[]>> download)
+        Func<string, Task<byte[]>> download,
+        Action<string, byte[]>? retainPreview = null)
     {
         ConcurrentDictionary<string, string> hashes = new(StringComparer.Ordinal);
         await Parallel.ForEachAsync(urls.Distinct(StringComparer.Ordinal),
@@ -19,6 +20,7 @@ internal static class SteamIconHashReader
                 byte[] bytes = await download(url).ConfigureAwait(false);
                 string hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
                 hashes[url] = hash;
+                retainPreview?.Invoke(url, bytes);
             }).ConfigureAwait(false);
         return hashes;
     }

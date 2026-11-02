@@ -8,6 +8,26 @@ namespace Achimeld.Browser;
 // Steam CDN may supply a content hash; it cannot choose a generic download.
 public static class SteamGameBanner
 {
+    public static string? ResolveName(uint appId, byte[] metadata)
+    {
+        if (appId == 0 || metadata.Length > 512 * 1024) return null;
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(metadata, new JsonDocumentOptions { MaxDepth = 32 });
+            if (!document.RootElement.TryGetProperty(appId.ToString(CultureInfo.InvariantCulture), out JsonElement app) ||
+                !app.TryGetProperty("success", out JsonElement success) || success.ValueKind != JsonValueKind.True ||
+                !app.TryGetProperty("data", out JsonElement data) ||
+                !data.TryGetProperty("name", out JsonElement name) || name.ValueKind != JsonValueKind.String)
+                return null;
+            string? value = name.GetString()?.Trim();
+            return value is { Length: > 0 and <= 128 } && !value.Any(char.IsControl) ? value : null;
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
     public static Uri? Resolve(uint appId, byte[] metadata)
     {
         if (appId == 0 || metadata.Length > 512 * 1024) return null;

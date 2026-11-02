@@ -126,6 +126,25 @@ fn delete_fill(preferences: &Preferences) -> Color32 {
     )
 }
 
+fn steam_art_mesh(texture: egui::TextureId, rect: Rect, opacity: f32) -> egui::Shape {
+    let left = rect.center().x;
+    let mut mesh = egui::Mesh::with_texture(texture);
+    for (position, uv, alpha) in [
+        (Pos2::new(left, rect.top()), Pos2::new(0.0, 0.0), 0),
+        (rect.right_top(), Pos2::new(1.0, 0.0), 128),
+        (rect.right_bottom(), Pos2::new(1.0, 1.0), 128),
+        (Pos2::new(left, rect.bottom()), Pos2::new(0.0, 1.0), 0),
+    ] {
+        mesh.vertices.push(egui::epaint::Vertex {
+            pos: position,
+            uv,
+            color: Color32::from_white_alpha((alpha as f32 * opacity).round() as u8),
+        });
+    }
+    mesh.indices.extend_from_slice(&[0, 1, 2, 0, 2, 3]);
+    egui::Shape::mesh(mesh)
+}
+
 fn paint_mark(painter: &egui::Painter, center: Pos2, marked: bool, fill: Color32, ink: Color32) {
     let radius = 11.0;
     if marked {
@@ -609,6 +628,7 @@ impl Desktop {
                             ui.set_width(width);
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
                             for row in visible.chunks(column_count) {
+                                let mut row_tiles = Vec::new();
                                 ui.columns(column_count, |columns| {
                                     for (column, &(index, entity)) in row.iter().enumerate() {
                                         let ui = &mut columns[column];
@@ -622,19 +642,25 @@ impl Desktop {
                                         ui.push_id((kind.key(), index), |ui| {
                                             let panel =
                                                 crate::theme::color(port.preferences(), "Panel");
+                                            let artwork = (kind == EntityKind::Achievement)
+                                                .then(|| port.steam_icon_preview(api, false))
+                                                .flatten()
+                                                .and_then(|preview| self.preview_texture(ui.ctx(), &format!("steam:{api}"), preview));
+                                            let alt_artwork = (kind == EntityKind::Achievement)
+                                                .then(|| port.steam_icon_preview(api, true))
+                                                .flatten()
+                                                .and_then(|preview| self.preview_texture(ui.ctx(), &format!("steam-alt:{api}"), preview));
+                                            let alt_held = ui.ctx().input(|input| input.modifiers.alt);
+                                            let alt_opacity = ui.ctx().animate_bool_with_time(
+                                                ui.id().with("steam-unachieved-preview"), alt_held, 0.25);
+                                            let tile_fill = if marked { crate::theme::mix(panel, fill, 0.18) } else { panel };
+                                            let background_shape = ui.painter().add(egui::Shape::Noop);
+                                            let mut artwork_shape = None;
                                             let tile =
                                                 egui::Frame::new()
-                                                    .fill(if marked {
-                                                        crate::theme::mix(panel, fill, 0.18)
-                                                    } else {
-                                                        panel
-                                                    })
-                                                    .stroke(Stroke::new(
-                                                        if marked { 1.5 } else { 0.0 },
-                                                        fill,
-                                                    ))
                                                     .inner_margin(12)
                                                     .show(ui, |ui| {
+                                                        artwork_shape = Some(ui.painter().add(egui::Shape::Noop));
                                                         ui.set_width(ui.available_width());
                                                         ui.horizontal_top(|ui| {
                                                             let mark_width = 22.0;
@@ -663,7 +689,8 @@ impl Desktop {
                                                                         ui.label(description);
                                                                     }
                                                                 }
-                                                                ui.horizontal_wrapped(|ui| {
+                                                            ui.horizontal_wrapped(|ui| {
+                                                                let detail_ink = crate::theme::color(port.preferences(), "Primary text").gamma_multiply(0.5);
                                                     for (key, label, attribute) in [
                                                         ("type", "Type", "data-type"),
                                                         ("setBy", "Set by", "data-set-by"),
@@ -739,7 +766,7 @@ impl Desktop {
                                                                 .into(),
                                                                 _ => value.to_string(),
                                                             };
-                                                            ui.label(format!("{label}: {text}"));
+                                                            ui.colored_label(detail_ink, format!("{label}: {text}"));
                                                         }
                                                     }
                                                 });
@@ -763,27 +790,31 @@ impl Desktop {
                                                             }
                                                         });
                                                     });
-                                            if !api.is_empty() && !reading {
-                                                let response = ui.interact(
-                                                    tile.response.rect,
-                                                    ui.id().with("select"),
-                                                    Sense::click(),
-                                                );
-                                                if response.hovered() {
-                                                    ui.ctx().set_cursor_icon(
-                                                        egui::CursorIcon::PointingHand,
-                                                    );
-                                                }
-                                                if response.clicked() {
-                                                    let key = (kind, api.to_owned());
-                                                    if !self.steam_marks.remove(&key) {
-                                                        self.steam_marks.insert(key);
-                                                    }
-                                                }
-                                            }
+                                            row_tiles.push((tile.response.rect, api.to_owned(), tile_fill,
+                                                background_shape, artwork.zip(artwork_shape), alt_artwork.map(|texture| (texture, alt_opacity)), ui.id().with("select"), marked));
                                         });
                                     }
                                 });
+                                let bottom = row_tiles.iter().map(|(rect, ..)| rect.bottom()).fold(0.0_f32, f32::max);
+                                for (natural, api, tile_fill, background_shape, artwork, alt_artwork, id, marked) in row_tiles {
+                                    let rect = Rect::from_min_max(natural.min, Pos2::new(natural.right(), bottom));
+                                    ui.painter().set(background_shape, egui::Shape::rect_filled(rect, 0.0, tile_fill));
+                                    if marked { ui.painter().rect_stroke(rect, 0.0, Stroke::new(1.5, fill), egui::StrokeKind::Inside); }
+                                    if let Some((texture, artwork_shape)) = artwork {
+                                        ui.painter().set(artwork_shape, steam_art_mesh(texture, rect, 1.0));
+                                    }
+                                    if let Some((texture, opacity)) = alt_artwork.filter(|(_, opacity)| *opacity > 0.0) {
+                                        ui.painter().add(steam_art_mesh(texture, rect, opacity));
+                                    }
+                                    if !api.is_empty() && !reading {
+                                        let response = ui.interact(rect, id, Sense::click());
+                                        if response.hovered() { ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand); }
+                                        if response.clicked() {
+                                            let key = (kind, api);
+                                            if !self.steam_marks.remove(&key) { self.steam_marks.insert(key); }
+                                        }
+                                    }
+                                }
                                 ui.add_space(8.0);
                             }
                         });

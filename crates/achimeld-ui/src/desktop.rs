@@ -284,7 +284,7 @@ pub struct Desktop {
     pub(crate) steam_delete_fresh: bool,
     pub(crate) sync_app_id_edit: Option<crate::synchronization_target::AppIdEdit>,
     brand_icon: Option<egui::TextureHandle>,
-    pub(crate) preference_icons: Option<[egui::TextureHandle; 5]>,
+    pub(crate) preference_icons: Option<[egui::TextureHandle; 6]>,
     history_icons: Option<[egui::TextureHandle; 2]>,
     tab_icons: Option<[egui::TextureHandle; 6]>,
     pub(crate) inspector_icons: Option<[egui::TextureHandle; 3]>,

@@ -51,6 +51,8 @@ The [Explosion layer audit](explosion-layer-audit.md) records deltoid shapes, le
 
 The [synchronization audit](synchronization-audit.md) records the reviewed-plan, draft, image-identity, cancellation and storage findings and fixes.
 
+The [2026-11-02 Steam partner and MCP live audit](steam-partner-mcp-live-audit-2026-11-02.md) records validation, interruption, reviewed deletion and restoration, Forget validation, desktop fallbacks, saved end state and open findings.
+
 The [procedural effect library boundary](procedural-effect-libraries.md) records self-contained explosion/particle presets, bounded host-owned collection I/O and progressive preview behavior.
 
 Record the invariant ID, audited commit/digest or package manifest hash, source/line references, attacker prerequisites, complete input-to-effect path, consequence, confidence, executable reproduction or missing evidence, and smallest appropriate fix. Distinguish confirmed defects, suspected defects and unqualified guarantees. Report coverage and exclusions even when there are no findings.

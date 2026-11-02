@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -33,6 +33,8 @@ pub struct Preferences {
     pub fill_nodes_by_columns: bool,
     pub order_selected_nodes_only: bool,
     pub include_helpers_in_sorting: bool,
+    #[serde(skip_serializing_if = "BTreeSet::is_empty")]
+    pub mcp_disabled_commands: BTreeSet<String>,
     pub palette: BTreeMap<String, [u8; 4]>,
 }
 fn is_true(value: &bool) -> bool {
@@ -87,6 +89,7 @@ impl Default for Preferences {
             fill_nodes_by_columns: false,
             order_selected_nodes_only: false,
             include_helpers_in_sorting: false,
+            mcp_disabled_commands: BTreeSet::new(),
             palette: colors.into_iter().map(|(n, c)| (n.into(), c)).collect(),
         }
     }
@@ -115,8 +118,22 @@ impl Preferences {
         {
             return Err("Missing palette color".into());
         }
+        if self.mcp_disabled_commands.len() > 128
+            || self.mcp_disabled_commands.iter().any(|name| {
+                name.is_empty()
+                    || name.len() > 64
+                    || !name.bytes().all(|byte| {
+                        byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_'
+                    })
+            })
+        {
+            return Err("Invalid MCP command preferences".into());
+        }
         self.achievement_api_name(1)?;
         Ok(())
+    }
+    pub fn mcp_allows(&self, command: &str) -> bool {
+        !self.mcp_disabled_commands.contains(command)
     }
     pub fn achievement_api_name(&self, index: usize) -> Result<String, String> {
         let pattern = &self.naming_convention;
@@ -145,5 +162,29 @@ impl Preferences {
         }
         achimeld_core::SteamApiName::new(&result).map_err(|e| e.to_string())?;
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mcp_commands_default_allowed_and_disabled_set_round_trips() {
+        let mut preferences = Preferences::default();
+        assert!(preferences.mcp_allows("apply_synchronization"));
+        preferences
+            .mcp_disabled_commands
+            .insert("apply_synchronization".into());
+        assert!(!preferences.mcp_allows("apply_synchronization"));
+        assert!(preferences.validate().is_ok());
+        let saved = serde_json::to_vec(&preferences).unwrap();
+        let restored: Preferences = serde_json::from_slice(&saved).unwrap();
+        assert!(!restored.mcp_allows("apply_synchronization"));
+        assert!(restored.mcp_allows("get_scene"));
+        preferences
+            .mcp_disabled_commands
+            .insert("bad command".into());
+        assert!(preferences.validate().is_err());
     }
 }

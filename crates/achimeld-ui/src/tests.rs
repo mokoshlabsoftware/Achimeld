@@ -242,6 +242,203 @@ fn steam_sections_share_scroll_and_only_show_remote_values_without_editing() {
 }
 
 #[test]
+fn steam_cards_share_row_height_and_fade_artwork_from_left() {
+    let mut fixture = Fixture::new();
+    let mut project = fixture.editor.document().project().clone();
+    let mut snapshot = steam_snapshot();
+    snapshot["achievements"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({
+            "apiName": "STEAM_THIRD", "setBy": "GameClient", "displayOrder": 2
+        }));
+    snapshot["localizations"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({
+            "apiName": "STEAM_THIRD", "field": "AchievementDisplayName",
+            "values": {"English": "Third achievement"}
+        }));
+    project["lastRemoteSnapshot"] = snapshot;
+    fixture.editor = Editor::new(
+        achimeld_application::Document::from_parts(
+            project,
+            fixture.editor.document().catalog().clone(),
+        )
+        .unwrap(),
+    );
+    fixture.previews.insert(
+        "steam:STEAM_FIRST:false".into(),
+        Preview {
+            width: 1,
+            height: 1,
+            source_size: [1, 1],
+            rgba: vec![255, 255, 255, 255].into(),
+            fingerprint: "steam-art".into(),
+        },
+    );
+    fixture.previews.insert(
+        "steam:STEAM_FIRST:true".into(),
+        Preview {
+            width: 1,
+            height: 1,
+            source_size: [1, 1],
+            rgba: vec![80, 80, 80, 255].into(),
+            fingerprint: "steam-alt-art".into(),
+        },
+    );
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    desktop.view = desktop::View::Steam;
+    let mut cards = Vec::new();
+    let mut artwork = Vec::new();
+    let mut order = Vec::new();
+    let mut detail_alpha = Vec::new();
+    fn collect(
+        shape: &egui::Shape,
+        cards: &mut Vec<egui::Rect>,
+        artwork: &mut Vec<Vec<u8>>,
+        order: &mut Vec<&'static str>,
+        detail_alpha: &mut Vec<u8>,
+    ) {
+        match shape {
+            egui::Shape::Rect(rect)
+                if (400.0..600.0).contains(&rect.rect.width())
+                    && (200.0..350.0).contains(&rect.rect.top()) =>
+            {
+                cards.push(rect.rect)
+            }
+            egui::Shape::Mesh(mesh) if mesh.vertices.len() == 4 => {
+                artwork.push(mesh.vertices.iter().map(|v| v.color.a()).collect());
+                order.push("art");
+            }
+            egui::Shape::Text(text) if text.galley.text() == "First steps on Steam" => {
+                order.push("name")
+            }
+            egui::Shape::Text(text) if text.galley.text().starts_with("Set by:") => {
+                detail_alpha.push(text.galley.job.sections[0].format.color.a());
+            }
+            egui::Shape::Vec(shapes) => {
+                for shape in shapes {
+                    collect(shape, cards, artwork, order, detail_alpha);
+                }
+            }
+            _ => {}
+        }
+    }
+    for _ in 0..3 {
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1600.0, 900.0),
+                )),
+                ..Default::default()
+            },
+            |ui| desktop.steam_view(ui, &mut fixture),
+        );
+        output.textures_delta.clear();
+        cards.clear();
+        artwork.clear();
+        order.clear();
+        detail_alpha.clear();
+        for shape in output.shapes {
+            collect(
+                &shape.shape,
+                &mut cards,
+                &mut artwork,
+                &mut order,
+                &mut detail_alpha,
+            );
+        }
+    }
+    cards.sort_by(|a, b| {
+        a.left()
+            .total_cmp(&b.left())
+            .then_with(|| b.height().total_cmp(&a.height()))
+    });
+    cards.dedup_by(|a, b| (a.left() - b.left()).abs() < 0.5);
+    assert_eq!(cards.len(), 3, "Steam achievement cards: {cards:?}");
+    assert!(
+        cards
+            .iter()
+            .all(|card| (card.height() - cards[0].height()).abs() < 0.5),
+        "{cards:?}"
+    );
+    assert_eq!(artwork, vec![vec![0, 128, 128, 0]]);
+    assert_eq!(order, vec!["art", "name"]);
+    assert!(detail_alpha.len() >= 3 && detail_alpha.iter().all(|alpha| *alpha == 128));
+    for step in 0..4 {
+        let events = vec![egui::Event::ModifiersChanged(egui::Modifiers::ALT)];
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1600.0, 900.0),
+                )),
+                time: Some(1.0 + f64::from(step) * 0.1),
+                events,
+                ..Default::default()
+            },
+            |ui| desktop.steam_view(ui, &mut fixture),
+        );
+        output.textures_delta.clear();
+        artwork.clear();
+        order.clear();
+        detail_alpha.clear();
+        for shape in output.shapes {
+            collect(
+                &shape.shape,
+                &mut cards,
+                &mut artwork,
+                &mut order,
+                &mut detail_alpha,
+            );
+        }
+        if step == 1 {
+            assert_eq!(artwork.len(), 2);
+            assert!((1..128).contains(&artwork[1][1]));
+        }
+    }
+    assert_eq!(artwork, vec![vec![0, 128, 128, 0]; 2]);
+    assert_eq!(order, vec!["art", "name", "art"]);
+    for step in 0..4 {
+        let events = vec![egui::Event::ModifiersChanged(egui::Modifiers::NONE)];
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1600.0, 900.0),
+                )),
+                time: Some(1.4 + f64::from(step) * 0.1),
+                events,
+                ..Default::default()
+            },
+            |ui| desktop.steam_view(ui, &mut fixture),
+        );
+        output.textures_delta.clear();
+        artwork.clear();
+        order.clear();
+        detail_alpha.clear();
+        for shape in output.shapes {
+            collect(
+                &shape.shape,
+                &mut cards,
+                &mut artwork,
+                &mut order,
+                &mut detail_alpha,
+            );
+        }
+        if step == 1 {
+            assert_eq!(artwork.len(), 2);
+            assert!((1..128).contains(&artwork[1][1]));
+        }
+    }
+    assert_eq!(artwork, vec![vec![0, 128, 128, 0]]);
+}
+
+#[test]
 fn steam_tiles_mark_for_deletion_and_read_steam_clears_the_marks() {
     let mut fixture = Fixture::new();
     let mut project = fixture.editor.document().project().clone();
@@ -882,6 +1079,11 @@ impl EditorPort for Fixture {
             rgba: p.rgba.clone(),
             fingerprint: p.fingerprint.clone(),
         })
+    }
+    fn steam_icon_preview(&self, api: &str, unachieved: bool) -> Option<Preview> {
+        self.previews
+            .get(&format!("steam:{api}:{unachieved}"))
+            .cloned()
     }
     fn unachieved_canvas_preview(&mut self, id: &str, _edge: usize) -> Option<Preview> {
         self.unachieved_requests += 1;
@@ -2498,8 +2700,7 @@ fn native_window(colors: bool, about: bool, floating: bool, app_style: bool, syn
     }
     let preferences_general = std::env::var_os("ACHIMELD_SCREENSHOT_PREFERENCES_GENERAL").is_some();
     if preferences_general {
-        let directory =
-            std::path::PathBuf::from(r"C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics");
+        let directory = std::path::PathBuf::from(r"C:\Users\Public\Documents\Achimeld\Logs");
         achimeld_application::diagnostics::set_persistence_status(
             achimeld_application::diagnostics::PersistenceStatus {
                 file: Some(directory.join("log.txt")),

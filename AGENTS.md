@@ -33,8 +33,7 @@ The canonical text-log directory for all builds is Windows Public Documents,
 it through the Windows Public Documents known-folder API, never a launcher-provided
 environment override. Open log folder and Preferences show this public location.
 Crash dumps, startup failure metadata and the per-user desktop-instance lock remain
-private under `%LOCALAPPDATA%\Achimeld\RustDiagnostics` (on this workstation:
-`C:\Users\domle\AppData\Local\Achimeld\RustDiagnostics`). Existing private logs
+private under `%LOCALAPPDATA%\Achimeld\RustDiagnostics`. Existing private logs
 remain there as historical evidence. Test executables isolate both locations in
 fixture storage. Inspect logs directly; do not ask the user to paste accessible logs.
 `log.txt` is the live application log, flushed after each record and readable while

@@ -33,6 +33,13 @@ internal static class GameBannerFixtures
         foreach (string json in new[] { "[]", "null", "{}", "{", """{"4670140":{"success":false}}""", """{"4670140":{"success":true,"data":{"capsule_image":2}}}""" })
             Check(SteamGameBanner.Resolve(app, Encoding.UTF8.GetBytes(json)) is null);
         Check(SteamGameBanner.Resolve(app, new byte[512 * 1024 + 1]) is null);
+        byte[] Named(string name, uint id = app, bool success = true) => JsonSerializer.SerializeToUtf8Bytes(
+            new Dictionary<string, object> { [id.ToString(System.Globalization.CultureInfo.InvariantCulture)] = new { success, data = new { name } } });
+        Check(SteamGameBanner.ResolveName(app, Named("  My game  ")) == "My game");
+        Check(SteamGameBanner.ResolveName(app, Named("Other game", 480)) is null);
+        Check(SteamGameBanner.ResolveName(app, Named("Other game", app, false)) is null);
+        Check(SteamGameBanner.ResolveName(app, Named("Line\nBreak")) is null);
+        Check(SteamGameBanner.ResolveName(app, Named(new string('A', 129))) is null);
         SteamBrowserRequestPolicy policy = new();
         policy.PinApp(app);
         bool rejected = false;

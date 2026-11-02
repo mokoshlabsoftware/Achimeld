@@ -34,6 +34,109 @@ fn logged_status(message: String) -> String {
     message
 }
 
+fn take_steam_icon_previews(snapshot: &mut Value) -> BTreeMap<(String, bool), Preview> {
+    use base64::Engine as _;
+    let mut previews = BTreeMap::new();
+    let Some(icons) = snapshot["icons"].as_array_mut() else {
+        return previews;
+    };
+    for icon in icons {
+        let Some(api) = icon["apiName"].as_str().map(str::to_owned) else {
+            continue;
+        };
+        let Some(attributes) = icon["attributes"].as_object_mut() else {
+            continue;
+        };
+        for (kind, unachieved) in [("achieved", false), ("unachieved", true)] {
+            let Some(encoded) = attributes.remove(&format!("data-{kind}-preview-data")) else {
+                continue;
+            };
+            let Some(encoded) = encoded.as_str() else {
+                continue;
+            };
+            let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(encoded) else {
+                continue;
+            };
+            if bytes.len() > 64 * 1024 {
+                continue;
+            }
+            let Ok(mut reader) =
+                image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format()
+            else {
+                continue;
+            };
+            let mut limits = image::Limits::default();
+            limits.max_image_width = Some(1024);
+            limits.max_image_height = Some(1024);
+            limits.max_alloc = Some(8 * 1024 * 1024);
+            reader.limits(limits);
+            let Ok(image) = reader.decode() else {
+                continue;
+            };
+            let source_size = [image.width() as usize, image.height() as usize];
+            let image = if image.width() <= 128 && image.height() <= 128 {
+                image.to_rgba8()
+            } else {
+                image.thumbnail(128, 128).to_rgba8()
+            };
+            previews.insert(
+                (api.clone(), unachieved),
+                Preview {
+                    width: image.width() as usize,
+                    height: image.height() as usize,
+                    source_size,
+                    rgba: image.into_raw().into(),
+                    fingerprint: attributes
+                        .get(&format!("data-{kind}-identity"))
+                        .and_then(Value::as_str)
+                        .unwrap_or(&api)
+                        .to_owned(),
+                },
+            );
+        }
+    }
+    previews
+}
+
+#[cfg(test)]
+#[test]
+fn steam_icon_bytes_remain_session_only() {
+    use base64::Engine as _;
+    let image = image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
+        2,
+        2,
+        image::Rgba([40, 80, 120, 255]),
+    ));
+    let mut png = std::io::Cursor::new(Vec::new());
+    image.write_to(&mut png, image::ImageFormat::Png).unwrap();
+    let encoded = base64::engine::general_purpose::STANDARD.encode(png.get_ref());
+    let mut snapshot = json!({"icons":[{"apiName":"FIRST","attributes":{
+        "data-achieved-preview-data": encoded,
+        "data-achieved-identity": "steam-hash",
+        "data-unachieved-preview-data": encoded,
+        "data-unachieved-identity": "steam-gray-hash"
+    }}]});
+    let previews = take_steam_icon_previews(&mut snapshot);
+    assert!(
+        snapshot["icons"][0]["attributes"]
+            .get("data-achieved-preview-data")
+            .is_none()
+    );
+    assert!(
+        snapshot["icons"][0]["attributes"]
+            .get("data-unachieved-preview-data")
+            .is_none()
+    );
+    let preview = &previews[&("FIRST".to_owned(), false)];
+    assert_eq!([preview.width, preview.height], [2, 2]);
+    assert_eq!(preview.rgba.as_ref(), &[40, 80, 120, 255].repeat(4));
+    assert_eq!(preview.fingerprint, "steam-hash");
+    assert_eq!(
+        previews[&("FIRST".to_owned(), true)].fingerprint,
+        "steam-gray-hash"
+    );
+}
+
 pub fn run(mut session: Session) -> Result<(), Box<dyn std::error::Error>> {
     let icon = eframe::icon_data::from_png_bytes(include_bytes!("../assets/achimeld.png"))?;
     session.require_healthy()?;
@@ -141,15 +244,16 @@ impl NativeApp {
         crate::ui_fonts::configure(&cc.egui_ctx);
         let mut host = Host::new(cc.egui_ctx.clone());
         host.file_dialog = rfd::FileDialog::new().set_parent(cc);
-        let automation = match automation::Server::start(cc.egui_ctx.clone()) {
-            Ok(server) => Some(server),
-            Err(error) => {
-                host.status = crate::desktop::logged_status(format!(
-                    "Editor automation unavailable: {error}"
-                ));
-                None
-            }
-        };
+        let automation =
+            match automation::Server::start(cc.egui_ctx.clone(), host.mcp_health_allowed.clone()) {
+                Ok(server) => Some(server),
+                Err(error) => {
+                    host.status = crate::desktop::logged_status(format!(
+                        "Editor automation unavailable: {error}"
+                    ));
+                    None
+                }
+            };
         if host
             .settings
             .as_ref()
@@ -255,10 +359,14 @@ struct Host {
     editor_session_id: String,
     settings: Option<crate::settings_location::SettingsLocation>,
     editor: Editor,
+    mcp_health_allowed: Arc<AtomicBool>,
     store: ProjectStore,
     status: String,
     ctx: egui::Context,
     read: Option<PendingRead>,
+    steam_icon_previews: BTreeMap<(String, bool), Preview>,
+    steam_preview_project_id: String,
+    steam_preview_fingerprint: String,
     browser_profile: Option<mpsc::Receiver<Result<(), String>>>,
     synchronization: Option<crate::synchronization::Pending>,
     verified_sync: Option<(String, u32)>,
@@ -334,6 +442,9 @@ impl Host {
             ),
             editor_state,
             settings,
+            mcp_health_allowed: Arc::new(AtomicBool::new(
+                preferences.mcp_allows("get_editor_health"),
+            )),
             editor: Editor::default().with_preferences(preferences),
             store: ProjectStore::new(),
             status: logged_status(
@@ -343,6 +454,9 @@ impl Host {
             ),
             ctx,
             read: None,
+            steam_icon_previews: BTreeMap::new(),
+            steam_preview_project_id: String::new(),
+            steam_preview_fingerprint: String::new(),
             browser_profile: None,
             synchronization: None,
             verified_sync: None,
@@ -578,6 +692,18 @@ impl Host {
             DialogResult::Import(atlas, Some(path)) => {
                 let result = self.start_art(path, crate::art_bank::Target::Import(atlas), None);
                 if let Err(error) = result {
+                    self.status = crate::desktop::logged_status(error);
+                }
+            }
+            DialogResult::BulkAchievements { entries, position } => {
+                let paths = entries.iter().map(|entry| entry.path.clone()).collect();
+                if let Err(error) = self.start_image_drop(
+                    paths,
+                    achimeld_application::ImageImportTarget::NewAchievementBatch {
+                        entries,
+                        position,
+                    },
+                ) {
                     self.status = crate::desktop::logged_status(error);
                 }
             }
@@ -819,6 +945,10 @@ impl Host {
             RecentProjects::for_user(Some(settings.path("rust-recent-projects.json")));
         self.editor_state = state;
         self.settings = Some(settings);
+        self.mcp_health_allowed.store(
+            self.editor.preferences().mcp_allows("get_editor_health"),
+            Ordering::Release,
+        );
         Ok(())
     }
     fn start_read(&mut self) -> Result<(), String> {
@@ -1011,31 +1141,6 @@ impl Host {
                             "Review the proposed Steam changes before synchronizing".into(),
                         );
                     }
-                    Ok(crate::synchronization::Event::Imported(document)) => {
-                        let result = Ok::<_, String>(*document).and_then(|document| {
-                            let merged = crate::synchronization::preserve_local_edits(
-                                &pending.baseline,
-                                self.editor.document(),
-                                &document,
-                            )?;
-                            pending.baseline = document;
-                            self.editor.execute(
-                                "Import Steam entries",
-                                Command::ApplySynchronization(Box::new(merged)),
-                                None,
-                            )
-                        });
-                        if let Err(error) = result {
-                            pending.cancel.cancel();
-                            finished = Some(Err(error));
-                            break;
-                        }
-                        pending.revision = self.editor.revision();
-                        self.assets = Files::new();
-                        self.assets.project = self.store.asset_base().map(Path::to_path_buf);
-                        self.render_generation += 1;
-                        self.art_stats_epoch += 1;
-                    }
                     Ok(crate::synchronization::Event::Progress(message)) => {
                         // The producer records every stage before enqueueing it.
                         self.status = message
@@ -1077,6 +1182,15 @@ impl Host {
                     &saved,
                     &document,
                 )?;
+                let worker_saved_result = saved == document;
+                if worker_saved_result {
+                    if saved_result != saved {
+                        return Err(
+                            "Saved Steam result changed unexpectedly; reload the project".into(),
+                        );
+                    }
+                    let _ = self.store.adopt_saved_result(&pending.path, &saved)?;
+                }
                 let had_unsaved_local_edits =
                     self.editor.is_dirty() && pending.baseline != *self.editor.document();
                 let live_result = crate::synchronization::preserve_local_edits(
@@ -1091,7 +1205,9 @@ impl Host {
                         None,
                     )?;
                 }
-                self.store.save(&saved_result, &pending.path)?;
+                if !worker_saved_result {
+                    self.store.save(&saved_result, &pending.path)?;
+                }
                 if !had_unsaved_local_edits {
                     self.editor.mark_saved();
                 }
@@ -1151,8 +1267,17 @@ impl Host {
                 return;
             }
             let validated = self.synchronization_verified();
-            let result = result.and_then(|snapshot| {
-                self.execute("Read Steam", Command::SetRemoteSnapshot(snapshot), None)
+            let result = result.and_then(|mut snapshot| {
+                let previews = take_steam_icon_previews(&mut snapshot);
+                self.execute("Read Steam", Command::SetRemoteSnapshot(snapshot), None)?;
+                self.steam_icon_previews = previews;
+                self.steam_preview_project_id = read.project_id.clone();
+                self.steam_preview_fingerprint =
+                    self.editor.document().project()["lastRemoteSnapshot"]["contentFingerprint"]
+                        .as_str()
+                        .unwrap_or("")
+                        .to_owned();
+                Ok(())
             });
             if validated {
                 self.verified_sync = result.as_ref().ok().map(|()| {
@@ -1704,6 +1829,20 @@ impl Host {
     }
 }
 impl EditorPort for Host {
+    fn mcp_commands(&self) -> &'static [(String, String)] {
+        static COMMANDS: std::sync::OnceLock<Vec<(String, String)>> = std::sync::OnceLock::new();
+        COMMANDS.get_or_init(|| {
+            achimeld_mcp::tools()
+                .iter()
+                .filter_map(|tool| {
+                    Some((
+                        tool["name"].as_str()?.to_owned(),
+                        tool["description"].as_str()?.to_owned(),
+                    ))
+                })
+                .collect()
+        })
+    }
     fn take_particle_preset(&mut self, achievement_id: &str, layer_id: &str) -> Option<Value> {
         self.take_loaded_particle_preset(achievement_id, layer_id)
     }
@@ -1758,6 +1897,10 @@ impl EditorPort for Host {
             "rejected"
         });
         result?;
+        self.mcp_health_allowed.store(
+            self.editor.preferences().mcp_allows("get_editor_health"),
+            Ordering::Release,
+        );
         if self.editor.preview_revision() != revision {
             self.render_generation += 1;
         }
@@ -1780,6 +1923,10 @@ impl EditorPort for Host {
             .undo_with(|before, after| persist_preferences_at(before, after, path.as_deref()))
         {
             Ok(true) => {
+                self.mcp_health_allowed.store(
+                    self.editor.preferences().mcp_allows("get_editor_health"),
+                    Ordering::Release,
+                );
                 if self.editor.preview_revision() != revision {
                     self.render_generation += 1;
                 }
@@ -1803,6 +1950,10 @@ impl EditorPort for Host {
             .redo_with(|before, after| persist_preferences_at(before, after, path.as_deref()))
         {
             Ok(true) => {
+                self.mcp_health_allowed.store(
+                    self.editor.preferences().mcp_allows("get_editor_health"),
+                    Ordering::Release,
+                );
                 if self.editor.preview_revision() != revision {
                     self.render_generation += 1;
                 }
@@ -1997,6 +2148,9 @@ impl EditorPort for Host {
                 if let Err(error) = self.start_image_drop(paths, target) {
                     self.status = crate::desktop::logged_status(error);
                 }
+            }
+            UiRequest::ReviewAchievementImages { paths, position } => {
+                self.start_dialog(Dialog::BulkAchievements { paths, position });
             }
             UiRequest::ReloadArt { atlas, id } => {
                 self.start_dialog(Dialog::ReloadArt { atlas, id })
@@ -2497,6 +2651,19 @@ impl EditorPort for Host {
             .as_ref()
             .and_then(|pending| pending.previews.get(api, locked))
     }
+    fn steam_icon_preview(&self, api: &str, unachieved: bool) -> Option<Preview> {
+        (self.editor.document().project()["projectId"].as_str()
+            == Some(self.steam_preview_project_id.as_str())
+            && self.editor.document().project()["lastRemoteSnapshot"]["contentFingerprint"]
+                .as_str()
+                == Some(self.steam_preview_fingerprint.as_str()))
+        .then(|| {
+            self.steam_icon_previews
+                .get(&(api.to_owned(), unachieved))
+                .cloned()
+        })
+        .flatten()
+    }
     fn exporting(&self) -> bool {
         self.export.is_some()
     }
@@ -2682,7 +2849,7 @@ fn load_preferences_at(folder: &Path) -> Result<Preferences, String> {
     file.take(64 * 1024 + 1)
         .read_to_end(&mut bytes)
         .map_err(|e| e.to_string())?;
-    if bytes.len() > 64 * 1024 {
+    if bytes.len() > 256 * 1024 {
         return Err("Preferences file is too large".into());
     }
     let preferences: Preferences = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
@@ -3197,6 +3364,55 @@ mod dialog_tests {
                 .len(),
             1
         );
+        drop(host);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn worker_saved_deletion_result_is_adopted_before_later_editor_save() {
+        let root = crate::test_output::root().join(format!("sync-worker-save-{}", new_id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("project.achv");
+        let mut host = dirty_host();
+        host.store.save(host.editor.document(), &path).unwrap();
+        let snapshot = host.store.load(&path).unwrap();
+        host.editor = Editor::new(snapshot.clone());
+        let mut remote_project = snapshot.project().clone();
+        remote_project["lastRemoteSnapshot"] = json!({"steamAppId":snapshot.app_id()});
+        let remote = Document::from_parts(remote_project, snapshot.catalog().clone()).unwrap();
+        let (sender, events) = mpsc::sync_channel(1);
+        let (approval, _receiver) = mpsc::sync_channel(1);
+        host.synchronization = Some(crate::synchronization::Pending {
+            snapshot: snapshot.clone(),
+            baseline: snapshot,
+            activity: "Deleting Steam entries",
+            completion_message: None,
+            handshake_only: false,
+            cancel: Cancellation::default(),
+            events,
+            approval,
+            review: None,
+            revision: host.editor.revision(),
+            path: path.clone(),
+            thread: None,
+            previews: Default::default(),
+        });
+        host.execute("Unsaved local stat", Command::Add(EntityKind::Stat), None)
+            .unwrap();
+        let mut worker_store = ProjectStore::new();
+        worker_store.load(&path).unwrap();
+        worker_store.save(&remote, &path).unwrap();
+        sender
+            .send(crate::synchronization::Event::Complete(Ok(remote.clone())))
+            .unwrap();
+        host.poll_synchronization();
+        assert!(host.synchronization_error().is_none());
+        assert!(host.editor.is_dirty());
+        assert_eq!(ProjectStore::new().load(&path).unwrap(), remote);
+        host.save_to(&path).unwrap();
+        let saved = ProjectStore::new().load(&path).unwrap();
+        assert_eq!(saved.project()["stats"].as_array().unwrap().len(), 1);
+        assert_eq!(saved.project()["lastRemoteSnapshot"]["steamAppId"], 0);
         drop(host);
         std::fs::remove_dir_all(root).unwrap();
     }

@@ -111,10 +111,13 @@ fn reconcile_deleted_history(
 pub(crate) enum Event {
     Summary(String),
     Banner(Box<Document>),
-    Imported(Box<Document>),
     Review(Value),
     Progress(String),
     Complete(Result<Document, String>),
+}
+
+fn should_use_steam_name(current: &str) -> bool {
+    current.eq_ignore_ascii_case("Untitled project")
 }
 
 /// Combine independently edited fields. Arrays are atomic: ambiguous concurrent
@@ -181,6 +184,17 @@ pub(crate) fn preserve_local_edits(
                 b.keys().chain(l.keys()).chain(r.keys()).collect();
             let mut result = serde_json::Map::new();
             for key in keys {
+                if key == "displayName"
+                    && b.get(key)
+                        .and_then(Value::as_str)
+                        .is_some_and(should_use_steam_name)
+                    && l.get(key) != b.get(key)
+                {
+                    if let Some(value) = l.get(key) {
+                        result.insert(key.clone(), value.clone());
+                    }
+                    continue;
+                }
                 if let Some(value) = merge(b.get(key), l.get(key), r.get(key))? {
                     result.insert(key.clone(), value);
                 }
@@ -223,6 +237,24 @@ pub(crate) struct Pending {
 #[cfg(test)]
 mod concurrent_edit_tests {
     use super::*;
+
+    #[test]
+    fn steam_name_only_fills_the_default_and_a_concurrent_rename_wins() {
+        assert!(should_use_steam_name("Untitled project"));
+        assert!(should_use_steam_name("Untitled Project"));
+        assert!(!should_use_steam_name("My game"));
+        let base = Document::new();
+        let mut local = base.project().clone();
+        local["displayName"] = json!("Chosen while validating");
+        let local = Document::from_parts(local, base.catalog().clone()).unwrap();
+        let mut remote = base.project().clone();
+        remote["displayName"] = json!("Steam game");
+        let remote = Document::from_parts(remote, base.catalog().clone()).unwrap();
+        let merged = preserve_local_edits(&base, &local, &remote).unwrap();
+        assert_eq!(merged.project()["displayName"], "Chosen while validating");
+        let merged_default = preserve_local_edits(&base, &base, &remote).unwrap();
+        assert_eq!(merged_default.project()["displayName"], "Steam game");
+    }
 
     #[test]
     fn independent_changes_merge_and_overlapping_changes_fail_without_mutating_local() {
@@ -570,7 +602,12 @@ fn handshake(
     stop.check().map_err(|e| e.to_string())?;
     *stage = "downloading the game banner";
     progress(Event::Progress("Downloading the Steam game banner…".into()))?;
-    let encoded = reader.read_game_banner(app_id).map_err(|e| e.to_string())?;
+    let details = reader.read_game_banner(app_id).map_err(|e| e.to_string())?;
+    let name = details["name"]
+        .as_str()
+        .filter(|name| !name.is_empty() && name.len() <= 512 && !name.chars().any(char::is_control))
+        .map(str::to_owned);
+    let encoded = details["banner"].as_str().map(str::to_owned);
     stop.check().map_err(|e| e.to_string())?;
     let mut result = document.clone();
     let mut store = ProjectStore::new();
@@ -588,6 +625,15 @@ fn handshake(
         ))?;
     }
     close_steam(&mut reader, progress, stage)?;
+    if let Some(name) = name
+        && result.project()["displayName"]
+            .as_str()
+            .is_some_and(should_use_steam_name)
+    {
+        let mut project = result.project().clone();
+        project["displayName"] = json!(name);
+        result = Document::from_parts(project, result.catalog().clone())?;
+    }
     progress(Event::Progress(
         "Steam connection validated. Choose Synchronize to prepare a review.".into(),
     ))?;
@@ -644,16 +690,14 @@ fn run(
     progress: &dyn Fn(Event) -> Result<(), String>,
     stage: &mut &'static str,
 ) -> Result<Document, String> {
-    let mut document = document;
-    for _ in 0..4 {
-        let (next, imported) = run_once(path, document, assets, stop, execution, progress, stage)?;
-        if !imported {
-            return Ok(next);
-        }
-        progress(Event::Imported(Box::new(next.clone())))?;
-        document = next;
+    let (next, imported) = run_once(path, document, assets, stop, execution, progress, stage)?;
+    if imported {
+        progress(Event::Summary(
+            "Steam entries imported. Synchronization completed and saved; run Synchronize again to review any further changes. Steamworks publication remains manual."
+                .into(),
+        ))?;
     }
-    Err("Steam kept changing during import; validate again".into())
+    Ok(next)
 }
 
 fn run_once(
@@ -959,7 +1003,7 @@ fn run_once(
     let _ = fs::remove_file(journal_path);
     if imported {
         progress(Event::Progress(format!(
-            "Imported and saved {} Steam entries in the project",
+            "Imported {} Steam entries for the project",
             choices
                 .iter()
                 .filter(|choice| choice["action"] == "Import")

@@ -10,7 +10,8 @@ public static class LiveSteamworksConfiguration
     public const string Revision = "steamworks-configuration-json-v1";
 
     public static ManagedPageDocument Normalize(SteamAppId appId, string statsJson, string achievementsJson,
-        IReadOnlyDictionary<string, string>? iconContentHashes = null)
+        IReadOnlyDictionary<string, string>? iconContentHashes = null,
+        IReadOnlyDictionary<string, byte[]>? iconPreviewBytes = null)
     {
         try
         {
@@ -71,14 +72,24 @@ public static class LiveSteamworksConfiguration
                     if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
                         throw new UnsupportedPortalStructureException("Steamworks returned an invalid icon preview URL.");
                     icon.Add(Attr(target + "-preview", uri.AbsoluteUri), Attr(target + "-identity", iconContentHashes?.GetValueOrDefault(uri.AbsoluteUri) ?? uri.AbsolutePath));
+                    if (iconPreviewBytes?.GetValueOrDefault(uri.AbsoluteUri) is { } bytes)
+                        icon.Add(Attr(target + "-preview-data", Convert.ToBase64String(bytes)));
                 }
                 icons.Add(icon);
             }
             XElement root = new("html", new XAttribute("data-appid", appId.Value),
                 new XAttribute("data-steamworks-revision", Revision), new XAttribute("data-steamworks-page", "stats-achievements"),
                 new XElement("body", statSection, achievementSection, localizations, icons));
+            string html = root.ToString(SaveOptions.DisableFormatting);
+            if (System.Text.Encoding.UTF8.GetByteCount(html) > 14 * 1024 * 1024)
+            {
+                foreach (XElement icon in icons.Elements("article"))
+                    foreach (string kind in new[] { "achieved", "unachieved" })
+                        icon.Attribute("data-" + kind + "-preview-data")?.Remove();
+                html = root.ToString(SaveOptions.DisableFormatting);
+            }
             return new ManagedPageDocument(new Uri($"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}"),
-                "Steamworks configuration", root.ToString(SaveOptions.DisableFormatting));
+                "Steamworks configuration", html);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException or KeyNotFoundException)
         {

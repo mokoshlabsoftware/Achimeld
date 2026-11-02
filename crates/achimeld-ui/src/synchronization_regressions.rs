@@ -1318,6 +1318,7 @@ fn app_id_editor_validates_cancels_saves_and_rejects_stale_edits() {
         .chain(labels)
         .collect::<Vec<_>>();
     assert!(labels.iter().any(|(label, _)| label == "Steam App ID"));
+    assert!(labels.iter().any(|(label, _)| label == "Project name"));
     assert!(!labels.iter().any(|(label, _)| label == "S. A. ID"));
     let field = ctx
         .read_response(egui::Id::new("sync-app-id-field"))
@@ -1343,11 +1344,13 @@ fn app_id_editor_validates_cancels_saves_and_rejects_stale_edits() {
     assert_eq!(port.editor.document(), &original);
     desktop.open_sync_app_id(&port);
     desktop.sync_app_id_edit.as_mut().unwrap().text = "480".into();
+    desktop.sync_app_id_edit.as_mut().unwrap().project_name = "My game".into();
     frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     click(&ctx, &mut desktop, &mut port, label_center(&labels, "Save"));
     assert!(desktop.sync_app_id_edit.is_none());
     assert_eq!(port.editor.document().app_id(), 480);
+    assert_eq!(port.editor.document().project()["displayName"], "My game");
     port.undo();
     assert_eq!(port.editor.document(), &original);
     desktop.open_sync_app_id(&port);

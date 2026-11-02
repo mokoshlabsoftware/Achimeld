@@ -62,7 +62,11 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
         if platform::elevated()? {
             return Err("Start the MCP server as a normal user".into());
         }
-        return achimeld_mcp::run();
+        achimeld_mcp::run()?;
+        // An idle client may hold stdout open without reading it. Exit directly
+        // after the last editor disappears so a blocked writer cannot retain
+        // the verified package or delay a new editor session.
+        std::process::exit(0);
     }
     let read_argument = commands::read_argument(arguments)?;
     let self_test = matches!(

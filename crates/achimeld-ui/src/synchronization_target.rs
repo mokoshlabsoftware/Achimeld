@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 pub(crate) struct AppIdEdit {
     pub(crate) text: String,
+    pub(crate) project_name: String,
     revision: u64,
     focus: bool,
     error: Option<String>,
@@ -594,6 +595,10 @@ impl Desktop {
                 0 => String::new(),
                 id => id.to_string(),
             },
+            project_name: port.editor().document().project()["displayName"]
+                .as_str()
+                .unwrap_or("")
+                .to_owned(),
             revision: port.editor().revision(),
             focus: true,
             error: None,
@@ -636,8 +641,15 @@ impl Desktop {
                     ui.spacing_mut().item_spacing = Vec2::new(8.0, 12.0);
                     egui::ScrollArea::vertical().id_salt("sync-app-id-body").max_height(body_height).show(ui, |ui| {
                         ui.with_layout(egui::Layout::top_down(Align::Center), |ui| {
-                            ui.add(egui::Label::new("Enter the Steam App ID for the app you want to synchronize with. Validate the destination after saving.").wrap().halign(Align::Center));
+                            ui.add(egui::Label::new("Edit the project name and Steam App ID for the app you want to synchronize with. Validate the destination after saving.").wrap().halign(Align::Center));
                             ui.add(egui::Label::new("Changing the App ID clears the previous Steam comparison history and keeps your project entries and artwork.").wrap().halign(Align::Center));
+                            crate::fields::row(ui, "Project name", |ui| {
+                                if ui.add(egui::TextEdit::singleline(&mut edit.project_name)
+                                    .id(egui::Id::new("sync-project-name-field"))
+                                    .char_limit(1024).desired_width(ui.available_width())).changed() {
+                                    edit.error = None;
+                                }
+                            });
                             crate::fields::row(ui, "Steam App ID", |ui| {
                                 let field = ui.add(egui::TextEdit::singleline(&mut edit.text)
                                     .font(egui::TextStyle::Monospace)
@@ -648,6 +660,7 @@ impl Desktop {
                             });
                             let error = if !current { Some("The project changed. Cancel and reopen this editor.") }
                                 else if !available { Some("Finish or cancel the current Steam operation first.") }
+                                else if edit.project_name.trim().is_empty() || edit.project_name.len() > 1024 { Some("Enter a project name.") }
                                 else if parse_app_id(&edit.text).is_none() { Some("Enter a whole-number Steam App ID from 1 to 4294967295.") }
                                 else { edit.error.as_deref() };
                             if let Some(error) = error { ui.add(egui::Label::new(error).wrap().halign(Align::Center)); }
@@ -660,7 +673,7 @@ impl Desktop {
                     let split = ((start + width * natural[0] / total) * ctx.pixels_per_point()).round() / ctx.pixels_per_point();
                     for (index, (_, glyph)) in actions.into_iter().enumerate() {
                         let right = if index == 0 { split } else { start + width };
-                        if ui.add_enabled(index == 1 || (parse_app_id(&edit.text).is_some() && current && available),
+                        if ui.add_enabled(index == 1 || (parse_app_id(&edit.text).is_some() && !edit.project_name.trim().is_empty() && edit.project_name.len() <= 1024 && current && available),
                             buttons::Button::new((glyph.image(ctx, 20.0), labels[index].clone())).bar()
                                 .min_size(Vec2::new(right - ui.cursor().left(), height)).icon_spacing(8.0)
                                 .image_tint_follows_text_color(true)).clicked() {
@@ -675,14 +688,15 @@ impl Desktop {
         // Reparse after the field has consumed this frame's text input.
         if save
             && let Some(app_id) = parse_app_id(&edit.text)
+            && !edit.project_name.trim().is_empty()
+            && edit.project_name.len() <= 1024
             && current
             && available
         {
-            let project = port.editor().document().project();
             match port.execute(
-                "Change Steam App ID",
+                "Edit project and Steam App ID",
                 Command::ProjectSettings {
-                    name: project["displayName"].as_str().unwrap_or("").into(),
+                    name: edit.project_name.trim().to_owned(),
                     app_id,
                     atlas: None,
                     assets: None,

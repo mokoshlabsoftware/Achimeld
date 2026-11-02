@@ -119,6 +119,9 @@ mod tests {
                 .map_err(|error| error.to_string())
         })
         .unwrap();
+        // Match the bootstrapper's explicit MCP process exit: a test harness
+        // flushing captured output can otherwise wait behind blocked stdio.
+        std::process::exit(0);
     }
 
     #[cfg(windows)]
@@ -186,7 +189,7 @@ mod tests {
         );
         assert!(
             status.is_some_and(|status| status.success()),
-            "Idle connector survived editor shutdown"
+            "Idle connector survived editor shutdown (blocked_output={blocked_output})"
         );
     }
 }

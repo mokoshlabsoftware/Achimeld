@@ -67,10 +67,64 @@ pub fn tools() -> Vec<Value> {
             "path:s",
         ),
         (
+            "open_project",
+            "Open an absolute .achv project path through the editor's normal project loader when the current project has no unsaved edits.",
+            "path",
+            "path:s",
+        ),
+        (
+            "reload_project",
+            "Reload the currently saved project from disk. This deliberately discards unsaved editor changes and resets the project session; supply discardUnsaved=true explicitly.",
+            "discardUnsaved",
+            "discardUnsaved:b",
+        ),
+        (
+            "save_project",
+            "Save the open project to its existing .achv path through the editor's normal storage checks.",
+            "",
+            "",
+        ),
+        (
+            "set_project_settings",
+            "Set the project's Steam App ID and/or display name in one undoable edit. Changing the App ID clears the old Steam validation and synchronization baseline.",
+            "",
+            "appId:i name:s",
+        ),
+        (
+            "review_achievement_image_folder",
+            "List supported image files directly in an absolute local-drive folder and return a review token. Up to 128 images; no recursion or reparse points.",
+            "folderPath",
+            "folderPath:s",
+        ),
+        (
+            "import_achievement_images",
+            "Import every reviewed image in a folder as one achievement each. Supply the review token and one fileName, name, description entry per image. Artwork is copied into the Art Data Bank.",
+            "folderPath token entries",
+            "folderPath:s token:s entries:a column:i row:i",
+        ),
+        (
             "get_synchronization",
-            "Read validation, activity, error and the current synchronization review. Review rows and token are required before applying changes.",
+            "Read validation, activity, error and the current synchronization review. Optionally filter returned rows by kind, state, or API-name query. Applying still requires a choice for every row in the complete review.",
+            "",
+            "kind:s state:s query:s",
+        ),
+        (
+            "forget_steam_validation",
+            "Forget the open project's saved Steam validation snapshot and downloaded game banner in one undoable editor change. Save the project to keep the change; local achievements and stats remain.",
             "",
             "",
+        ),
+        (
+            "review_steam_deletion",
+            "Review exact achievement or stat targets from the current verified Steam snapshot and receive a token bound to this editor session, revision, App ID, snapshot and target list.",
+            "targets",
+            "targets:a",
+        ),
+        (
+            "apply_steam_deletion",
+            "Delete the exact reviewed targets from the Steamworks draft after validation. Requires the review token, same targets and confirmDeletion=true. Steamworks publication remains manual.",
+            "token targets confirmDeletion",
+            "token:s targets:a confirmDeletion:b",
         ),
         (
             "get_remote_icon_metadata",
@@ -310,6 +364,8 @@ pub fn tools() -> Vec<Value> {
                 | "get_scene"
                 | "list_recent_projects"
                 | "get_synchronization"
+                | "review_steam_deletion"
+                | "review_achievement_image_folder"
                 | "get_remote_icon_metadata"
                 | "list_effect_presets"
                 | "get_node"
@@ -356,10 +412,39 @@ pub fn tools() -> Vec<Value> {
             if key == "page" {
                 schema["enum"] = json!(["Achievements", "Stats"]);
             }
-            if key == "path" {
+            if key == "kind" && name == "get_synchronization" {
+                schema["enum"] = json!(["Achievement", "Stat", "Icon", null]);
+            }
+            if key == "discardUnsaved" {
+                schema["enum"] = json!([true]);
+            }
+            if key == "confirmDeletion" {
+                schema["enum"] = json!([true]);
+            }
+            if key == "targets" && matches!(name, "review_steam_deletion" | "apply_steam_deletion")
+            {
+                schema = json!({"type":"array","minItems":1,"maxItems":1000,"items":{"type":"object","additionalProperties":false,"required":["kind","apiName"],"properties":{"kind":{"type":"string","enum":["Achievement","Stat"]},"apiName":{"type":"string","minLength":1,"maxLength":128}}}});
+            }
+            if key == "entries" && name == "import_achievement_images" {
+                schema = json!({"type":"array","minItems":1,"maxItems":128,"items":{"type":"object","additionalProperties":false,"required":["fileName","name","description"],"properties":{"fileName":{"type":"string","minLength":1,"maxLength":260},"name":{"type":"string","minLength":1,"maxLength":256},"description":{"type":"string","maxLength":1024}}}});
+            }
+            if matches!(key, "state" | "query") && name == "get_synchronization" {
+                schema["maxLength"] = json!(128);
+            }
+            if matches!(key, "path" | "folderPath") {
                 schema["maxLength"] = json!(4096);
             }
+            if key == "name" && name == "set_project_settings" {
+                schema["maxLength"] = json!(256);
+            }
+            if key == "appId" && name == "set_project_settings" {
+                schema["minimum"] = json!(0);
+                schema["maximum"] = json!(u32::MAX);
+            }
             if key == "apiName" {
+                schema["maxLength"] = json!(128);
+            }
+            if key == "token" {
                 schema["maxLength"] = json!(128);
             }
             if key == "choices" {
@@ -918,7 +1003,10 @@ pub fn call_editor_cancellable(
     }
     let pid = args["processId"].as_u64().ok_or("Invalid processId")? as u32;
     if operation == "status" {
-        return known_editor(pid).map(|_| editor_snapshot(pid, cancelled));
+        known_editor(pid)?;
+        let facts = query_status(pid, cancelled)?;
+        let uptime = achimeld_security::editor_transport::process_uptime(pid).map(format_uptime);
+        return Ok(status_value(pid, uptime.as_deref(), Some(&facts)));
     }
     let mut arguments = args.clone();
     let object = arguments.as_object_mut().ok_or("Invalid arguments")?;
@@ -964,9 +1052,46 @@ fn instances_with_status(cancelled: &std::sync::atomic::AtomicBool) -> Result<Va
                     .as_u64()
                     .and_then(|pid| u32::try_from(pid).ok())
             })
-            .map(|pid| editor_snapshot(pid, cancelled))
+            .filter_map(|pid| {
+                query_listing_facts(pid, cancelled)
+                    .ok()
+                    .flatten()
+                    .map(|facts| (pid, facts))
+            })
+            .map(|(pid, facts)| {
+                let uptime = editor_transport::process_uptime(pid).map(format_uptime);
+                status_value(pid, uptime.as_deref(), Some(&facts))
+            })
             .collect::<Vec<_>>()
     ))
+}
+
+fn query_listing_facts(
+    pid: u32,
+    cancelled: &std::sync::atomic::AtomicBool,
+) -> Result<Option<Value>, String> {
+    let data = exchange(
+        pid,
+        &Request {
+            operation: "list_instances".into(),
+            arguments: json!({}),
+            project_id: None,
+            expected_revision: None,
+            request_id: None,
+        },
+        std::time::Duration::from_secs(2),
+        cancelled,
+    )?;
+    if data["result"]["allowed"] != true {
+        return Ok(None);
+    }
+    let mut facts = data["result"]["facts"].clone();
+    for key in ["projectId", "editorSessionId", "revision"] {
+        if let Some(value) = data.get(key) {
+            facts[key] = value.clone();
+        }
+    }
+    Ok(project_facts(&facts).map(|_| facts))
 }
 
 fn known_editor(pid: u32) -> Result<(), String> {
@@ -980,13 +1105,6 @@ fn known_editor(pid: u32) -> Result<(), String> {
     } else {
         Err("Unknown editor; call list_instances again".into())
     }
-}
-
-fn editor_snapshot(pid: u32, cancelled: &std::sync::atomic::AtomicBool) -> Value {
-    use achimeld_security::editor_transport;
-    let uptime = editor_transport::process_uptime(pid).map(format_uptime);
-    let facts = query_status(pid, cancelled).ok();
-    status_value(pid, uptime.as_deref(), facts.as_ref())
 }
 
 fn query_status(pid: u32, cancelled: &std::sync::atomic::AtomicBool) -> Result<Value, String> {
@@ -1284,7 +1402,7 @@ mod tests {
         assert_eq!(responses[1]["result"]["protocolVersion"], "2025-11-25");
         assert_eq!(
             responses[2]["result"]["tools"].as_array().unwrap().len(),
-            46
+            55
         );
         assert_eq!(responses[3]["result"]["isError"], false);
     }
@@ -1301,6 +1419,53 @@ mod tests {
         assert!(validate_arguments("open_steam_page", &page).is_ok());
         page["page"] = json!("Other");
         assert!(validate_arguments("open_steam_page", &page).is_err());
+        let mut project = base.clone();
+        project["path"] = json!(r"C:\Projects\example.achv");
+        assert!(validate_arguments("open_project", &project).is_ok());
+        assert!(validate_arguments("forget_steam_validation", &base).is_ok());
+        assert!(validate_arguments("save_project", &base).is_ok());
+        let mut settings = base.clone();
+        settings["appId"] = json!(4873800);
+        settings["name"] = json!("New project name");
+        assert!(validate_arguments("set_project_settings", &settings).is_ok());
+        settings["appId"] = json!(-1);
+        assert!(validate_arguments("set_project_settings", &settings).is_err());
+        let folder = json!({"processId":1,"folderPath":r"C:\Art"});
+        assert!(validate_arguments("review_achievement_image_folder", &folder).is_ok());
+        let mut import = base.clone();
+        import["folderPath"] = json!(r"C:\Art");
+        import["token"] = json!("review-token");
+        import["entries"] = json!([{"fileName":"one.png","name":"One","description":"First"}]);
+        assert!(validate_arguments("import_achievement_images", &import).is_ok());
+        import["entries"] = json!([{"fileName":"one.png","name":"One"}]);
+        assert!(validate_arguments("import_achievement_images", &import).is_err());
+        let targets = json!([{"kind":"Achievement","apiName":"MAP"}]);
+        assert!(
+            validate_arguments(
+                "review_steam_deletion",
+                &json!({"processId":1,"targets":targets})
+            )
+            .is_ok()
+        );
+        let mut deletion = base.clone();
+        deletion["token"] = json!("review-token");
+        deletion["targets"] = targets;
+        deletion["confirmDeletion"] = json!(true);
+        assert!(validate_arguments("apply_steam_deletion", &deletion).is_ok());
+        deletion["confirmDeletion"] = json!(false);
+        assert!(validate_arguments("apply_steam_deletion", &deletion).is_err());
+        let mut reload = base.clone();
+        reload["discardUnsaved"] = json!(true);
+        assert!(validate_arguments("reload_project", &reload).is_ok());
+        reload["discardUnsaved"] = json!(false);
+        assert!(validate_arguments("reload_project", &reload).is_err());
+        project["executable"] = json!("other.exe");
+        assert!(validate_arguments("open_project", &project).is_err());
+        let filtered =
+            json!({"processId":1,"kind":"Achievement","state":"LocalOnly","query":"map"});
+        assert!(validate_arguments("get_synchronization", &filtered).is_ok());
+        let invalid_filter = json!({"processId":1,"kind":"Browser"});
+        assert!(validate_arguments("get_synchronization", &invalid_filter).is_err());
         let mut apply = base.clone();
         apply["token"] = json!("review");
         apply["choices"] = json!([{"key":"a","action":"Upload"}]);

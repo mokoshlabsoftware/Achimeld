@@ -6,7 +6,11 @@ Validation opens the pinned Steamworks destination, waits for sign-in, reopens
 that destination and checks authentication again. It then requests only the pinned
 app's public game banner through the supervised, cookie-free download policy and
 retains valid artwork in the host-owned Art Data Bank. An unavailable banner does
-not fail connection validation. Validation does not render upload icons,
+not fail connection validation. The same pinned public metadata may supply a
+bounded, control-free app name. After successful validation and browser close,
+the host replaces only the default Untitled project name. A local rename made
+during validation takes precedence. Missing or invalid name metadata does not
+fail validation or change the project. Validation does not render upload icons,
 prepare a synchronization plan, import remote entries or write a synchronization
 result. Successful validation is bound to the editor session and revision. A later
 Synchronize action prepares a fresh receiver-owned plan and automatically selects
@@ -154,6 +158,8 @@ Local icon style nodes (`styleAchievement`) and art images (`artImage`) remain h
 | Supervision pipe | 64 KiB maximum; client overall exchange deadline 5 seconds; server request, response and ACK1 receipt have distinct 3-second phase budgets. Strict typed operations; 64-hex nonce and UDP probe token; operation-specific argument presence. | Malformed or unauthorized connection rejected/disconnected; at most 16 static rejection messages. Control/attribution/probe loss stops Job; policyFailure/failed UDP denial sets health false. |
 | Supervision continuity | Nonce/actual server PID/session authenticated; package mode, version, Windows network-enforcement flag, browser/profile paths, ports and coverage pinned across Rust and C# health/probe responses. | Configuration change rejected, and caller closes reader/Node Job. The local C# client applies the same continuity contract. |
 | Snapshot | 16 MiB normalized XML, 200,000 nodes, DTD disabled except inert initial HTML doctype; exact origin/App ID; fixed revisions/sections; uniqueness and owner/link checks. | Result rejected; reader closed. This does not validate every request made inside the driver. |
+
+Steam's achieved and unachieved icon bytes are downloaded by the existing approved, supervised icon reader while it computes content hashes. Up to 256 icons totaling 8 MiB, each no larger than 256 KiB, may accompany the normalized read as base64 preview data. If the XML would exceed 14 MiB, the receiver omits all preview data while retaining icon identities and the configuration read. The desktop decodes each preview with 1024-pixel dimension and 8 MiB allocation limits, reduces it to at most 128 pixels, and removes the encoded data before saving the remote snapshot. Preview bytes remain session-only in the host. The UI receives decoded pixels, never a network or filesystem capability.
 | Project inventory | 32 MiB bounded file read; JSON depth 64; known format/schema 0/1; original bytes retained. | Inventory error; no migration/save capability. Full project/CSV/asset validation is pending. |
 | Broker | Loopback only; process-table attribution and Job/role checks; CONNECT only, approved DNS names, :443, 8 KiB header, 64 active clients; checked address connected directly. | Invalid client/request rejected; listener failure stops session. Tunnel lifecycle and total deadlines are reviewed separately from hostname parsing. |
 | Diagnostics | Static failure messages/stages, bounded supervisor records and broker diagnostics; process-table destinations are metadata, not payloads. | No arbitrary worker/portal errors included in persisted failure/report data. Local compiler/test logs are separate source evidence. |

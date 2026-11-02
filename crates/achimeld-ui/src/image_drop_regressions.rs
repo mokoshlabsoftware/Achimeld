@@ -353,6 +353,43 @@ fn drops_choose_canvas_card_general_and_layers_without_falling_through() {
         assert!(desktop.view == desktop::View::Achievements);
     }
 }
+
+#[test]
+fn multiple_canvas_images_request_name_and_description_approval() {
+    let mut fixture = Fixture::new();
+    let mut desktop = Desktop::default();
+    let ctx = egui::Context::default();
+    frame(&mut desktop, &mut fixture, &ctx, vec![], false);
+    frame(&mut desktop, &mut fixture, &ctx, vec![], false);
+    let canvas = desktop
+        .image_drop
+        .zones
+        .iter()
+        .find(|(_, rect, zone, _)| *zone == DropZone::Canvas && rect.is_positive())
+        .unwrap()
+        .1;
+    let position = canvas.right_bottom() - Vec2::splat(70.0);
+    let mut input = RawInput {
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1440.0, 920.0))),
+        events: vec![Event::PointerMoved(position)],
+        ..Default::default()
+    };
+    for path in ["C:/art/first.png", "C:/art/second.png"] {
+        input
+            .dropped_files
+            .push(std::sync::Arc::new(File(path.into())));
+    }
+    let mut out = ctx.run_ui(input, |ui| desktop.show(ui, &mut fixture));
+    out.textures_delta.clear();
+    assert!(matches!(
+        &fixture.last_request,
+        Some(UiRequest::ReviewAchievementImages {
+            paths: Some(paths),
+            position: target,
+        }) if paths.len() == 2
+            && *target == crate::canvas::canvas_position(position, canvas.min + desktop.pan, desktop.zoom)
+    ));
+}
 #[test]
 fn icon_mode_requires_layers_and_double_clicks_switch_or_clear_selection() {
     let mut fixture = Fixture::new();

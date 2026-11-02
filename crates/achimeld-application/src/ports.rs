@@ -9,6 +9,10 @@ pub enum ImageImportTarget {
         name: String,
         position: [i32; 2],
     },
+    NewAchievementBatch {
+        entries: Vec<AchievementImageDraft>,
+        position: [i32; 2],
+    },
     General {
         achievement_id: String,
         selected_layer_id: Option<String>,
@@ -19,6 +23,13 @@ pub enum ImageImportTarget {
         selected_layer_id: Option<String>,
         style_id: Option<String>,
     },
+}
+
+#[derive(Clone, Debug)]
+pub struct AchievementImageDraft {
+    pub path: PathBuf,
+    pub name: String,
+    pub description: String,
 }
 
 #[derive(Clone)]
@@ -62,6 +73,10 @@ pub enum UiRequest {
     ImportDroppedImages {
         paths: Vec<PathBuf>,
         target: ImageImportTarget,
+    },
+    ReviewAchievementImages {
+        paths: Option<Vec<PathBuf>>,
+        position: [i32; 2],
     },
     RefreshArt,
     ReloadArt {
@@ -131,6 +146,11 @@ pub struct LayerBlendPreview {
 
 /// The presentation crate can inspect state and request commands; the host owns all I/O.
 pub trait EditorPort {
+    /// The host supplies the exact MCP registry for Preferences without giving
+    /// the presentation crate a dependency on the automation transport.
+    fn mcp_commands(&self) -> &'static [(String, String)] {
+        &[]
+    }
     /// The host validates the native file; normal UI history applies its settings.
     fn take_particle_preset(
         &mut self,
@@ -429,6 +449,9 @@ pub trait EditorPort {
         false
     }
     fn synchronization_icon_preview(&self, _api_name: &str, _locked: bool) -> Option<Preview> {
+        None
+    }
+    fn steam_icon_preview(&self, _api_name: &str, _unachieved: bool) -> Option<Preview> {
         None
     }
     fn exporting(&self) -> bool {

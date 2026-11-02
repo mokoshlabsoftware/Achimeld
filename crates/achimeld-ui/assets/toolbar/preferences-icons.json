@@ -31,6 +31,12 @@
       "prompt": "Use case: logo-brand. Asset type: Achimeld desktop Preferences navigation icon, browser. Create ONE a globe showing simple latitude and longitude curves. Flat solid white monochrome toolbar silhouette with limited negative-space details, consistent medium-bold visual weight, readable at 20 by 20 pixels, clean antialiasing. Center in a square with balanced 12 percent padding. Genuinely transparent background. No button body, no border, no enclosing tile, no color, no gradients, no shadow, no glow, no labels or watermark. Match compact white Windows desktop toolbar artwork.",
       "source": "preferences-browser-source.png",
       "embedded": "preferences-browser.rgba"
+    },
+    {
+      "name": "mcp",
+      "prompt": "Create a new Achimeld Preferences tab icon for MCP command settings. Use the attached existing white gear and globe icons only as style references, not as edit targets. A single simple hub with three short connected nodes or plugs, expressing local tool connections. Solid white monochrome glyph, bold rounded geometry, clean silhouette, balanced square composition, high legibility at 20 pixels. No text, letters, gradients, shadows, border, circle badge, or background. Centered with generous transparent padding. Output a square transparent PNG.",
+      "source": "../toolbar-originals/preferences-mcp-source.png",
+      "embedded": "preferences-mcp.rgba"
     }
   ]
 }

@@ -1294,6 +1294,20 @@ impl Desktop {
                     }
                     ui.close();
                 }
+                if self.kind == EntityKind::Achievement
+                    && ui
+                        .add_enabled(
+                            editable,
+                            crate::buttons::Button::new("Import achievements from images…"),
+                        )
+                        .clicked()
+                {
+                    self.request(achimeld_application::UiRequest::ReviewAchievementImages {
+                        paths: None,
+                        position: menu.position,
+                    });
+                    ui.close();
+                }
                 if ui
                     .add_enabled(
                         editable && !self.selection.is_empty(),

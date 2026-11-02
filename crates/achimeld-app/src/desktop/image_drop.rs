@@ -66,8 +66,31 @@ impl Host {
         if self.art_busy() || self.synchronization.is_some() {
             return Err("Wait for the current artwork operation to finish".into());
         }
-        if paths.is_empty() || paths.len() > 32 {
-            return Err("Drop 1–32 artwork files at a time".into());
+        let limit = if matches!(target, ImageImportTarget::NewAchievementBatch { .. }) {
+            128
+        } else {
+            32
+        };
+        if paths.is_empty() || paths.len() > limit {
+            return Err(format!("Import 1-{limit} artwork files at a time"));
+        }
+        if let ImageImportTarget::NewAchievementBatch { entries, .. } = &target
+            && (entries.len() != paths.len()
+                || entries.iter().zip(&paths).any(|(entry, path)| {
+                    entry.path != *path
+                        || entry.name.trim().is_empty()
+                        || entry.name.len() > 256
+                        || entry.description.len() > 1024
+                        || !["png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff"]
+                            .iter()
+                            .any(|extension| {
+                                path.extension()
+                                    .and_then(|part| part.to_str())
+                                    .is_some_and(|part| part.eq_ignore_ascii_case(extension))
+                            })
+                }))
+        {
+            return Err("Invalid achievement image import".into());
         }
         let (tx, receiver) = mpsc::sync_channel(1);
         let (preview_tx, preview_receiver) = mpsc::sync_channel(1);
@@ -75,7 +98,11 @@ impl Host {
         let cancelled = Arc::new(AtomicBool::new(false));
         let worker_cancelled = cancelled.clone();
         // A General image is the saved composite, without a Photoshop layer choice.
-        let frame_limit = if matches!(target, ImageImportTarget::General { .. }) {
+        let strict_paths = matches!(target, ImageImportTarget::NewAchievementBatch { .. });
+        let frame_limit = if matches!(
+            target,
+            ImageImportTarget::General { .. } | ImageImportTarget::NewAchievementBatch { .. }
+        ) {
             1
         } else {
             usize::MAX
@@ -89,6 +116,13 @@ impl Host {
                     for path in paths {
                         if !path.is_absolute() {
                             return Err("Dropped artwork must use an absolute file path".into());
+                        }
+                        if strict_paths {
+                            if !crate::desktop::automation::local_path(&path) {
+                                return Err("Achievement image path must use a local drive".into());
+                            }
+                            achimeld_security::windows::reject_reparse(&path)
+                                .map_err(|e| e.to_string())?;
                         }
                         let name = path
                             .file_stem()
@@ -258,7 +292,11 @@ impl Host {
             self.image_drop = None;
             return;
         }
-        let creating = matches!(job.target, ImageImportTarget::NewAchievements { .. });
+        let creating = matches!(
+            job.target,
+            ImageImportTarget::NewAchievements { .. }
+                | ImageImportTarget::NewAchievementBatch { .. }
+        );
         let mut import = false;
         let response = egui::Modal::new(egui::Id::new("photoshop-drop-picker"))
             .frame(egui::Frame::popup(&ctx.global_style()).inner_margin(24))
@@ -388,6 +426,11 @@ impl Host {
         artwork: Vec<crate::art_bank::Prepared>,
         target: &ImageImportTarget,
     ) -> Result<(), String> {
+        if let ImageImportTarget::NewAchievementBatch { entries, .. } = target
+            && entries.len() != artwork.len()
+        {
+            return Err("Image count changed during achievement import".into());
+        }
         let mut candidate = self.editor.document().clone();
         let editing_style = match target {
             ImageImportTarget::General {
@@ -428,13 +471,24 @@ impl Host {
         };
         let mut selected = None;
         let mut general_added = None;
-        for art in artwork {
+        for (index, art) in artwork.into_iter().enumerate() {
             let mut project = candidate.project().clone();
             let image_id = new_id();
             let reference = self.store.retain_art(&art.bytes)?;
             project["assets"]["images"].as_array_mut().ok_or("Invalid image library")?.push(json!({"id":image_id,"displayName":art.name,"image":reference,"kind":"User","pixelWidth":art.dimensions[0],"pixelHeight":art.dimensions[1],"fileBytes":art.bytes.len(),"importSource":art.source}));
             candidate = Document::from_parts(project, candidate.catalog().clone())?;
-            if let ImageImportTarget::NewAchievements { name, position } = target {
+            let creation = match target {
+                ImageImportTarget::NewAchievements { name, position } => {
+                    Some((name.as_str(), None, position))
+                }
+                ImageImportTarget::NewAchievementBatch { entries, position } => Some((
+                    entries[index].name.as_str(),
+                    Some(entries[index].description.as_str()),
+                    position,
+                )),
+                _ => None,
+            };
+            if let Some((name, description, position)) = creation {
                 if name.trim().is_empty() {
                     return Err("Enter an achievement name".into());
                 }
@@ -447,14 +501,15 @@ impl Host {
                 let edit = achimeld_application::automation::prepare(
                     &candidate,
                     "create_achievement",
-                    &json!({"apiName":api,"displayName":name,"description":format!("{api} description"),"column":position[0],"row":position[1]}),
+                    &json!({"apiName":api,"displayName":name,"description":description.map(str::to_owned).unwrap_or_else(|| format!("{api} description")),"column":position[0],"row":position[1]}),
                 )?;
                 selected = edit.selection.map(|(_, id)| id);
                 candidate = edit.document;
             }
             let (achievement, layer, general) = match target {
                 ImageImportTarget::ArtBank => continue,
-                ImageImportTarget::NewAchievements { .. } => (
+                ImageImportTarget::NewAchievements { .. }
+                | ImageImportTarget::NewAchievementBatch { .. } => (
                     selected.as_deref().ok_or("Achievement creation failed")?,
                     None,
                     true,
@@ -492,7 +547,11 @@ impl Host {
                         selected["generalImageIndex"] = json!(index);
                     }
                 }
-                if matches!(target, ImageImportTarget::NewAchievements { .. }) {
+                if matches!(
+                    target,
+                    ImageImportTarget::NewAchievements { .. }
+                        | ImageImportTarget::NewAchievementBatch { .. }
+                ) {
                     entity["icon"] = json!({"layers":[{"id":new_id(),"kind":"AchievementImage","generalImageIndex":index,"displayName":"General image","visible":true,"opacity":1.0,"effects":[]}]});
                 }
             } else {

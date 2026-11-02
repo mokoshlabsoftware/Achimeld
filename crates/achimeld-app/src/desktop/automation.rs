@@ -18,15 +18,20 @@ pub(super) struct Server {
     receiver: mpsc::Receiver<Pending>,
     stopped: Arc<AtomicBool>,
     logic_ticks: Arc<std::sync::atomic::AtomicU64>,
+    health_allowed: Arc<AtomicBool>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
 impl Server {
-    pub(super) fn start(ctx: egui::Context) -> Result<Self, String> {
+    pub(super) fn start(
+        ctx: egui::Context,
+        health_allowed: Arc<AtomicBool>,
+    ) -> Result<Self, String> {
         let first = Pipe::create().map_err(|e| e.to_string())?;
         let stopped = Arc::new(AtomicBool::new(false));
         let stop = stopped.clone();
         let logic_ticks = Arc::new(std::sync::atomic::AtomicU64::new(0));
         let ticks = logic_ticks.clone();
+        let health_permission = health_allowed.clone();
         let (sender, receiver) = mpsc::sync_channel(1);
         let thread = std::thread::spawn(move || {
             let mut first = Some(first);
@@ -59,6 +64,12 @@ impl Server {
                 let prepared = validate(&request);
                 let response = match prepared {
                     Err(error) => failure("invalid_request", &error),
+                    Ok(())
+                        if request.operation == "get_editor_health"
+                            && !health_permission.load(Ordering::Acquire) =>
+                    {
+                        failure("command_disabled", "MCP command disabled in Preferences")
+                    }
                     Ok(()) if request.operation == "get_editor_health" => success(json!({
                         "processId": std::process::id(),
                         "frameNumber": ctx.cumulative_frame_nr(),
@@ -119,11 +130,15 @@ impl Server {
             receiver,
             stopped,
             logic_ticks,
+            health_allowed,
             thread: Some(thread),
         })
     }
     pub(super) fn note_logic_tick(&self) {
         self.logic_ticks.fetch_add(1, Ordering::Release);
+    }
+    pub(super) fn set_health_allowed(&self, allowed: bool) {
+        self.health_allowed.store(allowed, Ordering::Release);
     }
 }
 impl Drop for Server {
@@ -136,7 +151,14 @@ impl Drop for Server {
 }
 fn validate(request: &Request) -> Result<(), String> {
     if request.operation == "list_instances" {
-        return Err("Discovery belongs to the MCP facade".into());
+        if request.arguments != json!({})
+            || request.project_id.is_some()
+            || request.expected_revision.is_some()
+            || request.request_id.is_some()
+        {
+            return Err("Invalid editor discovery request".into());
+        }
+        return Ok(());
     }
     let mut args = request.arguments.clone();
     let map = args.as_object_mut().ok_or("Arguments must be an object")?;
@@ -179,10 +201,13 @@ fn valid_id(id: &str) -> bool {
 fn read_only(operation: &str) -> bool {
     matches!(
         operation,
-        "get_scene"
+        "list_instances"
+            | "get_scene"
             | "get_editor_health"
             | "list_recent_projects"
             | "get_synchronization"
+            | "review_steam_deletion"
+            | "review_achievement_image_folder"
             | "get_remote_icon_metadata"
             | "list_effect_presets"
             | "status"
@@ -200,10 +225,208 @@ fn public_synchronization_review(review: &Value) -> Value {
     }
     public
 }
+fn filter_public_review(review: &mut Value, args: &Value) {
+    let Some(rows) = review["rows"].as_array_mut() else {
+        return;
+    };
+    let total = rows.len();
+    let kind = args["kind"].as_str();
+    let state = args["state"].as_str();
+    let query = args["query"].as_str().filter(|query| !query.is_empty());
+    rows.retain(|row| {
+        kind.is_none_or(|kind| row["kind"].as_str() == Some(kind))
+            && state.is_none_or(|state| row["state"].as_str() == Some(state))
+            && query.is_none_or(|query| {
+                row["apiName"]
+                    .as_str()
+                    .is_some_and(|name| name.to_lowercase().contains(&query.to_lowercase()))
+            })
+    });
+    let returned = rows.len();
+    review["totalRows"] = json!(total);
+    review["returnedRows"] = json!(returned);
+}
 fn remote_icon_api_name(icon: &Value) -> Option<&str> {
     icon["achievementApiName"]
         .as_str()
         .or_else(|| icon["achievementApiName"]["value"].as_str())
+}
+fn status_data(host: &Host, ui: &achimeld_ui::Desktop) -> Value {
+    let document = host.editor.document();
+    let mut result = json!({
+        "projectName": document.project()["displayName"].as_str().unwrap_or(""),
+        "workingVersion": achimeld_ui::current_version(),
+        "steamAppId": document.app_id(),
+        "isDirty": host.editor.is_dirty(),
+        "validationVerified": host.synchronization_verified(),
+        "synchronizationActive": host.synchronization.is_some(),
+        "synchronizationReviewReady": host.synchronization_review().is_some(),
+        "canvas": ui.automation_scene()["activeCanvas"],
+        "achievementCount": document.entities(EntityKind::Achievement).len(),
+        "steamSyncCount": document.synchronized_entities(EntityKind::Achievement).count(),
+        "statCount": document.entities(EntityKind::Stat).len(),
+    });
+    if let Some(path) = host.store.path() {
+        result["projectPath"] = json!(path.display().to_string());
+    }
+    result["modal"] = modal_value(host, ui);
+    result["blockedByModal"] = json!(!result["modal"].is_null());
+    result
+}
+fn achievement_image_folder(folder: &Path) -> Result<Vec<(PathBuf, u64, u128)>, String> {
+    if !local_path(folder) || !folder.is_dir() {
+        return Err("Supply an existing absolute local-drive image folder".into());
+    }
+    achimeld_security::windows::reject_reparse(folder).map_err(|e| e.to_string())?;
+    let mut files = Vec::new();
+    let mut total = 0_u64;
+    for item in std::fs::read_dir(folder).map_err(|e| e.to_string())? {
+        let path = item.map_err(|e| e.to_string())?.path();
+        let supported = path
+            .extension()
+            .and_then(|part| part.to_str())
+            .is_some_and(|part| {
+                ["png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff"]
+                    .iter()
+                    .any(|extension| part.eq_ignore_ascii_case(extension))
+            });
+        if !supported {
+            continue;
+        }
+        achimeld_security::windows::reject_reparse(&path).map_err(|e| e.to_string())?;
+        let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
+        if !metadata.is_file() {
+            return Err("Image folder contains a non-file image entry".into());
+        }
+        total = total
+            .checked_add(metadata.len())
+            .ok_or("Image folder exceeds the import budget")?;
+        if total > 128 * 1024 * 1024 || files.len() >= 128 {
+            return Err("Import at most 128 images totaling 128 MiB".into());
+        }
+        let modified = metadata
+            .modified()
+            .map_err(|e| e.to_string())?
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos();
+        files.push((path, metadata.len(), modified));
+    }
+    if files.is_empty() {
+        return Err("The folder contains no supported images".into());
+    }
+    files.sort_by_key(|(path, _, _)| {
+        path.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_ascii_lowercase()
+    });
+    Ok(files)
+}
+
+fn achievement_image_folder_review(host: &Host, args: &Value) -> Result<Value, String> {
+    let folder = PathBuf::from(args["folderPath"].as_str().ok_or("Missing folderPath")?);
+    let files = achievement_image_folder(&folder)?;
+    let entries = files
+        .iter()
+        .map(|(path, size, modified)| {
+            json!({"fileName":path.file_name().unwrap_or_default().to_string_lossy(),"size":size,"modified":modified})
+        })
+        .collect::<Vec<_>>();
+    let token = format!(
+        "{:x}",
+        Sha256::digest(
+            serde_json::to_vec(&json!({
+                "folderPath":folder,
+                "projectId":host.editor.document().project()["projectId"],
+                "sessionId":host.editor_session_id,
+                "revision":host.editor.revision(),
+                "entries":entries,
+            }))
+            .map_err(|e| e.to_string())?
+        )
+    );
+    Ok(
+        json!({"token":token,"folderPath":folder,"images":files.iter().map(|(path, _, _)| {
+        let name = path.file_stem().unwrap_or_default().to_string_lossy();
+        json!({"fileName":path.file_name().unwrap_or_default().to_string_lossy(),"name":name,"description":format!("Earn {name}")})
+    }).collect::<Vec<_>>() }),
+    )
+}
+
+fn steam_deletion_review(host: &Host, args: &Value) -> Result<Value, String> {
+    if !host.synchronization_verified() || host.synchronization_error().is_some() {
+        return Err("Validate the Steam connection in this editor session first".into());
+    }
+    if host.store.path().is_none() || host.synchronization.is_some() || host.read.is_some() {
+        return Err("Save the project and finish the active Steam operation first".into());
+    }
+    let document = host.editor.document();
+    let snapshot = &document.project()["lastRemoteSnapshot"];
+    if snapshot["steamAppId"].as_u64() != Some(u64::from(document.app_id()))
+        || snapshot["isComplete"] != true
+    {
+        return Err("Read the complete Steam configuration again before deleting".into());
+    }
+    let targets = args["targets"]
+        .as_array()
+        .ok_or("Missing deletion targets")?;
+    if targets.is_empty() || targets.len() > 1000 {
+        return Err("Invalid Steam deletion selection".into());
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut rows = Vec::with_capacity(targets.len());
+    for target in targets {
+        let kind = target["kind"].as_str().ok_or("Missing deletion kind")?;
+        let name = target["apiName"]
+            .as_str()
+            .ok_or("Missing deletion API name")?;
+        if name.is_empty() || !seen.insert((kind, name)) {
+            return Err("Duplicate or empty Steam deletion target".into());
+        }
+        let field = match kind {
+            "Achievement" => "achievements",
+            "Stat" => "stats",
+            _ => return Err("Unknown Steam deletion kind".into()),
+        };
+        let entry = snapshot[field]
+            .as_array()
+            .ok_or("Invalid Steam snapshot")?
+            .iter()
+            .find(|entry| {
+                entry["apiName"].as_str() == Some(name)
+                    || entry["apiName"]["value"].as_str() == Some(name)
+            })
+            .ok_or("Deletion target is absent from the verified Steam snapshot")?;
+        rows.push(json!({
+            "kind":kind,
+            "apiName":name,
+            "displayName":entry["displayName"]["value"].as_str().or_else(|| entry["displayName"].as_str()),
+            "steamId":entry["steamId"],
+        }));
+    }
+    let snapshot_hash = format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(snapshot).map_err(|e| e.to_string())?)
+    );
+    let token = format!(
+        "{:x}",
+        Sha256::digest(
+            serde_json::to_vec(&json!({
+                "projectId":document.project()["projectId"],
+                "sessionId":host.editor_session_id,
+                "documentRevision":host.editor.revision(),
+                "appId":document.app_id(),
+                "snapshotHash":snapshot_hash,
+                "targets":targets,
+            }))
+            .map_err(|e| e.to_string())?
+        )
+    );
+    let count = rows.len();
+    Ok(
+        json!({"token":token,"appId":document.app_id(),"targets":rows,"count":count,"publication":"manual"}),
+    )
 }
 fn modal_value(host: &Host, ui: &achimeld_ui::Desktop) -> Value {
     if let Some((id, kind, message)) = ui.automation_modal() {
@@ -286,6 +509,7 @@ impl Engine {
         json!({"projectId":host.editor.document().project()["projectId"],"editorSessionId":host.editor_session_id,"revision":self.revision,"result":result})
     }
     pub(super) fn poll(&mut self, server: &Server, host: &mut Host, ui: &mut achimeld_ui::Desktop) {
+        server.set_health_allowed(host.editor.preferences().mcp_allows("get_editor_health"));
         self.observe(host, ui);
         if let Some(work) = &self.work {
             match work.receiver.try_recv() {
@@ -460,6 +684,26 @@ impl Engine {
         if let Err(error) = validate(request) {
             return Some(failure("invalid_request", &error));
         }
+        if request.operation != "list_instances"
+            && !host.editor.preferences().mcp_allows(&request.operation)
+        {
+            return Some(failure(
+                "command_disabled",
+                "MCP command disabled in Preferences",
+            ));
+        }
+        if matches!(request.operation.as_str(), "undo" | "redo")
+            && if request.operation == "undo" {
+                host.editor.undo_label()
+            } else {
+                host.editor.redo_label()
+            } == Some("Preferences")
+        {
+            return Some(failure(
+                "command_disabled",
+                "MCP cannot change Preferences history",
+            ));
+        }
         if request.operation == "get_achievement_translations" && self.work.is_some() {
             return Some(failure(
                 "editor_busy",
@@ -497,6 +741,10 @@ impl Engine {
                 && matches!(
                     request.operation.as_str(),
                     "open_recent_project"
+                        | "open_project"
+                        | "reload_project"
+                        | "forget_steam_validation"
+                        | "apply_steam_deletion"
                         | "validate_steam"
                         | "prepare_synchronization"
                         | "open_steam_page"
@@ -557,6 +805,13 @@ impl Engine {
         let request = &pending.request;
         let args = &request.arguments;
         match request.operation.as_str() {
+            "list_instances" => {
+                if host.editor.preferences().mcp_allows("list_instances") {
+                    Ok(json!({"allowed":true,"facts":status_data(host, ui)}))
+                } else {
+                    Ok(json!({"allowed":false}))
+                }
+            }
             "list_style_collections"
             | "get_icon_style"
             | "create_style_collection"
@@ -683,10 +938,153 @@ impl Engine {
                 host.open(&path)?;
                 Ok(json!({"opened":true,"path":path}))
             }
+            "open_project" => {
+                if host.editor.is_dirty() {
+                    return Err("Save or discard current project edits in the editor first".into());
+                }
+                let path = std::path::PathBuf::from(args["path"].as_str().ok_or("Missing path")?);
+                if !local_path(&path)
+                    || !path
+                        .extension()
+                        .and_then(|part| part.to_str())
+                        .is_some_and(|part| part.eq_ignore_ascii_case("achv"))
+                {
+                    return Err("Supply an absolute .achv project path".into());
+                }
+                achimeld_security::windows::reject_reparse(&path)
+                    .map_err(|error| error.to_string())?;
+                host.open(&path)?;
+                Ok(json!({"opened":true,"path":path}))
+            }
+            "reload_project" => {
+                if args["discardUnsaved"] != true {
+                    return Err("Explicit discardUnsaved=true is required".into());
+                }
+                let path = host
+                    .store
+                    .path()
+                    .ok_or("Save the project before reloading")?
+                    .to_path_buf();
+                host.open(&path)?;
+                Ok(json!({"reloaded":true,"path":path}))
+            }
+            "save_project" => {
+                let path = host
+                    .store
+                    .path()
+                    .ok_or("Save the project in the editor first")?
+                    .to_path_buf();
+                host.save_to(&path)?;
+                Ok(json!({"saved":true,"path":path}))
+            }
+            "set_project_settings" => {
+                if args["appId"].is_null() && args["name"].is_null() {
+                    return Err("Supply appId or name".into());
+                }
+                let current = host.editor.document();
+                let app_id = args["appId"]
+                    .as_u64()
+                    .map(|value| u32::try_from(value).map_err(|_| "Invalid Steam App ID"))
+                    .transpose()?
+                    .unwrap_or_else(|| current.app_id());
+                let name = args["name"]
+                    .as_str()
+                    .unwrap_or(current.project()["displayName"].as_str().unwrap_or(""))
+                    .trim()
+                    .to_owned();
+                if name.is_empty() || name.len() > 256 {
+                    return Err("Project name must contain 1-256 characters".into());
+                }
+                host.finish_group();
+                host.execute(
+                    "MCP: set project settings",
+                    Command::ProjectSettings {
+                        name: name.clone(),
+                        app_id,
+                        atlas: None,
+                        assets: None,
+                    },
+                    None,
+                )?;
+                Ok(json!({"appId":app_id,"name":name,"saved":false}))
+            }
+            "review_achievement_image_folder" => achievement_image_folder_review(host, args),
+            "import_achievement_images" => {
+                let review = achievement_image_folder_review(host, args)?;
+                if args["token"] != review["token"] {
+                    return Err("Image folder changed; review it again".into());
+                }
+                let folder =
+                    PathBuf::from(args["folderPath"].as_str().ok_or("Missing folderPath")?);
+                let files = achievement_image_folder(&folder)?;
+                let supplied = args["entries"].as_array().ok_or("Missing image entries")?;
+                if supplied.len() != files.len() {
+                    return Err("Supply one name and description for every image".into());
+                }
+                let mut metadata = std::collections::BTreeMap::new();
+                for entry in supplied {
+                    let file_name = entry["fileName"]
+                        .as_str()
+                        .ok_or("Missing image file name")?;
+                    let name = entry["name"]
+                        .as_str()
+                        .ok_or("Missing achievement name")?
+                        .trim();
+                    let description = entry["description"].as_str().ok_or("Missing description")?;
+                    if name.is_empty()
+                        || name.len() > 256
+                        || description.len() > 1024
+                        || metadata
+                            .insert(
+                                file_name.to_owned(),
+                                (name.to_owned(), description.to_owned()),
+                            )
+                            .is_some()
+                    {
+                        return Err("Invalid or duplicate achievement image entry".into());
+                    }
+                }
+                let mut entries = Vec::with_capacity(files.len());
+                let mut paths = Vec::with_capacity(files.len());
+                for (path, _, _) in files {
+                    let file_name = path.file_name().unwrap_or_default().to_string_lossy();
+                    let (name, description) = metadata
+                        .remove(file_name.as_ref())
+                        .ok_or("Image entries do not match the reviewed folder")?;
+                    paths.push(path.clone());
+                    entries.push(achimeld_application::AchievementImageDraft {
+                        path,
+                        name,
+                        description,
+                    });
+                }
+                if !metadata.is_empty() {
+                    return Err("Image entries do not match the reviewed folder".into());
+                }
+                let position = ["column", "row"].map(|key| {
+                    let value = args[key].as_i64().unwrap_or(0);
+                    i32::try_from(value)
+                        .ok()
+                        .filter(|value| (-100_000..=100_000).contains(value))
+                        .ok_or("Invalid canvas position")
+                });
+                let [column, row] = position;
+                host.start_image_drop(
+                    paths,
+                    achimeld_application::ImageImportTarget::NewAchievementBatch {
+                        entries,
+                        position: [column?, row?],
+                    },
+                )?;
+                Ok(json!({"started":true,"count":supplied.len(),"status":host.status}))
+            }
             "get_synchronization" => {
-                let review = host
+                let mut review = host
                     .synchronization_review()
                     .map(public_synchronization_review);
+                if let Some(review) = review.as_mut() {
+                    filter_public_review(review, args);
+                }
                 Ok(json!({
                     "verified": host.synchronization_verified(),
                     "active": host.synchronization.is_some(),
@@ -695,6 +1093,41 @@ impl Engine {
                     "status": host.status,
                     "steamAppId": host.editor.document().app_id(),
                 }))
+            }
+            "forget_steam_validation" => {
+                host.forget_steam_validation()?;
+                host.status = crate::desktop::logged_status(
+                    "Steam validation forgotten. Save the project to keep this change.".into(),
+                );
+                Ok(json!({"forgotten":true,"saved":false}))
+            }
+            "review_steam_deletion" => steam_deletion_review(host, args),
+            "apply_steam_deletion" => {
+                if args["confirmDeletion"] != true {
+                    return Err("Explicit confirmDeletion=true is required".into());
+                }
+                let review = steam_deletion_review(host, args)?;
+                if review["token"] != args["token"] {
+                    return Err("Steam deletion review token changed".into());
+                }
+                let targets = review["targets"]
+                    .as_array()
+                    .ok_or("Invalid Steam deletion review")?
+                    .iter()
+                    .map(|target| {
+                        let kind = if target["kind"] == "Stat" {
+                            EntityKind::Stat
+                        } else {
+                            EntityKind::Achievement
+                        };
+                        (kind, target["apiName"].as_str().unwrap_or("").to_owned())
+                    })
+                    .collect();
+                host.request(UiRequest::DeleteSteam(targets));
+                if let Some(error) = host.synchronization_error() {
+                    return Err(error.into());
+                }
+                Ok(json!({"started":true,"status":host.status}))
             }
             "get_remote_icon_metadata" => {
                 let api_name = args["apiName"].as_str().ok_or("Missing API name")?;
@@ -841,28 +1274,7 @@ impl Engine {
                 host.request(UiRequest::Exit);
                 Ok(json!({"requested":true,"status":host.status}))
             }
-            "status" => {
-                let document = host.editor.document();
-                let mut result = json!({
-                    "projectName": document.project()["displayName"].as_str().unwrap_or(""),
-                    "workingVersion": achimeld_ui::current_version(),
-                    "steamAppId": document.app_id(),
-                    "isDirty": host.editor.is_dirty(),
-                    "validationVerified": host.synchronization_verified(),
-                    "synchronizationActive": host.synchronization.is_some(),
-                    "synchronizationReviewReady": host.synchronization_review().is_some(),
-                    "canvas": ui.automation_scene()["activeCanvas"],
-                    "achievementCount": document.entities(EntityKind::Achievement).len(),
-                    "steamSyncCount": document.synchronized_entities(EntityKind::Achievement).count(),
-                    "statCount": document.entities(EntityKind::Stat).len(),
-                });
-                if let Some(path) = host.store.path() {
-                    result["projectPath"] = json!(path.display().to_string());
-                }
-                result["modal"] = modal_value(host, ui);
-                result["blockedByModal"] = json!(!result["modal"].is_null());
-                Ok(result)
-            }
+            "status" => Ok(status_data(host, ui)),
             "get_node" => Ok(edits::node(
                 host.editor.document(),
                 args["nodeId"].as_str().ok_or("Missing nodeId")?,
@@ -1446,6 +1858,31 @@ mod tests {
             dispatch(&mut engine, &mut host, &mut ui, foreign)["success"],
             false
         );
+        let relative = request(
+            &host,
+            &engine,
+            "open_project",
+            json!({"path":"relative.achv"}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, relative)["success"],
+            false
+        );
+        let reload = request(
+            &host,
+            &engine,
+            "reload_project",
+            json!({"discardUnsaved":true}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, reload)["success"],
+            false
+        );
+        let forget = request(&host, &engine, "forget_steam_validation", json!({}));
+        let forgotten = dispatch(&mut engine, &mut host, &mut ui, forget);
+        assert_eq!(forgotten["success"], true);
+        assert_eq!(forgotten["data"]["result"]["saved"], false);
+        assert_eq!(host.editor.undo_label(), Some("Forget Steam validation"));
         let cancel = request(&host, &engine, "cancel_steam_read", json!({}));
         assert_eq!(
             dispatch(&mut engine, &mut host, &mut ui, cancel)["success"],
@@ -1456,6 +1893,275 @@ mod tests {
             dispatch(&mut engine, &mut host, &mut ui, exit)["success"],
             true
         );
+    }
+    #[test]
+    fn synchronization_review_filter_preserves_token_and_counts_full_review() {
+        let mut review = json!({
+            "token":"review-1",
+            "rows":[
+                {"key":"Achievement:MAP","kind":"Achievement","state":"LocalOnly","apiName":"MAP"},
+                {"key":"Icon:MAP","kind":"Icon","state":"LocalOnly","apiName":"MAP"},
+                {"key":"Stat:SCORE","kind":"Stat","state":"SteamOnly","apiName":"SCORE"}
+            ]
+        });
+        filter_public_review(&mut review, &json!({"kind":"Achievement","query":"map"}));
+        assert_eq!(review["token"], "review-1");
+        assert_eq!(review["totalRows"], 3);
+        assert_eq!(review["returnedRows"], 1);
+        assert_eq!(review["rows"][0]["key"], "Achievement:MAP");
+    }
+    #[test]
+    fn mcp_policy_blocks_reads_mutations_and_preference_history() {
+        let (mut host, mut ui, mut engine) = fixture();
+        let mut preferences = host.editor.preferences().clone();
+        for command in [
+            "get_scene",
+            "status",
+            "list_instances",
+            "create_achievement",
+        ] {
+            preferences.mcp_disabled_commands.insert(command.into());
+        }
+        host.editor
+            .execute("Preferences", Command::Preferences(preferences), None)
+            .unwrap();
+        engine.observe(&host, &ui);
+        for operation in ["get_scene", "status", "create_achievement"] {
+            let args = if operation == "create_achievement" {
+                json!({"apiName":"A","displayName":"A","description":"Text","column":0,"row":0})
+            } else {
+                json!({})
+            };
+            let call = request(&host, &engine, operation, args);
+            assert_eq!(
+                dispatch(&mut engine, &mut host, &mut ui, call)["errorCode"],
+                "command_disabled"
+            );
+        }
+        let discovery = Request {
+            operation: "list_instances".into(),
+            arguments: json!({}),
+            project_id: None,
+            expected_revision: None,
+            request_id: None,
+        };
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, discovery)["data"]["result"]["allowed"],
+            false
+        );
+        let undo = request(&host, &engine, "undo", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, undo)["errorCode"],
+            "command_disabled"
+        );
+    }
+    #[test]
+    fn mcp_opens_arbitrary_saved_project_and_reloads_unsaved_edits() {
+        let (mut host, mut ui, mut engine) = fixture();
+        let directory = std::env::temp_dir()
+            .join("achimeld-tests")
+            .join(format!("mcp-project-{}", new_id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("project.achv");
+        ProjectStore::new()
+            .save(host.editor.document(), &path)
+            .unwrap();
+        engine.observe(&host, &ui);
+        let open = request(&host, &engine, "open_project", json!({"path":path}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, open)["success"],
+            true
+        );
+        let opened_session = host.editor_session_id.clone();
+        host.editor
+            .execute(
+                "Unsaved art image",
+                Command::AddArtImageAt { position: [1, 1] },
+                None,
+            )
+            .unwrap();
+        assert!(host.editor.is_dirty());
+        engine.observe(&host, &ui);
+        let reload = request(
+            &host,
+            &engine,
+            "reload_project",
+            json!({"discardUnsaved":true}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, reload)["success"],
+            true
+        );
+        assert!(!host.editor.is_dirty());
+        assert_ne!(host.editor_session_id, opened_session);
+        assert!(
+            host.editor
+                .document()
+                .entities(EntityKind::Achievement)
+                .is_empty()
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
+    fn steam_deletion_review_pins_exact_verified_targets() {
+        let (mut host, mut ui, mut engine) = fixture();
+        let directory = std::env::temp_dir()
+            .join("achimeld-tests")
+            .join(format!("mcp-delete-review-{}", new_id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("project.achv");
+        let mut project = host.editor.document().project().clone();
+        project["lastRemoteSnapshot"] = json!({
+            "steamAppId":project["steamAppId"],
+            "isComplete":true,
+            "achievements":[{"apiName":{"value":"MAP"},"displayName":{"value":"Ancient Map"},"steamId":"37_5"}],
+            "stats":[]
+        });
+        let document =
+            Document::from_parts(project, host.editor.document().catalog().clone()).unwrap();
+        host.editor = Editor::new(document);
+        host.store.save(host.editor.document(), &path).unwrap();
+        host.editor.mark_saved();
+        host.verified_sync = Some((
+            host.editor_session_id.clone(),
+            host.editor.document().app_id(),
+        ));
+        engine.observe(&host, &ui);
+        let targets = json!([{"kind":"Achievement","apiName":"MAP"}]);
+        let review = request(
+            &host,
+            &engine,
+            "review_steam_deletion",
+            json!({"targets":targets}),
+        );
+        let result = dispatch(&mut engine, &mut host, &mut ui, review);
+        assert_eq!(result["success"], true, "{result}");
+        assert_eq!(result["data"]["result"]["targets"][0]["steamId"], "37_5");
+        let token = result["data"]["result"]["token"].clone();
+        let altered = request(
+            &host,
+            &engine,
+            "review_steam_deletion",
+            json!({"targets":[{"kind":"Achievement","apiName":"OTHER"}]}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, altered)["success"],
+            false
+        );
+        let apply = request(
+            &host,
+            &engine,
+            "apply_steam_deletion",
+            json!({"token":token,"targets":[{"kind":"Achievement","apiName":"OTHER"}],"confirmDeletion":true}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, apply)["success"],
+            false
+        );
+        drop(host);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
+    fn mcp_project_settings_change_name_and_destination_in_one_undo_step() {
+        let (mut host, mut ui, mut engine) = fixture();
+        let before = host.editor.document().clone();
+        engine.observe(&host, &ui);
+        let change = request(
+            &host,
+            &engine,
+            "set_project_settings",
+            json!({"appId":4873800,"name":"MCP project"}),
+        );
+        let result = dispatch(&mut engine, &mut host, &mut ui, change);
+        assert_eq!(result["success"], true, "{result}");
+        assert_eq!(host.editor.document().app_id(), 4873800);
+        assert_eq!(
+            host.editor.document().project()["displayName"],
+            "MCP project"
+        );
+        host.editor.undo();
+        assert_eq!(host.editor.document(), &before);
+    }
+    #[test]
+    fn image_folder_review_requires_exact_all_image_metadata() {
+        let (mut host, mut ui, mut engine) = fixture();
+        let before = host.editor.document().clone();
+        let before_count = host
+            .editor
+            .document()
+            .entities(EntityKind::Achievement)
+            .len();
+        let directory = std::env::temp_dir()
+            .join("achimeld-tests")
+            .join(format!("mcp-image-folder-{}", new_id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        for name in ["first.png", "second.png"] {
+            image::RgbaImage::from_pixel(2, 2, image::Rgba([20, 30, 40, 255]))
+                .save(directory.join(name))
+                .unwrap();
+        }
+        std::fs::write(directory.join("notes.txt"), b"ignored").unwrap();
+        engine.observe(&host, &ui);
+        let review = request(
+            &host,
+            &engine,
+            "review_achievement_image_folder",
+            json!({"folderPath":directory}),
+        );
+        let result = dispatch(&mut engine, &mut host, &mut ui, review);
+        assert_eq!(result["success"], true, "{result}");
+        let token = result["data"]["result"]["token"].clone();
+        assert_eq!(
+            result["data"]["result"]["images"].as_array().unwrap().len(),
+            2
+        );
+        let wrong = request(
+            &host,
+            &engine,
+            "import_achievement_images",
+            json!({"folderPath":directory,"token":token,"entries":[{"fileName":"first.png","name":"First","description":"First description"}]}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, wrong)["success"],
+            false
+        );
+        let valid = request(
+            &host,
+            &engine,
+            "import_achievement_images",
+            json!({"folderPath":directory,"token":token,"entries":[
+                {"fileName":"first.png","name":"First","description":"First description"},
+                {"fileName":"second.png","name":"Second","description":"Second description"}
+            ]}),
+        );
+        let result = dispatch(&mut engine, &mut host, &mut ui, valid);
+        assert_eq!(result["success"], true, "{result}");
+        for _ in 0..300 {
+            host.poll_image_drop();
+            if host.image_drop.is_none() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        assert!(host.image_drop.is_none(), "{}", host.status);
+        let created = host.editor.document().entities(EntityKind::Achievement);
+        assert_eq!(created.len(), before_count + 2);
+        assert_eq!(created[before_count]["internalName"], "First");
+        assert_eq!(created[before_count + 1]["internalName"], "Second");
+        for (entity, expected) in [
+            (&created[before_count], "First description"),
+            (&created[before_count + 1], "Second description"),
+        ] {
+            let id = entity["descriptionLocalizationId"].as_str().unwrap();
+            assert_eq!(
+                host.editor.document().catalog().text(id, "English"),
+                expected
+            );
+        }
+        host.editor.undo();
+        assert_eq!(host.editor.document(), &before);
+        drop(host);
+        std::fs::remove_dir_all(directory).unwrap();
     }
     #[test]
     fn selection_returns_the_destination_camera_and_global_style_import_is_one_undo_step() {
@@ -1608,6 +2314,7 @@ mod tests {
         let server = Server {
             receiver,
             stopped: Arc::new(AtomicBool::new(false)),
+            health_allowed: Arc::new(AtomicBool::new(true)),
             logic_ticks: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             thread: None,
         };
@@ -1623,6 +2330,7 @@ mod tests {
         let server = Server {
             receiver,
             stopped: Arc::new(AtomicBool::new(false)),
+            health_allowed: Arc::new(AtomicBool::new(true)),
             logic_ticks: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             thread: None,
         };
@@ -2003,7 +2711,7 @@ mod tests {
     fn author_default_styles_through_mcp() {
         let (mut host, mut ui, mut engine) = fixture();
         let original = host.editor.document().clone();
-        let server = Server::start(host.ctx.clone()).unwrap();
+        let server = Server::start(host.ctx.clone(), host.mcp_health_allowed.clone()).unwrap();
         let process = std::process::id();
         let client = std::thread::spawn(move || {
             let mut trace = Vec::new();
@@ -2241,7 +2949,7 @@ mod tests {
     #[test]
     fn real_windows_pipe_serves_the_stdio_facade_and_survives_disconnection() {
         let (mut host, mut ui, mut engine) = fixture();
-        let server = Server::start(host.ctx.clone()).unwrap();
+        let server = Server::start(host.ctx.clone(), host.mcp_health_allowed.clone()).unwrap();
         let process = std::process::id();
         let (tx, rx) = mpsc::sync_channel(1);
         let client = std::thread::spawn(move || {
@@ -2390,5 +3098,38 @@ mod tests {
                 .len(),
             1
         );
+        let mut preferences = host.editor.preferences().clone();
+        for command in ["list_instances", "status", "get_scene", "get_editor_health"] {
+            preferences.mcp_disabled_commands.insert(command.into());
+        }
+        host.editor
+            .execute("Preferences", Command::Preferences(preferences), None)
+            .unwrap();
+        server.set_health_allowed(false);
+        let policy_client = std::thread::spawn(move || {
+            let instances = achimeld_mcp::call_editor("list_instances", &json!({})).unwrap();
+            assert!(
+                !instances
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|instance| instance["processId"] == process)
+            );
+            for command in ["status", "get_scene", "get_editor_health"] {
+                let error =
+                    achimeld_mcp::call_editor(command, &json!({"processId":process})).unwrap_err();
+                assert!(error.contains("command_disabled"), "{command}: {error}");
+            }
+        });
+        let deadline = Instant::now() + Duration::from_secs(20);
+        while !policy_client.is_finished() {
+            engine.poll(&server, &mut host, &mut ui);
+            assert!(
+                Instant::now() < deadline,
+                "MCP policy pipe fixture timed out"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        policy_client.join().unwrap();
     }
 }

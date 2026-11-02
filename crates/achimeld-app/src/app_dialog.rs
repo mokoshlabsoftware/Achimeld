@@ -1,5 +1,5 @@
 //! Themed prompts. Filesystem enumeration stays in the supervised host.
-use achimeld_application::UiRequest;
+use achimeld_application::{AchievementImageDraft, UiRequest};
 use achimeld_ui::buttons::Button;
 use eframe::egui;
 use std::path::{Path, PathBuf};
@@ -39,6 +39,10 @@ pub(crate) enum Dialog {
         Vec<achimeld_application::effect_presets::EffectPreset>,
     ),
     Import(bool),
+    BulkAchievements {
+        paths: Option<Vec<PathBuf>>,
+        position: [i32; 2],
+    },
     ReloadArt {
         atlas: bool,
         id: String,
@@ -87,6 +91,10 @@ pub(crate) enum DialogResult {
         Option<PathBuf>,
     ),
     Import(bool, Option<PathBuf>),
+    BulkAchievements {
+        entries: Vec<AchievementImageDraft>,
+        position: [i32; 2],
+    },
     ReloadArt {
         atlas: bool,
         id: String,
@@ -132,6 +140,7 @@ impl Dialog {
             Self::EffectsExport(..) => "Export effect collection",
             Self::GradientExport(_) => "Export Photoshop gradients",
             Self::Import(_) | Self::ImportLayer { .. } => "Import image",
+            Self::BulkAchievements { .. } => "Import achievements",
             Self::ReloadArt { .. } => "Reload artwork from file",
             Self::Export => "Choose export folder",
             Self::ExportTranslations => "Export achievement translations",
@@ -198,6 +207,7 @@ impl Dialog {
             Self::EffectsImport(kind) => DialogResult::EffectsImport(kind, path),
             Self::EffectsExport(kind, presets) => DialogResult::EffectsExport(kind, presets, path),
             Self::Import(atlas) => DialogResult::Import(atlas, path),
+            Self::BulkAchievements { .. } => DialogResult::Acknowledged,
             Self::ReloadArt { atlas, id } => DialogResult::ReloadArt { atlas, id, path },
             Self::ImportLayer {
                 project_id,
@@ -237,6 +247,8 @@ pub(crate) struct AppDialog {
     folder: PathBuf,
     picker: rfd::FileDialog,
     pending: Option<mpsc::Receiver<Option<PathBuf>>>,
+    bulk_pending: Option<mpsc::Receiver<Option<Vec<PathBuf>>>>,
+    bulk_entries: Option<Vec<AchievementImageDraft>>,
     replace_target: Option<PathBuf>,
     error: Option<String>,
 }
@@ -248,6 +260,8 @@ impl AppDialog {
             folder,
             picker,
             pending: None,
+            bulk_pending: None,
+            bulk_entries: None,
             replace_target: None,
             error: None,
         }
@@ -340,6 +354,9 @@ impl AppDialog {
     }
     pub(crate) fn show(&mut self, ctx: &egui::Context) -> Option<DialogResult> {
         let kind = self.kind.take()?;
+        if matches!(kind, Dialog::BulkAchievements { .. }) {
+            return self.show_bulk(ctx, kind);
+        }
         if !matches!(
             kind,
             Dialog::Discard(_)
@@ -468,6 +485,137 @@ impl AppDialog {
             None
         }
     }
+
+    fn show_bulk(&mut self, ctx: &egui::Context, kind: Dialog) -> Option<DialogResult> {
+        let Dialog::BulkAchievements { paths, position } = &kind else {
+            unreachable!();
+        };
+        if self.bulk_entries.is_none() && self.error.is_none() {
+            if let Some(paths) = paths {
+                match achievement_image_drafts(paths.clone()) {
+                    Ok(entries) => self.bulk_entries = Some(entries),
+                    Err(error) => self.error = Some(error),
+                }
+            } else if let Some(pending) = &self.bulk_pending {
+                match pending.try_recv() {
+                    Ok(Some(paths)) => {
+                        self.bulk_pending = None;
+                        match achievement_image_drafts(paths) {
+                            Ok(entries) => self.bulk_entries = Some(entries),
+                            Err(error) => self.error = Some(error),
+                        }
+                    }
+                    Ok(None) => return Some(DialogResult::Acknowledged),
+                    Err(mpsc::TryRecvError::Empty) => {}
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        self.bulk_pending = None;
+                        self.error = Some("The image picker closed unexpectedly".into());
+                    }
+                }
+            } else {
+                let picker = self
+                    .picker
+                    .clone()
+                    .set_title("Import achievements")
+                    .set_directory(&self.folder)
+                    .add_filter(
+                        "Images",
+                        &["png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff"],
+                    );
+                let (sender, receiver) = mpsc::sync_channel(1);
+                let ctx = ctx.clone();
+                match std::thread::Builder::new()
+                    .name("achievement-image-picker".into())
+                    .spawn(move || {
+                        let _ = sender.send(picker.pick_files());
+                        ctx.request_repaint();
+                    }) {
+                    Ok(_) => self.bulk_pending = Some(receiver),
+                    Err(error) => {
+                        self.error = Some(format!("Could not open the image picker: {error}"))
+                    }
+                }
+            }
+        }
+        if self.bulk_entries.is_none() && self.error.is_none() {
+            self.kind = Some(kind);
+            return None;
+        }
+        let mut choice = None;
+        let frame = egui::Frame::popup(&ctx.global_style())
+            .fill(egui::Color32::BLACK)
+            .inner_margin(0)
+            .corner_radius(0);
+        let response = egui::Modal::new(egui::Id::new("app-dialog"))
+            .frame(frame)
+            .show(ctx, |ui| {
+                choice = if let Some(error) = &self.error {
+                    app_prompt(
+                        ui,
+                        "Import achievements",
+                        error,
+                        None,
+                        &[("Cancel", PromptIcon::Cancel, SaveChoice::Cancel)],
+                    )
+                } else if let Some(entries) = &mut self.bulk_entries {
+                    achievement_image_prompt(ui, entries)
+                } else {
+                    None
+                };
+            });
+        if choice.is_none() && response.should_close() {
+            choice = Some(SaveChoice::Cancel);
+        }
+        match choice {
+            Some(SaveChoice::Save) => Some(DialogResult::BulkAchievements {
+                entries: self.bulk_entries.take().unwrap_or_default(),
+                position: *position,
+            }),
+            Some(_) => Some(DialogResult::Acknowledged),
+            None => {
+                self.kind = Some(kind);
+                None
+            }
+        }
+    }
+}
+
+fn achievement_image_drafts(paths: Vec<PathBuf>) -> Result<Vec<AchievementImageDraft>, String> {
+    if paths.is_empty() || paths.len() > 128 {
+        return Err("Choose between 1 and 128 images".into());
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    paths
+        .into_iter()
+        .map(|path| {
+            let extension = path
+                .extension()
+                .and_then(|part| part.to_str())
+                .unwrap_or("");
+            if !path.is_absolute()
+                || !["png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff"]
+                    .iter()
+                    .any(|item| extension.eq_ignore_ascii_case(item))
+                || !seen.insert(path.to_string_lossy().to_ascii_lowercase())
+            {
+                return Err("Choose distinct supported image files".into());
+            }
+            let name = path
+                .file_stem()
+                .and_then(|part| part.to_str())
+                .ok_or("Image file name is not supported")?
+                .trim()
+                .to_owned();
+            if name.is_empty() {
+                return Err("Image file name is empty".into());
+            }
+            Ok(AchievementImageDraft {
+                path,
+                description: format!("Earn {name}"),
+                name,
+            })
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy)]
@@ -687,6 +835,113 @@ fn app_prompt(
     choice
 }
 
+fn achievement_image_prompt(
+    ui: &mut egui::Ui,
+    entries: &mut [AchievementImageDraft],
+) -> Option<SaveChoice> {
+    let width = 720.0_f32.min((ui.ctx().content_rect().width() - 32.0).max(0.0));
+    ui.set_width(width);
+    ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+    let title = ui.painter().layout_no_wrap(
+        "Import achievements".into(),
+        egui::TextStyle::Heading.resolve(ui.style()),
+        ui.visuals().text_color(),
+    );
+    let header_height = title.size().y.max(24.0) + 24.0;
+    let (header, _) =
+        ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
+    PromptIcon::Save
+        .image(ui.ctx(), 24.0)
+        .tint(ui.visuals().text_color())
+        .paint_at(
+            ui,
+            egui::Rect::from_center_size(
+                egui::pos2(header.left() + 36.0, header.center().y),
+                egui::Vec2::splat(24.0),
+            ),
+        );
+    ui.painter().galley(
+        header.center() - title.size() / 2.0,
+        title,
+        ui.visuals().text_color(),
+    );
+    prompt_divider(ui);
+    let action_height = achimeld_ui::buttons::bar_height(ui, 20.0);
+    let body_height =
+        (ui.ctx().content_rect().height() - header_height - action_height - 74.0).max(0.0);
+    egui::Frame::new()
+        .inner_margin(egui::Margin::symmetric(24, 20))
+        .show(ui, |ui| {
+            ui.set_width((width - 48.0).max(0.0));
+            egui::ScrollArea::vertical()
+                .max_height(body_height)
+                .show(ui, |ui| {
+                    ui.add(
+                        egui::Label::new("Review each image's achievement name and description before importing.")
+                            .wrap(),
+                    );
+                    ui.add_space(12.0);
+                    for (index, entry) in entries.iter_mut().enumerate() {
+                        let file = entry.path.file_name().unwrap_or_default().to_string_lossy();
+                        ui.strong(format!("{}. {}", index + 1, file));
+                        ui.add_space(4.0);
+                        egui::Grid::new(("achievement-image-fields", index))
+                            .num_columns(2)
+                            .spacing(egui::vec2(10.0, 6.0))
+                            .show(ui, |ui| {
+                                ui.label("Name");
+                                ui.add_sized(
+                                    [ui.available_width().max(120.0), 24.0],
+                                    egui::TextEdit::singleline(&mut entry.name),
+                                );
+                                ui.end_row();
+                                ui.label("Description");
+                                ui.add_sized(
+                                    [ui.available_width().max(120.0), 48.0],
+                                    egui::TextEdit::multiline(&mut entry.description)
+                                        .desired_rows(2),
+                                );
+                                ui.end_row();
+                            });
+                        ui.add_space(12.0);
+                    }
+                });
+        });
+    prompt_divider(ui);
+    let valid = entries.iter().all(|entry| {
+        !entry.name.trim().is_empty() && entry.name.len() <= 256 && entry.description.len() <= 1024
+    });
+    let mut choice = None;
+    ui.allocate_ui_with_layout(
+        egui::vec2(width, action_height),
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            for (index, (label, icon, answer)) in [
+                ("Import", PromptIcon::Save, SaveChoice::Save),
+                ("Cancel", PromptIcon::Cancel, SaveChoice::Cancel),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                if ui
+                    .add_enabled(
+                        index != 0 || valid,
+                        Button::new((icon.image(ui.ctx(), 20.0), label))
+                            .bar()
+                            .icon_spacing(8.0)
+                            .image_tint_follows_text_color(true)
+                            .min_size(egui::vec2(width / 2.0, action_height)),
+                    )
+                    .clicked()
+                {
+                    choice = Some(answer);
+                }
+            }
+        },
+    );
+    choice
+}
+
 fn validate_target(kind: &Dialog, mut path: PathBuf) -> Result<PathBuf, String> {
     if !path.is_absolute() {
         return Err("Choose an absolute file or folder path".into());
@@ -771,6 +1026,25 @@ fn validate_target(kind: &Dialog, mut path: PathBuf) -> Result<PathBuf, String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn image_batch_defaults_each_name_and_description_and_rejects_duplicates() {
+        let entries = achievement_image_drafts(vec![
+            PathBuf::from(r"C:\art\First.png"),
+            PathBuf::from(r"C:\art\Second.jpg"),
+        ])
+        .unwrap();
+        assert_eq!(entries[0].name, "First");
+        assert_eq!(entries[0].description, "Earn First");
+        assert_eq!(entries[1].name, "Second");
+        assert!(
+            achievement_image_drafts(vec![
+                PathBuf::from(r"C:\art\First.png"),
+                PathBuf::from(r"C:\art\first.PNG"),
+            ])
+            .is_err()
+        );
+        assert!(achievement_image_drafts(vec![PathBuf::from(r"C:\art\layer.psd")]).is_err());
+    }
     #[test]
     fn saved_project_prompt_closes_without_starting_a_picker() {
         fn text_rect(shape: &egui::Shape, label: &str) -> Option<egui::Rect> {

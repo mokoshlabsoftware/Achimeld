@@ -4,11 +4,13 @@ Sync connects a saved local project with a Steamworks destination. Validate chec
 
 Uploads save to a Steamworks draft. Publishing remains a manual Steamworks step.
 
+The Steam view shows entries from the latest read. Cards in each row have the same height. When Steam supplies small icon previews, achieved art fills the right half of that achievement card at 50% opacity and fades out toward the left. Hold Alt to preview the separate unachieved art above the card text; it fades in and out over 0.25 seconds. Secondary details such as Set by, values and display order use half-opacity text. Read Steam again to refresh the previews; they are kept only for the current editor session.
+
 ![Previously validated saved snapshot](screenshots/0.2.29.0/05-sync-saved-state.jpg)
 
 ## Destination and connection
 
-Check the project name and Steam App ID. Edit Steam App ID changes the intended association. Save the project before validating; an unsaved project receives guidance to save first.
+Check the project name and Steam App ID. Edit Steam App ID lets you change both fields. Changing the App ID changes the intended association. Save the project before validating; an unsaved project receives guidance to save first. After successful validation, an available name for the pinned Steam app replaces only the default Untitled project name.
 
 Open achievements and Open stats beside the validation or synchronization action open the selected project's pages in the dedicated Steam browser. Close that browser window when finished. These shortcuts do not validate the connection or change the project.
 
@@ -43,7 +45,9 @@ Expand field differences and inspect the actual values. An import choice can cha
 
 Check the destination, field choices and selected-change count. Planned Steam draft actions and editable choices share one scrolling modal. A thin bar counts down five seconds after a plan is ready, then synchronization starts automatically. Press Stop to pause the countdown and edit choices. Start 5 s begins a new countdown; Synchronize now submits immediately; Cancel discards the review. Another notice pauses the countdown so it cannot submit behind a blocking prompt. The review token and Steam App ID bind the operation to the captured project and destination.
 
-An MCP client can perform the same supervised workflow for a saved project. It validates first, prepares a fresh review, then supplies the review token and an explicit action for every row. The client can poll the current review, activity and errors, or cancel active work. See [Local editor automation](automation.md) for the tool sequence. Steamworks publication remains manual.
+An MCP client can perform the same supervised workflow for a saved project. It validates first, prepares a fresh review, then supplies the review token and an explicit action for every row. The client can poll the current review, activity and errors, filter returned rows by kind, state or API name, cancel active work, and forget saved validation before revalidating. Filtering does not reduce the choices required when applying a review. See [Local editor automation](automation.md) for the tool sequence. Steamworks publication remains manual.
+
+A deliberate Steam draft deletion is separate from the difference review. MCP clients first review exact achievement or stat API names against a verified full Steam snapshot, then apply the same target list with the returned token and explicit deletion confirmation. Achimeld reads the draft again and saves the verified result. A completed synchronization submission closes its review; if an import reveals more differences, start another review explicitly.
 
 The review uses a frozen project snapshot and caches achieved and unachieved icon PNG bytes before showing choices. Editing and ordinary Save remain available. Later edits are retained for the next synchronization, and the current upload uses the captured artwork. A conflicting completion retains local edits and asks for a fresh review.
 

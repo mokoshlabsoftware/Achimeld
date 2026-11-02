@@ -39,7 +39,9 @@ pub use document::{Catalog, Command, Document, EntityKind, new_id};
 pub use editor_state::{GradientPreset, GradientStop};
 pub use editor_state::{IconStyle, LayerLayout, style_signature};
 pub use history::Editor;
-pub use ports::{EditorPort, ImageImportTarget, Preview, SteamPage, UiRequest};
+pub use ports::{
+    AchievementImageDraft, EditorPort, ImageImportTarget, Preview, SteamPage, UiRequest,
+};
 pub use preferences::Preferences;
 pub use reorder::ReorderGesture;
 

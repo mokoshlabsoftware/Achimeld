@@ -8,6 +8,7 @@ checks += CspReportFixtures.Run();
 checks += MediaPolicyFixtures.Run();
 checks += WorkerDiagnosticFixtures.Run();
 checks += GameBannerFixtures.Run();
+checks += SteamPreviewFixtures.Run();
 void Reject(Action action) { try { action(); } catch (Exception e) when (e is InvalidDataException or ArgumentException) { checks++; return; } throw new Exception("Unsafe input accepted."); }
 foreach (string url in new[] { "https://cdn.steamstatic.com/steamcommunity/public/images/apps/480/a.png", "https://steamcommunity.com/public/images/apps/480/a.jpg", "https://partner.steamgames.com/public/images/a.png" }) { BrowserReadPolicy.RequireIcon(new Uri(url)); checks++; }
 foreach (string url in new[] { "http://cdn.steamstatic.com/a.png", "https://steamstatic.com.evil.test/a.png", "https://sub.steamcommunity.com/a.png", "https://127.0.0.1/a.png", "https://user:secret@cdn.steamstatic.com/a.png", "https://cdn.steamstatic.com:8443/a.png", "https://cdn.steamstatic.com/a.png?token=secret", "https://cdn.steamstatic.com/a.png#secret", "https://login.steampowered.com/a.png", "https://checkout.steampowered.com/a.png", "https://help.steampowered.com/a.png" })

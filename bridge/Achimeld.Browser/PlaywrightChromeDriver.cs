@@ -14,6 +14,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
     private readonly SteamworksPageClassifier _classifier = new();
     private readonly ConcurrentQueue<IPage> _unexpectedPages = new();
     private readonly Dictionary<string, string> _iconContentHashes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, byte[]> _iconPreviewBytes = new(StringComparer.Ordinal);
     private Achimeld.Security.SupervisionSession? _supervision;
     private IPlaywright? _playwright;
     private HttpClient? _iconDownloads;
@@ -174,7 +175,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
         string stats = await ReadConfigurationJsonAsync(appId, "fetchstats").ConfigureAwait(false);
         string achievements = await ReadConfigurationJsonAsync(appId, "fetchachievements").ConfigureAwait(false);
         await ReadIconContentHashesAsync(achievements).ConfigureAwait(false);
-        return LiveSteamworksConfiguration.Normalize(appId, stats, achievements, _iconContentHashes);
+        return LiveSteamworksConfiguration.Normalize(appId, stats, achievements, _iconContentHashes, _iconPreviewBytes);
     }
 
     private async Task EnterReadForAppAsync(SteamAppId appId)
@@ -191,6 +192,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
     {
         // Re-read content on every snapshot, including URLs that have not changed.
         _iconContentHashes.Clear();
+        _iconPreviewBytes.Clear();
         using JsonDocument configuration = JsonDocument.Parse(achievementsJson);
         string[] urls = configuration.RootElement.GetProperty("achievements").EnumerateArray()
             .SelectMany(achievement => IconFields
@@ -199,8 +201,20 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
             .OfType<string>()
             .Where(static url => url.Length > 0)
             .ToArray();
+        int previewBytes = 0;
+        object previewLock = new();
         IReadOnlyDictionary<string, string> hashes = await SteamIconHashReader.ReadAsync(
-            urls, DownloadIconAsync).ConfigureAwait(false);
+            urls, DownloadIconAsync, (url, bytes) =>
+            {
+                if (bytes.Length is < 1 or > 256 * 1024) return;
+                lock (previewLock)
+                {
+                    if (_iconPreviewBytes.Count >= 256) return;
+                    if (previewBytes + bytes.Length > 8 * 1024 * 1024) return;
+                    _iconPreviewBytes[url] = bytes;
+                    previewBytes += bytes.Length;
+                }
+            }).ConfigureAwait(false);
         foreach ((string url, string hash) in hashes) _iconContentHashes[url] = hash;
     }
     private async Task<byte[]> DownloadIconAsync(string url)

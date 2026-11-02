@@ -173,13 +173,14 @@ impl Desktop {
         if paths.is_empty() {
             return;
         }
-        if paths.len() > 32 {
-            self.error = Some("Drop at most 32 artwork files at a time".into());
-            return;
-        }
         let Some((_, rect, zone, _)) = target else {
             return;
         };
+        let limit = if zone == DropZone::Canvas { 128 } else { 32 };
+        if paths.len() > limit {
+            self.error = Some(format!("Drop at most {limit} artwork files at a time"));
+            return;
+        }
         ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
         let layer = self.selected_layer.clone();
         let style = match &zone {
@@ -192,21 +193,31 @@ impl Desktop {
             _ => None,
         };
         match zone {
-            DropZone::Canvas => self.request(UiRequest::ImportDroppedImages {
-                target: ImageImportTarget::NewAchievements {
-                    name: paths[0]
-                        .file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("Achievement")
-                        .into(),
-                    position: crate::canvas::canvas_position(
-                        pointer.expect("A drop target requires a pointer"),
-                        rect.min + self.pan,
-                        self.zoom,
-                    ),
-                },
-                paths,
-            }),
+            DropZone::Canvas => {
+                let position = crate::canvas::canvas_position(
+                    pointer.expect("A drop target requires a pointer"),
+                    rect.min + self.pan,
+                    self.zoom,
+                );
+                if paths.len() > 1 {
+                    self.request(UiRequest::ReviewAchievementImages {
+                        paths: Some(paths),
+                        position,
+                    });
+                } else {
+                    self.request(UiRequest::ImportDroppedImages {
+                        target: ImageImportTarget::NewAchievements {
+                            name: paths[0]
+                                .file_stem()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("Achievement")
+                                .into(),
+                            position,
+                        },
+                        paths,
+                    });
+                }
+            }
             DropZone::General(achievement_id) => self.request(UiRequest::ImportDroppedImages {
                 paths,
                 target: ImageImportTarget::General {

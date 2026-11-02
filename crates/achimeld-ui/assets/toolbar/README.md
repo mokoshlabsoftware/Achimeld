@@ -148,7 +148,7 @@ The gradient Reverse action uses the built-in imagegen source in
 `gradient-flip.json`. The dominant visible glyph is cropped and centered in a
 64 x 64 white tintable RGBA asset, preserving its generated alpha.
 
-The five Preferences section icons use built-in imagegen artwork. Original
+The six Preferences section icons use built-in imagegen artwork. Original
 transparent sources, exact prompts and 64 x 64 white tintable RGBA preparation
 are retained in preferences-icons.json and preferences-*-source.png.
 

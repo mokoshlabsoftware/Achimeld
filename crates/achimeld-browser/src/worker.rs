@@ -238,7 +238,7 @@ impl SteamReader {
     pub fn read_game_banner(
         &mut self,
         app_id: SteamAppId,
-    ) -> Result<Option<String>, SecurityError> {
+    ) -> Result<serde_json::Value, SecurityError> {
         self.call(ReadCommand::ReadGameBanner(app_id))
     }
     pub fn prepare_sync(

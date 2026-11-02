@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 
 namespace Achimeld.Browser;
 
+public sealed record SteamGameDetails(string? Name, byte[]? Banner);
+
 public sealed partial class PlaywrightChromeDriver
 {
     private readonly Dictionary<(uint AppId, string ApiName), (string Achieved, string Unachieved)> _uploadedIconHashes = new();
@@ -36,13 +38,16 @@ public sealed partial class PlaywrightChromeDriver
 
     public Task<byte[]> ReadApprovedArtworkAsync(Uri uri) => DownloadIconAsync(uri.AbsoluteUri);
 
-    public async Task<byte[]?> ReadGameBannerAsync(uint appId)
+    public async Task<byte[]?> ReadGameBannerAsync(uint appId) => (await ReadGameDetailsAsync(appId)).Banner;
+
+    public async Task<SteamGameDetails> ReadGameDetailsAsync(uint appId)
     {
         await EnterReadForAppAsync(new Achimeld.Core.SteamAppId(appId)).ConfigureAwait(false);
         // Resolve Steam's content-addressed capsule using fixed public metadata
         // for the pinned app. Both requests use the cookie-free, no-redirect client.
         Uri fallback = _requestPolicy.GameBannerUri(appId);
         Uri? current = null;
+        string? name = null;
         try
         {
             using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(5));
@@ -53,6 +58,7 @@ public sealed partial class PlaywrightChromeDriver
             {
                 byte[] metadata = await BoundedSteamContent.ReadAsync(response.Content, 512 * 1024, deadline.Token).ConfigureAwait(false);
                 current = _requestPolicy.ResolveGameBanner(appId, metadata);
+                name = SteamGameBanner.ResolveName(appId, metadata);
             }
         }
         catch (Exception exception) when (exception is HttpRequestException or OperationCanceledException or InvalidDataException)
@@ -62,9 +68,9 @@ public sealed partial class PlaywrightChromeDriver
         if (current is not null)
         {
             byte[]? currentBytes = await DownloadGameBannerAsync(current).ConfigureAwait(false);
-            if (currentBytes is not null) return currentBytes;
+            if (currentBytes is not null) return new(name, currentBytes);
         }
-        return await DownloadGameBannerAsync(fallback).ConfigureAwait(false);
+        return new(name, await DownloadGameBannerAsync(fallback).ConfigureAwait(false));
     }
 
     private async Task<byte[]?> DownloadGameBannerAsync(Uri uri)

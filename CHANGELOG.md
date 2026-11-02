@@ -2,6 +2,50 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.3.0 (2026-11-02)
+
+- Commit Steam audit fixes, MCP controls and bulk achievement import
+
+## 0.3.2.10 (2026-11-02)
+
+- Edit project name and Steam App ID through MCP
+
+## 0.3.2.9 (2026-11-02)
+
+- Create achievements from approved image batches on the canvas and through MCP
+
+## 0.3.2.8 (2026-11-02)
+
+- Review Steam deletions and save existing projects through MCP
+
+## 0.3.2.7 (2026-11-02)
+
+- Keep Steam deletion saves, sync completion and browser shutdown responsive
+
+## 0.3.2.6 (2026-11-02)
+
+- Allow individual MCP commands in Preferences with a new icon
+
+## 0.3.2.5 (2026-11-02)
+
+- Improve Steam cards with equal row heights, achievement art previews and dimmed details
+
+## 0.3.2.4 (2026-11-02)
+
+- Extend MCP project recovery and Steam review controls
+
+## 0.3.2.3 (2026-11-02)
+
+- Keep workstation diagnostics path in private guidance and use the public log location in UI previews
+
+## 0.3.2.2 (2026-11-02)
+
+- Edit the project name with its Steam App ID and fill the default name after validation
+
+## 0.3.2.1 (2026-11-02)
+
+- Keep the installer Update choice highlighted and ready without a checkmark
+
 ## 0.3.2.0 (2026-11-02)
 
 - Commit MCP reconnection fix after publishing audit

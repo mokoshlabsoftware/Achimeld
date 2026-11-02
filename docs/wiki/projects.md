@@ -23,6 +23,8 @@ Dialogs and text focus can change which shortcuts are available. If you have uns
 
 File > Project settings contains the project name, Steam App ID, atlas grid and icon output settings.
 
+You can also edit the Project name in Sync > Edit Steam App ID. Saving that dialog updates the name and App ID together. After a successful validation, Achimeld uses the pinned Steam app's public name when it is available and the project still has the default Untitled project name. A name you chose yourself is retained.
+
 The atlas grid uses tile width and height, offsets, spacing and traversal order. These determine how a tile index resolves to artwork.
 
 Output width and height determine icon dimensions. Unachieved icon settings set desaturation from 50% to 100%, opacity, and an optional dark-to-light gradient map with strength limited to 50%. The gradient map is off by default. Legacy Tint settings become an equivalent constant-color gradient when opened. Inspect the resulting pair before exporting or synchronizing.
@@ -36,6 +38,12 @@ Imported artwork is copied into project-owned storage. Saved projects use a sibl
 Copy the project, its companion catalog and its artwork folder as a set. Avoid placing working projects inside disposable application build folders.
 
 Art Data Bank provides source inspection, reload and resolution controls. Resizing an atlas changes its tile grid, so recheck the tile dimensions and references afterward.
+
+## Create achievements from images
+
+Right-click an empty area of the Achievements canvas and choose Import achievements from images to select multiple image files. Dropping multiple supported images onto that canvas opens the same approval window. Review each proposed achievement name and description, edit them as needed, then choose Import. Cancel leaves the project unchanged. A single-image drop keeps the existing direct import behavior.
+
+Each approved image creates one achievement with a General image and icon layer, and the source artwork is copied into the Art Data Bank. The batch is one undoable edit. Import up to 128 supported images at a time; the prepared artwork is limited to 128 MiB. Photoshop layer files are handled by the separate layer import workflow.
 
 ## Undo and recovery
 

@@ -191,6 +191,10 @@ impl Desktop {
                         "browser",
                         include_bytes!("../assets/toolbar/preferences-browser.rgba").as_slice(),
                     ),
+                    (
+                        "mcp",
+                        include_bytes!("../assets/toolbar/preferences-mcp.rgba").as_slice(),
+                    ),
                 ]
                 .map(|(name, bytes)| {
                     ctx.load_texture(
@@ -276,7 +280,7 @@ impl Desktop {
                             }
                         });
                     });
-                let categories = ["General", "Colors", "App style", "Naming", "Browser"]
+                let categories = ["General", "Colors", "App style", "Naming", "Browser", "MCP"]
                     .map(|label| crate::localization::text(ui.ctx(), label));
                 let navigation_width = categories.iter().map(|label| ui.painter().layout_no_wrap(
                     label.clone(), egui::TextStyle::Button.resolve(ui.style()), ui.visuals().text_color()
@@ -584,10 +588,58 @@ impl Desktop {
                     }
                 }
             }
-            _ => {
+            4 => {
                 ui.label("Steam opens in a separate browser when you choose Read Steam.");
                 ui.label("Sign in manually if prompted. Your session is kept for next time.");
                 ui.label(port.status());
+            }
+            5 => mcp_command_preferences(ui, port, preferences),
+            _ => {}
+        }
+    }
+}
+
+fn mcp_command_preferences(
+    ui: &mut egui::Ui,
+    port: &dyn EditorPort,
+    preferences: &mut achimeld_application::Preferences,
+) {
+    ui.heading("MCP commands");
+    ui.label("Every command is allowed by default. Turn off a command to reject it for local MCP clients after you save Preferences.");
+    let commands = port.mcp_commands();
+    ui.label(format!(
+        "{} of {} allowed",
+        commands
+            .iter()
+            .filter(|(name, _)| preferences.mcp_allows(name))
+            .count(),
+        commands.len()
+    ));
+    if ui.app_button("Allow all commands").clicked() {
+        preferences.mcp_disabled_commands.clear();
+    }
+    let filter_id = ui.id().with("mcp-command-filter");
+    let mut filter = ui
+        .data(|data| data.get_temp::<String>(filter_id))
+        .unwrap_or_default();
+    ui.add(egui::TextEdit::singleline(&mut filter).hint_text("Filter commands"));
+    ui.data_mut(|data| data.insert_temp(filter_id, filter.clone()));
+    let needle = filter.to_ascii_lowercase();
+    for (name, description) in commands {
+        if !name.contains(needle.as_str())
+            && !description.to_ascii_lowercase().contains(needle.as_str())
+        {
+            continue;
+        }
+        let mut allowed = preferences.mcp_allows(name);
+        if crate::fields::checkbox(ui, name, &mut allowed)
+            .on_hover_text(description)
+            .changed()
+        {
+            if allowed {
+                preferences.mcp_disabled_commands.remove(name);
+            } else {
+                preferences.mcp_disabled_commands.insert(name.clone());
             }
         }
     }
