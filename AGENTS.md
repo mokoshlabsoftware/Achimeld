@@ -93,11 +93,10 @@ Git, LFS, release assets, package registries, CI artifacts, Pages, or disguised
 archives. Source artwork, build recipes and automatic source-code archives are
 allowed. Text-only CI audit evidence is allowed; compiled build outputs are not.
 
-**Lemon Squeezy delivery is explicitly authorized.** Publish.bat delivers the
-verified promoted installer after successful source publication. The standalone
-private/Upload-LemonSqueezy.bat retries delivery without rebuilding. Target product,
-store and test/live mode are pinned in private/lemon-product.json; never activate
-sales or switch modes automatically. BuildOnly and quick builds do not upload.
+**Gumroad delivery is manual.** Publish.bat creates a source-only release and
+prepares the verified promoted installer locally. It must not upload to a
+storefront, activate sales or change store settings. BuildOnly and quick builds
+also remain local. Verify the installer and its receipt before manual delivery.
 Never use GitHub/GitLab as an installer host or fallback download location.
 
 Generated installers, packages, build outputs and audit evidence belong under

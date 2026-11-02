@@ -12,6 +12,15 @@ try {
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     . (Join-Path $PSScriptRoot 'BuildPaths.ps1')
     Initialize-AchimeldBuildPaths
+    if ($env:ACHIMELD_RELEASE_TARGET) {
+        $releaseTarget = [IO.Path]::GetFullPath($env:ACHIMELD_RELEASE_TARGET)
+        $artifactRoot = [IO.Path]::GetFullPath($env:ACHIMELD_ARTIFACT_ROOT)
+        if ((Split-Path -Parent $releaseTarget) -ine $artifactRoot -or
+            (Split-Path -Leaf $releaseTarget) -cnotmatch '^release-target-[a-f0-9]{32}$') {
+            throw 'Release target must be a dedicated directory under current build storage.'
+        }
+        $env:CARGO_TARGET_DIR = $releaseTarget
+    }
     if ($BuildRelease) { $CargoArguments = @('build','--workspace','--release','--locked','--offline') }
     if (!$ToolchainRoot) {
         $localCompiler = Join-Path $env:ACHIMELD_CACHE_ROOT 'rustup/toolchains/1.99.0-x86_64-pc-windows-msvc'

@@ -25,7 +25,7 @@ File > Project settings contains the project name, Steam App ID, atlas grid and 
 
 The atlas grid uses tile width and height, offsets, spacing and traversal order. These determine how a tile index resolves to artwork.
 
-Output width and height determine icon dimensions. Unachieved icon settings select grayscale or tint and opacity. Inspect these before exporting.
+Output width and height determine icon dimensions. Unachieved icon settings set desaturation from 50% to 100%, opacity, and an optional dark-to-light gradient map with strength limited to 50%. The gradient map is off by default. Legacy Tint settings become an equivalent constant-color gradient when opened. Inspect the resulting pair before exporting or synchronizing.
 
 The Steam App ID identifies the intended game. A local App ID field and a successful Steam connection are separate things.
 

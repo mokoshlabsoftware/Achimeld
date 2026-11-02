@@ -381,6 +381,27 @@ impl WorkerResponse {
                 Some("steam.sync.readback-mismatch") => {
                     Some("Steam draft read-back did not match the approved change.")
                 }
+                Some("steam.sync.icon-post-rejected") => Some(
+                    "Steamworks rejected the reviewed icon upload. Read Steam again before retrying.",
+                ),
+                Some("steam.sync.icon-not-saved") => Some(
+                    "Steamworks did not report a saved icon. Read Steam again before retrying.",
+                ),
+                Some("steam.sync.icon-verify-failed") => Some(
+                    "The saved Steam icon did not match the reviewed artwork after read-back retries. Read Steam again before retrying.",
+                ),
+                Some("steam.sync.icon-stale") => Some(
+                    "Steam still serves the pre-upload icon hash after the draft write. The outcome is uncertain; read Steam again before retrying.",
+                ),
+                Some("steam.sync.icon-format") => Some(
+                    "Steamworks returned an icon with unexpected image dimensions or format. The draft outcome is uncertain; read Steam again before retrying.",
+                ),
+                Some("steam.sync.icon-pixels-near") => Some(
+                    "Steamworks converted the icon but its pixels fell outside the strict artwork threshold. The draft outcome is uncertain; read Steam again before retrying.",
+                ),
+                Some("steam.sync.icon-pixels-different") => Some(
+                    "Steamworks saved icon pixels substantially different from the reviewed artwork. The draft outcome is uncertain; read Steam again before retrying.",
+                ),
                 Some("steam.sync.rename-identity") => {
                     Some("Steam did not preserve the renamed record identity.")
                 }
@@ -643,6 +664,34 @@ mod tests {
                 "Steam draft read-back did not match the approved change.",
             ),
             (
+                "steam.sync.icon-post-rejected",
+                "Steamworks rejected the reviewed icon upload. Read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.icon-not-saved",
+                "Steamworks did not report a saved icon. Read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.icon-verify-failed",
+                "The saved Steam icon did not match the reviewed artwork after read-back retries. Read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.icon-stale",
+                "Steam still serves the pre-upload icon hash after the draft write. The outcome is uncertain; read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.icon-format",
+                "Steamworks returned an icon with unexpected image dimensions or format. The draft outcome is uncertain; read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.icon-pixels-near",
+                "Steamworks converted the icon but its pixels fell outside the strict artwork threshold. The draft outcome is uncertain; read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.icon-pixels-different",
+                "Steamworks saved icon pixels substantially different from the reviewed artwork. The draft outcome is uncertain; read Steam again before retrying.",
+            ),
+            (
                 "steam.sync.rename-identity",
                 "Steam did not preserve the renamed record identity.",
             ),
@@ -691,6 +740,13 @@ mod tests {
             "steam.sync.review-changed",
             "steam.sync.remote-changed",
             "steam.sync.readback-mismatch",
+            "steam.sync.icon-post-rejected",
+            "steam.sync.icon-not-saved",
+            "steam.sync.icon-verify-failed",
+            "steam.sync.icon-stale",
+            "steam.sync.icon-format",
+            "steam.sync.icon-pixels-near",
+            "steam.sync.icon-pixels-different",
             "steam.sync.rename-identity",
             "steam.sync.localization-missing",
             "steam.sync.progress-selection",

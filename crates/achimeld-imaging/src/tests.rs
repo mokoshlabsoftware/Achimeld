@@ -1,4 +1,4 @@
-use crate::{AssetSource, render};
+use crate::{AssetSource, render, render_layer_cancellable};
 use achimeld_application::{Command, Editor, EntityKind, new_id};
 use image::{Rgba, RgbaImage};
 use serde_json::{Value, json};
@@ -748,6 +748,141 @@ fn configured_unachieved_tint_and_opacity_are_not_silently_ignored() {
     let pair = render(editor.document(), &id, Some((16, 16)), &mut Assets).unwrap();
     assert_eq!(*pair.achieved.get_pixel(0, 0), Rgba([255, 0, 0, 128]));
     assert_eq!(*pair.unachieved.get_pixel(0, 0), Rgba([27, 27, 155, 64]));
+}
+#[test]
+fn version_visibility_and_bounded_unachieved_style_render_both_icon_versions() {
+    let mut editor = Editor::default();
+    editor
+        .execute("Add", Command::Add(EntityKind::Achievement), None)
+        .unwrap();
+    let mut entity = editor.document().entities(EntityKind::Achievement)[0].clone();
+    let id = entity["id"].as_str().unwrap().to_owned();
+    let folder = new_id();
+    entity["icon"] = json!({"layers":[
+        {"id":new_id(),"kind":"Solid","solidColorHex":"#FFCC3366"},
+        {"id":folder,"kind":"Folder","versionVisibility":"AchievedOnly"},
+        {"id":new_id(),"kind":"Solid","parentFolderId":folder,"solidColorHex":"#FF00FF00"}
+    ]});
+    let mut atlas = editor.document().project()["atlas"].clone();
+    atlas["unachievedIcon"] = json!({
+        "desaturation":0.5,"opacity":1.0,
+        "gradientOverlay":{"enabled":true,"opacity":0.5,
+            "darkColorHex":"#000000","lightColorHex":"#FFFFFF"}
+    });
+    editor
+        .execute(
+            "Configure",
+            Command::Batch(vec![
+                Command::ReplaceEntity {
+                    kind: EntityKind::Achievement,
+                    id: id.clone(),
+                    value: entity,
+                },
+                Command::ProjectSettings {
+                    name: "Unachieved test".into(),
+                    app_id: 0,
+                    atlas: Some(atlas.clone()),
+                    assets: None,
+                },
+            ]),
+            None,
+        )
+        .unwrap();
+    let pair = render(editor.document(), &id, Some((8, 8)), &mut Assets).unwrap();
+    assert_eq!(*pair.achieved.get_pixel(0, 0), Rgba([0, 255, 0, 255]));
+    let locked = pair.unachieved.get_pixel(0, 0);
+    assert!((i16::from(locked[0]) - 117).abs() <= 1);
+    assert!((i16::from(locked[1]) - 78).abs() <= 1);
+    assert!((i16::from(locked[2]) - 91).abs() <= 1);
+    assert_eq!(locked[3], 255);
+
+    let mut updated = editor
+        .document()
+        .entity(EntityKind::Achievement, &id)
+        .unwrap()
+        .clone();
+    let unachieved_layer = new_id();
+    updated["icon"]["layers"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({
+            "id":unachieved_layer,"kind":"Solid","solidColorHex":"#FF0000FF",
+            "versionVisibility":"UnachievedOnly"
+        }));
+    editor
+        .execute(
+            "Unachieved layer",
+            Command::ReplaceEntity {
+                kind: EntityKind::Achievement,
+                id: id.clone(),
+                value: updated,
+            },
+            None,
+        )
+        .unwrap();
+    let pair = render(editor.document(), &id, Some((8, 8)), &mut Assets).unwrap();
+    assert_eq!(*pair.achieved.get_pixel(0, 0), Rgba([0, 255, 0, 255]));
+    assert_eq!(*pair.unachieved.get_pixel(0, 0), Rgba([14, 14, 77, 255]));
+    let layer_preview = render_layer_cancellable(
+        editor.document(),
+        &id,
+        &unachieved_layer,
+        &mut Assets,
+        &|| false,
+    )
+    .unwrap();
+    assert_eq!(*layer_preview.get_pixel(0, 0), Rgba([0, 0, 255, 255]));
+
+    atlas["unachievedIcon"]["desaturation"] = json!(0.49);
+    assert!(
+        editor
+            .execute(
+                "Invalid desaturation",
+                Command::ProjectSettings {
+                    name: "Unachieved test".into(),
+                    app_id: 0,
+                    atlas: Some(atlas.clone()),
+                    assets: None
+                },
+                None
+            )
+            .is_err()
+    );
+    atlas["unachievedIcon"]["desaturation"] = json!(0.5);
+    atlas["unachievedIcon"]["gradientOverlay"]["opacity"] = json!(0.51);
+    assert!(
+        editor
+            .execute(
+                "Invalid gradient strength",
+                Command::ProjectSettings {
+                    name: "Unachieved test".into(),
+                    app_id: 0,
+                    atlas: Some(atlas),
+                    assets: None
+                },
+                None
+            )
+            .is_err()
+    );
+    let mut invalid = editor
+        .document()
+        .entity(EntityKind::Achievement, &id)
+        .unwrap()
+        .clone();
+    invalid["icon"]["layers"][1]["versionVisibility"] = json!("Neither");
+    assert!(
+        editor
+            .execute(
+                "Invalid version visibility",
+                Command::ReplaceEntity {
+                    kind: EntityKind::Achievement,
+                    id,
+                    value: invalid,
+                },
+                None,
+            )
+            .is_err()
+    );
 }
 #[test]
 fn adjustment_layers_honor_their_selected_blend_mode() {

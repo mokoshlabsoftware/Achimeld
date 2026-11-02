@@ -1,5 +1,7 @@
 # Local editor MCP
 
+The [MCP guidelines](mcp-guidelines.md) define the expected minimized-window, handshake, reconnect, health, and error behavior. The current implementation and live qualification are tracked separately in the [MCP audit](security/mcp-audit.md).
+
 Build and Run also recovers connectors from older packages: if only exact `Achimeld.exe --mcp` processes remain in the current development package, it closes those connectors before building. Any editor, supervisor, worker or other command preserves the save-and-close build guard. Cleanup validates the executable path and process start time against a retained process handle; it does not terminate processes from other packages.
 
 Achimeld implements the original Achiever MCP workflow against its open Rust editor. The original checkout is a behavioral reference, never a build dependency.
@@ -14,9 +16,13 @@ The MCP process verifies and retains locks on its signed package while an editor
 
 The tools are `list_instances`, `status`, `get_scene`, `get_node`, `list_icon_styles`, `get_achievement_translations`, `export_achievement_translations`, `import_achievement_translations`, `create_achievement`, `create_stat`, `create_stats`, `update_node`, `move_nodes`, `select_node`, `configure_stat`, `link_achievement_stat`, `add_general_image`, `apply_icon_style`, `export_achievement_icons`, `undo`, and `redo`.
 
+`status` and `get_scene` report modal state. `acknowledge_modal` accepts only the exact `modalId` of an informational OK notice. `list_effect_presets` returns named Explosion Explorer and particle recipes; `apply_effect_preset` applies one saved preset to 1-100 selected achievements in one undo step. `close_effect_explorer` closes that floating editor after its normal save check. Initialization includes a structured `_meta.achimeld` editor snapshot in addition to human-readable instructions.
+
 Steam workflow tools are `get_synchronization`, `validate_steam`, `prepare_synchronization`, `apply_synchronization`, and `cancel_synchronization`. Save the project in the editor first. `validate_steam` starts the existing supervised connection check. Poll `get_synchronization` until `verified` is true or `error` is set. `prepare_synchronization` then starts a fresh Steam read and prepares a review. Poll until `review` appears. To apply it, supply its exact `token` and one `{key,action}` choice for every row; actions must be listed by that row. The application host checks the review again before sending it to the existing synchronization worker. The call returns when work starts, so poll for completion or failure. `cancel_synchronization` cancels active work or a waiting review. Uploads update the Steamworks draft; publishing remains manual.
 
 `open_menu` opens one of the top title menus (`File`, `Edit`, `Tools`, `Windows`, `Help`) and `close_menu` closes the active popup. Both use the selected editor's UI and ordinary mutation revision pins. Nested and context menus remain controlled through their parent UI interactions.
+
+`list_recent_projects` reads the desktop's remembered project paths. `open_recent_project` opens one exact member only when the current document is clean. `open_steam_page` opens the pinned App ID's achievements or stats route in the supervised browser; `cancel_steam_read` interrupts that page read. `close_editor` invokes the normal Save, Discard, Cancel close flow.
 
 Style authoring additionally provides `list_style_collections`, `get_icon_style`,
 `create_style_collection`, `create_icon_style`, `export_style_preview`,

@@ -1,6 +1,10 @@
 # Reviewed Steam synchronization implementation audit
 
-The host now renders and hashes each synchronized achievement's icon pair during preparation. The receiver compares those hashes with the saved baseline and fresh Steam icon identity, so an artwork-only edit appears as a separate Icon upload while unchanged icons remain in sync. Proposed imports and uploads wait for the user's row selection and confirmation. The worker still pins selected PNG bytes and verifies Steam read-back at execution. This source and fixture check does not establish live Steam compatibility.
+The host renders, hashes and retains each available synchronized achievement icon pair as bounded PNG bytes during preparation. The receiver compares those hashes with the saved baseline and fresh Steam icon identity, so an artwork-only edit appears as a separate Icon row. The review shows the frozen action plan; one explicit Synchronize click submits selected rows without a second confirmation. The worker uploads those captured bytes and verifies Steam read-back. A user can edit and save the project during the review and transfer; completion merges independent local and Steam changes. This source and fixture check does not establish live Steam compatibility.
+
+## Live icon conversion correction (2026-11-01)
+
+The reviewed Steam artwork snapshot renders its upload PNG pairs at 256 by 256 pixels, independent of the project's atlas export size. This matches the saved Steam achievement icon dimensions observed in the live waifus6 draft. The worker downloads and hashes each pre-upload Steam icon, then after one authorized POST retries the saved configuration and CDN download until a changed image hash appears. A full snapshot read must report that same hash for the selected achievement's achieved and unachieved images. It never repeats the POST. An unchanged hash is an uncertain stale outcome; a changed hash proves new saved bytes, not their visual meaning. Public preview inspection supplies visual QA when needed.
 
 ## Previous deferred icon flow and process cleanup (2026-10-29)
 
@@ -155,6 +159,23 @@ Successful runs refresh the saved remote snapshot without deleting authored
 project entries. Failure invalidates session validation and asks for a refresh.
 A successful draft deletion still requires manual Steamworks publication.
 
+Exit cancels an active synchronization and drops its review channels before
+the normal local Save/Discard/Cancel close flow. The Rust worker is detached at
+this point so a stalled Steam call cannot hold the desktop window open. Its
+frozen input cannot mutate the editor after detachment; a draft write already
+in flight may have an uncertain outcome. The durable journal and a fresh
+Steam read are required before any retry. Completion polling continues while
+an application dialog is visible so prompts cannot stall normal cancellation.
+
+Icon upload read-back retries fresh saved-configuration reads and CDN downloads
+for a bounded interval until the exact selected icon's content hash differs from
+its pre-upload hash. It never repeats the draft POST. The full verified remote
+snapshot must contain the resulting hash before the step can complete. Closed
+worker codes distinguish a rejected POST, missing saved image, invalid raster,
+and unchanged remote hash. Older pixel-difference codes remain in the wire
+vocabulary for compatibility but the current writer does no pixel comparison.
+Arbitrary portal responses and image bytes do not enter diagnostics.
+
 Fixture evidence covers mixed missing/present batches, dependency order, replay,
 failed read-back, confirmation cancellation and validation gating. Live Steam
 selectors, installed supervision, and exact-package runtime diagnostics require
@@ -228,19 +249,116 @@ and concurrent source edits invalidated source stability. No live Steam writes,
 native rename-panel screenshot acceptance, installer delivery, or exact-build
 runtime/crash qualification was performed for this change.
 
+## Live icon hash readback and timed review
+
+The 0.3.0.5 hidden desktop was run through the supervised MCP connection with
+the saved waifus6 project (Steam App ID 4873800). The first review had 233 rows.
+Exactly one icon pair, ACHIEVEMENT_013, was selected for upload; all other rows
+were Skip. Steamworks reported the draft saved, and an independent fresh review
+returned achieved SHA-256
+`c7db266af28e08aadb9a1063b74bae3d15c8b8b105a351a94499e7cc5aee44f7`
+and unachieved SHA-256
+`fbc6023e7953b55290b093ab404e3a618612e9cd13f0c3f774eef763b94134b1`.
+Both differ from their pre-upload CDN hashes. The review was cancelled and the
+editor exited normally. The exact running build emitted a flushed Public
+Documents runtime log. This qualifies one live draft upload and readback; it
+does not qualify Steamworks publication or every achievement.
+
+The subsequent 0.3.0.6 UI source moves the review to a square modal with one
+scrollable list and a stoppable five-second countdown. Focused UI regressions
+cover editing, Stop, resume, timed submission and a changed-destination Cancel
+path. Its package build was attempted but failed during Rust compilation when
+an expected release rlib disappeared while other Rust work was active. There
+is no 0.3.0.6 runtime qualification; the combined later build must supply it.
+
+The 0.3.0.8 hidden desktop used the saved waifus6 project for live stress checks.
+Validation cancellation during browser startup left the UI responsive; Achievements
+opened through MCP selection, and a later validation succeeded. A duplicate
+validation request returned `editor_busy` without interrupting the first check.
+Stats and Achievements selection worked after validation and while a fresh Steam
+review was preparing. Cancelling that review before the five-second deadline
+reported cancellation, left the document clean, and preserved 100 achievements
+and 32 stats. Its 233 review rows had one default Import and 232 Skip choices,
+so the timed boundary did not select a Steam draft upload. The close request
+exited normally, with the exact build's Public Documents log recording the
+session and cleanup.
+
+One cancellation raced the automatic submission at the read-only `beginSync`
+plan check. The worker was stopped and the editor stayed responsive, but the
+error exposed `IPC header unavailable` instead of cancellation. `BeginAsync`
+only refreshes and checks the remote snapshot and derives steps; draft writes
+start later in `StepAsync`. Working version 0.3.0.9 gives cancellation precedence
+to worker transport errors from read-only prepare and begin requests. It does
+not mask errors during draft steps, whose outcomes may be uncertain. The focused
+regression and the full offline fixture audit passed at
+`C:\Projects\AchimeldBuild\current\audit-0855b97d546a445e8beaebdf73a119ab`.
+The exact rebuilt runtime remains to be checked.
+
+The exact 0.3.0.9 hidden runtime exposed a second pre-write cancellation race:
+rapid Cancel while the dedicated Steam browser was starting left the editor
+responsive and Achievements selectable, but the result still displayed
+`IPC header unavailable`. Starting validation and immediately requesting normal
+close cancelled the operation and exited cleanly; the Public Documents log
+retained the active worker cleanup. Working version 0.3.0.10 now tracks whether
+any `syncStep` request has started. A cancelled error before that boundary is
+reported as cancellation across browser startup, validation, remote read and
+review planning. At or after the first draft step, the original error remains
+visible because the remote outcome may be uncertain. The focused boundary test
+and full offline fixture audit passed at
+`C:\Projects\AchimeldBuild\current\audit-9e9df4dc378c442093731a4571cd335d`.
+The exact 0.3.0.10 hidden runtime then completed three rapid validation-cancel
+cycles on waifus6. Cancellation during browser startup and Steamworks navigation
+returned `Steam read cancelled`, with no active operation or dirty project.
+Revalidation succeeded, Achievements and Stats navigation remained available,
+and MCP status reported the review modal as blocking while the five-second
+countdown was active. Cancelling that review before submission left no selected
+draft write. Both supervised Steam page reads were cancelled and a subsequent
+validation succeeded. A normal close during active validation exited the editor;
+the exact package emitted a flushed Public Documents log through exit. The live
+run did not force a transport failure after a draft step, and it did not repeat
+the narrow timed `beginSync` race; the boundary regression covers both outcomes.
+
+An additional 0.3.0.10 watched endurance run cancelled eight validations at
+delays from zero to four seconds. All eight stopped cleanly while the editor
+remained alive. The next uncancelled validation authenticated and downloaded
+the banner, but explicit browser stop failed with `Owned Steam worker process
+enumeration incomplete`. The background cleanup reaper confirmed exit about
+half a second later, and a retry validated successfully. The process list was
+changing while Windows filled it; it remained within the owned Job's 256-process
+cap. Working version 0.3.0.11 accepts an in-bound count mismatch because Job
+termination and active-process accounting still gate reopening until zero.
+Over-capacity counts and failed process queries or termination still fail.
+Focused process-list boundary testing and the full offline fixture audit passed
+at `C:\Projects\AchimeldBuild\current\audit-48c9edc4771040f2b5a5849b723969d1`.
+The exact 0.3.0.11 watched package completed the same eight staggered
+validation cancellations, followed by six successful validations. A subsequent
+Steam review opened as a reported modal and cancelled before submission;
+Achievements and Stats remained selectable, and the document stayed clean
+at 100 achievements and 32 stats. The Public Documents runtime log ended in
+a normal exit, with bootstrapper exit code zero. The changing-list branch did
+not recur in that live run, so its direct evidence remains the bounded-count
+test and the source ownership/accounting checks.
+
+One earlier 0.3.0.10 hidden session disappeared during destination navigation.
+Its log ended without a normal-exit record or local dump, and a fresh MCP call
+found no editor. The launcher's exit code was not captured in that run. Later
+watched sessions completed the delayed and eight-cycle tests and exited with
+code zero. The cause of that one exit remains unqualified; forced termination
+cannot reliably produce in-process crash evidence.
+
 ## Local editing during active progress
 
-Active progress is a movable panel without a modal backdrop. Steam and Sync
-surfaces remain disabled; existing reviews still guard editor mutations. During
-active work the host permits local editing and the closed artwork/preset intents.
-Project switching, saving the shared project file, destination changes and history
-navigation remain guarded. Worker protocol, approval recipes and storage ownership
-are unchanged. A host-owned baseline combines independent object fields with the
-current editor result. Arrays are atomic; overlapping changes fail visibly and
-retain the local editor. Local edits remain unsaved, and a stale review is cancelled
-before approval. Tests cover background clicks, dragging, cancellation, concurrent
-banner handoff, handshake completion, and conflicting local result preservation.
-Installed and live Steam qualification remain separate and were not performed.
+Active progress is a movable nonmodal window with stage, elapsed time and an
+explicit Cancel button. The review keeps its action bar outside the scrolling rows
+and states that it uses a frozen snapshot. Host editing, history and ordinary Save
+remain available; project switching, Save As and destination changes are guarded.
+The worker never replaces the shared project file while it runs. It writes only
+verified content-addressed image bytes to the current project's Art Data Bank.
+At completion the host merges the frozen result separately with the latest saved
+file and the live editor. Object fields and ID-keyed arrays merge independent
+changes; overlapping changes fail visibly and retain the editor. Captured PNG
+bytes have a 128 MiB total memory cap. Source tests cover the merge and ownership
+contracts; installed and live Steam qualification remain separate.
 
 ## Completed operations and delayed browser teardown
 

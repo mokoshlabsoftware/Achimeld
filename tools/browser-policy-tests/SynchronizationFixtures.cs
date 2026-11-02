@@ -255,6 +255,11 @@ internal static class SynchronizationFixtures
         Check(portal.Writes == 1 && portal.Verifications > 0);
         var stable = await new SynchronizationSession(portal).PrepareAsync(iconRequest with { Project = result.GetProperty("project").Clone() }, 480);
         Check(stable.Rows.Single(r => r.Kind == "Icon").State == "InSync");
+        Check(stable.RemoteIcons.Single().AchievementApiName.Value == "ACH_WIN" &&
+            stable.RemoteIcons.Single().AchievedIdentity == portal.Snapshot.Icons.Single().AchievedIdentity &&
+            stable.RemoteIcons.Single().AchievedPreviewUri == portal.Snapshot.Icons.Single().AchievedPreviewUri);
+        JsonElement reviewWire = JsonSerializer.SerializeToElement(stable, SecurityWire.Json);
+        Check(reviewWire.GetProperty("remoteIcons")[0].GetProperty("achievementApiName").GetProperty("value").GetString() == "ACH_WIN");
         var changedArtwork = iconRequest with { Project = result.GetProperty("project").Clone(),
             Icons = new() { ["ACH_WIN"] = new(new string('a', 64), hash) } };
         var artworkReview = await new SynchronizationSession(portal).PrepareAsync(changedArtwork, 480);

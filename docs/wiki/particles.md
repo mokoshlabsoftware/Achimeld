@@ -50,7 +50,7 @@ Randomize changes the base seed. Applying an effect preset preserves the current
 
 Before working change 0.2.29.23, Load effect and Save effect used single-effect .achparticles files containing particle settings, component shapes, map points, variation ranges and seed behavior. Common layer transforms, blending, folders and other layer effects remained in the enclosing recipe. For the newer toolbar and complete preset exports, see Preset files below.
 
-Particle Explorer, available from Tools or the layer's folder button, keeps the live preview visible on the left while the preset library and editing controls scroll on the right. It manages named presets with search, save, duplicate, removal and undo removal. Its .achparticles collections also include layer opacity, blend, transforms and effects. They can import earlier single-effect files.
+Particle Explorer, available from Tools or the layer's folder button, keeps the live preview visible on the left while the preset library and editing controls scroll on the right. The library displays a grid of rendered effect previews with names below the images, at a default size of 96 by 96 pixels. It manages named presets with search, save, duplicate, removal and undo removal. Its .achparticles collections also include layer opacity, blend, transforms and effects. They can import earlier single-effect files.
 
 MagicDust is bundled with the application as a Particle Explorer preset and is the starting effect for newly created particle layers. Its layer uses Screen blending. Existing particle layers keep their saved settings, and existing saved presets remain in the library.
 

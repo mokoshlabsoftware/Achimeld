@@ -120,7 +120,7 @@ impl Default for Document {
 impl Document {
     pub fn new() -> Self {
         Self {
-            project: json!({"format":"com.achimeld.project","schemaVersion":1,"projectId":new_id(),"displayName":"Untitled project","steamAppId":0,"localizationCatalogSha256":"","assets":{"atlas":{"kind":"RelativeToProject","path":"atlas.png"},"localizationCatalog":{"kind":"RelativeToProject","path":"project.achimeld.localization.csv"},"atlases":[],"images":[]},"atlas":{"tileWidth":512,"tileHeight":512,"leftOffset":0,"topOffset":0,"horizontalSpacing":0,"verticalSpacing":0,"traversal":"RowMajor","outputSize":512,"unachievedIcon":{"mode":"Grayscale","opacity":1,"tintHex":"#808080"}},"iconStyles":[],"achievements":[],"stats":[],"tombstones":[],"syncBaselines":[],"lastRemoteSnapshot":null,"nextAchievementInternalId":1}),
+            project: json!({"format":"com.achimeld.project","schemaVersion":1,"projectId":new_id(),"displayName":"Untitled project","steamAppId":0,"localizationCatalogSha256":"","assets":{"atlas":{"kind":"RelativeToProject","path":"atlas.png"},"localizationCatalog":{"kind":"RelativeToProject","path":"project.achimeld.localization.csv"},"atlases":[],"images":[]},"atlas":{"tileWidth":512,"tileHeight":512,"leftOffset":0,"topOffset":0,"horizontalSpacing":0,"verticalSpacing":0,"traversal":"RowMajor","outputSize":512,"unachievedIcon":{"desaturation":1.0,"opacity":1.0,"gradientOverlay":{"enabled":false,"opacity":0.25,"darkColorHex":"#4E4778","lightColorHex":"#D8CAE8"}}},"iconStyles":[],"achievements":[],"stats":[],"tombstones":[],"syncBaselines":[],"lastRemoteSnapshot":null,"nextAchievementInternalId":1}),
             catalog: Catalog::default(),
         }
     }

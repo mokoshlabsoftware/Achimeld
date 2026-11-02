@@ -3,6 +3,7 @@ use achimeld_application::{Command, EditorPort, UiRequest};
 use achimeld_core::SteamAppId;
 use egui::{Align, Color32, Rect, Sense, Vec2};
 use std::collections::BTreeSet;
+use std::time::{Duration, Instant};
 
 pub(crate) struct AppIdEdit {
     pub(crate) text: String,
@@ -101,14 +102,13 @@ impl Desktop {
                 .is_some_and(|stamp| !stamp.is_empty())
     }
 
-    pub(crate) fn sync_review_identity(&self, port: &dyn EditorPort) -> Option<(String, u32, u64)> {
+    pub(crate) fn sync_review_identity(&self, port: &dyn EditorPort) -> Option<(String, u32)> {
         let app_id = SteamAppId::new(port.editor().document().app_id())
             .ok()?
             .value();
         let review = port.synchronization_review()?;
         let token = review["token"].as_str().filter(|token| !token.is_empty())?;
-        (review["appId"].as_u64() == Some(u64::from(app_id)))
-            .then(|| (token.into(), app_id, port.editor().revision()))
+        (review["appId"].as_u64() == Some(u64::from(app_id))).then(|| (token.into(), app_id))
     }
 
     pub(crate) fn sync_destination_confirmed(&self, port: &dyn EditorPort) -> bool {
@@ -183,8 +183,9 @@ impl Desktop {
             .filter(|token| !token.is_empty())
         {
             self.steam_delete_review = false;
-            self.sync_plan_fresh = true;
             self.sync_plan_token = Some(token.to_owned());
+            // The review modal owns the five-second countdown and explicit
+            // Stop action before the frozen choices reach the host.
         } else {
             self.sync_confirmation = None;
             achimeld_application::diagnostics::record(
@@ -291,23 +292,91 @@ impl Desktop {
     }
 
     pub(crate) fn sync_plan_window(&mut self, ctx: &egui::Context, port: &mut dyn EditorPort) {
-        let Some(token) = self.sync_plan_token.clone() else {
+        let Some(review) = port.synchronization_review() else {
+            self.sync_plan_token = None;
+            self.sync_review_started = None;
             return;
         };
-        let current = port
-            .synchronization_review()
-            .and_then(|review| review["token"].as_str().map(str::to_owned));
-        if current.as_deref() != Some(token.as_str()) || !self.sync_action_enabled(port) {
-            self.sync_plan_token = None;
-            self.sync_plan_fresh = false;
+        let Some((token, app_id)) = self.sync_review_identity(port) else {
+            self.sync_plan_token = review["token"].as_str().map(str::to_owned);
+            self.sync_review_started = None;
+            let choice = steam::review_prompt(
+                ctx,
+                "sync-plan-destination-changed",
+                "Review synchronization",
+                steam::glyph_image(
+                    ctx,
+                    "tab-sync",
+                    include_bytes!("../assets/toolbar/tab-sync.rgba"),
+                    24.0,
+                ),
+                &[steam::ReviewAction {
+                    colors: None,
+                    enabled: true,
+                    label: "Cancel review",
+                    icon: Glyph::Cancel.image(ctx, 20.0),
+                }],
+                |ui| {
+                    ui.label("The Steam App ID changed after validation. Cancel this review and validate the destination again.");
+                },
+            );
+            if matches!(
+                choice,
+                steam::ReviewChoice::Action(_) | steam::ReviewChoice::Dismissed
+            ) {
+                self.sync_plan_token = None;
+                self.sync_confirmation = None;
+                self.request(UiRequest::CancelSynchronization);
+            }
             return;
+        };
+        if self.error.is_some() || self.about || self.sync_app_id_edit.is_some() {
+            self.sync_review_started = None;
+            self.sync_review_elapsed = Duration::ZERO;
+            return;
+        }
+        let rows = review["rows"]
+            .as_array()
+            .map(Vec::as_slice)
+            .unwrap_or_default();
+        if self.sync_token != token {
+            self.sync_token = token.clone();
+            self.sync_plan_token = Some(token.clone());
+            self.sync_confirmation = Some((token.clone(), app_id));
+            self.sync_filter.clear();
+            self.sync_choices = rows
+                .iter()
+                .filter_map(|row| {
+                    Some((
+                        row["key"].as_str()?.into(),
+                        row["defaultAction"].as_str()?.into(),
+                    ))
+                })
+                .collect();
+            self.sync_review_elapsed = Duration::ZERO;
+            self.sync_review_paused = false;
+            self.sync_review_started = (self.sync_selected_count(port) > 0).then(Instant::now);
         }
         {
             let snapshot = &port.editor().document().project()["lastRemoteSnapshot"];
             self.retain_steam_marks(snapshot);
         }
         let (creations, deletions, other) = self.planned_sync_lines(port);
-        let choice = steam::review_prompt(
+        self.sync_plan_token = Some(token);
+        let selected = self.sync_selected_count(port);
+        if selected > 0 && !self.sync_review_paused && self.sync_review_started.is_none() {
+            self.sync_review_started = Some(Instant::now());
+        }
+        let elapsed = self.sync_review_elapsed
+            + self
+                .sync_review_started
+                .map_or(Duration::ZERO, |started| started.elapsed());
+        let remaining = Duration::from_secs(5).saturating_sub(elapsed);
+        let running =
+            selected > 0 && !self.sync_review_paused && self.sync_review_started.is_some();
+        let progress = (selected > 0).then(|| remaining.as_secs_f32() / 5.0);
+        let mut changed = false;
+        let choice = steam::review_prompt_wide(
             ctx,
             "sync-plan-review",
             "Review synchronization",
@@ -320,8 +389,14 @@ impl Desktop {
             &[
                 steam::ReviewAction {
                     colors: None,
-                    enabled: true,
-                    label: "Synchronize",
+                    enabled: running || selected > 0,
+                    label: if running { "Stop" } else { "Start 5 s" },
+                    icon: Glyph::Cancel.image(ctx, 20.0),
+                },
+                steam::ReviewAction {
+                    colors: None,
+                    enabled: selected > 0 && self.sync_destination_confirmed(port),
+                    label: "Synchronize now",
                     icon: steam::glyph_image(
                         ctx,
                         "tab-sync",
@@ -336,28 +411,180 @@ impl Desktop {
                     icon: Glyph::Cancel.image(ctx, 20.0),
                 },
             ],
+            progress,
             |ui| {
-                ui.with_layout(egui::Layout::top_down(Align::Center), |ui| {
-                    ui.add(
-                        egui::Label::new("Review the planned actions before synchronizing. Marked deletions are listed here and are not sent to Steam.")
-                            .wrap()
-                            .halign(Align::Center),
+                let widgets = &mut ui.visuals_mut().widgets;
+                widgets.inactive.corner_radius = egui::CornerRadius::ZERO;
+                widgets.hovered.corner_radius = egui::CornerRadius::ZERO;
+                widgets.active.corner_radius = egui::CornerRadius::ZERO;
+                ui.label(format!("Validated destination: Steam App ID {app_id}"));
+                ui.label(steamworks_destination(app_id));
+                ui.label(format!(
+                    "{selected} selected {}. {}",
+                    if selected == 1 { "change" } else { "changes" },
+                    if running {
+                        format!(
+                            "Synchronization starts in {:.1} s. Press Stop to edit the plan.",
+                            remaining.as_secs_f32()
+                        )
+                    } else if self.sync_review_paused {
+                        "Countdown stopped. Edit the plan, then start it again or synchronize now."
+                            .into()
+                    } else {
+                        "Select changes to start the five-second countdown.".into()
+                    }
+                ));
+                if review["reconciliation"] == true {
+                    ui.colored_label(
+                        crate::theme::color(port.preferences(), "Warning"),
+                        "The previous synchronization was interrupted. This plan uses a fresh Steam read.",
                     );
-                });
+                }
+                ui.label("Artwork for this upload is cached. You can keep editing the project after synchronization starts.");
                 steam::review_section(ui, "New achievements", &creations);
                 steam::review_section(ui, "Marked for deletion", &deletions);
                 steam::review_section(ui, "Other selected changes", &other);
+                ui.separator();
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.sync_filter)
+                        .hint_text("Filter by API name"),
+                );
+                let query = self.sync_filter.to_lowercase();
+                for row in rows.iter().filter(|row| {
+                    row["state"] != "InSync"
+                        && row["apiName"]
+                            .as_str()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains(&query)
+                }) {
+                    let key = row["key"].as_str().unwrap_or("");
+                    ui.push_id(key, |ui| {
+                        egui::Frame::new()
+                            .fill(crate::theme::color(port.preferences(), "Panel"))
+                            .corner_radius(0)
+                            .inner_margin(10)
+                            .show(ui, |ui| {
+                                ui.set_width(ui.available_width());
+                                let mut imported = false;
+                                ui.horizontal_wrapped(|ui| {
+                                    ui.strong(format!(
+                                        "{} · {}",
+                                        row["kind"].as_str().unwrap_or(""),
+                                        row["apiName"].as_str().unwrap_or("")
+                                    ));
+                                    ui.weak(match row["state"].as_str().unwrap_or("") {
+                                        "LocalOnly" => "Only in project",
+                                        "SteamOnly" => "Only on Steam",
+                                        "LocalChanged" => "Project changed",
+                                        "SteamChanged" => "Steam changed",
+                                        "Conflict" => "Review both versions",
+                                        "InSync" => "Up to date",
+                                        "ArtworkUnavailable" => "Artwork unavailable",
+                                        "RenamedOnSteam" => "Renamed on Steam · import keeps the old entry as Retired",
+                                        value => value,
+                                    });
+                                    let entry = self.sync_choices.entry(key.into()).or_insert_with(|| "Skip".into());
+                                    if let Some(default) = row["defaultAction"]
+                                        .as_str()
+                                        .filter(|action| *action != "Skip")
+                                    {
+                                        let mut included = entry != "Skip";
+                                        if ui.checkbox(&mut included, "Include").changed() {
+                                            *entry = if included { default } else { "Skip" }.into();
+                                            imported = included && default == "Import";
+                                            changed = true;
+                                        }
+                                    }
+                                    for action in row["actions"]
+                                        .as_array()
+                                        .into_iter()
+                                        .flatten()
+                                        .filter_map(|value| value.as_str())
+                                    {
+                                        let label = match action {
+                                            "Upload" => "Use project",
+                                            "Skip" => "Leave unchanged",
+                                            "Import" => "Use Steam",
+                                            _ => action,
+                                        };
+                                        if ui.add(buttons::Button::selectable(entry == action, label).bar()).clicked() {
+                                            *entry = action.into();
+                                            imported = action == "Import";
+                                            changed = true;
+                                        }
+                                    }
+                                });
+                                if imported {
+                                    self.sync_choices.insert(
+                                        format!("Icon:{}", row["apiName"].as_str().unwrap_or("")),
+                                        "Skip".into(),
+                                    );
+                                }
+                                if row["state"] == "ArtworkUnavailable" {
+                                    ui.weak("Artwork could not be generated. Repair its source in the Art Data Bank before uploading icons.");
+                                }
+                                if let Some(error) = row["uploadError"].as_str() {
+                                    ui.colored_label(crate::theme::color(port.preferences(), "Warning"), error);
+                                }
+                                let fields = row["fields"].as_array().map(Vec::as_slice).unwrap_or_default();
+                                if !fields.is_empty() {
+                                    egui::CollapsingHeader::new(format!(
+                                        "{} field {}",
+                                        fields.len(),
+                                        if fields.len() == 1 { "difference" } else { "differences" }
+                                    ))
+                                    .show(ui, |ui| {
+                                        for field in fields {
+                                            ui.label(field["field"].as_str().unwrap_or(""));
+                                            ui.horizontal_wrapped(|ui| {
+                                                ui.label(format!("Project: {}", field["local"].as_str().unwrap_or("")));
+                                                ui.label(format!("Steam: {}", field["steam"].as_str().unwrap_or("")));
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                    });
+                    ui.add_space(4.0);
+                }
             },
         );
-        if std::mem::take(&mut self.sync_plan_fresh) {
-            return;
+        if changed && !self.sync_review_paused {
+            self.sync_review_elapsed = Duration::ZERO;
+            self.sync_review_started = (self.sync_selected_count(port) > 0).then(Instant::now);
         }
         match choice {
-            steam::ReviewChoice::Action(0) => self.confirm_sync_plan(port),
-            steam::ReviewChoice::Action(_) | steam::ReviewChoice::Dismissed => {
+            steam::ReviewChoice::Action(0) if running => {
+                self.sync_review_elapsed = elapsed;
+                self.sync_review_started = None;
+                self.sync_review_paused = true;
+            }
+            steam::ReviewChoice::Action(0) => {
+                self.sync_review_elapsed = Duration::ZERO;
+                self.sync_review_started = Some(Instant::now());
+                self.sync_review_paused = false;
+            }
+            steam::ReviewChoice::Action(1) => self.confirm_sync_plan(port),
+            steam::ReviewChoice::Action(2) => {
                 self.sync_plan_token = None;
+                self.sync_review_started = None;
+                self.sync_confirmation = None;
+                self.request(UiRequest::CancelSynchronization);
+            }
+            steam::ReviewChoice::Dismissed => {
+                self.sync_review_elapsed = elapsed;
+                self.sync_review_started = None;
+                self.sync_review_paused = true;
+            }
+            steam::ReviewChoice::Idle if running && remaining.is_zero() && !changed => {
+                self.confirm_sync_plan(port);
             }
             steam::ReviewChoice::Idle => {}
+            steam::ReviewChoice::Action(_) => {}
+        }
+        if running {
+            ctx.request_repaint_after(Duration::from_millis(16));
         }
     }
 

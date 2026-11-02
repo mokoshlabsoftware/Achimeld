@@ -175,6 +175,34 @@ impl NativeApp {
     }
 }
 impl eframe::App for NativeApp {
+    fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        if matches!(
+            self.health.try_recv(),
+            Ok(()) | Err(mpsc::TryRecvError::Disconnected)
+        ) {
+            std::process::exit(125);
+        }
+        // Steam cancellation and completion must keep moving even while an
+        // application prompt is visible, including during a close request.
+        self.host.poll_synchronization();
+        if self.host.dialog.is_none() && !self.host.drop_picker_open() {
+            self.host.poll_read();
+            self.host.poll_browser_profile();
+            self.host.poll_export();
+            self.host.poll_translations();
+            self.host.poll_art();
+            self.host.poll_image_drop();
+        }
+        self.host.previews.poll();
+        self.host.poll_viewer();
+        if let Some(server) = &self.automation {
+            self.automation_state
+                .poll(server, &mut self.host, &mut self.ui);
+            server.note_logic_tick();
+        }
+        ctx.request_repaint_after(Duration::from_millis(250));
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let activity = self.diagnostics.frame();
         let failure = crate::diagnostics::failure();
@@ -187,31 +215,12 @@ impl eframe::App for NativeApp {
         }
         self.ui
             .file_drop_position(image_drop::native_drop_position(ui.ctx(), frame));
-        if matches!(
-            self.health.try_recv(),
-            Ok(()) | Err(mpsc::TryRecvError::Disconnected)
-        ) {
-            std::process::exit(125);
-        }
         let dialog_open = self.host.dialog.is_some() || self.host.drop_picker_open();
         if !dialog_open && self.about_pending {
             self.ui
                 .open_update_notes(load_acknowledged_version().unwrap_or(None));
             self.about_pending = false;
         }
-        if !dialog_open {
-            activity.phase("poll host operations");
-            self.host.poll_read();
-            self.host.poll_synchronization();
-            self.host.poll_browser_profile();
-            self.host.poll_export();
-            self.host.poll_translations();
-            self.host.poll_art();
-            self.host.poll_image_drop();
-        }
-        activity.phase("publish previews");
-        self.host.previews.poll();
-        self.host.poll_viewer();
         if dialog_open {
             ui.disable();
         }
@@ -220,11 +229,6 @@ impl eframe::App for NativeApp {
         activity.phase("draw prompts");
         self.host.show_dialog(ui.ctx());
         self.host.show_drop_picker(ui.ctx());
-        if let Some(server) = &self.automation {
-            activity.phase("editor automation");
-            self.automation_state
-                .poll(server, &mut self.host, &mut self.ui);
-        }
         if ui.ctx().input(|i| i.viewport().close_requested()) && !self.host.exit_allowed {
             ui.ctx()
                 .send_viewport_cmd(egui::ViewportCommand::CancelClose);
@@ -257,7 +261,7 @@ struct Host {
     read: Option<PendingRead>,
     browser_profile: Option<mpsc::Receiver<Result<(), String>>>,
     synchronization: Option<crate::synchronization::Pending>,
-    verified_sync: Option<(String, u64)>,
+    verified_sync: Option<(String, u32)>,
     sync_error: Option<(String, u32, String)>,
     previews: PreviewWorker,
     render_generation: u64,
@@ -276,6 +280,7 @@ struct Host {
     general_image_added: Option<(String, i64, u64)>,
     particle_preset: Option<(achimeld_application::particles::PresetTarget, Value)>,
     effect_preview: Option<effects::EffectPreview>,
+    effect_thumbnails: Option<effects::EffectThumbnails>,
     construction_preview: Option<effects::EffectPreview>,
     art_stats: crate::art_bank::Stats,
     art_stats_epoch: u64,
@@ -357,6 +362,7 @@ impl Host {
             general_image_added: None,
             particle_preset: None,
             effect_preview: None,
+            effect_thumbnails: None,
             construction_preview: None,
             art_stats: Default::default(),
             art_stats_epoch: 0,
@@ -969,39 +975,29 @@ impl Host {
         let mut finished = None;
         if let Some(pending) = &mut self.synchronization {
             pending.previews.poll();
-            if pending.review.is_some() && pending.revision != self.editor.revision() {
-                pending.cancel.cancel();
-            }
             loop {
                 match pending.events.try_recv() {
                     Ok(crate::synchronization::Event::Summary(message)) => {
                         pending.completion_message = Some(message)
                     }
                     Ok(crate::synchronization::Event::Banner(document)) => {
-                        let locally_edited = pending.baseline != *self.editor.document();
-                        let result = self
-                            .store
-                            .adopt_saved_result(&pending.path, &document)
-                            .and_then(|document| {
-                                let merged = crate::synchronization::preserve_local_edits(
-                                    &pending.baseline,
-                                    self.editor.document(),
-                                    &document,
-                                )?;
-                                pending.baseline = document;
-                                self.editor.execute(
-                                    "Download Steam game banner",
-                                    Command::ImportArtwork(Box::new(merged)),
-                                    None,
-                                )
-                            });
+                        let result = Ok::<_, String>(*document).and_then(|document| {
+                            let merged = crate::synchronization::preserve_local_edits(
+                                &pending.baseline,
+                                self.editor.document(),
+                                &document,
+                            )?;
+                            pending.baseline = document;
+                            self.editor.execute(
+                                "Download Steam game banner",
+                                Command::ImportArtwork(Box::new(merged)),
+                                None,
+                            )
+                        });
                         if let Err(error) = result {
                             pending.cancel.cancel();
                             finished = Some(Err(error));
                             break;
-                        }
-                        if !locally_edited {
-                            self.editor.mark_saved();
                         }
                         pending.revision = self.editor.revision();
                         self.assets = Files::new();
@@ -1010,41 +1006,29 @@ impl Host {
                         self.art_stats_epoch += 1;
                     }
                     Ok(crate::synchronization::Event::Review(review)) => {
-                        if pending.baseline != *self.editor.document() {
-                            pending.cancel.cancel();
-                            finished = Some(Err("The project changed while preparing the review. Your edits are retained; save and synchronize again.".into()));
-                            break;
-                        }
                         pending.review = Some(review);
                         self.status = crate::desktop::logged_status(
                             "Review the proposed Steam changes before synchronizing".into(),
                         );
                     }
                     Ok(crate::synchronization::Event::Imported(document)) => {
-                        let locally_edited = pending.baseline != *self.editor.document();
-                        let result = self
-                            .store
-                            .adopt_saved_result(&pending.path, &document)
-                            .and_then(|document| {
-                                let merged = crate::synchronization::preserve_local_edits(
-                                    &pending.baseline,
-                                    self.editor.document(),
-                                    &document,
-                                )?;
-                                pending.baseline = document;
-                                self.editor.execute(
-                                    "Import Steam entries",
-                                    Command::ApplySynchronization(Box::new(merged)),
-                                    None,
-                                )
-                            });
+                        let result = Ok::<_, String>(*document).and_then(|document| {
+                            let merged = crate::synchronization::preserve_local_edits(
+                                &pending.baseline,
+                                self.editor.document(),
+                                &document,
+                            )?;
+                            pending.baseline = document;
+                            self.editor.execute(
+                                "Import Steam entries",
+                                Command::ApplySynchronization(Box::new(merged)),
+                                None,
+                            )
+                        });
                         if let Err(error) = result {
                             pending.cancel.cancel();
                             finished = Some(Err(error));
                             break;
-                        }
-                        if !locally_edited {
-                            self.editor.mark_saved();
                         }
                         pending.revision = self.editor.revision();
                         self.assets = Files::new();
@@ -1077,27 +1061,38 @@ impl Host {
             if let Some(thread) = pending.thread.take() {
                 let _ = thread.join();
             }
-            self.ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
             let result = result.and_then(|document| {
                 if pending.handshake_only {
                     pending.cancel.check().map_err(|e| e.to_string())?;
-                    return Ok(());
+                    if document == pending.snapshot {
+                        return Ok(());
+                    }
                 }
-                // Refresh storage identities after the background transaction. The
-                // command retains one undo entry for local changes; Steam is external.
-                let document = self.store.adopt_saved_result(&pending.path, &document)?;
-                let locally_edited = pending.baseline != *self.editor.document();
-                let document = crate::synchronization::preserve_local_edits(
+                // Steam owns the frozen document. Merge its verified result with
+                // both the current editor and the latest saved file, because a
+                // user may have edited or saved either while the worker ran.
+                let saved = ProjectStore::new().load(&pending.path)?;
+                let saved_result = crate::synchronization::preserve_local_edits(
+                    &pending.snapshot,
+                    &saved,
+                    &document,
+                )?;
+                let had_unsaved_local_edits =
+                    self.editor.is_dirty() && pending.baseline != *self.editor.document();
+                let live_result = crate::synchronization::preserve_local_edits(
                     &pending.baseline,
                     self.editor.document(),
                     &document,
                 )?;
-                self.execute(
-                    "Apply local synchronization result",
-                    Command::ApplySynchronization(Box::new(document)),
-                    None,
-                )?;
-                if !locally_edited {
+                if live_result != *self.editor.document() {
+                    self.execute(
+                        "Apply local synchronization result",
+                        Command::ApplySynchronization(Box::new(live_result)),
+                        None,
+                    )?;
+                }
+                self.store.save(&saved_result, &pending.path)?;
+                if !had_unsaved_local_edits {
                     self.editor.mark_saved();
                 }
                 self.assets = Files::new();
@@ -1106,10 +1101,12 @@ impl Host {
                 self.art_stats_epoch += 1;
                 Ok(())
             });
-            self.verified_sync = result
-                .as_ref()
-                .ok()
-                .map(|()| (self.editor_session_id.clone(), self.editor.revision()));
+            self.verified_sync = result.as_ref().ok().map(|()| {
+                (
+                    self.editor_session_id.clone(),
+                    self.editor.document().app_id(),
+                )
+            });
             if let Err(error) = &result {
                 self.set_sync_error(error.clone());
             } else {
@@ -1158,10 +1155,12 @@ impl Host {
                 self.execute("Read Steam", Command::SetRemoteSnapshot(snapshot), None)
             });
             if validated {
-                self.verified_sync = result
-                    .as_ref()
-                    .ok()
-                    .map(|()| (self.editor_session_id.clone(), self.editor.revision()));
+                self.verified_sync = result.as_ref().ok().map(|()| {
+                    (
+                        self.editor_session_id.clone(),
+                        self.editor.document().app_id(),
+                    )
+                });
             }
             self.report(result, "Steam configuration read successfully");
         }
@@ -1720,13 +1719,6 @@ impl EditorPort for Host {
         command: Command,
         group: Option<&str>,
     ) -> Result<(), String> {
-        if self
-            .synchronization
-            .as_ref()
-            .is_some_and(|pending| pending.review.is_some())
-        {
-            return Err("Finish or cancel synchronization before editing the project".into());
-        }
         let revision = self.editor.preview_revision();
         let preference_path = self
             .settings
@@ -1775,7 +1767,7 @@ impl EditorPort for Host {
         self.editor.finish_group();
     }
     fn undo(&mut self) {
-        if self.synchronization.is_some() || self.read.is_some() {
+        if self.read.is_some() {
             return;
         }
         let revision = self.editor.preview_revision();
@@ -1798,7 +1790,7 @@ impl EditorPort for Host {
         }
     }
     fn redo(&mut self) {
-        if self.synchronization.is_some() || self.read.is_some() {
+        if self.read.is_some() {
             return;
         }
         let revision = self.editor.preview_revision();
@@ -1821,6 +1813,21 @@ impl EditorPort for Host {
         }
     }
     fn request(&mut self, request: UiRequest) {
+        if matches!(request, UiRequest::Exit) && self.synchronization.is_some() {
+            let mut pending = self.synchronization.take().expect("active sync");
+            pending.cancel.cancel();
+            drop(pending.events);
+            drop(pending.approval);
+            // The worker owns only its frozen input and supervised session.
+            // Detach after cancellation so a stalled network call cannot hold
+            // the window open. The durable journal is read on the next sync.
+            drop(pending.thread.take());
+            self.dialog = None;
+            self.verified_sync = None;
+            self.status = crate::desktop::logged_status(
+                "Synchronization cancelled; closing the editor".into(),
+            );
+        }
         if matches!(request, UiRequest::PrepareSynchronization) {
             achimeld_application::diagnostics::record(
                 "INFO",
@@ -1843,48 +1850,21 @@ impl EditorPort for Host {
             return;
         }
         if self.synchronization.is_some()
-            && !matches!(
+            && matches!(
                 &request,
-                UiRequest::ApplySynchronization(_)
-                    | UiRequest::CancelSynchronization
-                    | UiRequest::PreviewSynchronizationIcons(_)
-                    | UiRequest::ImportAtlas
-                    | UiRequest::ImportImage
-                    | UiRequest::ImportArtFiles(_)
-                    | UiRequest::ImportDroppedImages { .. }
-                    | UiRequest::RefreshArt
-                    | UiRequest::ReloadArt { .. }
-                    | UiRequest::ResizeArt { .. }
-                    | UiRequest::ImportGeneralImage { .. }
-                    | UiRequest::ImportGeneralFiles { .. }
-                    | UiRequest::PasteGeneralImage { .. }
-                    | UiRequest::CopyGeneralImage { .. }
-                    | UiRequest::ImportLayerImage { .. }
-                    | UiRequest::OpenPreferences
-                    | UiRequest::OpenLogFolder
-                    | UiRequest::OpenWiki
-                    | UiRequest::LoadParticlePreset { .. }
-                    | UiRequest::SaveParticlePreset(_)
-                    | UiRequest::ImportGradients
-                    | UiRequest::ExportGradients(_)
-                    | UiRequest::ImportEffects(_)
-                    | UiRequest::ExportEffects { .. }
-                    | UiRequest::AboutDismissed
-                    | UiRequest::StyleViewer(_)
+                UiRequest::NewProject
+                    | UiRequest::OpenProject
+                    | UiRequest::OpenRecentProject(_)
+                    | UiRequest::SaveProjectAs
+                    | UiRequest::PrepareSynchronization
+                    | UiRequest::ReadSteam
+                    | UiRequest::OpenSteamPage(_)
+                    | UiRequest::DeleteSteam(_)
             )
         {
-            if matches!(request, UiRequest::Exit) {
-                if let Some(pending) = &self.synchronization {
-                    pending.cancel.cancel();
-                }
-                self.status = crate::desktop::logged_status(
-                    "Cancelling synchronization · close again after it stops".into(),
-                );
-            } else {
-                self.status = crate::desktop::logged_status(
-                    "Finish or cancel synchronization before editing the project".into(),
-                );
-            }
+            self.status = crate::desktop::logged_status(
+                "The Steam snapshot is active. Finish or cancel it before changing projects or starting another Steam operation".into(),
+            );
             return;
         }
         // Validate membership before saving can reorder/evict the chosen entry.
@@ -2242,6 +2222,15 @@ impl EditorPort for Host {
             self.store.asset_base(),
         )
     }
+    fn unachieved_canvas_preview(&mut self, id: &str, edge: usize) -> Option<Preview> {
+        self.previews.unachieved_canvas_preview(
+            id,
+            edge.clamp(64, 512).next_power_of_two(),
+            self.render_generation,
+            self.editor.document(),
+            self.store.asset_base(),
+        )
+    }
     fn set_layer_blend_preview(
         &mut self,
         preview: Option<achimeld_application::ports::LayerBlendPreview>,
@@ -2344,6 +2333,15 @@ impl EditorPort for Host {
         self.effect_preview
             .as_ref()
             .and_then(effects::EffectPreview::error)
+    }
+    fn effect_thumbnail(
+        &mut self,
+        preset: &achimeld_application::effect_presets::EffectPreset,
+    ) -> Option<Preview> {
+        if self.effect_thumbnails.is_none() {
+            self.effect_thumbnails = effects::EffectThumbnails::new(self.ctx.clone()).ok();
+        }
+        self.effect_thumbnails.as_mut()?.thumbnail(preset)
     }
     fn explosion_construction_preview(
         &mut self,
@@ -2474,8 +2472,8 @@ impl EditorPort for Host {
     fn synchronization_verified(&self) -> bool {
         self.verified_sync
             .as_ref()
-            .is_some_and(|(session, revision)| {
-                session == &self.editor_session_id && *revision == self.editor.revision()
+            .is_some_and(|(session, app_id)| {
+                session == &self.editor_session_id && *app_id == self.editor.document().app_id()
             })
     }
     fn synchronization_error(&self) -> Option<&str> {
@@ -2790,11 +2788,28 @@ mod about_tests {
 #[cfg(test)]
 mod dialog_tests {
     #[test]
-    fn verified_sync_is_scoped_to_the_unchanged_editor_session() {
+    fn verified_sync_is_scoped_to_editor_session_and_steam_app_id() {
         use super::*;
         let mut host = Host::new(egui::Context::default());
         assert!(!host.synchronization_verified());
-        host.verified_sync = Some((host.editor_session_id.clone(), host.editor.revision()));
+        host.verified_sync = Some((
+            host.editor_session_id.clone(),
+            host.editor.document().app_id(),
+        ));
+        assert!(host.synchronization_verified());
+        let app_id = host.editor.document().app_id();
+        host.editor
+            .execute(
+                "Retitle",
+                Command::ProjectSettings {
+                    name: "Retitled".into(),
+                    app_id,
+                    atlas: None,
+                    assets: None,
+                },
+                None,
+            )
+            .unwrap();
         assert!(host.synchronization_verified());
         host.editor
             .execute(
@@ -2809,7 +2824,7 @@ mod dialog_tests {
             )
             .unwrap();
         assert!(!host.synchronization_verified());
-        host.verified_sync = Some(("another-session".into(), host.editor.revision()));
+        host.verified_sync = Some(("another-session".into(), host.editor.document().app_id()));
         assert!(!host.synchronization_verified());
     }
 
@@ -3080,12 +3095,13 @@ mod dialog_tests {
     }
 
     #[test]
-    fn an_active_sync_rejects_editor_mutations_and_cancel_is_terminal_to_review() {
+    fn an_active_sync_keeps_project_edits_available_and_cancel_is_terminal_to_review() {
         let mut host = dirty_host();
         let before = host.editor.document().clone();
         let (_sender, events) = mpsc::sync_channel(1);
         let (approval, receiver) = mpsc::sync_channel(1);
         host.synchronization = Some(crate::synchronization::Pending {
+            snapshot: before.clone(),
             baseline: host.editor.document().clone(),
             activity: "Synchronizing Steam",
             completion_message: None,
@@ -3100,13 +3116,16 @@ mod dialog_tests {
             previews: Default::default(),
         });
         assert!(
-            host.execute("Blocked edit", Command::Add(EntityKind::Stat), None)
-                .is_err()
+            host.execute("Concurrent edit", Command::Add(EntityKind::Stat), None)
+                .is_ok()
         );
+        assert_ne!(host.editor.document(), &before);
         host.undo();
-        host.redo();
-        host.request(UiRequest::NewProject);
         assert_eq!(host.editor.document(), &before);
+        host.redo();
+        assert_ne!(host.editor.document(), &before);
+        host.request(UiRequest::NewProject);
+        assert_ne!(host.editor.document(), &before);
         host.request(UiRequest::ApplySynchronization(vec![(
             "Stat:SCORE".into(),
             "Upload".into(),
@@ -3122,7 +3141,64 @@ mod dialog_tests {
                 .check()
                 .is_err()
         );
-        assert_eq!(host.editor.document(), &before);
+        assert_ne!(host.editor.document(), &before);
+        host.request(UiRequest::Exit);
+        assert!(host.synchronization.is_none());
+        assert!(!host.exit_allowed);
+        assert!(host.dialog.is_some());
+    }
+
+    #[test]
+    fn sync_completion_merges_a_concurrent_save_with_steam_result() {
+        let root = crate::test_output::root().join(format!("sync-concurrent-save-{}", new_id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("project.achv");
+        let mut host = dirty_host();
+        host.store.save(host.editor.document(), &path).unwrap();
+        let snapshot = host.store.load(&path).unwrap();
+        host.editor = Editor::new(snapshot.clone());
+        let mut remote = snapshot.project().clone();
+        remote["lastRemoteSnapshot"] = json!({"steamAppId":snapshot.app_id()});
+        let remote = Document::from_parts(remote, snapshot.catalog().clone()).unwrap();
+        let (sender, events) = mpsc::sync_channel(1);
+        let (approval, _receiver) = mpsc::sync_channel(1);
+        host.synchronization = Some(crate::synchronization::Pending {
+            snapshot: snapshot.clone(),
+            baseline: snapshot,
+            activity: "Synchronizing Steam",
+            completion_message: None,
+            handshake_only: false,
+            cancel: Cancellation::default(),
+            events,
+            approval,
+            review: None,
+            revision: host.editor.revision(),
+            path: path.clone(),
+            thread: None,
+            previews: Default::default(),
+        });
+        host.execute("Concurrent stat", Command::Add(EntityKind::Stat), None)
+            .unwrap();
+        host.save_to(&path).unwrap();
+        sender
+            .send(crate::synchronization::Event::Complete(Ok(remote)))
+            .unwrap();
+        host.poll_synchronization();
+        assert!(host.synchronization.is_none());
+        assert!(host.synchronization_error().is_none());
+        assert!(!host.editor.is_dirty());
+        let disk = ProjectStore::new().load(&path).unwrap();
+        assert_eq!(disk.project()["stats"].as_array().unwrap().len(), 1);
+        assert_eq!(disk.project()["lastRemoteSnapshot"]["steamAppId"], 0);
+        assert_eq!(
+            host.editor.document().project()["stats"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        drop(host);
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -3136,23 +3212,18 @@ mod dialog_tests {
             host.editor.mark_saved();
             let before = host.editor.document().clone();
             let mut background = ProjectStore::new();
-            background.load(&path).unwrap();
+            let disk_before = background.load(&path).unwrap();
             let reference = background
-                .retain_art(b"host-owned-handoff-fixture")
+                .retain_art_in_bank(b"host-owned-handoff-fixture")
                 .unwrap();
             let mut project = before.project().clone();
             project["assets"]["images"].as_array_mut().unwrap().push(json!({"id":new_id(),"kind":"User","steamBannerAppId":before.app_id(),"displayName":"Game banner","image":reference}));
-            background
-                .save(
-                    &Document::from_parts(project, before.catalog().clone()).unwrap(),
-                    &path,
-                )
-                .unwrap();
-            let saved = background.load(&path).unwrap();
+            let saved = Document::from_parts(project, before.catalog().clone()).unwrap();
             let (sender, events) = mpsc::sync_channel(4);
             let (approval, _receiver) = mpsc::sync_channel(1);
             let revision = host.editor.revision();
             host.synchronization = Some(crate::synchronization::Pending {
+                snapshot: before.clone(),
                 baseline: host.editor.document().clone(),
                 activity: "Synchronizing Steam",
                 completion_message: None,
@@ -3191,7 +3262,7 @@ mod dialog_tests {
                 assert!(host.editor.is_dirty());
             } else {
                 assert_eq!(host.editor.document(), &saved);
-                assert!(!host.editor.is_dirty());
+                assert!(host.editor.is_dirty());
                 let pending = host.synchronization.as_ref().unwrap();
                 assert_eq!(pending.revision, host.editor.revision());
                 assert!(pending.revision > revision);
@@ -3211,7 +3282,7 @@ mod dialog_tests {
                     )))
                     .unwrap();
                 host.poll_synchronization();
-                assert_eq!(ProjectStore::new().load(&path).unwrap(), saved);
+                assert_eq!(ProjectStore::new().load(&path).unwrap(), disk_before);
                 host.undo();
                 assert_eq!(host.editor.document(), &before);
             }
@@ -3233,6 +3304,7 @@ mod dialog_tests {
                 cancel.cancel();
             }
             host.synchronization = Some(crate::synchronization::Pending {
+                snapshot: host.editor.document().clone(),
                 baseline: host.editor.document().clone(),
                 activity: "Synchronizing Steam",
                 completion_message: None,
@@ -3254,8 +3326,9 @@ mod dialog_tests {
             }
             let before = host.editor.document().clone();
             let before_revision = host.editor.revision();
+            let snapshot = host.synchronization.as_ref().unwrap().snapshot.clone();
             sender
-                .send(crate::synchronization::Event::Complete(Ok(before.clone())))
+                .send(crate::synchronization::Event::Complete(Ok(snapshot)))
                 .unwrap();
             host.poll_synchronization();
             assert_eq!(host.editor.document(), &before);
@@ -3277,12 +3350,13 @@ mod dialog_tests {
     }
 
     #[test]
-    fn steam_operation_completion_and_failure_release_job_and_request_app_focus() {
+    fn steam_operation_completion_and_failure_release_job_without_stealing_focus() {
         for success in [false, true] {
             let mut host = dirty_host();
             let (sender, events) = mpsc::sync_channel(1);
             let (approval, _receiver) = mpsc::sync_channel(1);
             host.synchronization = Some(crate::synchronization::Pending {
+                snapshot: host.editor.document().clone(),
                 baseline: host.editor.document().clone(),
                 activity: "Synchronizing Steam",
                 completion_message: Some("Deletion fixture completed".into()),
@@ -3308,7 +3382,7 @@ mod dialog_tests {
             output.textures_delta.clear();
             assert!(host.synchronization.is_none());
             assert_eq!(host.synchronization_verified(), success);
-            assert!(output.viewport_output.values().any(|viewport| {
+            assert!(!output.viewport_output.values().any(|viewport| {
                 viewport
                     .commands
                     .iter()

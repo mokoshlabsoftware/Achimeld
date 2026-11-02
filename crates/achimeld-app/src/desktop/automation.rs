@@ -17,6 +17,7 @@ struct Pending {
 pub(super) struct Server {
     receiver: mpsc::Receiver<Pending>,
     stopped: Arc<AtomicBool>,
+    logic_ticks: Arc<std::sync::atomic::AtomicU64>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
 impl Server {
@@ -24,6 +25,8 @@ impl Server {
         let first = Pipe::create().map_err(|e| e.to_string())?;
         let stopped = Arc::new(AtomicBool::new(false));
         let stop = stopped.clone();
+        let logic_ticks = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let ticks = logic_ticks.clone();
         let (sender, receiver) = mpsc::sync_channel(1);
         let thread = std::thread::spawn(move || {
             let mut first = Some(first);
@@ -56,6 +59,11 @@ impl Server {
                 let prepared = validate(&request);
                 let response = match prepared {
                     Err(error) => failure("invalid_request", &error),
+                    Ok(()) if request.operation == "get_editor_health" => success(json!({
+                        "processId": std::process::id(),
+                        "frameNumber": ctx.cumulative_frame_nr(),
+                        "logicTicks": ticks.load(Ordering::Acquire),
+                    })),
                     Ok(()) => {
                         let (reply, replies) = mpsc::sync_channel(1);
                         let cancelled = Arc::new(AtomicBool::new(false));
@@ -110,8 +118,12 @@ impl Server {
         Ok(Self {
             receiver,
             stopped,
+            logic_ticks,
             thread: Some(thread),
         })
+    }
+    pub(super) fn note_logic_tick(&self) {
+        self.logic_ticks.fetch_add(1, Ordering::Release);
     }
 }
 impl Drop for Server {
@@ -168,7 +180,11 @@ fn read_only(operation: &str) -> bool {
     matches!(
         operation,
         "get_scene"
+            | "get_editor_health"
+            | "list_recent_projects"
             | "get_synchronization"
+            | "get_remote_icon_metadata"
+            | "list_effect_presets"
             | "status"
             | "get_node"
             | "list_icon_styles"
@@ -176,6 +192,27 @@ fn read_only(operation: &str) -> bool {
             | "list_style_collections"
             | "get_icon_style"
     )
+}
+fn public_synchronization_review(review: &Value) -> Value {
+    let mut public = review.clone();
+    if let Some(fields) = public.as_object_mut() {
+        fields.remove("remoteIcons");
+    }
+    public
+}
+fn remote_icon_api_name(icon: &Value) -> Option<&str> {
+    icon["achievementApiName"]
+        .as_str()
+        .or_else(|| icon["achievementApiName"]["value"].as_str())
+}
+fn modal_value(host: &Host, ui: &achimeld_ui::Desktop) -> Value {
+    if let Some((id, kind, message)) = ui.automation_modal() {
+        json!({"modalId":id,"kind":kind,"message":message,"acknowledgeable":kind == "notice"})
+    } else if host.dialog.is_some() {
+        json!({"kind":"editorDialog","acknowledgeable":false})
+    } else {
+        Value::Null
+    }
 }
 
 fn translation_operation(operation: &str) -> bool {
@@ -246,7 +283,7 @@ impl Engine {
         }
     }
     fn envelope(&self, host: &Host, result: Value) -> Value {
-        json!({"projectId":host.editor.document().project()["projectId"],"revision":self.revision,"result":result})
+        json!({"projectId":host.editor.document().project()["projectId"],"editorSessionId":host.editor_session_id,"revision":self.revision,"result":result})
     }
     pub(super) fn poll(&mut self, server: &Server, host: &mut Host, ui: &mut achimeld_ui::Desktop) {
         self.observe(host, ui);
@@ -457,18 +494,32 @@ impl Engine {
         }
         if host.dialog.is_some()
             || (host.synchronization.is_some()
+                && matches!(
+                    request.operation.as_str(),
+                    "open_recent_project"
+                        | "validate_steam"
+                        | "prepare_synchronization"
+                        | "open_steam_page"
+                ))
+            || (host.read.is_some()
                 && !matches!(
                     request.operation.as_str(),
-                    "apply_synchronization" | "cancel_synchronization" | "close_menu"
+                    "cancel_steam_read" | "close_editor"
                 ))
-            || host.read.is_some()
             || host.art.is_some()
             || host.image_drop.is_some()
             || !host.art_queue.is_empty()
             || host.export.is_some()
             || host.translations.is_some()
             || self.work.is_some()
-            || ui.automation_busy()
+            || (ui.automation_busy()
+                && !matches!(
+                    request.operation.as_str(),
+                    "cancel_synchronization"
+                        | "acknowledge_modal"
+                        | "close_editor"
+                        | "close_effect_explorer"
+                ))
             || host.style_viewer.as_ref().is_some_and(|v| v.state.busy)
         {
             return Some(failure(
@@ -547,17 +598,152 @@ impl Engine {
             "get_scene" => {
                 let document = host.editor.document();
                 Ok(
-                    json!({"project":{"id":document.project()["projectId"],"displayName":document.project()["displayName"],"steamAppId":document.app_id()},"canvas":ui.automation_scene(),"achievements":edits::summaries(document,EntityKind::Achievement),"stats":edits::summaries(document,EntityKind::Stat),"assets":document.project()["assets"],"isDirty":host.editor.is_dirty(),"canUndo":host.editor.undo_label().is_some(),"canRedo":host.editor.redo_label().is_some(),"undoLabel":host.editor.undo_label(),"redoLabel":host.editor.redo_label()}),
+                    json!({"project":{"id":document.project()["projectId"],"displayName":document.project()["displayName"],"steamAppId":document.app_id()},"canvas":ui.automation_scene(),"achievements":edits::summaries(document,EntityKind::Achievement),"stats":edits::summaries(document,EntityKind::Stat),"assets":document.project()["assets"],"isDirty":host.editor.is_dirty(),"canUndo":host.editor.undo_label().is_some(),"canRedo":host.editor.redo_label().is_some(),"undoLabel":host.editor.undo_label(),"redoLabel":host.editor.redo_label(),"modal":modal_value(host,ui)}),
                 )
             }
-            "get_synchronization" => Ok(json!({
-                "verified": host.synchronization_verified(),
-                "active": host.synchronization.is_some(),
-                "error": host.synchronization_error(),
-                "review": host.synchronization_review(),
-                "status": host.status,
-                "steamAppId": host.editor.document().app_id(),
-            })),
+            "list_effect_presets" => Ok(json!(host.editor_state.state.effect_presets)),
+            "apply_effect_preset" => {
+                let id = args["presetId"].as_str().ok_or("Missing presetId")?;
+                let preset = host
+                    .editor_state
+                    .state
+                    .effect_presets
+                    .iter()
+                    .find(|preset| preset.id == id)
+                    .ok_or("Unknown effect preset")?
+                    .clone();
+                preset.validate()?;
+                let ids = args["achievementIds"]
+                    .as_array()
+                    .ok_or("Missing achievementIds")?;
+                if ids.is_empty() || ids.len() > 100 {
+                    return Err("Choose 1-100 achievements".into());
+                }
+                let mut seen = std::collections::BTreeSet::new();
+                let mut project = host.editor.document().project().clone();
+                for id in ids {
+                    let id = id.as_str().ok_or("Invalid achievement ID")?;
+                    if !seen.insert(id) {
+                        return Err("Duplicate achievement ID".into());
+                    }
+                    let entity = project["achievements"]
+                        .as_array_mut()
+                        .and_then(|items| items.iter_mut().find(|item| item["id"] == id))
+                        .ok_or("Unknown achievement ID")?;
+                    let layers = entity["icon"]["layers"]
+                        .as_array_mut()
+                        .ok_or("Achievement icon has no layer list")?;
+                    if let Some(layer) = layers
+                        .iter_mut()
+                        .find(|layer| layer["kind"] == preset.kind.layer_kind())
+                    {
+                        preset.apply_to(layer)?;
+                        layer["displayName"] = json!(preset.name);
+                    } else {
+                        let mut layer = preset.layer.clone();
+                        layer["id"] = json!(achimeld_application::new_id());
+                        layer["displayName"] = json!(preset.name);
+                        layers.insert(0, layer);
+                    }
+                }
+                let document =
+                    Document::from_parts(project, host.editor.document().catalog().clone())?;
+                host.finish_group();
+                host.execute(
+                    "MCP: apply effect preset",
+                    Command::ApplyAutomation(Box::new(document)),
+                    None,
+                )?;
+                Ok(json!({"presetId":preset.id,"achievementCount":seen.len(),"saved":false}))
+            }
+            "acknowledge_modal" => {
+                let id = args["modalId"].as_str().ok_or("Missing modalId")?;
+                let about = matches!(id, "about" | "startup-update");
+                if !ui.automation_acknowledge_modal(id) {
+                    return Err("The informational modal changed or is unavailable".into());
+                }
+                if about {
+                    host.request(UiRequest::AboutDismissed);
+                }
+                Ok(json!({"acknowledged":true}))
+            }
+            "close_effect_explorer" => {
+                ui.automation_close_effect_explorer(host)?;
+                Ok(json!({"closed":true}))
+            }
+            "list_recent_projects" => Ok(json!(host.recent_projects.paths)),
+            "open_recent_project" => {
+                if host.editor.is_dirty() {
+                    return Err("Save or discard current project edits in the editor first".into());
+                }
+                let path = std::path::PathBuf::from(args["path"].as_str().ok_or("Missing path")?);
+                if !host.recent_projects.paths.contains(&path) {
+                    return Err("Project is not in this editor's recent list".into());
+                }
+                host.open(&path)?;
+                Ok(json!({"opened":true,"path":path}))
+            }
+            "get_synchronization" => {
+                let review = host
+                    .synchronization_review()
+                    .map(public_synchronization_review);
+                Ok(json!({
+                    "verified": host.synchronization_verified(),
+                    "active": host.synchronization.is_some(),
+                    "error": host.synchronization_error(),
+                    "review": review,
+                    "status": host.status,
+                    "steamAppId": host.editor.document().app_id(),
+                }))
+            }
+            "get_remote_icon_metadata" => {
+                let api_name = args["apiName"].as_str().ok_or("Missing API name")?;
+                let project = host.editor.document().project();
+                if !project["achievements"]
+                    .as_array()
+                    .ok_or("Invalid project achievements")?
+                    .iter()
+                    .any(|item| item["apiName"].as_str() == Some(api_name))
+                {
+                    return Err("Achievement is not in the open project".into());
+                }
+                let app_id = host.editor.document().app_id();
+                let review = host
+                    .synchronization_review()
+                    .ok_or("No current Steam review")?;
+                if review["appId"].as_u64() != Some(u64::from(app_id)) {
+                    return Err("Steam review belongs to another App ID".into());
+                }
+                let icon = review["remoteIcons"]
+                    .as_array()
+                    .ok_or("No validated Steam icon metadata in the review")?
+                    .iter()
+                    .find(|item| remote_icon_api_name(item) == Some(api_name))
+                    .ok_or("No Steam icon pair for this achievement")?;
+                let prefix = format!(
+                    "https://shared.fastly.steamstatic.com/community_assets/images/apps/{app_id}/"
+                );
+                for key in ["achievedPreviewUri", "unachievedPreviewUri"] {
+                    let uri = icon[key].as_str().ok_or("Steam icon URL is unavailable")?;
+                    let name = uri
+                        .strip_prefix(&prefix)
+                        .ok_or("Steam icon URL is outside the public CDN")?;
+                    let stem = name
+                        .strip_suffix(".jpg")
+                        .ok_or("Steam icon URL has an unexpected format")?;
+                    if stem.len() != 40 || !stem.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                        return Err("Steam icon URL has an unexpected path".into());
+                    }
+                }
+                Ok(json!({
+                    "achievementApiName": api_name,
+                    "achievedPreviewUri": icon["achievedPreviewUri"],
+                    "unachievedPreviewUri": icon["unachievedPreviewUri"],
+                    "achievedIdentity": icon["achievedIdentity"],
+                    "unachievedIdentity": icon["unachievedIdentity"],
+                    "remoteFingerprint": review["remoteFingerprint"],
+                }))
+            }
             "validate_steam" | "prepare_synchronization" => {
                 if host.store.path().is_none() {
                     return Err("Save the project in the editor before validation".into());
@@ -635,10 +821,37 @@ impl Engine {
                 ui.automation_close_menu();
                 Ok(json!({"closed":true}))
             }
+            "open_steam_page" => {
+                let page = match args["page"].as_str() {
+                    Some("Achievements") => achimeld_application::SteamPage::Achievements,
+                    Some("Stats") => achimeld_application::SteamPage::Stats,
+                    _ => return Err("Unknown Steam page".into()),
+                };
+                host.open_steam_page(page)?;
+                Ok(json!({"started":true,"status":host.status}))
+            }
+            "cancel_steam_read" => {
+                if host.read.is_none() {
+                    return Err("No Steam read is active".into());
+                }
+                host.request(UiRequest::CancelRead);
+                Ok(json!({"cancelled":true,"status":host.status}))
+            }
+            "close_editor" => {
+                host.request(UiRequest::Exit);
+                Ok(json!({"requested":true,"status":host.status}))
+            }
             "status" => {
                 let document = host.editor.document();
                 let mut result = json!({
                     "projectName": document.project()["displayName"].as_str().unwrap_or(""),
+                    "workingVersion": achimeld_ui::current_version(),
+                    "steamAppId": document.app_id(),
+                    "isDirty": host.editor.is_dirty(),
+                    "validationVerified": host.synchronization_verified(),
+                    "synchronizationActive": host.synchronization.is_some(),
+                    "synchronizationReviewReady": host.synchronization_review().is_some(),
+                    "canvas": ui.automation_scene()["activeCanvas"],
                     "achievementCount": document.entities(EntityKind::Achievement).len(),
                     "steamSyncCount": document.synchronized_entities(EntityKind::Achievement).count(),
                     "statCount": document.entities(EntityKind::Stat).len(),
@@ -646,6 +859,8 @@ impl Engine {
                 if let Some(path) = host.store.path() {
                     result["projectPath"] = json!(path.display().to_string());
                 }
+                result["modal"] = modal_value(host, ui);
+                result["blockedByModal"] = json!(!result["modal"].is_null());
                 Ok(result)
             }
             "get_node" => Ok(edits::node(
@@ -1098,6 +1313,20 @@ fn export_icons(
 mod tests {
     use super::*;
     #[test]
+    fn remote_icon_metadata_uses_wire_api_name_and_stays_out_of_full_review() {
+        let review = json!({
+            "rows": [{"key":"Icon:ACH_WIN"}],
+            "remoteIcons": [{"achievementApiName":{"value":"ACH_WIN"}}]
+        });
+        assert_eq!(
+            remote_icon_api_name(&review["remoteIcons"][0]),
+            Some("ACH_WIN")
+        );
+        let public = public_synchronization_review(&review);
+        assert!(public.get("remoteIcons").is_none());
+        assert_eq!(public["rows"][0]["key"], "Icon:ACH_WIN");
+    }
+    #[test]
     fn status_counts_achievements_steam_sync_and_stats() {
         let (mut host, mut ui, mut engine) = fixture();
         host.editor
@@ -1205,6 +1434,28 @@ mod tests {
             dispatch(&mut engine, &mut host, &mut ui, close)["success"],
             true
         );
+        let recent = request(&host, &engine, "list_recent_projects", json!({}));
+        assert!(dispatch(&mut engine, &mut host, &mut ui, recent)["data"]["result"].is_array());
+        let foreign = request(
+            &host,
+            &engine,
+            "open_recent_project",
+            json!({"path":"C:\\other.achv"}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, foreign)["success"],
+            false
+        );
+        let cancel = request(&host, &engine, "cancel_steam_read", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, cancel)["success"],
+            false
+        );
+        let exit = request(&host, &engine, "close_editor", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, exit)["success"],
+            true
+        );
     }
     #[test]
     fn selection_returns_the_destination_camera_and_global_style_import_is_one_undo_step() {
@@ -1268,6 +1519,65 @@ mod tests {
         assert!(host.editor.document().icon_styles().is_empty());
     }
     #[test]
+    fn apply_named_effect_preset_uses_its_exact_recipe_and_one_undo_step() {
+        let (mut host, mut ui, mut engine) = fixture();
+        engine.observe(&host, &ui);
+        let create = request(
+            &host,
+            &engine,
+            "create_achievement",
+            json!({"apiName":"EFFECT","displayName":"Effect","description":"Effect test","column":0,"row":0}),
+        );
+        let id = dispatch(&mut engine, &mut host, &mut ui, create)["data"]["result"]["nodeId"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let settings = achimeld_application::explosion::ExplosionSettings::new_deltoid();
+        let preset = achimeld_application::effect_presets::EffectPreset::from_layer(
+            achimeld_application::effect_presets::EffectKind::Explosion,
+            &json!({"kind":"Explosion","explosion":settings}),
+            "Exact Anime Effect".into(),
+        )
+        .unwrap();
+        host.editor_state.state.effect_presets.push(preset.clone());
+        engine.observe(&host, &ui);
+        let apply = request(
+            &host,
+            &engine,
+            "apply_effect_preset",
+            json!({"presetId":preset.id,"achievementIds":[id]}),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, apply)["success"],
+            true
+        );
+        let layers = host
+            .editor
+            .document()
+            .entity(EntityKind::Achievement, &id)
+            .unwrap()["icon"]["layers"]
+            .as_array()
+            .unwrap()
+            .clone();
+        let applied = layers
+            .iter()
+            .find(|layer| layer["kind"] == "Explosion")
+            .unwrap();
+        assert_eq!(applied["explosion"], preset.layer["explosion"]);
+        assert_eq!(applied["displayName"], "Exact Anime Effect");
+        assert!(host.editor.undo());
+        assert!(
+            host.editor
+                .document()
+                .entity(EntityKind::Achievement, &id)
+                .unwrap()["icon"]["layers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|layer| layer["kind"] != "Explosion")
+        );
+    }
+    #[test]
     fn export_result_remains_bound_to_its_origin_after_a_project_switch() {
         let (mut host, mut ui, mut engine) = fixture();
         engine.observe(&host, &ui);
@@ -1298,6 +1608,7 @@ mod tests {
         let server = Server {
             receiver,
             stopped: Arc::new(AtomicBool::new(false)),
+            logic_ticks: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             thread: None,
         };
         engine.poll(&server, &mut host, &mut ui);
@@ -1312,6 +1623,7 @@ mod tests {
         let server = Server {
             receiver,
             stopped: Arc::new(AtomicBool::new(false)),
+            logic_ticks: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             thread: None,
         };
         for expired in [true, false] {
@@ -1959,7 +2271,7 @@ mod tests {
             let line = instructions
                 .lines()
                 .find(|line| line.contains(&format!("Editor {process} ")))
-                .expect("handshake names this editor");
+                .unwrap_or_else(|| panic!("handshake omitted this editor: {instructions}"));
             assert!(line.contains("has been up for"), "{line}");
             assert!(line.contains("Open project \"Untitled project\""), "{line}");
             assert!(

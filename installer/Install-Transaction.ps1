@@ -14,13 +14,24 @@ function Assert-NotCancelled {
 function Get-AchimeldProcessIds {
     foreach ($name in @('Achimeld','Achimeld.App','achimeld-app','achimeld-bootstrapper')) {
         foreach ($process in [Diagnostics.Process]::GetProcessesByName($name)) {
-            try { $process.Id } finally { $process.Dispose() }
+            try {
+                # The name lookup is a snapshot. A process may exit before Setup
+                # inspects it, so consult the live process handle before blocking.
+                $process.Refresh()
+                if (!$process.HasExited) { $process.Id }
+            } finally { $process.Dispose() }
         }
     }
 }
 
 function Assert-AchimeldStopped {
-    if (@(Get-AchimeldProcessIds).Count) { throw 'Achimeld is running. Close it before installing, updating, repairing or uninstalling.' }
+    $first = @(Get-AchimeldProcessIds)
+    if (!$first.Count) { return }
+    Start-Sleep -Milliseconds 250
+    $stillRunning = @(Get-AchimeldProcessIds | Where-Object { $_ -in $first })
+    if ($stillRunning.Count) {
+        throw ('Achimeld process ' + ($stillRunning -join ', ') + ' is still running. Close it before installing, updating, repairing or uninstalling.')
+    }
 }
 
 function Get-RegisteredInstallRoot {

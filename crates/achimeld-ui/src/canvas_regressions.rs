@@ -1,6 +1,89 @@
 use super::*;
 
 #[test]
+fn holding_alt_paints_temporary_unachieved_icons_over_card_text() {
+    fn has_texture(shape: &egui::Shape, id: egui::TextureId) -> bool {
+        match shape {
+            egui::Shape::Mesh(mesh) => mesh.texture_id == id,
+            egui::Shape::Vec(shapes) => shapes.iter().any(|shape| has_texture(shape, id)),
+            _ => false,
+        }
+    }
+    let mut fixture = Fixture::new();
+    let ids: Vec<_> = fixture
+        .editor
+        .document()
+        .entities(EntityKind::Achievement)
+        .iter()
+        .filter_map(|entity| entity["id"].as_str().map(str::to_owned))
+        .collect();
+    for id in &ids {
+        fixture.previews.insert(
+            format!("unachieved:{id}"),
+            Preview {
+                width: 64,
+                height: 64,
+                source_size: [64, 64],
+                rgba: [80, 80, 80, 255].repeat(64 * 64).into(),
+                fingerprint: format!("locked-{id}"),
+            },
+        );
+    }
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    desktop.view = desktop::View::Achievements;
+    desktop.kind = EntityKind::Achievement;
+    let mut time = 0.0;
+    let mut frame = |desktop: &mut Desktop, fixture: &mut Fixture, alt: bool| {
+        time += 0.05;
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1600.0, 1000.0),
+                )),
+                time: Some(time),
+                events: vec![egui::Event::ModifiersChanged(egui::Modifiers {
+                    alt,
+                    ..Default::default()
+                })],
+                ..Default::default()
+            },
+            |ui| desktop.show(ui, fixture),
+        );
+        let shapes: Vec<_> = output
+            .shapes
+            .iter()
+            .map(|shape| shape.shape.clone())
+            .collect();
+        output.textures_delta.clear();
+        shapes
+    };
+    frame(&mut desktop, &mut fixture, true);
+    let shapes = frame(&mut desktop, &mut fixture, true);
+    assert!(fixture.unachieved_requests > 0);
+    let texture = desktop.textures[&format!("unachieved-canvas:{}", ids[0])]
+        .1
+        .id();
+    assert!(shapes.iter().any(|shape| has_texture(shape, texture)));
+    let requested = fixture.unachieved_requests;
+    let shapes = frame(&mut desktop, &mut fixture, false);
+    assert_eq!(fixture.unachieved_requests, requested);
+    assert!(!shapes.iter().any(|shape| has_texture(shape, texture)));
+    desktop.view = desktop::View::Stats;
+    desktop.kind = EntityKind::Stat;
+    let shapes = frame(&mut desktop, &mut fixture, true);
+    assert_eq!(fixture.unachieved_requests, requested);
+    assert!(!shapes.iter().any(|shape| has_texture(shape, texture)));
+
+    let achieved = crate::canvas::achievement_art_rect(egui::Pos2::ZERO, 1.0, 1.0);
+    let compared = crate::canvas::comparison_art_rect(achieved, 1.0);
+    assert!(compared.left() > achieved.right());
+    assert!(compared.left() < 116.0 && compared.right() > 116.0);
+}
+
+#[test]
 fn second_right_click_dismisses_canvas_menu_without_moving_it() {
     fn collect_menu_positions(shape: &egui::Shape, label: &str, positions: &mut Vec<egui::Pos2>) {
         match shape {

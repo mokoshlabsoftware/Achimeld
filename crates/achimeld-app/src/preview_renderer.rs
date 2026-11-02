@@ -1,7 +1,9 @@
 use crate::desktop::Files;
 use achimeld_application::preview::PreviewState;
 use achimeld_application::{Document, Preview, ports::LayerBlendPreview};
-use achimeld_imaging::{AssetSource, render_achieved_cancellable, render_layer_cancellable};
+use achimeld_imaging::{
+    AssetSource, render_achieved_cancellable, render_cancellable, render_layer_cancellable,
+};
 use eframe::egui;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
@@ -324,16 +326,38 @@ impl PreviewWorker {
         project: Option<&std::path::Path>,
     ) -> Option<Preview> {
         let key = if let Some(hover) = &self.blend_preview
-            && hover.achievement_id == id
+            && let Some(layer_id) = blend_layer_for_achievement(hover, id, document)
         {
             let edge = edge.unwrap_or(512);
-            format!("blend:{edge}:{}:{}:{id}", hover.mode, hover.layer_id)
+            format!("blend:{edge}:{}:{layer_id}:{id}", hover.mode)
         } else if let Some(edge) = edge {
             format!("canvas:{edge}:{id}")
         } else {
             id.to_owned()
         };
         self.preview(&key, generation, document, project)
+    }
+    pub fn unachieved_canvas_preview(
+        &mut self,
+        id: &str,
+        edge: usize,
+        generation: u64,
+        document: &Document,
+        project: Option<&std::path::Path>,
+    ) -> Option<Preview> {
+        self.preview(
+            &format!("unachieved-canvas:{edge}:{id}"),
+            generation,
+            document,
+            project,
+        )
+    }
+    pub fn preview_is_current(&self, key: &str) -> bool {
+        self.inputs.get(key).is_some_and(|(generation, _)| {
+            self.states
+                .get(key)
+                .is_some_and(|state| state.generation() == Some(*generation))
+        })
     }
     pub fn preview(
         &mut self,
@@ -439,6 +463,7 @@ impl PreviewWorker {
                         && !id.starts_with("viewer-style:")
                         && !id.starts_with("construction:"))
                     || id.starts_with("canvas:64:")
+                    || id.starts_with("unachieved-canvas:64:")
                     || id.starts_with("style:64:")
                     || id.starts_with("blend:64:")
                 {
@@ -469,9 +494,47 @@ impl PreviewWorker {
 }
 // Keep this dependency projection beside render_job. Unknown preview routes use
 // the complete document so a new route fails toward freshness, never stale pixels.
+fn blend_layer_for_achievement(
+    hover: &LayerBlendPreview,
+    id: &str,
+    document: &Document,
+) -> Option<String> {
+    if hover.achievement_id == id {
+        return Some(hover.layer_id.clone());
+    }
+    let style_id = hover.style_id.as_ref()?;
+    let style = document
+        .icon_styles()
+        .into_iter()
+        .find(|style| &style.id == style_id)?;
+    let entity = document.project()["achievements"]
+        .as_array()?
+        .iter()
+        .find(|entity| entity["id"] == id)?;
+    if achimeld_application::style_achievements::is_local_icon(entity)
+        || achimeld_application::style_signature(&entity["icon"])
+            != achimeld_application::style_signature(&style.recipe)
+    {
+        return None;
+    }
+    let edited = document.project()["achievements"]
+        .as_array()?
+        .iter()
+        .find(|entity| entity["id"] == hover.achievement_id)?;
+    let index = edited["icon"]["layers"]
+        .as_array()?
+        .iter()
+        .position(|layer| layer["id"] == hover.layer_id)?;
+    entity["icon"]["layers"][index]["id"]
+        .as_str()
+        .map(str::to_owned)
+}
+
 fn render_inputs(key: &str, document: &Document) -> serde_json::Value {
     use serde_json::{Value, json};
     let id = if let Some(rest) = key.strip_prefix("canvas:") {
+        rest.split_once(':').map(|(_, id)| id)
+    } else if let Some(rest) = key.strip_prefix("unachieved-canvas:") {
         rest.split_once(':').map(|(_, id)| id)
     } else if let Some(rest) = key.strip_prefix("blend:") {
         rest.splitn(4, ':').nth(3)
@@ -717,17 +780,21 @@ fn render_job(
     } else if let Some((achievement, layer)) = id.split_once('/') {
         render_layer_cancellable(document, achievement, layer, assets, cancelled)?
     } else {
-        let (id, canvas_edge) = if let Some(canvas) = id.strip_prefix("canvas:") {
+        let canvas = id
+            .strip_prefix("unachieved-canvas:")
+            .map(|value| (value, true))
+            .or_else(|| id.strip_prefix("canvas:").map(|value| (value, false)));
+        let (id, canvas_edge, unachieved) = if let Some((canvas, unachieved)) = canvas {
             let (edge, id) = canvas.split_once(':').ok_or("Invalid canvas preview")?;
             let edge = edge
                 .parse::<u32>()
                 .map_err(|_| "Invalid canvas preview size")?;
-            if !(64..=512).contains(&edge) || !edge.is_power_of_two() {
+            if !(64..=512).contains(&edge) || !(edge.is_power_of_two() || edge == 96) {
                 return Err("Invalid canvas preview size".into());
             }
-            (id, Some(edge))
+            (id, Some(edge), unachieved)
         } else {
-            (id, None)
+            (id, None, false)
         };
         let settings = &document.project()["atlas"];
         let default = settings["outputSize"].as_u64().unwrap_or(512);
@@ -743,20 +810,17 @@ fn render_job(
         };
         let ratio = (f64::from(edge) / width.max(height) as f64).min(1.0);
         source_size = Some([width as usize, height as usize]);
-        render_achieved_cancellable(
-            document,
-            id,
-            if job.pass == Pass::Quick || canvas_edge.is_some() {
-                Some((
-                    (width as f64 * ratio).round().max(1.0) as u32,
-                    (height as f64 * ratio).round().max(1.0) as u32,
-                ))
-            } else {
-                None
-            },
-            assets,
-            cancelled,
-        )?
+        let render_size = (job.pass == Pass::Quick || canvas_edge.is_some()).then(|| {
+            (
+                (width as f64 * ratio).round().max(1.0) as u32,
+                (height as f64 * ratio).round().max(1.0) as u32,
+            )
+        });
+        if unachieved {
+            render_cancellable(document, id, render_size, assets, cancelled)?.unachieved
+        } else {
+            render_achieved_cancellable(document, id, render_size, assets, cancelled)?
+        }
     };
     if cancelled() {
         return Err("Icon rendering cancelled".into());
@@ -831,6 +895,57 @@ mod tests {
     use achimeld_application::{Command, Editor, EntityKind, new_id};
     use serde_json::json;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn unachieved_canvas_previews_have_separate_pixels_and_refresh_with_project_settings() {
+        let (document, ids) = fixture(1);
+        let mut project = document.project().clone();
+        project["achievements"][0]["icon"] = json!({"layers":[
+            {"id":new_id(),"kind":"Solid","solidColorHex":"#FFFF0000"}
+        ]});
+        let document = Document::from_parts(project, document.catalog().clone()).unwrap();
+        let id = &ids[0];
+        let achieved_key = format!("canvas:128:{id}");
+        let unachieved_key = format!("unachieved-canvas:128:{id}");
+        let mut worker = PreviewWorker::with_threads(egui::Context::default(), 2);
+        worker.achievement_preview(id, Some(128), 1, &document, None);
+        worker.unachieved_canvas_preview(id, 128, 1, &document, None);
+        wait_until(|| {
+            worker.poll();
+            [achieved_key.as_str(), unachieved_key.as_str()]
+                .iter()
+                .all(|key| {
+                    worker
+                        .states
+                        .get(*key)
+                        .and_then(|state| state.output())
+                        .is_some_and(|preview| preview.width == 128)
+                })
+        });
+        assert_eq!(
+            &worker.states[&achieved_key].output().unwrap().rgba[..4],
+            &[255, 0, 0, 255]
+        );
+        assert_eq!(
+            &worker.states[&unachieved_key].output().unwrap().rgba[..4],
+            &[54, 54, 54, 255]
+        );
+
+        let mut project = document.project().clone();
+        project["atlas"]["unachievedIcon"]["desaturation"] = json!(0.5);
+        let changed = Document::from_parts(project, document.catalog().clone()).unwrap();
+        worker.unachieved_canvas_preview(id, 128, 2, &changed, None);
+        wait_until(|| {
+            worker.poll();
+            worker.states[&unachieved_key]
+                .output()
+                .is_some_and(|preview| preview.width == 128 && preview.rgba[0] > 54)
+        });
+        assert_eq!(
+            &worker.states[&achieved_key].output().unwrap().rgba[..4],
+            &[255, 0, 0, 255]
+        );
+    }
 
     #[test]
     fn icon_edits_and_undo_preserve_other_icons_pixels_and_pending_work() {
@@ -979,6 +1094,7 @@ mod tests {
                 achievement_id: ids[0].clone(),
                 layer_id: layer.clone(),
                 mode: mode.into(),
+                style_id: None,
             })
         };
         let started = Instant::now();
@@ -1279,6 +1395,61 @@ mod tests {
             ids.push(id);
         }
         (editor.document().clone(), ids)
+    }
+    #[test]
+    fn shared_style_blend_hover_refreshes_each_matching_icon() {
+        let (document, ids) = fixture(3);
+        let mut project = document.project().clone();
+        let edited_layer = project["achievements"][0]["icon"]["layers"][1]["id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let matching_layer = project["achievements"][1]["icon"]["layers"][1]["id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let style_id = new_id();
+        project["iconStyles"] = json!([{
+            "id":style_id.clone(), "name":"Shared", "recipe":project["achievements"][0]["icon"]
+        }]);
+        project["achievements"][2]["icon"]["layers"][1]["opacity"] = json!(0.5);
+        let document = Document::from_parts(project, document.catalog().clone()).unwrap();
+        let hover = LayerBlendPreview {
+            achievement_id: ids[0].clone(),
+            layer_id: edited_layer.clone(),
+            mode: "Multiply".into(),
+            style_id: Some(style_id),
+        };
+        assert_eq!(
+            blend_layer_for_achievement(&hover, &ids[0], &document),
+            Some(edited_layer.clone())
+        );
+        assert_eq!(
+            blend_layer_for_achievement(&hover, &ids[1], &document),
+            Some(matching_layer.clone())
+        );
+        assert_eq!(
+            blend_layer_for_achievement(&hover, &ids[2], &document),
+            None
+        );
+        let mut worker = PreviewWorker::with_threads(egui::Context::default(), 0);
+        worker.set_blend_preview(Some(hover));
+        for id in &ids {
+            worker.achievement_preview(id, Some(64), 1, &document, None);
+        }
+        assert!(
+            worker
+                .states
+                .contains_key(&format!("blend:64:Multiply:{edited_layer}:{}", ids[0]))
+        );
+        assert!(
+            worker
+                .states
+                .contains_key(&format!("blend:64:Multiply:{matching_layer}:{}", ids[1]))
+        );
+        assert!(worker.states.contains_key(&format!("canvas:64:{}", ids[2])));
+        worker.set_blend_preview(None);
+        assert!(worker.states.keys().all(|id| !id.starts_with("blend:")));
     }
     fn wait_until(mut condition: impl FnMut() -> bool) {
         let deadline = Instant::now() + Duration::from_secs(20);

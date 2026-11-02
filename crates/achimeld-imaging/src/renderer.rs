@@ -49,51 +49,79 @@ pub fn render_cancellable(
     let mut work = Work {
         cancelled,
         allow_missing_art: false,
+        version: Some(IconVersion::Achieved),
         planes: 0,
         pixels: 0,
         art_stack: Vec::new(),
         mask_ids: Default::default(),
     };
     let achieved = compose_achieved(document, id, size, assets, &mut work)?;
-    work.plane(achieved.width(), achieved.height())?;
     let settings = &document.project()["atlas"]["unachievedIcon"];
-    let tint = match settings["mode"].as_str().unwrap_or("Grayscale") {
-        "Grayscale" => None,
-        "Tint" => Some(rgba(settings["tintHex"].as_str().unwrap_or("#808080"))?),
-        mode => return Err(format!("Unsupported unachieved icon mode: {mode}")),
-    };
     let opacity = num(settings, "opacity", 1.0).clamp(0.0, 1.0);
-    let mut unachieved = achieved.clone();
-    // Locked artwork has exactly one source: this achievement's composed icon.
-    // Legacy unachievedImageId references must never override this derivation.
+    let desaturation = num(settings, "desaturation", 1.0).clamp(0.5, 1.0);
+    let gradient = &settings["gradientOverlay"];
+    let legacy_tint = if gradient.is_null() && settings["mode"] == "Tint" {
+        Some(rgba(settings["tintHex"].as_str().unwrap_or("#808080"))?)
+    } else {
+        None
+    };
+    let gradient_strength = if legacy_tint.is_some() {
+        0.5
+    } else if gradient["enabled"] == true {
+        num(gradient, "opacity", 0.25).clamp(0.0, 0.5)
+    } else {
+        0.0
+    };
+    let dark = if let Some(tint) = legacy_tint {
+        tint
+    } else {
+        rgba(gradient["darkColorHex"].as_str().unwrap_or("#4E4778"))?
+    };
+    let light = if let Some(tint) = legacy_tint {
+        tint
+    } else {
+        rgba(gradient["lightColorHex"].as_str().unwrap_or("#D8CAE8"))?
+    };
+    let project = document.project();
+    let achievement = document
+        .entity(EntityKind::Achievement, id)
+        .ok_or("Achievement no longer exists")?;
+    let excluded = needs_unachieved_render(project, achievement, 0);
+    let mut unachieved = if excluded {
+        let mut locked_work = Work {
+            cancelled,
+            allow_missing_art: false,
+            version: Some(IconVersion::Unachieved),
+            planes: 0,
+            pixels: 0,
+            art_stack: Vec::new(),
+            mask_ids: Default::default(),
+        };
+        compose_achieved(document, id, size, assets, &mut locked_work)?
+    } else {
+        achieved.clone()
+    };
+    // Legacy unachievedImageId references never override this composition.
     for pixel in unachieved.pixels_mut() {
         let grey = (0.2126 * f64::from(pixel[0])
             + 0.7152 * f64::from(pixel[1])
             + 0.0722 * f64::from(pixel[2]))
-        .round() as u8;
+        .round();
         for i in 0..3 {
-            pixel[i] = tint.map_or(grey, |tint| {
-                ((f64::from(grey) + f64::from(tint[i])) / 2.0).round() as u8
-            });
+            let base = f64::from(pixel[i]) * (1.0 - desaturation) + grey * desaturation;
+            let mapped =
+                f64::from(dark[i]) + (f64::from(light[i]) - f64::from(dark[i])) * grey / 255.0;
+            pixel[i] =
+                (base * (1.0 - gradient_strength) + mapped * gradient_strength).round() as u8;
         }
         pixel[3] = (f64::from(pixel[3]) * opacity).round() as u8;
     }
     assert_eq!(achieved.dimensions(), unachieved.dimensions());
-    debug_assert!(
-        achieved
-            .pixels()
-            .zip(unachieved.pixels())
-            .all(|(source, locked)| {
-                locked[3] == (f64::from(source[3]) * opacity).round() as u8
-                    && (tint.is_some() || (locked[0] == locked[1] && locked[1] == locked[2]))
-            })
-    );
     achimeld_application::diagnostics::record(
         "INFO",
         "artwork",
         &format!(
-            "Locked artwork derived from composed achievement {id}; mode={}; size={}x{}; opacity={opacity}; separate locked assets ignored",
-            if tint.is_some() { "Tint" } else { "Grayscale" },
+            "Locked artwork derived from achievement {id}; size={}x{}; desaturation={desaturation}; gradient={gradient_strength}; opacity={opacity}; excluded layers={excluded}",
             achieved.width(),
             achieved.height()
         ),
@@ -119,6 +147,7 @@ pub fn render_achieved_cancellable(
         &mut Work {
             cancelled,
             allow_missing_art: true,
+            version: Some(IconVersion::Achieved),
             planes: 0,
             pixels: 0,
             art_stack: Vec::new(),
@@ -148,6 +177,36 @@ fn compose_achieved(
         return Err("Icon dimensions must be between 1 and 4096 pixels".into());
     }
     compose_icon(project, achievement, width, height, 0, assets, work)
+}
+fn needs_unachieved_render(project: &Value, achievement: &Value, depth: usize) -> bool {
+    if depth > achimeld_application::art_images::MAX_LINK_DEPTH {
+        return false;
+    }
+    let Some(layers) = achievement["icon"]["layers"].as_array() else {
+        return false;
+    };
+    layers.iter().any(|layer| {
+        layer["versionVisibility"]
+            .as_str()
+            .is_some_and(|visibility| visibility != "Both")
+            || (layer["versionVisibility"].is_null() && layer["hideWhenUnachieved"] == true)
+            || achimeld_application::art_images::layer_source(achievement, layer)
+                .and_then(|id| {
+                    project["achievements"].as_array()?.iter().find(|entry| {
+                        entry["id"].as_str() == Some(id)
+                            && achimeld_application::art_images::is_art_image(entry)
+                    })
+                })
+                .is_some_and(|source| needs_unachieved_render(project, source, depth + 1))
+    })
+}
+fn excluded_for_version(layer: &Value, for_unachieved: bool) -> bool {
+    match layer["versionVisibility"].as_str() {
+        Some("AchievedOnly") => for_unachieved,
+        Some("UnachievedOnly") => !for_unachieved,
+        Some("Both") => false,
+        _ => for_unachieved && layer["hideWhenUnachieved"] == true,
+    }
 }
 fn compose_icon(
     project: &Value,
@@ -283,6 +342,7 @@ pub fn render_layer_cancellable(
         let mut work = Work {
             cancelled,
             allow_missing_art: true,
+            version: None,
             planes: 0,
             pixels: 0,
             art_stack: Vec::new(),
@@ -317,6 +377,7 @@ pub fn render_layer_cancellable(
     let mut work = Work {
         cancelled,
         allow_missing_art: true,
+        version: None,
         planes: 0,
         pixels: 0,
         art_stack: Vec::new(),
@@ -338,9 +399,15 @@ pub fn render_layer_cancellable(
         None,
     )
 }
+#[derive(Clone, Copy)]
+enum IconVersion {
+    Achieved,
+    Unachieved,
+}
 struct Work<'a> {
     cancelled: &'a dyn Fn() -> bool,
     allow_missing_art: bool,
+    version: Option<IconVersion>,
     planes: u64,
     pixels: u64,
     art_stack: Vec<String>,
@@ -382,6 +449,9 @@ fn group(
     for layer in layers {
         work.check()?;
         if layer["visible"] == false
+            || work.version.is_some_and(|version| {
+                excluded_for_version(layer, matches!(version, IconVersion::Unachieved))
+            })
             || layer["parentFolderId"].as_str() != parent
             || layer["id"].as_str().is_some_and(|id| masks.contains(id))
         {
@@ -485,6 +555,12 @@ fn plane(
     work: &mut Work<'_>,
     backdrop: Option<&RgbaImage>,
 ) -> Result<RgbaImage, String> {
+    if work.version.is_some_and(|version| {
+        excluded_for_version(layer, matches!(version, IconVersion::Unachieved))
+    }) {
+        work.check()?;
+        return Ok(RgbaImage::new(width, height));
+    }
     work.plane(width, height)?;
     if layer["kind"] == "Explosion" {
         work.pixels += crate::explosion::estimate(

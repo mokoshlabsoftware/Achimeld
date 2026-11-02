@@ -31,9 +31,13 @@ pub(super) struct EffectPreview {
     key: String,
     layer: Value,
     generation: u64,
+    size: usize,
 }
 impl EffectPreview {
     pub(super) fn new(ctx: egui::Context) -> Result<Self, String> {
+        Self::with_size(ctx, 256)
+    }
+    fn with_size(ctx: egui::Context, size: usize) -> Result<Self, String> {
         let mut editor = Editor::default();
         editor.execute(
             "Preview",
@@ -48,10 +52,11 @@ impl EffectPreview {
         Ok(Self {
             worker: PreviewWorker::with_threads(ctx, 2),
             document,
-            key: format!("canvas:256:{achievement}"),
+            key: format!("canvas:{size}:{achievement}"),
             achievement,
             layer: Value::Null,
             generation: 0,
+            size,
         })
     }
     pub(super) fn preview(&mut self, preset: &EffectPreset) -> Option<Preview> {
@@ -65,13 +70,18 @@ impl EffectPreview {
             self.generation += 1;
         }
         self.worker.poll();
-        self.worker.achievement_preview(
+        let preview = self.worker.achievement_preview(
             &self.achievement,
-            Some(256),
+            Some(self.size),
             self.generation,
             &self.document,
             None,
-        )
+        );
+        // The shared renderer intentionally retains its last frame while a new
+        // recipe is rendering. A library tile must never claim those old pixels
+        // as the newly selected preset's thumbnail.
+        self.worker.preview_is_current(&self.key).then_some(())?;
+        preview
     }
     pub(super) fn error(&self) -> Option<&str> {
         self.worker.error(&self.key)
@@ -97,9 +107,111 @@ impl EffectPreview {
     }
 }
 
+/// One bounded preview queue serves the library, so browsing many presets does
+/// not start a renderer per tile or repeatedly cancel another tile's work.
+pub(super) struct EffectThumbnails {
+    renderer: EffectPreview,
+    active: Option<EffectPreset>,
+    ready: BTreeMap<String, (Value, Preview)>,
+}
+impl EffectThumbnails {
+    pub(super) fn new(ctx: egui::Context) -> Result<Self, String> {
+        Ok(Self {
+            renderer: EffectPreview::with_size(ctx, 96)?,
+            active: None,
+            ready: BTreeMap::new(),
+        })
+    }
+    pub(super) fn thumbnail(&mut self, preset: &EffectPreset) -> Option<Preview> {
+        if let Some(active) = self.active.as_ref() {
+            if let Some(preview) = self.renderer.preview(active) {
+                let complete = preview.fingerprint.ends_with("Detail")
+                    || preview.fingerprint.ends_with("Single");
+                if self.ready.len() >= 256 {
+                    self.ready.pop_first();
+                }
+                self.ready
+                    .insert(active.id.clone(), (active.layer.clone(), preview));
+                if complete {
+                    self.active = None;
+                }
+            } else if self.renderer.error().is_some() {
+                self.active = None;
+            }
+        }
+        if self.active.is_none()
+            && !self
+                .ready
+                .get(&preset.id)
+                .is_some_and(|(layer, _)| layer == &preset.layer)
+        {
+            self.active = Some(preset.clone());
+            self.renderer.preview(preset);
+        }
+        self.ready
+            .get(&preset.id)
+            .and_then(|(layer, preview)| (layer == &preset.layer).then(|| preview.clone()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn particle_library_thumbnail_uses_the_effect_renderer_at_96_pixels() {
+        let preset = effect_presets::built_in_particles().remove(0);
+        let mut thumbnails = EffectThumbnails::new(egui::Context::default()).unwrap();
+        let started = std::time::Instant::now();
+        let rendered = loop {
+            if let Some(preview) = thumbnails.thumbnail(&preset)
+                && preview.fingerprint.ends_with("Detail")
+            {
+                break preview;
+            }
+            assert!(
+                started.elapsed().as_secs() < 60,
+                "Particle thumbnail did not finish: {:?}",
+                thumbnails.renderer.error()
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        };
+        assert_eq!((rendered.width, rendered.height), (96, 96));
+        assert!(
+            rendered
+                .rgba
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .any(|pixel| pixel[3] > 0)
+        );
+    }
+    #[test]
+    fn library_tiles_do_not_cache_another_presets_pixels() {
+        let first = effect_presets::built_in_particles().remove(0);
+        let mut second = first.clone();
+        second.id = achimeld_application::new_id();
+        second.name = "Dim particles".into();
+        second.layer["opacity"] = json!(0.15);
+        second.validate().unwrap();
+        let mut thumbnails = EffectThumbnails::new(egui::Context::default()).unwrap();
+        let started = std::time::Instant::now();
+        let (first_image, second_image) = loop {
+            let a = thumbnails.thumbnail(&first);
+            let b = thumbnails.thumbnail(&second);
+            if let (Some(a), Some(b)) = (a, b)
+                && a.fingerprint.ends_with("Detail")
+                && b.fingerprint.ends_with("Detail")
+            {
+                break (a, b);
+            }
+            assert!(
+                started.elapsed().as_secs() < 60,
+                "Preset tiles did not finish"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        };
+        assert_ne!(first_image.rgba, second_image.rgba);
+    }
     #[test]
     fn explosion_construction_preview_refines_latest_settings_without_changing_editor() {
         let mut preview = EffectPreview::new(egui::Context::default()).unwrap();

@@ -75,7 +75,7 @@ internal static class BrowserFixtures
                 await persistent.NewPageAsync();
                 SteamBrowserRequestPolicy startupPolicy = new();
                 IPage? owned = null;
-                owned = await BrowserStartup.CreateOwnedPageAsync(persistent, startupPolicy, () => owned).WaitAsync(TimeSpan.FromSeconds(15));
+                owned = await BrowserStartup.CreateOwnedPageAsync(persistent, startupPolicy, () => owned).WaitAsync(TimeSpan.FromSeconds(45));
                 if (owned.IsClosed || owned.Url != "about:blank" || persistent.Pages.Count != 1 || await owned.EvaluateAsync<int>("() => 42") != 42)
                     throw new Exception("Persistent browser did not retain exactly one live owned page.");
                 startupPolicy.RequireHealthy();

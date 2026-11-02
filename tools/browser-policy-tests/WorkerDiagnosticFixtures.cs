@@ -21,6 +21,13 @@ internal static class WorkerDiagnosticFixtures
             (new InvalidDataException("Steam changed after review; prepare a new synchronization plan."), "steam.sync.review-changed"),
             (new InvalidDataException("Steam changed during synchronization; prepare a fresh plan."), "steam.sync.remote-changed"),
             (new InvalidDataException("Steam draft read-back did not match the approved change."), "steam.sync.readback-mismatch"),
+            (new InvalidOperationException("Steamworks rejected the achievement icon upload."), "steam.sync.icon-post-rejected"),
+            (new InvalidOperationException("Steamworks did not save the achievement icon."), "steam.sync.icon-not-saved"),
+            (new InvalidOperationException("Steamworks saved icon artwork that does not match the approved upload."), "steam.sync.icon-verify-failed"),
+            (new InvalidOperationException("Steamworks still serves the pre-upload achievement icon after the upload."), "steam.sync.icon-stale"),
+            (new InvalidOperationException("Steamworks saved an icon with unexpected image dimensions or format."), "steam.sync.icon-format"),
+            (new InvalidOperationException("Steamworks saved icon pixels close to but outside the approved threshold."), "steam.sync.icon-pixels-near"),
+            (new InvalidOperationException("Steamworks saved icon pixels substantially different from the approved upload."), "steam.sync.icon-pixels-different"),
             (new InvalidDataException("Steam did not preserve the renamed record identity."), "steam.sync.rename-identity"),
             (new InvalidDataException("A localization row is missing."), "steam.sync.localization-missing"),
             (new InvalidDataException("Select the progress stat before its dependent achievement."), "steam.sync.progress-selection"),
@@ -54,8 +61,9 @@ internal static class WorkerDiagnosticFixtures
         {
             if (WorkerFailure.Details("operation", test.Error, 12, null).GetRawText().Contains(secret, StringComparison.Ordinal))
                 throw new Exception("Failure details exposed exception contents.");
-            if (WorkerFailure.Code("prepareSync", test.Error) != test.Code)
-                throw new Exception("Worker diagnostic classification changed or exposed raw error data.");
+            string code = WorkerFailure.Code(test.Error is InvalidOperationException ? "syncStep" : "prepareSync", test.Error);
+            if (code != test.Code)
+                throw new Exception($"Worker diagnostic classification changed: expected {test.Code}, got {code}.");
             if (WorkerFailure.Kind(test.Error).Contains(secret, StringComparison.Ordinal))
                 throw new Exception("Worker diagnostic kind exposed raw error data.");
         }
@@ -85,6 +93,28 @@ internal static class WorkerDiagnosticFixtures
             WorkerFailure.Code("navigate", new Exception(secret)) != "steam.navigation.failed" ||
             WorkerFailure.Code("readConfiguration", new Exception(secret)) != "steam.read.failed")
             throw new Exception("Worker fallback diagnostic classification changed.");
-        return cases.Length + 3;
+        int reads = 0;
+        List<TimeSpan> waits = [];
+        bool propagated = IconUploadVerification.WaitForSavedArtworkAsync(
+            () => Task.FromResult(++reads == 3),
+            duration => { waits.Add(duration); return Task.CompletedTask; }).GetAwaiter().GetResult();
+        if (!propagated || reads != 3 || waits.Count != 2 || waits[0] != TimeSpan.FromMilliseconds(500) || waits[1] != TimeSpan.FromSeconds(1))
+            throw new Exception("Icon verification did not retry only the read-back.");
+        reads = 0;
+        waits.Clear();
+        bool exhausted = IconUploadVerification.WaitForSavedArtworkAsync(
+            () => Task.FromResult(++reads > 5),
+            duration => { waits.Add(duration); return Task.CompletedTask; }).GetAwaiter().GetResult();
+        if (exhausted || reads != 5 || waits.Count != 4 || waits[^1] != TimeSpan.FromSeconds(4))
+            throw new Exception("Icon verification retry budget changed.");
+        string oldHash = new('a', 64), newHash = new('b', 64);
+        if (!IconUploadVerification.IsFresh(oldHash, newHash) ||
+            !IconUploadVerification.IsFresh(null, newHash) ||
+            IconUploadVerification.IsFresh(oldHash, oldHash) ||
+            IconUploadVerification.IsFresh(oldHash.ToUpperInvariant(), oldHash) ||
+            IconUploadVerification.IsFresh(oldHash, null) ||
+            IconUploadVerification.IsFresh(oldHash, "invalid"))
+            throw new Exception("Remote icon hash freshness check changed.");
+        return cases.Length + 6;
     }
 }

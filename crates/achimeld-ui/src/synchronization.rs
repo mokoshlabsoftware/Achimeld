@@ -15,9 +15,6 @@ fn snapshot_time(stamp: &str) -> String {
 
 impl Desktop {
     pub(crate) fn synchronization_view(&mut self, ui: &mut egui::Ui, port: &mut dyn EditorPort) {
-        if Self::steam_operation_active(port) {
-            ui.disable();
-        }
         crate::buttons::bar_panel(ui, "sync-toolbar", 24.0).show(ui, |ui| {
             let height = ui.available_height();
             egui::ScrollArea::horizontal()
@@ -66,7 +63,8 @@ impl Desktop {
                 });
         });
         egui::Frame::new().inner_margin(16).show(ui, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
+            let height = ui.available_height().max(100.0);
+            egui::ScrollArea::vertical().max_height(height).show(ui, |ui| {
                 ui.heading(crate::localization::text(ui.ctx(), "Synchronize"));
                 self.sync_game_banner(ui, port);
                 let project = port.editor().document().project();
@@ -78,95 +76,11 @@ impl Desktop {
                 if let Some(error) = port.synchronization_error() {
                     ui.colored_label(crate::theme::color(port.preferences(), "Error"), error);
                 }
-                if let Some(review) = port.synchronization_review() {
-                    let token = review["token"].as_str().unwrap_or("");
-                    let rows = review["rows"].as_array().map(Vec::as_slice).unwrap_or_default();
-                    if self.sync_token != token {
-                        self.sync_confirmation = self.sync_review_identity(port);
-                        self.sync_token = token.into();
-                        self.sync_filter.clear(); self.sync_page = 0;
-                        self.sync_choices = rows.iter().filter_map(|row| Some((row["key"].as_str()?.into(), row["defaultAction"].as_str()?.into()))).collect();
-                    }
-                    let achievements = review["steamAchievements"].as_u64().unwrap_or(0);
-                    ui.strong(format!("Steam entries are in the project · {} stats · {achievements} {}", review["steamStats"].as_u64().unwrap_or(0), if achievements == 1 { "achievement" } else { "achievements" }));
-                    if let Some(identity) = self.sync_review_identity(port) {
-                        ui.strong(format!("Validated destination · Steam App ID {}", identity.1));
-                        ui.add(egui::Label::new(crate::synchronization_target::steamworks_destination(identity.1)).wrap());
-                        ui.label("Steamworks configuration loaded successfully. Check the App ID and reviewed entries before synchronizing.");
-                    } else {
-                        ui.colored_label(crate::theme::color(port.preferences(), "Warning"), "This validation belongs to another Steam App ID. Cancel and validate again.");
-                    }
-                    if review["reconciliation"] == true {
-                        ui.colored_label(crate::theme::color(port.preferences(), "Warning"), "The previous synchronization was interrupted. This plan uses a fresh Steam read; review the remaining differences.");
-                    }
-                    ui.separator();
-                    if ui.add(egui::TextEdit::singleline(&mut self.sync_filter).hint_text("Filter by API name")).changed() { self.sync_page = 0; }
-                    let query = self.sync_filter.to_lowercase();
-                    let visible: Vec<_> = rows.iter().filter(|row| row["state"] != "InSync" && row["apiName"].as_str().unwrap_or("").to_lowercase().contains(&query)).collect();
-                    let pages = visible.len().div_ceil(50).max(1);
-                    self.sync_page = self.sync_page.min(pages - 1);
-                    if pages > 1 { ui.horizontal_wrapped(|ui| {
-                        if ui.add_enabled(self.sync_page > 0, crate::buttons::Button::new("Previous")).clicked() { self.sync_page -= 1; }
-                        ui.label(format!("Page {} of {pages}", self.sync_page + 1));
-                        if ui.add_enabled(self.sync_page + 1 < pages, crate::buttons::Button::new("Next")).clicked() { self.sync_page += 1; }
-                    }); }
-                    for row in visible.into_iter().skip(self.sync_page * 50).take(50) {
-                        let key = row["key"].as_str().unwrap_or("");
-                        ui.push_id(key, |ui| {
-                            egui::Frame::new().fill(crate::theme::color(port.preferences(), "Panel")).inner_margin(10).show(ui, |ui| {
-                                ui.set_width(ui.available_width());
-                                let mut imported = false;
-                                ui.horizontal_wrapped(|ui| {
-                                    ui.strong(format!("{} · {}", row["kind"].as_str().unwrap_or(""), row["apiName"].as_str().unwrap_or("")));
-                                    ui.weak(match row["state"].as_str().unwrap_or("") {
-                                        "LocalOnly" => "Only in project", "SteamOnly" => "Only on Steam", "LocalChanged" => "Project changed", "SteamChanged" => "Steam changed",
-                                        "Conflict" => "Review both versions", "InSync" => "Up to date", "ArtworkUnavailable" => "Artwork unavailable", "RenamedOnSteam" => "Renamed on Steam · import keeps the old entry as Retired", value => value,
-                                    });
-                                    let choice = self.sync_choices.entry(key.into()).or_insert_with(|| "Skip".into());
-                                    if let Some(default) = row["defaultAction"].as_str().filter(|action| *action != "Skip") {
-                                        let mut included = choice != "Skip";
-                                        if ui.checkbox(&mut included, "Include").changed() {
-                                            *choice = if included { default } else { "Skip" }.into();
-                                            imported = included && default == "Import";
-                                        }
-                                    }
-                                    for action in row["actions"].as_array().into_iter().flatten().filter_map(|v| v.as_str()) {
-                                        if ui.add(crate::buttons::Button::selectable(choice == action, match action { "Upload" => "Use project", "Skip" => "Leave unchanged", "Import" => "Use Steam", _ => action })).clicked() { *choice = action.into(); imported = action == "Import"; }
-                                    }
-                                });
-                                if imported { self.sync_choices.insert(format!("Icon:{}", row["apiName"].as_str().unwrap_or("")), "Skip".into()); }
-                                if row["state"] == "ArtworkUnavailable" { ui.weak("Artwork could not be generated. Repair its source in the Art Data Bank before uploading icons."); }
-                                if let Some(error) = row["uploadError"].as_str() { ui.colored_label(crate::theme::color(port.preferences(), "Warning"), error); }
-                                let fields = row["fields"].as_array().map(Vec::as_slice).unwrap_or_default();
-                                if !fields.is_empty() {
-                                    egui::CollapsingHeader::new(format!("{} field {}", fields.len(), if fields.len() == 1 { "difference" } else { "differences" })).show(ui, |ui| {
-                                        for field in fields {
-                                            ui.label(field["field"].as_str().unwrap_or(""));
-                                            ui.horizontal_wrapped(|ui| {
-                                                ui.label(format!("Project: {}", field["local"].as_str().unwrap_or("")));
-                                                ui.label(format!("Steam: {}", field["steam"].as_str().unwrap_or("")));
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        });
-                        ui.add_space(4.0);
-                    }
-                    let selected = self.sync_selected_count(port);
-                    let compact_actions = ui.available_width() < 650.0;
-                    crate::buttons::bar(ui, 24.0, |ui| {
-                        if ui.add_enabled(self.sync_action_enabled(port), crate::buttons::Button::new(format!("Synchronize {selected} selected {}", if selected == 1 { "change" } else { "changes" })).bar().primary_outline()).clicked() {
-                            self.run_sync_action(port);
-                        }
-                        if !compact_actions { self.steam_page_buttons(ui, port); }
-                        if ui.add(crate::buttons::Button::new("Cancel").bar()).clicked() { self.sync_confirmation = None; self.request(UiRequest::CancelSynchronization); }
-                    });
-                    if compact_actions {
-                        crate::buttons::bar(ui, 24.0, |ui| self.steam_page_buttons(ui, port));
-                    }
+                if port.synchronization_review().is_some() {
+                    ui.strong("The reviewed changes are ready in the modal window.");
                 } else if port.synchronizing() {
-                    // Active work is presented by the centered progress modal.
+                    ui.spinner();
+                    ui.label(port.status());
                 } else {
                     self.sync_confirmation = None;
                     let valid_id = achimeld_core::SteamAppId::new(port.editor().document().app_id()).is_ok();

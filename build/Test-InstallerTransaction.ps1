@@ -21,7 +21,13 @@ New-Item -ItemType Directory -Path $fixture | Out-Null
 # execution, ACL mutation and registration discovery are mocked; no app/OS policy
 # command runs, and no actual installed path is enumerated by these fixtures.
 function Get-RegisteredInstallRoot { return $script:registeredRoot }
-function Get-AchimeldProcessIds { if ($script:simulateRunning) { 123 } }
+function Get-AchimeldProcessIds {
+    if ($script:simulateRunning) { 123 }
+    elseif ($script:simulateTransient -and !$script:transientObserved) {
+        $script:transientObserved = $true
+        456
+    }
+}
 function Assert-AdministratorTree([string]$Path) { Assert-NoReparse $Path }
 function Assert-InstallationParent([string]$Path) { Assert-NoReparse $Path }
 function Set-Acl { param($LiteralPath, $AclObject) }
@@ -58,6 +64,11 @@ try {
     try { Assert-AchimeldStopped } catch { $blocked = $true }
     Assert-Condition $blocked 'Running Achimeld did not block installation.'
     $script:simulateRunning = $false
+    $script:simulateTransient = $true
+    $script:transientObserved = $false
+    Assert-AchimeldStopped
+    Assert-Condition $script:transientObserved 'Transient process fixture did not run.'
+    $script:simulateTransient = $false
     foreach ($scenario in @('fresh','fresh-cancel','update','update-cancel','late-cancel','policy-failure','late-rollback','repair','repair-rollback','missing-policy','repair-missing-policy','damaged-rejected','relocate','nested-rejected')) {
         $caseRoot = Join-Path $fixture $scenario
         New-Item -ItemType Directory -Path $caseRoot | Out-Null

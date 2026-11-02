@@ -5,7 +5,13 @@ namespace Achimeld.Browser;
 
 public sealed partial class PlaywrightChromeDriver
 {
-    public void BeginReviewedDraft(uint appId, PortalEntityKind kind) => _requestPolicy.BeginReviewedDraft(appId, kind);
+    private readonly Dictionary<(uint AppId, string ApiName), (string Achieved, string Unachieved)> _uploadedIconHashes = new();
+
+    public void BeginReviewedDraft(uint appId, PortalEntityKind kind)
+    {
+        _requestPolicy.BeginReviewedDraft(appId, kind);
+        if (kind == PortalEntityKind.Icon) _uploadedIconHashes.Clear();
+    }
     public void EndReviewedDraft() => _requestPolicy.EndReviewedDraft();
 
     private static async Task EnsureUniqueAsync(ILocator locator, string description)
@@ -14,47 +20,25 @@ public sealed partial class PlaywrightChromeDriver
             throw new UnsupportedPortalStructureException("Expected one " + description + ".");
     }
 
-    private async Task<bool> VerifySavedIconAsync(string url, byte[] approved, string? expectedHash = null)
+    private async Task<string?> ReadSavedIconHashAsync(string url)
     {
-        if (string.IsNullOrEmpty(url)) return false;
+        if (string.IsNullOrEmpty(url)) return null;
         byte[] saved = await DownloadIconAsync(url).ConfigureAwait(false);
-        if (expectedHash is not null && Convert.ToHexStringLower(SHA256.HashData(saved)) != expectedHash) return false;
-        if (!BoundedRaster.HasSafeDimensions(approved, 4096) || !BoundedRaster.HasSafeDimensions(saved, 256)) return false;
-        // Fixed application script; only bounded image bytes are supplied. Steam converts
-        // uploads to 256px JPEGs, so compare decoded pixels. Persist raw remote hashes.
-        bool matches = await (await EnsurePageAsync().ConfigureAwait(false)).EvaluateAsync<bool>("""
-            async ({expected, actual}) => {
-                const decode = async value => createImageBitmap(new Blob([Uint8Array.from(atob(value), c => c.charCodeAt(0))]));
-                const a = await decode(expected), b = await decode(actual);
-                try {
-                    const w = Math.min(a.width, 256), h = Math.min(a.height, 256);
-                    if (a.width > 4096 || a.height > 4096 || b.width !== w || b.height !== h) return false;
-                    const pixels = image => {
-                        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d', {willReadFrequently: true});
-                        ctx.fillStyle = 'black'; ctx.fillRect(0, 0, w, h);
-                        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(image, 0, 0, w, h); return ctx.getImageData(0, 0, w, h).data;
-                    };
-                    const x = pixels(a), y = pixels(b); let error = 0;
-                    for (let i = 0; i < x.length; i++) if (i % 4 !== 3) error += (x[i] - y[i]) ** 2;
-                    return Math.sqrt(error / (w * h * 3)) / 255 <= 0.03;
-                } finally { a.close(); b.close(); }
-            }
-            """, new { expected = Convert.ToBase64String(approved), actual = Convert.ToBase64String(saved) }).ConfigureAwait(false);
-        return matches;
+        if (!BoundedRaster.HasSafeDimensions(saved, 256))
+            throw new InvalidOperationException("Steamworks saved an icon with unexpected image dimensions or format.");
+        return Convert.ToHexStringLower(SHA256.HashData(saved));
     }
 
-    public async Task<bool> VerifyIconPairAsync(PortalWriteOperation operation, Achimeld.Core.RemoteIconMetadata? actual) =>
-        actual?.AchievedPreviewUri is Uri achieved && actual.UnachievedPreviewUri is Uri unachieved &&
-        actual.AchievedIdentity is string achievedHash && actual.UnachievedIdentity is string unachievedHash &&
-        await VerifySavedIconAsync(achieved.AbsoluteUri, operation.GeneratedUploads["achievedIcon"], achievedHash).ConfigureAwait(false) &&
-        await VerifySavedIconAsync(unachieved.AbsoluteUri, operation.GeneratedUploads["unachievedIcon"], unachievedHash).ConfigureAwait(false);
+    public Task<bool> VerifyIconPairAsync(PortalWriteOperation operation, Achimeld.Core.RemoteIconMetadata? actual) =>
+        Task.FromResult(_uploadedIconHashes.TryGetValue((operation.AppId.Value, operation.Target.ApiName.Value), out var expected) &&
+            actual?.AchievedPreviewUri is not null && actual.UnachievedPreviewUri is not null &&
+            actual.AchievedIdentity == expected.Achieved && actual.UnachievedIdentity == expected.Unachieved);
 
     public Task<byte[]> ReadApprovedArtworkAsync(Uri uri) => DownloadIconAsync(uri.AbsoluteUri);
 
     public async Task<byte[]?> ReadGameBannerAsync(uint appId)
     {
+        await EnterReadForAppAsync(new Achimeld.Core.SteamAppId(appId)).ConfigureAwait(false);
         // Resolve Steam's content-addressed capsule using fixed public metadata
         // for the pinned app. Both requests use the cookie-free, no-redirect client.
         Uri fallback = _requestPolicy.GameBannerUri(appId);

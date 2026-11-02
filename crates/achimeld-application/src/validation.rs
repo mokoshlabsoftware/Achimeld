@@ -92,6 +92,15 @@ pub(crate) fn project(project: &Value) -> Result {
         return Err("Unsupported unachieved icon mode".into());
     }
     number(unachieved, "opacity", 0.0, 1.0)?;
+    number(unachieved, "desaturation", 0.5, 1.0)?;
+    let gradient = &unachieved["gradientOverlay"];
+    if !gradient.is_null() && !gradient.is_object() {
+        return Err("Unachieved gradient settings must be an object".into());
+    }
+    if !gradient["enabled"].is_null() && !gradient["enabled"].is_boolean() {
+        return Err("Unachieved gradient enabled must be a boolean".into());
+    }
+    number(gradient, "opacity", 0.0, 0.5)?;
     for key in ["images", "atlases"] {
         let entries = project["assets"][key]
             .as_array()
@@ -217,6 +226,17 @@ pub(crate) fn entity(entity: &Value) -> Result {
             ("offsetY", -100000.0, 100000.0),
         ] {
             number(layer, key, min, max)?;
+        }
+        if !layer["hideWhenUnachieved"].is_null() && !layer["hideWhenUnachieved"].is_boolean() {
+            return Err("Hide when unachieved must be a boolean".into());
+        }
+        if !layer["versionVisibility"].is_null()
+            && !matches!(
+                layer["versionVisibility"].as_str(),
+                Some("Both" | "AchievedOnly" | "UnachievedOnly")
+            )
+        {
+            return Err("Invalid layer version visibility".into());
         }
         if layer["kind"] == "PerlinNoise" {
             perlin_noise(&layer["perlinNoise"])?;

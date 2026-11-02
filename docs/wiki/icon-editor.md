@@ -10,6 +10,8 @@ Select an ordinary achievement and open Icon in Properties, or click its icon th
 
 Use Show layers panel to bring the stack back into view.
 
+On the Achievements canvas, hold Alt to compare each unachieved icon beside its achieved icon. The temporary copies appear over card text when space is tight. Release Alt to hide them; this does not edit or save the project. The Stats canvas does not show this comparison.
+
 ![Layer stack and value-linked text controls](screenshots/0.2.29.0/10-icon-text-link.jpg)
 
 ## Read the example stack

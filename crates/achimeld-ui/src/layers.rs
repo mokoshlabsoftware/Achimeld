@@ -459,6 +459,38 @@ impl Desktop {
             if !mask {
                 effects_ui(ui, layer);
             }
+            ui.separator();
+            let mut visibility = layer["versionVisibility"]
+                .as_str()
+                .unwrap_or(if layer["hideWhenUnachieved"] == true {
+                    "AchievedOnly"
+                } else {
+                    "Both"
+                })
+                .to_owned();
+            let previous = visibility.clone();
+            crate::inspector::field(ui, "Show in", 120.0, |ui| {
+                crate::dropdowns::Dropdown::from_id_salt("version-visibility")
+                    .width(ui.available_width().min(220.0))
+                    .selected_text(match visibility.as_str() {
+                        "AchievedOnly" => "Achieved only",
+                        "UnachievedOnly" => "Unachieved only",
+                        _ => "Both versions",
+                    })
+                    .show_ui(ui, |ui| {
+                        for (value, label) in [
+                            ("Both", "Both versions"),
+                            ("AchievedOnly", "Achieved only"),
+                            ("UnachievedOnly", "Unachieved only"),
+                        ] {
+                            ui.app_selectable_value(&mut visibility, value.into(), label);
+                        }
+                    });
+            });
+            if visibility != previous {
+                layer["versionVisibility"] = json!(visibility);
+                layer.as_object_mut().unwrap().remove("hideWhenUnachieved");
+            }
             if *layer != initial {
                 if mask {
                     achimeld_application::masks::retain_source_controls(stored_layer, layer);

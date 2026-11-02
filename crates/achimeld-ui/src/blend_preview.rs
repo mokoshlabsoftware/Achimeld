@@ -96,6 +96,7 @@ impl Desktop {
                         achievement_id: achievement.into(),
                         layer_id: layer["id"].as_str().unwrap_or("").into(),
                         mode: String::new(),
+                        style_id: self.layer_palette.active_style.clone(),
                     },
                     popup,
                     layer: menu.layer,

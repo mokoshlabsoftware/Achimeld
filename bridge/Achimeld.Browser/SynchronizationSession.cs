@@ -17,7 +17,12 @@ public sealed record SyncStepRequest(Guid Token, string Key, byte[]? Achieved = 
 public sealed record FinishSyncRequest(Guid Token);
 public sealed record SyncReviewRow(string Key, string Kind, string ApiName, string State, string DefaultAction,
     string[] Actions, object[] Fields, bool HasArtwork, string? UploadError = null);
-public sealed record SyncReview(Guid Token, uint AppId, SyncReviewRow[] Rows, string RemoteFingerprint, byte[]? GameBanner = null);
+public sealed record SyncReview(Guid Token, uint AppId, SyncReviewRow[] Rows, string RemoteFingerprint, byte[]? GameBanner = null)
+{
+    // The validated CDN references allow exact post-write artwork inspection without
+    // exposing a browser session, portal response, or credentials to the editor.
+    public RemoteIconMetadata[] RemoteIcons { get; init; } = [];
+}
 public sealed record SyncStep(string Key, string Action, string ApiName, bool NeedsIcons);
 public sealed record SyncArtwork(Guid Id, byte[] Bytes);
 public sealed record SyncStepResult(SyncArtwork[] Artwork);
@@ -228,7 +233,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         }
         byte[]? banner = await portal.ReadGameBannerAsync(pinnedAppId);
         if (banner is not null && (banner.Length > 2 * 1024 * 1024 || !BoundedRaster.HasSafeDimensions(banner, 1024))) banner = null;
-        review = new(Guid.NewGuid(), pinnedAppId, rows.ToArray(), Fingerprint(current), banner);
+        review = new(Guid.NewGuid(), pinnedAppId, rows.ToArray(), Fingerprint(current), banner)
+            { RemoteIcons = current.Icons.ToArray() };
         return review;
     }
 

@@ -4,7 +4,7 @@ Export creates an output for use elsewhere. Save the project separately to retai
 
 ## Desktop achievement icons
 
-Choose File > Export achievement icons (also available in Tools). The export window lists every ordinary achievement icon, selected by default. Select all, select none, or choose any subset. Choose PNG or JPG, an API-name or numbered API-name filename, and an output folder. These choices and the folder are saved with the project when you save it. Check output width/height and grayscale/tint/opacity for unachieved icons in Project settings.
+Choose File > Export achievement icons (also available in Tools). The export window lists every ordinary achievement icon, selected by default. Select all, select none, or choose any subset. Choose PNG or JPG, an API-name or numbered API-name filename, and an output folder. These choices and the folder are saved with the project when you save it. Check output width/height, 50%-100% desaturation, optional gradient map (up to 50% strength), and opacity for unachieved icons in Project settings.
 
 The desktop path produces achieved and unachieved pairs in the selected format:
 

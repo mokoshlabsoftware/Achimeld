@@ -121,6 +121,15 @@ impl EditorPort for ReviewPort {
 }
 
 #[test]
+fn close_during_sync_requests_exit_even_with_the_effect_explorer_open() {
+    let mut port = ReviewPort::new();
+    let mut desktop = Desktop::default();
+    desktop.effect_explorer.open = true;
+    desktop.close(&mut port);
+    assert!(matches!(port.base.last_request, Some(UiRequest::Exit)));
+}
+
+#[test]
 fn artwork_only_review_can_be_unselected_and_reselected() {
     let mut port = ReviewPort::new();
     port.review["rows"] = json!([
@@ -587,18 +596,49 @@ fn review_is_side_effect_free_and_only_selected_prepared_rows_are_submitted() {
             .iter()
             .any(|(label, _)| label == "Import available Steam entries")
     );
+    let first_row = labels
+        .iter()
+        .find(|(label, _)| label == "Stat · SCORE")
+        .unwrap()
+        .1
+        .center();
+    frame(
+        &ctx,
+        &mut desktop,
+        &mut port,
+        1000.0,
+        vec![
+            egui::Event::PointerMoved(first_row),
+            egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(0.0, -420.0),
+                phase: egui::TouchPhase::Move,
+                modifiers: egui::Modifiers::NONE,
+            },
+        ],
+    );
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     let import = labels
         .iter()
         .find(|(label, _)| label == "Use Steam")
-        .unwrap()
+        .unwrap_or_else(|| {
+            panic!(
+                "review labels: {:?}",
+                labels.iter().map(|(label, _)| label).collect::<Vec<_>>()
+            )
+        })
         .1
         .center();
     click(&ctx, &mut desktop, &mut port, import);
     let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     assert_eq!(desktop.sync_choices["Achievement:STEAM_FIRST"], "Import");
-    let apply = labels
+    assert_eq!(
+        desktop.automation_modal().map(|modal| modal.1),
+        Some("review")
+    );
+    let stop = labels
         .iter()
-        .find(|(label, _)| label == "Synchronize 2 selected changes")
+        .find(|(label, _)| label == "Stop")
         .unwrap()
         .1
         .center();
@@ -606,46 +646,30 @@ fn review_is_side_effect_free_and_only_selected_prepared_rows_are_submitted() {
         label.as_str(),
         "Skip" | "Upload" | "I confirm this is the correct Steam App ID."
     )));
-    click(&ctx, &mut desktop, &mut port, apply);
+    click(&ctx, &mut desktop, &mut port, stop);
+    assert!(desktop.sync_review_paused);
+    desktop.sync_review_elapsed = std::time::Duration::from_secs(6);
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     assert!(
         desktop.requests.is_empty(),
-        "Synchronize opens the planned-action review before applying"
+        "Stop must prevent the timed upload"
     );
-    assert!(desktop.sync_plan_token.is_some());
     let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
-    assert!(
-        labels
-            .iter()
-            .any(|(label, _)| label == "Review synchronization")
-    );
-    assert!(
-        labels
-            .iter()
-            .any(|(label, _)| label == "New achievements (0)")
-    );
-    assert!(
-        labels
-            .iter()
-            .any(|(label, _)| label == "Marked for deletion (0)")
-    );
-    assert!(
-        labels
-            .iter()
-            .any(|(label, _)| label == "Upload · Stat · SCORE")
-    );
-    assert!(
-        labels
-            .iter()
-            .any(|(label, _)| label == "Import · Achievement · STEAM_FIRST")
-    );
     let start = labels
         .iter()
-        .filter(|(label, rect)| label == "Synchronize" && rect.center().x > 200.0)
-        .max_by(|left, right| left.1.center().y.total_cmp(&right.1.center().y))
-        .expect("planned synchronization action")
+        .find(|(label, _)| label == "Start 5 s")
+        .unwrap()
         .1
         .center();
     click(&ctx, &mut desktop, &mut port, start);
+    assert!(!desktop.sync_review_paused);
+    desktop.sync_review_started =
+        Some(std::time::Instant::now() - std::time::Duration::from_secs(6));
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!(
+        desktop.sync_plan_token.is_none(),
+        "The five-second countdown submits the visible plan"
+    );
     let request = desktop.requests.pop().unwrap();
     let UiRequest::ApplySynchronization(choices) = request else {
         panic!("Expected typed synchronization selection");
@@ -654,6 +678,45 @@ fn review_is_side_effect_free_and_only_selected_prepared_rows_are_submitted() {
     assert!(choices.contains(&("Stat:SCORE".into(), "Upload".into())));
     assert!(choices.contains(&("Achievement:STEAM_FIRST".into(), "Import".into())));
     assert_eq!(port.base.editor.document(), &original);
+}
+
+#[test]
+fn changed_destination_still_has_a_cancelable_review_modal() {
+    let mut port = ReviewPort::new();
+    port.base
+        .editor
+        .execute(
+            "Change destination",
+            Command::ProjectSettings {
+                name: "Different app".into(),
+                app_id: 481,
+                atlas: None,
+                assets: None,
+            },
+            None,
+        )
+        .unwrap();
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!(
+        labels
+            .iter()
+            .any(|(label, _)| label.contains("Steam App ID changed"))
+    );
+    let cancel = labels
+        .iter()
+        .find(|(label, _)| label == "Cancel review")
+        .unwrap()
+        .1
+        .center();
+    click(&ctx, &mut desktop, &mut port, cancel);
+    assert!(matches!(
+        desktop.requests.pop(),
+        Some(UiRequest::CancelSynchronization)
+    ));
 }
 
 #[test]
@@ -1108,7 +1171,7 @@ fn toolbar_app_id_stage_opens_sync_and_editor_then_validate_prepares_the_review(
 }
 
 #[test]
-fn confirmation_is_bound_to_the_app_id_review_and_revision() {
+fn confirmation_is_bound_to_the_app_id_and_review_but_allows_later_edits() {
     let mut port = ReviewPort::new();
     let mut desktop = Desktop::default();
     let ctx = egui::Context::default();
@@ -1127,7 +1190,7 @@ fn confirmation_is_bound_to_the_app_id_review_and_revision() {
     port.base
         .execute("Edit", Command::Add(EntityKind::Stat), None)
         .unwrap();
-    assert!(!desktop.sync_action_enabled(&port));
+    assert!(desktop.sync_action_enabled(&port));
     desktop.sync_confirmation = desktop.sync_review_identity(&port);
     port.review["token"] = json!("new-review");
     assert!(!desktop.sync_action_enabled(&port));

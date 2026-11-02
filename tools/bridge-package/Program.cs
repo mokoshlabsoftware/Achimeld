@@ -6,6 +6,9 @@ if (args.Length != 3 || args[0] != "--development") throw new ArgumentException(
 string repository = Path.GetFullPath(args[1]), package = Path.GetFullPath(args[2]);
 string artifacts = Path.GetFullPath(Environment.GetEnvironmentVariable("ACHIMELD_ARTIFACT_ROOT") ?? throw new InvalidOperationException("Use build/BridgePackage.ps1."));
 string target = Path.GetFullPath(Environment.GetEnvironmentVariable("CARGO_TARGET_DIR") ?? throw new InvalidOperationException("Rust output directory unavailable."));
+string? releaseTarget = Environment.GetEnvironmentVariable("ACHIMELD_RELEASE_TARGET");
+if (releaseTarget is not null && !target.Equals(Path.GetFullPath(releaseTarget), StringComparison.OrdinalIgnoreCase))
+    throw new InvalidOperationException("Release target changed while packaging.");
 string boundary = artifacts + Path.DirectorySeparatorChar;
 if (!package.StartsWith(boundary,StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Package boundary rejected.");
 using RSA key = RSA.Create(4096);

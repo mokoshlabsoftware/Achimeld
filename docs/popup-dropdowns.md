@@ -24,6 +24,8 @@ Escape and outside clicks dismiss without applying a candidate. Preserve each me
 
 Both the layer-list control and the pinned property-row control use `blend_preview`. This applies to images, solids, shapes, text/3D, particles, explosions, gradients, noise, folders and adjustments. Hovering or keyboard-selecting another mode temporarily renders that layer with the candidate blend mode against the current composition. Click or Enter commits through the ordinary editor and undo path. Escape, outside dismissal, pointer departure, focus loss, disabled editing, selection changes and document revisions clear the temporary preview.
 
+In Edit Style mode, the same candidate refreshes every matching icon that the shared style edit would change. Each icon uses its own corresponding layer and General images. Unrelated icons retain their current previews.
+
 Effect blend properties, including the light/blur blend choice, reuse the same complete icon list and appearance. Their existing defaults remain intact.
 
 Keep previews outside the saved recipe. Reuse the host's bounded quick/detail renderer, cancel obsolete work, retain the last successful visible image while its replacement is pending, and preserve asset I/O ownership. No protocol operations, policy authority or new filesystem paths are needed for this presentation behavior.

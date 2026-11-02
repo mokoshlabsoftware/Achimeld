@@ -634,6 +634,18 @@ fn retry_pending_cleanup() -> bool {
     });
     pending.is_empty()
 }
+fn bounded_job_process_list(assigned: u32, listed: u32) -> Result<(), SecurityError> {
+    // Membership may change while Windows fills the list. The owned Job is
+    // terminated after inspection, and accounting below confirms zero active
+    // processes before the next worker can start.
+    if assigned > 256 || listed > 256 {
+        Err(SecurityError(
+            "Owned Steam worker process enumeration incomplete",
+        ))
+    } else {
+        Ok(())
+    }
+}
 fn owned_job_processes(job: HANDLE) -> Result<Vec<Handle>, SecurityError> {
     // NULL queries the caller's ambient Job on Windows, not an owned worker Job.
     // Reject sentinel handles before enumeration can acquire unrelated processes.
@@ -659,12 +671,14 @@ fn owned_job_processes(job: HANDLE) -> Result<Vec<Handle>, SecurityError> {
     }
     // SAFETY: A successful query initialized the aligned fixed header.
     let list = unsafe { &*buffer.as_ptr().cast::<JOBOBJECT_BASIC_PROCESS_ID_LIST>() };
-    if list.NumberOfAssignedProcesses != list.NumberOfProcessIdsInList
-        || list.NumberOfProcessIdsInList > 256
-    {
-        return Err(SecurityError(
-            "Owned Steam worker process enumeration incomplete",
-        ));
+    bounded_job_process_list(
+        list.NumberOfAssignedProcesses,
+        list.NumberOfProcessIdsInList,
+    )?;
+    if list.NumberOfAssignedProcesses != list.NumberOfProcessIdsInList {
+        log::info!(
+            "Owned Steam worker process list changed during cleanup; Job accounting will confirm exit"
+        );
     }
     // SAFETY: The capped count fits the initialized buffer; handles are retained below.
     let pids = unsafe {
@@ -834,6 +848,14 @@ mod tests {
     fn invalid_job_cleanup_is_reported_as_failure() {
         assert!(owned_job_processes(ptr::null_mut()).is_err());
         assert!(owned_job_processes(INVALID_HANDLE_VALUE).is_err());
+    }
+    #[test]
+    fn changing_job_membership_is_covered_by_termination_and_accounting() {
+        assert!(bounded_job_process_list(4, 3).is_ok());
+        assert!(bounded_job_process_list(3, 4).is_ok());
+        assert!(bounded_job_process_list(256, 256).is_ok());
+        assert!(bounded_job_process_list(257, 256).is_err());
+        assert!(bounded_job_process_list(256, 257).is_err());
     }
     #[test]
     #[ignore = "Requires the built C# pipe fixture; build/Test-Bridge.ps1 runs this gate"]

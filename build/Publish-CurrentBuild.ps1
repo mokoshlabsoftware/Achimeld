@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$PackagePath)
+param([Parameter(Mandatory)][string]$PackagePath, [switch]$PassThru)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'BuildPaths.ps1')
 Initialize-AchimeldBuildPaths
@@ -40,4 +40,8 @@ $buildLauncher = "[CmdletBinding()]`nparam([switch]`$Offline, [switch]`$BuildOnl
 [IO.File]::WriteAllText((Join-Path $current 'last-archive.txt'), $archive, [Text.UTF8Encoding]::new($false))
 Write-Host "Current build: $destination"
 Write-Host "Dated archive: $archive"
-$destination
+if ($PassThru) {
+    [pscustomobject]@{ PackagePath = $destination; ArchivePath = $archive }
+} else {
+    $destination
+}

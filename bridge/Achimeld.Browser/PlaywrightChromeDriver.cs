@@ -170,16 +170,21 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 
     public async Task<ManagedPageDocument> ReadCompleteConfigurationAsync(SteamAppId appId)
     {
+        await EnterReadForAppAsync(appId).ConfigureAwait(false);
+        string stats = await ReadConfigurationJsonAsync(appId, "fetchstats").ConfigureAwait(false);
+        string achievements = await ReadConfigurationJsonAsync(appId, "fetchachievements").ConfigureAwait(false);
+        await ReadIconContentHashesAsync(achievements).ConfigureAwait(false);
+        return LiveSteamworksConfiguration.Normalize(appId, stats, achievements, _iconContentHashes);
+    }
+
+    private async Task EnterReadForAppAsync(SteamAppId appId)
+    {
         await RequireHealthyAsync().ConfigureAwait(false);
         SteamworksUrlGuard.EnsureAllowed(new Uri((await EnsurePageAsync().ConfigureAwait(false)).Url), appId);
         if (await ReadAuthenticationStateAsync().ConfigureAwait(false) != PortalAccessState.Authenticated)
             throw new PortalSafetyException("portal.authentication.required", "Steamworks authentication is required.");
         _requestPolicy.PinApp(appId.Value);
         _requestPolicy.EnterRead();
-        string stats = await ReadConfigurationJsonAsync(appId, "fetchstats").ConfigureAwait(false);
-        string achievements = await ReadConfigurationJsonAsync(appId, "fetchachievements").ConfigureAwait(false);
-        await ReadIconContentHashesAsync(achievements).ConfigureAwait(false);
-        return LiveSteamworksConfiguration.Normalize(appId, stats, achievements, _iconContentHashes);
     }
 
     private async Task ReadIconContentHashesAsync(string achievementsJson)

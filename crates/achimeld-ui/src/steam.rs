@@ -163,6 +163,12 @@ pub(crate) struct ReviewAction {
     pub enabled: bool,
 }
 
+struct PromptLayout {
+    width: f32,
+    body_height: f32,
+    progress: Option<f32>,
+}
+
 fn prompt_divider(ui: &mut egui::Ui) {
     let (rect, _) = ui.allocate_exact_size(
         Vec2::new(ui.available_width(), 1.0 / ui.ctx().pixels_per_point()),
@@ -180,24 +186,42 @@ pub(crate) fn review_prompt(
     actions: &[ReviewAction],
     body: impl FnOnce(&mut egui::Ui),
 ) -> ReviewChoice {
-    prompt(ctx, id, title, header_icon, actions, body, false)
+    prompt(
+        ctx,
+        id,
+        title,
+        header_icon,
+        actions,
+        PromptLayout {
+            width: 468.0,
+            body_height: 420.0,
+            progress: None,
+        },
+        body,
+    )
 }
 
-pub(crate) fn progress_prompt(
+pub(crate) fn review_prompt_wide(
     ctx: &egui::Context,
+    id: &'static str,
     title: &str,
     header_icon: egui::Image<'static>,
     actions: &[ReviewAction],
+    progress: Option<f32>,
     body: impl FnOnce(&mut egui::Ui),
 ) -> ReviewChoice {
     prompt(
         ctx,
-        "steam-operation-progress",
+        id,
         title,
         header_icon,
         actions,
+        PromptLayout {
+            width: 880.0,
+            body_height: 680.0,
+            progress,
+        },
         body,
-        true,
     )
 }
 
@@ -207,8 +231,8 @@ fn prompt(
     title: &str,
     header_icon: egui::Image<'static>,
     actions: &[ReviewAction],
+    layout: PromptLayout,
     body: impl FnOnce(&mut egui::Ui),
-    floating: bool,
 ) -> ReviewChoice {
     let mut choice = None;
     let frame = egui::Frame::new()
@@ -241,7 +265,8 @@ fn prompt(
             })
             .collect();
         let total = natural.iter().sum::<f32>().max(1.0);
-        let width = 468.0_f32
+        let width = layout
+            .width
             .max(total)
             .min((ctx.content_rect().width() - 32.0).max(1.0));
         ui.set_width(width);
@@ -271,9 +296,26 @@ fn prompt(
             ui.visuals().text_color(),
         );
         prompt_divider(ui);
+        if let Some(remaining) = layout.progress {
+            let (track, _) = ui.allocate_exact_size(
+                Vec2::new(width, 2.0 / ctx.pixels_per_point()),
+                Sense::hover(),
+            );
+            ui.painter().rect_filled(
+                Rect::from_min_max(
+                    track.min,
+                    egui::pos2(
+                        track.left() + track.width() * remaining.clamp(0.0, 1.0),
+                        track.bottom(),
+                    ),
+                ),
+                0.0,
+                ui.visuals().selection.bg_fill,
+            );
+        }
         let bar = crate::buttons::bar_height(ui, 20.0);
-        let body_height =
-            (ctx.content_rect().height() - header.height() - bar - 76.0).clamp(120.0, 420.0);
+        let body_height = (ctx.content_rect().height() - header.height() - bar - 76.0)
+            .clamp(120.0, layout.body_height);
         egui::Frame::new()
             .inner_margin(egui::Margin::symmetric(24, 20))
             .show(ui, |ui| {
@@ -326,20 +368,10 @@ fn prompt(
             },
         );
     };
-    let dismissed = if floating {
-        egui::Area::new(egui::Id::new(id))
-            .order(egui::Order::Foreground)
-            .movable(true)
-            .constrain(true)
-            .default_pos(ctx.content_rect().center() - Vec2::new(234.0, 142.0))
-            .show(ctx, |ui| frame.show(ui, content));
-        false
-    } else {
-        egui::Modal::new(egui::Id::new(id))
-            .frame(frame)
-            .show(ctx, content)
-            .should_close()
-    };
+    let dismissed = egui::Modal::new(egui::Id::new(id))
+        .frame(frame)
+        .show(ctx, content)
+        .should_close();
     if let Some(index) = choice {
         ReviewChoice::Action(index)
     } else if dismissed {
@@ -360,6 +392,7 @@ pub(crate) fn review_section(ui: &mut egui::Ui, title: &str, lines: &[String]) {
     for line in lines {
         egui::Frame::new()
             .fill(ui.visuals().widgets.inactive.bg_fill)
+            .corner_radius(0)
             .inner_margin(10)
             .show(ui, |ui| {
                 ui.set_width(ui.available_width());

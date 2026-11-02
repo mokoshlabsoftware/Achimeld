@@ -43,14 +43,62 @@ pub fn tools() -> Vec<Value> {
             "",
         ),
         (
+            "get_editor_health",
+            "Read the editor process and UI frame counter directly from its MCP listener, including when the window is minimized.",
+            "",
+            "",
+        ),
+        (
             "get_scene",
             "Read the open editor, projectId, revision, nodes, selection and undo state.",
             "",
             "",
         ),
         (
+            "list_recent_projects",
+            "List projects already in this editor's recent-project history.",
+            "",
+            "",
+        ),
+        (
+            "open_recent_project",
+            "Open one exact path from list_recent_projects when the current project has no unsaved edits.",
+            "path",
+            "path:s",
+        ),
+        (
             "get_synchronization",
             "Read validation, activity, error and the current synchronization review. Review rows and token are required before applying changes.",
+            "",
+            "",
+        ),
+        (
+            "get_remote_icon_metadata",
+            "Read one achievement's public CDN preview URLs and content hashes from the current Steam review. No portal pages or credentials are returned.",
+            "apiName",
+            "apiName:s",
+        ),
+        (
+            "list_effect_presets",
+            "Read the exact named Explosion Explorer and particle presets, including their layer recipes and stable IDs.",
+            "",
+            "",
+        ),
+        (
+            "apply_effect_preset",
+            "Apply one exact saved explosion or particle preset to 1-100 existing achievements in one undo step. Existing matching effect layers are updated; otherwise one is added.",
+            "presetId achievementIds",
+            "presetId:s achievementIds:a",
+        ),
+        (
+            "acknowledge_modal",
+            "Acknowledge the current informational OK notice using the modalId returned by status or get_scene. Never confirms a destructive choice.",
+            "modalId",
+            "modalId:s",
+        ),
+        (
+            "close_effect_explorer",
+            "Close Explosion or Particle Explorer after saving valid preset changes, as the window close button does.",
             "",
             "",
         ),
@@ -87,6 +135,24 @@ pub fn tools() -> Vec<Value> {
         (
             "close_menu",
             "Close the active menu or popup in the editor.",
+            "",
+            "",
+        ),
+        (
+            "open_steam_page",
+            "Open the pinned Steamworks achievements or stats page in the dedicated supervised browser. Close that browser or cancel the read before validation.",
+            "page",
+            "page:s",
+        ),
+        (
+            "cancel_steam_read",
+            "Cancel the active supervised Steam page or snapshot read.",
+            "",
+            "",
+        ),
+        (
+            "close_editor",
+            "Request a normal editor close. Unsaved work uses the in-app Save, Discard, Cancel prompt; active synchronization is cancelled first.",
             "",
             "",
         ),
@@ -240,8 +306,12 @@ pub fn tools() -> Vec<Value> {
             name,
             "list_instances"
                 | "status"
+                | "get_editor_health"
                 | "get_scene"
+                | "list_recent_projects"
                 | "get_synchronization"
+                | "get_remote_icon_metadata"
+                | "list_effect_presets"
                 | "get_node"
                 | "list_icon_styles"
                 | "list_style_collections"
@@ -277,8 +347,20 @@ pub fn tools() -> Vec<Value> {
             if key == "nodes" {
                 schema = json!({"type":"array","minItems":1,"maxItems":1000,"items":{"type":"object","additionalProperties":false,"required":["nodeId","column","row"],"properties":{"nodeId":{"type":"string"},"column":{"type":"integer"},"row":{"type":"integer"}}}});
             }
+            if key == "achievementIds" {
+                schema = json!({"type":"array","minItems":1,"maxItems":100,"uniqueItems":true,"items":{"type":"string","minLength":1,"maxLength":128}});
+            }
             if key == "menu" {
                 schema["enum"] = json!(["File", "Edit", "Tools", "Windows", "Help"]);
+            }
+            if key == "page" {
+                schema["enum"] = json!(["Achievements", "Stats"]);
+            }
+            if key == "path" {
+                schema["maxLength"] = json!(4096);
+            }
+            if key == "apiName" {
+                schema["maxLength"] = json!(128);
             }
             if key == "choices" {
                 schema = json!({"type":"array","minItems":1,"maxItems":1000,"items":{"type":"object","additionalProperties":false,"required":["key","action"],"properties":{"key":{"type":"string","maxLength":256},"action":{"type":"string","enum":["Upload","Import","Skip"]}}}});
@@ -446,7 +528,7 @@ fn server_info() -> Value {
     })
 }
 
-const HANDSHAKE: &str = "Controls an already open supervised Achimeld editor. This connection states each editor's uptime, open project name, achievement count, how many achievements sync with Steam, and stat count. Call list_instances then get_scene. Local edits share undo history. No project save/open or Steam writes are exposed.";
+const HANDSHAKE: &str = "Controls an already open supervised Achimeld editor. Initialization includes bounded structured editor facts. Call list_instances then get_scene before edits. Local edits share undo history. Steam writes require a reviewed synchronization token and explicit row choices. Steamworks publication remains manual.";
 
 fn handshake_instructions(instances: Result<Value, String>) -> String {
     let Ok(instances) = instances else {
@@ -620,6 +702,26 @@ fn status_value(pid: u32, uptime: Option<&str>, facts: Option<&Value>) -> Value 
             value["projectPath"] = json!(path);
         }
     }
+    if let Some(facts) = facts {
+        for key in [
+            "projectId",
+            "editorSessionId",
+            "revision",
+            "workingVersion",
+            "steamAppId",
+            "isDirty",
+            "validationVerified",
+            "synchronizationActive",
+            "synchronizationReviewReady",
+            "canvas",
+            "modal",
+            "blockedByModal",
+        ] {
+            if let Some(field) = facts.get(key) {
+                value[key] = field.clone();
+            }
+        }
+    }
     value
 }
 
@@ -676,11 +778,19 @@ impl Protocol {
                     "2025-11-25"
                 };
                 self.initialized = true;
+                let instances = call("list_instances", &json!({}));
+                let editors = instances
+                    .as_ref()
+                    .ok()
+                    .and_then(Value::as_array)
+                    .cloned()
+                    .unwrap_or_default();
                 json!({
                     "protocolVersion": version,
                     "capabilities": {"tools": {"listChanged": false}},
                     "serverInfo": server_info(),
-                    "instructions": handshake_instructions(call("list_instances", &json!({})))
+                    "instructions": handshake_instructions(instances),
+                    "_meta": {"achimeld": {"handshakeVersion": 1, "editors": editors}}
                 })
             }
             "ping" => json!({}),
@@ -832,7 +942,18 @@ pub fn call_editor_cancellable(
 
 fn instances_with_status(cancelled: &std::sync::atomic::AtomicBool) -> Result<Value, String> {
     use achimeld_security::editor_transport;
-    let instances = editor_transport::instances().map_err(|e| e.to_string())?;
+    let mut instances = editor_transport::instances().map_err(|e| e.to_string())?;
+    // The one-instance pipe is briefly absent while the editor replaces it after a
+    // disconnected client. Keep initialization from reporting no editor in that gap.
+    for _ in 0..8 {
+        if !instances.as_array().is_some_and(Vec::is_empty)
+            || cancelled.load(std::sync::atomic::Ordering::Acquire)
+        {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+        instances = editor_transport::instances().map_err(|e| e.to_string())?;
+    }
     let Some(list) = instances.as_array() else {
         return Ok(instances);
     };
@@ -881,7 +1002,12 @@ fn query_status(pid: u32, cancelled: &std::sync::atomic::AtomicBool) -> Result<V
         std::time::Duration::from_secs(2),
         cancelled,
     )?;
-    let facts = data.get("result").cloned().unwrap_or(Value::Null);
+    let mut facts = data.get("result").cloned().unwrap_or(Value::Null);
+    for key in ["projectId", "editorSessionId", "revision"] {
+        if let Some(value) = data.get(key) {
+            facts[key] = value.clone();
+        }
+    }
     if project_facts(&facts).is_some() {
         Ok(facts)
     } else {
@@ -1158,7 +1284,7 @@ mod tests {
         assert_eq!(responses[1]["result"]["protocolVersion"], "2025-11-25");
         assert_eq!(
             responses[2]["result"]["tools"].as_array().unwrap().len(),
-            35
+            46
         );
         assert_eq!(responses[3]["result"]["isError"], false);
     }
@@ -1170,6 +1296,11 @@ mod tests {
         assert!(validate_arguments("open_menu", &menu).is_ok());
         menu["menu"] = json!("Developer");
         assert!(validate_arguments("open_menu", &menu).is_err());
+        let mut page = base.clone();
+        page["page"] = json!("Achievements");
+        assert!(validate_arguments("open_steam_page", &page).is_ok());
+        page["page"] = json!("Other");
+        assert!(validate_arguments("open_steam_page", &page).is_err());
         let mut apply = base.clone();
         apply["token"] = json!("review");
         apply["choices"] = json!([{"key":"a","action":"Upload"}]);

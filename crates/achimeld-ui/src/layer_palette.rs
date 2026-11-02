@@ -3061,7 +3061,7 @@ pub(crate) fn effect_menu(ui: &mut egui::Ui, layer: &mut Value) -> Option<String
     added
 }
 pub(crate) fn new_layer(kind: &str) -> Value {
-    let mut layer = json!({"id":new_id(),"displayName":label(kind),"kind":kind,"visible":true,"opacity":1.0,"blendMode":"Normal","scale":1.0,"rotation":0.0,"offsetX":0.0,"offsetY":0.0,"tileIndex":0,"effects":[],"solidColorHex":"#FFFFFFFF","text":{"content":"Text","fontFamily":"Segoe UI","fontSize":128.0,"colorHex":"#FFFFFFFF","alignment":"Center"},"shape":{"kind":"Rectangle","colorHex":"#FFFFFFFF","scaleX":0.5,"scaleY":0.5,"vertexCount":5,"innerRadius":0.5},"curves":{"points":[{"input":0.0,"output":0.0},{"input":1.0,"output":1.0}]},"gradient":{"kind":"Linear","angle":90.0,"stops":[{"offset":0.0,"colorHex":"#FF000000"},{"offset":1.0,"colorHex":"#FFFFFFFF"}]},"adjustment":{}});
+    let mut layer = json!({"id":new_id(),"displayName":label(kind),"kind":kind,"visible":true,"versionVisibility":"Both","opacity":1.0,"blendMode":"Normal","scale":1.0,"rotation":0.0,"offsetX":0.0,"offsetY":0.0,"tileIndex":0,"effects":[],"solidColorHex":"#FFFFFFFF","text":{"content":"Text","fontFamily":"Segoe UI","fontSize":128.0,"colorHex":"#FFFFFFFF","alignment":"Center"},"shape":{"kind":"Rectangle","colorHex":"#FFFFFFFF","scaleX":0.5,"scaleY":0.5,"vertexCount":5,"innerRadius":0.5},"curves":{"points":[{"input":0.0,"output":0.0},{"input":1.0,"output":1.0}]},"gradient":{"kind":"Linear","angle":90.0,"stops":[{"offset":0.0,"colorHex":"#FF000000"},{"offset":1.0,"colorHex":"#FFFFFFFF"}]},"adjustment":{}});
     if kind == "Artifact3d" {
         layer["artifact3d"] = json!(achimeld_application::artifact3d::ArtifactSettings::default());
     }

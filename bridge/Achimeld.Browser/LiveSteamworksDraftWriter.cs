@@ -154,6 +154,15 @@ public sealed partial class PlaywrightChromeDriver
         await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
     }
 
+    private async Task<string> ReadSavedIconSourceAsync(SteamAppId appId, string apiName, bool achieved)
+    {
+        using JsonDocument configuration = JsonDocument.Parse(
+            await ReadConfigurationJsonAsync(appId, "fetchachievements").ConfigureAwait(false));
+        JsonElement achievement = configuration.RootElement.GetProperty("achievements").EnumerateArray()
+            .Single(item => item.GetProperty("api_name").GetString() == apiName);
+        return achievement.GetProperty(achieved ? "icon" : "icon_gray").GetString() ?? "";
+    }
+
     private async Task UploadLiveIconPairAsync(PortalWriteOperation operation)
     {
         await NavigateAsync(new Uri($"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{operation.AppId.Value}")).ConfigureAwait(false);
@@ -162,19 +171,16 @@ public sealed partial class PlaywrightChromeDriver
             await ReadConfigurationJsonAsync(operation.AppId, "fetchachievements").ConfigureAwait(false));
         JsonElement achievement = configuration.RootElement.GetProperty("achievements").EnumerateArray()
             .Single(item => item.GetProperty("api_name").GetString() == operation.Target.ApiName.Value);
-        bool achievedMatches = await VerifySavedIconAsync(achievement.GetProperty("icon").GetString() ?? "",
-            operation.GeneratedUploads["achievedIcon"]).ConfigureAwait(false);
-        bool unachievedMatches = await VerifySavedIconAsync(achievement.GetProperty("icon_gray").GetString() ?? "",
-            operation.GeneratedUploads["unachievedIcon"]).ConfigureAwait(false);
-        if (achievedMatches && unachievedMatches) return;
+        string? achievedBeforeHash = await ReadSavedIconHashAsync(achievement.GetProperty("icon").GetString() ?? "").ConfigureAwait(false);
+        string? unachievedBeforeHash = await ReadSavedIconHashAsync(achievement.GetProperty("icon_gray").GetString() ?? "").ConfigureAwait(false);
+        string? achievedAfterHash = null, unachievedAfterHash = null;
         string statId = LivePortalIdentity.RecordId(achievement, "stat_id"), bitId = LivePortalIdentity.RecordId(achievement, "bit_id");
         string rowId = "a" + statId + "_" + bitId;
         await page.Locator($"#{rowId} input[value='Edit']").ClickAsync().ConfigureAwait(false);
         await page.Locator("input[id$='_apiname']").WaitForAsync().ConfigureAwait(false);
-        foreach ((string key, string requestType, string imageId) in new[]
-            { ("achievedIcon", "achievement", rowId + "_icon"), ("unachievedIcon", "achievement_gray", rowId + "_icon_gray") })
+        foreach ((string key, string requestType) in new[]
+            { ("achievedIcon", "achievement"), ("unachievedIcon", "achievement_gray") })
         {
-            if (key == "achievedIcon" ? achievedMatches : unachievedMatches) continue;
             SteamworksUrlGuard.EnsureAllowed(new Uri(page.Url), operation.AppId);
             ILocator form = page.Locator($"#{rowId} form").Filter(new LocatorFilterOptions
                 { Has = page.Locator($"input[name='requestType'][value='{requestType}']") });
@@ -195,12 +201,24 @@ public sealed partial class PlaywrightChromeDriver
             using JsonDocument savedIcon = JsonDocument.Parse(await readback.TextAsync().ConfigureAwait(false));
             string savedSource = savedIcon.RootElement.GetProperty(requestType == "achievement" ? "icon" : "icon_gray").GetString() ?? "";
             if (string.IsNullOrEmpty(savedSource)) throw new InvalidOperationException("Steamworks did not save the achievement icon.");
-            if (!await VerifySavedIconAsync(savedSource, operation.GeneratedUploads[key]).ConfigureAwait(false))
-                throw new InvalidOperationException("Steamworks saved icon artwork that does not match the approved upload.");
-            await page.WaitForFunctionAsync("args => document.getElementById(args.id)?.getAttribute('src') === args.source",
-                new { id = imageId, source = savedSource }).ConfigureAwait(false);
+            string? beforeHash = key == "achievedIcon" ? achievedBeforeHash : unachievedBeforeHash;
+            string? readbackHash = null;
+            int reads = 0;
+            if (!await IconUploadVerification.WaitForSavedArtworkAsync(
+                async () => {
+                    if (reads++ > 0)
+                        savedSource = await ReadSavedIconSourceAsync(operation.AppId, operation.Target.ApiName.Value,
+                            requestType == "achievement").ConfigureAwait(false);
+                    readbackHash = await ReadSavedIconHashAsync(savedSource).ConfigureAwait(false);
+                    return IconUploadVerification.IsFresh(beforeHash, readbackHash);
+                }, delay => Task.Delay(delay)).ConfigureAwait(false))
+                throw new InvalidOperationException("Steamworks still serves the pre-upload achievement icon after the upload.");
+            if (key == "achievedIcon") achievedAfterHash = readbackHash;
+            else unachievedAfterHash = readbackHash;
             await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
         }
+        _uploadedIconHashes[(operation.AppId.Value, operation.Target.ApiName.Value)] =
+            (achievedAfterHash!, unachievedAfterHash!);
     }
 
     private static async Task FillLiveLocalizationAsync(IPage page, string prefix, PortalWriteOperation operation)

@@ -782,6 +782,7 @@ struct Fixture {
     requests: usize,
     last_request: Option<UiRequest>,
     previews: BTreeMap<String, Preview>,
+    unachieved_requests: usize,
     blend_preview: Option<achimeld_application::ports::LayerBlendPreview>,
     recent_projects: Vec<std::path::PathBuf>,
     styles: Vec<achimeld_application::IconStyle>,
@@ -818,6 +819,7 @@ impl Fixture {
             requests: 0,
             last_request: None,
             previews: BTreeMap::new(),
+            unachieved_requests: 0,
             blend_preview: None,
             recent_projects: Vec::new(),
             styles: Vec::new(),
@@ -880,6 +882,10 @@ impl EditorPort for Fixture {
             rgba: p.rgba.clone(),
             fingerprint: p.fingerprint.clone(),
         })
+    }
+    fn unachieved_canvas_preview(&mut self, id: &str, _edge: usize) -> Option<Preview> {
+        self.unachieved_requests += 1;
+        self.preview(&format!("unachieved:{id}"))
     }
     fn icon_style_preview(
         &mut self,
@@ -1082,6 +1088,40 @@ fn stale_settings_cannot_erase_assets_imported_after_opening_the_window() {
     assert_eq!(fixture.editor.document().project()["assets"], assets);
     fixture.editor.undo();
     assert_eq!(fixture.editor.document(), &imported);
+}
+#[test]
+fn project_settings_preserve_legacy_unachieved_tint_as_a_bounded_gradient() {
+    let mut fixture = Fixture::new();
+    let mut atlas = fixture.editor.document().project()["atlas"].clone();
+    atlas["unachievedIcon"] = json!({"mode":"Tint","opacity":0.75,"tintHex":"#2255AA"});
+    fixture
+        .editor
+        .execute(
+            "Legacy settings",
+            Command::ProjectSettings {
+                name: "Legacy".into(),
+                app_id: 0,
+                atlas: Some(atlas),
+                assets: None,
+            },
+            None,
+        )
+        .unwrap();
+    let mut desktop = Desktop::default();
+    desktop.open_settings(&fixture);
+    let style = desktop.atlas["unachievedIcon"].clone();
+    assert_eq!(style["desaturation"], 1.0);
+    assert_eq!(style["opacity"], 0.75);
+    assert_eq!(style["gradientOverlay"]["enabled"], true);
+    assert_eq!(style["gradientOverlay"]["opacity"], 0.5);
+    assert_eq!(style["gradientOverlay"]["darkColorHex"], "#2255AA");
+    assert_eq!(style["gradientOverlay"]["lightColorHex"], "#2255AA");
+    assert!(style["mode"].is_null());
+    assert!(desktop.apply_settings(&mut fixture));
+    assert_eq!(
+        fixture.editor.document().project()["atlas"]["unachievedIcon"],
+        style
+    );
 }
 #[test]
 fn disabled_editor_ignores_project_and_editing_shortcuts() {

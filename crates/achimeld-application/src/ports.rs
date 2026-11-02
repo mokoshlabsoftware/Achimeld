@@ -125,6 +125,8 @@ pub struct LayerBlendPreview {
     pub achievement_id: String,
     pub layer_id: String,
     pub mode: String,
+    /// The shared style being edited, if this hover should affect its icons.
+    pub style_id: Option<String>,
 }
 
 /// The presentation crate can inspect state and request commands; the host owns all I/O.
@@ -171,6 +173,11 @@ pub trait EditorPort {
     /// inspector previews. The host owns asynchronous composition and its cache.
     fn canvas_preview(&mut self, entity_id: &str, _edge: usize) -> Option<Preview> {
         self.preview(entity_id)
+    }
+    /// A temporary unachieved comparison requested only while Alt is held on
+    /// the achievement canvas. The host owns composition and the bounded cache.
+    fn unachieved_canvas_preview(&mut self, _entity_id: &str, _edge: usize) -> Option<Preview> {
+        None
     }
     /// Saved recipe rendered with the achievement's General images and linked text.
     /// The host composes a temporary view; neither the style nor achievement is edited.
@@ -303,6 +310,12 @@ pub trait EditorPort {
         Err("Effect library unavailable".into())
     }
     fn effect_preview(&mut self, _preset: &crate::effect_presets::EffectPreset) -> Option<Preview> {
+        None
+    }
+    fn effect_thumbnail(
+        &mut self,
+        _preset: &crate::effect_presets::EffectPreset,
+    ) -> Option<Preview> {
         None
     }
     fn effect_preview_error(&self) -> Option<&str> {

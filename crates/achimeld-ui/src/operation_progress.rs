@@ -1,7 +1,5 @@
 //! Presentation-only operation timing, independent of changing stage messages.
 use crate::Desktop;
-use crate::steam::{ReviewAction, ReviewChoice, progress_prompt};
-use crate::style_picker::Glyph;
 use achimeld_application::{EditorPort, UiRequest};
 use std::time::{Duration, Instant};
 
@@ -45,7 +43,7 @@ impl Desktop {
     pub(crate) fn operation_progress(&mut self, ctx: &egui::Context, port: &dyn EditorPort) {
         let (activity, cancel) = if port.browser_profile_busy() {
             (Some("Deleting browser profile"), None)
-        } else if port.synchronizing() && port.synchronization_review().is_none() {
+        } else if Self::steam_operation_active(port) && port.synchronizing() {
             (
                 Some(port.synchronization_activity()),
                 Some(UiRequest::CancelSynchronization),
@@ -58,55 +56,28 @@ impl Desktop {
         let elapsed = self.operation_clock.observe(activity, Instant::now());
         let Some(activity) = activity else { return };
         ctx.request_repaint_after(Duration::from_millis(100));
-        let actions = if cancel.is_some() {
-            vec![ReviewAction {
-                label: "Cancel",
-                icon: Glyph::Cancel.image(ctx, 20.0),
-                colors: None,
-                enabled: true,
-            }]
-        } else {
-            Vec::new()
-        };
-        // Consume Escape once so it cannot also reach another floating control.
-        let escape = ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape));
-        let choice = progress_prompt(
-            ctx,
-            &crate::localization::text(ctx, activity),
-            Glyph::Validate.image(ctx, 24.0),
-            &actions,
-            |ui| {
-                let body_size = egui::TextStyle::Body.resolve(ui.style()).size;
-                ui.vertical_centered(|ui| {
-                    ui.add(egui::Spinner::new().size(32.0));
-                    ui.add_space(16.0);
-                    ui.add(
-                        egui::Label::new(
-                            egui::RichText::new(port.status()).size((body_size * 1.35).max(18.0)),
-                        )
-                        .wrap()
-                        .halign(egui::Align::Center),
-                    );
-                    ui.add_space(20.0);
-                    ui.label(
-                        egui::RichText::new(crate::localization::text(ctx, "Elapsed time"))
-                            .size(body_size.max(16.0)),
-                    );
-                    ui.label(
-                        egui::RichText::new(elapsed_text(elapsed))
-                            .monospace()
-                            .size((body_size * 2.0).max(28.0)),
-                    );
-                    ui.add_space(8.0);
+        egui::Window::new(crate::localization::text(ctx, activity))
+            .id(egui::Id::new("steam-operation-progress"))
+            .default_pos(ctx.content_rect().right_top() + egui::vec2(-440.0, 90.0))
+            .default_width(400.0)
+            .resizable(false)
+            .collapsible(false)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.spinner();
+                    ui.add(egui::Label::new(port.status()).wrap());
                 });
-            },
-        );
-        // Outside clicks never hide active work. Escape retains cancellation semantics.
-        if (matches!(choice, ReviewChoice::Action(0)) || escape)
-            && let Some(cancel) = cancel
-        {
-            self.request(cancel);
-        }
+                ui.label(format!(
+                    "{}: {}",
+                    crate::localization::text(ctx, "Elapsed time"),
+                    elapsed_text(elapsed)
+                ));
+                if let Some(cancel) = cancel
+                    && ui.add(crate::buttons::Button::new("Cancel")).clicked()
+                {
+                    self.request(cancel);
+                }
+            });
     }
 }
 
@@ -217,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn operation_progress_escape_cancels_only_cancellable_work() {
+    fn operation_progress_escape_does_not_cancel_background_work() {
         for profile in [false, true] {
             let port = Port {
                 editor: Default::default(),
@@ -249,13 +220,7 @@ mod tests {
                 );
                 output.textures_delta.clear();
             }
-            assert_eq!(desktop.requests.len(), usize::from(!profile));
-            if !profile {
-                assert!(matches!(
-                    desktop.requests[0],
-                    UiRequest::CancelSynchronization
-                ));
-            }
+            assert!(desktop.requests.is_empty());
             assert!(desktop.operation_clock.active.is_some());
         }
     }

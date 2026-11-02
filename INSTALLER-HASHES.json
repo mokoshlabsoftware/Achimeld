@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "releases": [
+    {
+      "workingVersion": "0.1.4.0",
+      "installerSha256": "be6627c1c539370be6ad59894abb5b9f459d15d09f5c72b5984eccedfa60478d",
+      "gitlabSourceCommit": "e732cea89e345131d82886e410d2981244b9f6eb",
+      "sourceTag": "v0.1.4.0"
+    },
+    {
+      "workingVersion": "0.2.10.10",
+      "installerSha256": "9ab2f71e6933cd7be210a5231d0ac665b42438d9d39e937fae9effba7835b4e1",
+      "gitlabSourceCommit": "2c0ba7993fba52b54f7bd8cc4087c7aacd58df96",
+      "sourceTag": "v0.2.10.10"
+    },
+    {
+      "workingVersion": "0.2.22.6",
+      "installerSha256": "ee58ec4728aacf971ad59c07029cbbfa5a1cf0d750963d242904ac0f1503eb32",
+      "gitlabSourceCommit": "84d3ad202f53c5c8777a13ce1855c522066570f3",
+      "sourceTag": "v0.2.22.6"
+    },
+    {
+      "workingVersion": "0.2.26.0",
+      "installerSha256": "f23b89f6fa1150a57dbaea4cf74d248637014df011890e371453ab26ceda7532",
+      "gitlabSourceCommit": "a52a324577788571dedeb4f0213e620908bae814",
+      "sourceTag": "v0.2.26.0"
+    },
+    {
+      "workingVersion": "0.2.29.0",
+      "installerSha256": "51292013f68eadb614b0b4182cc38968daa78b2fb0d4867870235db3a38a1dcb",
+      "gitlabSourceCommit": "38566bf2b805b09882fb5dc0dc4888c30a794ed6",
+      "sourceTag": "v0.2.29.0"
+    },
+    {
+      "workingVersion": "0.2.3.0",
+      "installerSha256": "669e2de9885e18278fc92ff31e696bef1f3f2cb70bfddb33c3f262b50632bfca",
+      "gitlabSourceCommit": "a5e19f7307523c2d01386657a5aa5ec21e3f3485",
+      "sourceTag": "v0.2.3.0"
+    },
+    {
+      "workingVersion": "0.2.34.0",
+      "installerSha256": "e6f26dac2bc10be982454118889e18b9c20481914c676ada8c22b687d72ac933",
+      "gitlabSourceCommit": "7b288ba640d6d2615db9aefaec814f02a956d860",
+      "sourceTag": "v0.2.34.0"
+    },
+    {
+      "workingVersion": "0.2.35.0",
+      "installerSha256": "1ceb0c9fb51860b3cc1c9153c10303fd0207bc6ff3699c4f071597ef15c80dd7",
+      "gitlabSourceCommit": "e0dd3677afcdd0e737dd1505f7d1706f58e8aa16",
+      "sourceTag": "v0.2.35.0"
+    },
+    {
+      "workingVersion": "0.2.8.0",
+      "installerSha256": "9e5df75dbcc6cb0c320f8bdfa629488e4bb8f5fae2ee88564d3c8fcfdbbcfd91",
+      "gitlabSourceCommit": "fa0821a8a5ec21b9c33c1b8e5c7a878c21ff7ead",
+      "sourceTag": "v0.2.8.0"
+    },
+    {
+      "workingVersion": "0.3.2.0",
+      "installerSha256": "c0e7104253980de9dd31f53c2cd014b1ca114f6299a008d6cfcb82e536673cd7",
+      "gitlabSourceCommit": "c2f4b7c987e0b4c0d2c340accfe94c22f62ab788",
+      "sourceTag": "v0.3.2.0"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 use crate::Desktop;
 use crate::buttons::UiButtonExt as _;
-use crate::inspector::{choice, integer, number, text};
+use crate::inspector::{boolean, choice, integer};
 use achimeld_application::{Command, EditorPort};
 impl Desktop {
     pub(crate) fn open_preferences(&mut self, port: &dyn EditorPort) {
@@ -30,8 +30,28 @@ impl Desktop {
         self.app_id = port.editor().document().app_id();
         self.atlas = p["atlas"].clone();
         if self.atlas["unachievedIcon"].is_null() {
-            self.atlas["unachievedIcon"] =
-                serde_json::json!({"mode":"Grayscale","opacity":1.0,"tintHex":"#808080"});
+            self.atlas["unachievedIcon"] = serde_json::json!({});
+        }
+        let unachieved = &mut self.atlas["unachievedIcon"];
+        if unachieved["desaturation"].is_null() {
+            unachieved["desaturation"] = serde_json::json!(1.0);
+        }
+        if unachieved["opacity"].is_null() {
+            unachieved["opacity"] = serde_json::json!(1.0);
+        }
+        if unachieved["gradientOverlay"].is_null() {
+            let legacy_tint = unachieved["mode"] == "Tint";
+            let tint = unachieved["tintHex"].as_str().unwrap_or("#808080");
+            unachieved["gradientOverlay"] = serde_json::json!({
+                "enabled":legacy_tint,
+                "opacity":if legacy_tint {0.5} else {0.25},
+                "darkColorHex":if legacy_tint {tint} else {"#4E4778"},
+                "lightColorHex":if legacy_tint {tint} else {"#D8CAE8"}
+            });
+        }
+        if let Some(fields) = unachieved.as_object_mut() {
+            fields.remove("mode");
+            fields.remove("tintHex");
         }
         for key in ["outputWidth", "outputHeight"] {
             if self.atlas[key].is_null() {
@@ -90,10 +110,37 @@ impl Desktop {
                 ui.separator();
                 ui.heading("Unachieved icons");
                 let unachieved = &mut self.atlas["unachievedIcon"];
-                choice(ui, "Mode", unachieved, "mode", &["Grayscale", "Tint"]);
-                number(ui, "Opacity", unachieved, "opacity", 0.0..=1.0, 0.01);
-                if unachieved["mode"] == "Tint" {
-                    text(ui, "Tint", unachieved, "tintHex");
+                let mut desaturation = unachieved["desaturation"].as_f64().unwrap_or(1.0) * 100.0;
+                if crate::sliders::value_slider(
+                    ui,
+                    "Desaturation",
+                    &mut desaturation,
+                    50.0..=100.0,
+                    "%",
+                    0,
+                ) {
+                    unachieved["desaturation"] = serde_json::json!(desaturation / 100.0);
+                }
+                let mut opacity = unachieved["opacity"].as_f64().unwrap_or(1.0) * 100.0;
+                if crate::sliders::value_slider(ui, "Opacity", &mut opacity, 0.0..=100.0, "%", 0) {
+                    unachieved["opacity"] = serde_json::json!(opacity / 100.0);
+                }
+                let gradient = &mut unachieved["gradientOverlay"];
+                boolean(ui, "Gradient map", gradient, "enabled");
+                if gradient["enabled"] == true {
+                    let mut strength = gradient["opacity"].as_f64().unwrap_or(0.25) * 100.0;
+                    if crate::sliders::value_slider(
+                        ui,
+                        "Strength",
+                        &mut strength,
+                        0.0..=50.0,
+                        "%",
+                        0,
+                    ) {
+                        gradient["opacity"] = serde_json::json!(strength / 100.0);
+                    }
+                    crate::layers::color(ui, "Dark color", gradient, "darkColorHex");
+                    crate::layers::color(ui, "Light color", gradient, "lightColorHex");
                 }
                 ui.separator();
                 ui.horizontal(|ui| {

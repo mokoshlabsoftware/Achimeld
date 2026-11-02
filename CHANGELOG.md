@@ -2,6 +2,150 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.2.0 (2026-11-02)
+
+- Commit MCP reconnection fix after publishing audit
+
+## 0.3.1.2 (2026-11-02)
+
+- Keep MCP editor discovery stable while its connection is replaced
+
+## 0.3.1.1 (2026-11-02)
+
+- Prepare source publication for manual Gumroad installer delivery
+
+## 0.3.1.0 (2026-11-02)
+
+- Commit audited Steam synchronization, MCP and editor changes
+
+## 0.3.0.11 (2026-11-02)
+
+- Keep Steam validation successful when owned browser processes change during cleanup
+
+## 0.3.0.10 (2026-11-01)
+
+- Report Steam connection cancellation clearly before any draft step starts
+
+## 0.3.0.9 (2026-11-01)
+
+- Report cancellation clearly when Steam synchronization planning is interrupted
+
+## 0.3.0.8 (2026-11-01)
+
+- Show temporary unachieved icons beside achievement cards while Alt is held
+
+## 0.3.0.7 (2026-11-01)
+
+- Add layer version visibility and bounded unachieved icon styling
+
+## 0.3.0.6 (2026-11-01)
+
+- Show Steam changes in a scrollable square modal with a stoppable five-second countdown
+
+## 0.3.0.5 (2026-11-01)
+
+- Capture Steam icons at 256 pixels and verify fresh draft images by their content hashes
+
+## 0.3.0.4 (2026-11-01)
+
+- Keep full Steam reviews bounded and resolve icon metadata names correctly
+
+## 0.3.0.3 (2026-11-01)
+
+- Expose validated Steam icon preview references for read-only MCP review diagnostics
+
+## 0.3.0.2 (2026-11-01)
+
+- Classify Steam icon image conversion differences without accepting unverified art
+
+## 0.3.0.1 (2026-11-01)
+
+- Retry Steam icon read-back without repeating draft uploads and report precise failures
+
+## 0.3.0.0 (2026-11-01)
+
+- Start the 0.3 working series with responsive Steam synchronization and editor control
+
+## 0.2.39.9 (2026-11-01)
+
+- Refresh every matching icon during shared-style blend mode previews
+
+## 0.2.39.8 (2026-11-01)
+
+- Cancel Steam synchronization and close the editor in one action
+
+## 0.2.39.7 (2026-11-01)
+
+- Keep MCP responsive when the editor is minimized and enrich its handshake
+
+## 0.2.39.6 (2026-11-01)
+
+- Show exact effect presets through MCP and correct their thumbnails and notices
+
+## 0.2.39.5 (2026-11-01)
+
+- Keep editing and saving while Steam synchronizes a frozen artwork snapshot
+
+## 0.2.39.4 (2026-11-01)
+
+- Control supervised Steam page reads, recent projects and editor close through MCP
+
+## 0.2.39.3 (2026-11-01)
+
+- Show rendered 96-pixel effect thumbnails in a preset grid
+
+## 0.2.39.2 (2026-11-01)
+
+- Allow authenticated Steam validation to read the game banner before configuration
+
+## 0.2.39.1 (2026-11-01)
+
+- Allow installation when source verification is unavailable and preserve published installer hashes
+
+## 0.2.39.0 (2026-11-01)
+
+- Bind signed installer verification to isolated release output
+
+## 0.2.38.1 (2026-11-01)
+
+- Keep signed installer binaries on the isolated release target
+
+## 0.2.38.0 (2026-11-01)
+
+- Stabilize the audited Chromium startup fixture
+
+## 0.2.37.1 (2026-11-01)
+
+- Stabilize the audited Chromium startup check under load
+
+## 0.2.37.0 (2026-11-01)
+
+- Complete installer warning translations
+
+## 0.2.36.1 (2026-11-01)
+
+- Translate installer source warning for Hungarian and Turkish
+
+## 0.2.36.0 (2026-11-01)
+
+- Verify installer identity and isolate audited package builds
+
+## 0.2.35.4 (2026-11-01)
+
+- Isolate installer release binaries and package archive from concurrent builds
+
+## 0.2.35.3 (2026-11-01)
+
+- Recheck live Achimeld processes before Setup blocks installation
+
+## 0.2.35.2 (2026-11-01)
+
+- Show the Achimeld wordmark in the installer header
+
+## 0.2.35.1 (2026-11-01)
+
+- Allow a warned interactive installer when its hash differs from the published record
+
 ## 0.2.35.0 (2026-11-01)
 
 - Restore source-only GitHub publication policy

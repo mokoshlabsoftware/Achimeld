@@ -274,10 +274,11 @@ pub struct Desktop {
     pub(crate) sync_token: String,
     pub(crate) sync_choices: BTreeMap<String, String>,
     pub(crate) sync_filter: String,
-    pub(crate) sync_page: usize,
-    pub(crate) sync_confirmation: Option<(String, u32, u64)>,
+    pub(crate) sync_review_started: Option<std::time::Instant>,
+    pub(crate) sync_review_paused: bool,
+    pub(crate) sync_review_elapsed: std::time::Duration,
+    pub(crate) sync_confirmation: Option<(String, u32)>,
     pub(crate) sync_plan_token: Option<String>,
-    pub(crate) sync_plan_fresh: bool,
     pub(crate) steam_marks: BTreeSet<(EntityKind, String)>,
     pub(crate) steam_delete_review: bool,
     pub(crate) steam_delete_fresh: bool,
@@ -332,6 +333,8 @@ pub struct Desktop {
     pub(crate) atlas: Value,
     pub(crate) settings_revision: u64,
     pub(crate) error: Option<String>,
+    notice_id: Option<String>,
+    notice_message: Option<String>,
     pub(crate) selected_layer: Option<String>,
     pub(crate) blend_hover: Option<crate::blend_preview::BlendHover>,
     pub(crate) entity_drafts: BTreeMap<String, EntityDraft>,
@@ -360,10 +363,11 @@ impl Default for Desktop {
             sync_token: String::new(),
             sync_choices: BTreeMap::new(),
             sync_filter: String::new(),
-            sync_page: 0,
+            sync_review_started: None,
+            sync_review_paused: false,
+            sync_review_elapsed: std::time::Duration::ZERO,
             sync_confirmation: None,
             sync_plan_token: None,
-            sync_plan_fresh: false,
             steam_marks: BTreeSet::new(),
             steam_delete_review: false,
             steam_delete_fresh: false,
@@ -418,6 +422,8 @@ impl Default for Desktop {
             atlas: Value::Null,
             settings_revision: 0,
             error: None,
+            notice_id: None,
+            notice_message: None,
             selected_layer: None,
             blend_hover: None,
             entity_drafts: BTreeMap::new(),
@@ -698,6 +704,74 @@ impl Desktop {
             || self.camera_motion.is_some()
             || self.canvas_menu.is_some()
             || self.icon_pan.is_some()
+    }
+    pub fn automation_modal(&self) -> Option<(&str, &str, &str)> {
+        if let (Some(message), Some(id)) = (&self.error, &self.notice_id) {
+            return Some((id, "notice", message));
+        }
+        if self.sync_plan_token.is_some() {
+            return Some((
+                "sync-plan-review",
+                "review",
+                "Synchronization changes are open for review",
+            ));
+        }
+        if self.about {
+            return Some((
+                if self.update_notes {
+                    "startup-update"
+                } else {
+                    "about"
+                },
+                "notice",
+                if self.update_notes {
+                    "Application update"
+                } else {
+                    "About Achimeld"
+                },
+            ));
+        }
+        None
+    }
+    pub fn automation_acknowledge_modal(&mut self, expected_id: &str) -> bool {
+        if self.error.is_some() && self.notice_id.as_deref() == Some(expected_id) {
+            self.error = None;
+            self.notice_id = None;
+            self.notice_message = None;
+            return true;
+        }
+        if self.about
+            && expected_id
+                == if self.update_notes {
+                    "startup-update"
+                } else {
+                    "about"
+                }
+        {
+            self.about = false;
+            self.update_notes = false;
+            return true;
+        }
+        false
+    }
+    pub fn automation_close_effect_explorer(
+        &mut self,
+        port: &mut dyn EditorPort,
+    ) -> Result<(), String> {
+        if !self.effect_explorer.open {
+            return Ok(());
+        }
+        let mut explorer = std::mem::take(&mut self.effect_explorer);
+        let saved = explorer.save(port);
+        if saved {
+            explorer.open = false;
+        }
+        self.effect_explorer = explorer;
+        if saved {
+            Ok(())
+        } else {
+            Err("Correct the preset before closing Explosion Explorer".into())
+        }
     }
     pub fn automation_select(&mut self, kind: EntityKind, id: String, port: &mut dyn EditorPort) {
         self.view = if kind == EntityKind::Achievement {
@@ -1550,6 +1624,10 @@ impl Desktop {
             }
         }
         if let Some(message) = self.error.clone() {
+            if self.notice_message.as_deref() != Some(&message) {
+                self.notice_id = Some(achimeld_application::new_id());
+                self.notice_message = Some(message.clone());
+            }
             use crate::steam::{ReviewAction, ReviewChoice, review_prompt};
             use crate::style_picker::Glyph;
             let choice = review_prompt(
@@ -1569,6 +1647,8 @@ impl Desktop {
             );
             if !matches!(choice, ReviewChoice::Idle) {
                 self.error = None;
+                self.notice_id = None;
+                self.notice_message = None;
             }
         }
     }
@@ -1606,6 +1686,10 @@ impl Desktop {
         }
     }
     pub fn close(&mut self, port: &mut dyn EditorPort) {
+        if port.synchronizing() {
+            port.request(UiRequest::Exit);
+            return;
+        }
         if self.effect_explorer.open && !self.effect_explorer.save(port) {
             return;
         }
@@ -1789,6 +1873,27 @@ impl Desktop {
         // size request keeps the previous successful texture visible.
         let key = format!("canvas:{id}");
         if let Some(preview) = port.canvas_preview(id, edge) {
+            self.preview_texture(ctx, &key, preview)
+        } else {
+            self.texture_clock += 1;
+            self.textures.get_mut(&key).map(|(_, texture, used)| {
+                *used = self.texture_clock;
+                texture.id()
+            })
+        }
+    }
+    pub(crate) fn unachieved_canvas_texture(
+        &mut self,
+        ctx: &egui::Context,
+        port: &mut dyn EditorPort,
+        id: &str,
+        physical_edge: f32,
+    ) -> Option<egui::TextureId> {
+        let edge = (physical_edge.ceil() as usize)
+            .clamp(64, 512)
+            .next_power_of_two();
+        let key = format!("unachieved-canvas:{id}");
+        if let Some(preview) = port.unachieved_canvas_preview(id, edge) {
             self.preview_texture(ctx, &key, preview)
         } else {
             self.texture_clock += 1;

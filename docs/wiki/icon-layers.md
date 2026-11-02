@@ -16,6 +16,8 @@ For ordinary artwork, Transform offers Offset X/Y from -4096 to 4096, Scale from
 
 Mask sources have a reduced set of controls; see [Masks](masks.md).
 
+Every layer type has a Show in menu at the bottom of its properties. Choose Both versions (the default), Achieved only, or Unachieved only. A folder's choice applies to its contents. Project settings apply desaturation and the optional gradient map after the unachieved layers are composed.
+
 ## Image sources
 
 | Layer | Controls and purpose |

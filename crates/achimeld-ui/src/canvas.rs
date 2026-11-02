@@ -230,10 +230,16 @@ pub(crate) fn uncovered_canvas(canvas: Rect, panel: Option<Rect>) -> Option<Rect
     })
 }
 
-fn achievement_art_rect(min: Pos2, zoom: f32, labels: f32) -> Rect {
+pub(crate) fn achievement_art_rect(min: Pos2, zoom: f32, labels: f32) -> Rect {
     Rect::from_min_size(
         min + Vec2::splat(10.0) * zoom * labels,
         Vec2::splat((118.0 - 22.0 * labels) * zoom),
+    )
+}
+pub(crate) fn comparison_art_rect(achieved: Rect, zoom: f32) -> Rect {
+    Rect::from_min_size(
+        achieved.min + Vec2::new(achieved.width() + 8.0 * zoom, 0.0),
+        achieved.size(),
     )
 }
 
@@ -940,6 +946,9 @@ impl Desktop {
                 }
             }
         }
+        let compare_unachieved =
+            self.kind == EntityKind::Achievement && ui.input(|i| i.modifiers.alt);
+        let mut comparison_icons = Vec::new();
         let mut pointer_on_card = false;
         for entity in &cards {
             let id = entity.id.clone();
@@ -1045,6 +1054,16 @@ impl Desktop {
                     focus_icons.push((art, entity.focus_art));
                 } else {
                     painter.add(artwork);
+                }
+                if compare_unachieved
+                    && let Some(texture) = self.unachieved_canvas_texture(
+                        ui.ctx(),
+                        port,
+                        &id,
+                        art.width() * ui.ctx().pixels_per_point(),
+                    )
+                {
+                    comparison_icons.push((texture, comparison_art_rect(art, self.zoom)));
                 }
             } else {
                 painter.text(
@@ -1175,6 +1194,17 @@ impl Desktop {
                 self.icon_pan = None;
                 self.selected_layer = None;
                 ui.ctx().request_repaint();
+            }
+        }
+        if compare_unachieved {
+            let overlay = ui.painter_at(rect);
+            for (texture, destination) in comparison_icons {
+                overlay.image(
+                    texture,
+                    destination,
+                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                    Color32::WHITE,
+                );
             }
         }
         // Let an existing menu handle the outside click before changing its

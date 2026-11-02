@@ -72,6 +72,37 @@ impl ProjectStore {
         self.staged_art_files.insert(path.clone());
         Ok(json!({"kind":"Absolute","path":path.to_str().ok_or("Invalid art bank path")?}))
     }
+    /// Retain verified Steam artwork in the current project's content-addressed
+    /// bank without replacing its project or catalog files. A concurrent editor
+    /// save may therefore commit newer local work while the Steam snapshot runs.
+    pub fn retain_art_in_bank(&self, bytes: &[u8]) -> Result<Value> {
+        if bytes.len() > 64 * 1024 * 1024 {
+            return Err("Artwork exceeds 64 MiB".into());
+        }
+        let path = self
+            .path
+            .as_deref()
+            .ok_or("Load a saved project before retaining Steam artwork")?;
+        let parent = path.parent().ok_or("Project directory unavailable")?;
+        reject_reparse(parent)?;
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or("Invalid project name")?;
+        let directory = parent.join(format!("{stem}.art-data-bank"));
+        reject_reparse(&directory)?;
+        if !directory.exists() {
+            fs::create_dir(&directory).map_err(|e| e.to_string())?;
+        }
+        let target = directory.join(format!("{}.png", hash(bytes)));
+        retain_immutable(&target, bytes)?;
+        let relative = target
+            .strip_prefix(parent)
+            .map_err(|e| e.to_string())?
+            .to_str()
+            .ok_or("Invalid art bank path")?;
+        Ok(json!({"kind":"RelativeToProject","path":relative}))
+    }
     pub fn load(&mut self, path: &Path) -> Result<Document> {
         let absolute = std::path::absolute(path).map_err(|e| e.to_string())?;
         let path = absolute.as_path();

@@ -190,7 +190,10 @@ mod tests {
         let before =
             Document::from_parts(project, host.editor.document().catalog().clone()).unwrap();
         host.editor = Editor::new(before.clone());
-        host.verified_sync = Some((host.editor_session_id.clone(), host.editor.revision()));
+        host.verified_sync = Some((
+            host.editor_session_id.clone(),
+            host.editor.document().app_id(),
+        ));
         host.forget_steam_validation().unwrap();
         let after = host.editor.document().project();
         assert!(after["lastRemoteSnapshot"].is_null());

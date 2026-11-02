@@ -1,6 +1,67 @@
 use super::*;
 
 #[test]
+fn every_layer_properties_pane_shows_the_version_visibility_choice() {
+    fn has_label(shape: &egui::Shape, expected: &str) -> bool {
+        match shape {
+            egui::Shape::Text(text) => text.galley.text() == expected,
+            egui::Shape::Vec(shapes) => shapes.iter().any(|shape| has_label(shape, expected)),
+            _ => false,
+        }
+    }
+    let mut fixture = Fixture::new();
+    let achievement = fixture.editor.document().entities(EntityKind::Achievement)[0].clone();
+    let id = achievement["id"].as_str().unwrap().to_owned();
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    for kind in [
+        "Folder",
+        "Solid",
+        "Text",
+        "Explosion",
+        "Curves",
+        "MaskReference",
+        "GeneralImage",
+    ] {
+        let mut desktop = Desktop::default();
+        desktop.selection = vec![id.clone()];
+        let layer = crate::layer_palette::new_layer(kind);
+        assert_eq!(layer["versionVisibility"], "Both");
+        desktop.selected_layer = layer["id"].as_str().map(str::to_owned);
+        let mut layers = vec![layer];
+        let mut entity = achievement.clone();
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(800.0, 3000.0),
+                )),
+                ..Default::default()
+            },
+            |ui| {
+                ui.set_width(600.0);
+                desktop.layer_properties(ui, &mut fixture, &mut layers, &mut entity);
+            },
+        );
+        assert!(
+            output
+                .shapes
+                .iter()
+                .any(|shape| has_label(&shape.shape, "Show in")),
+            "{kind}"
+        );
+        assert!(
+            output
+                .shapes
+                .iter()
+                .any(|shape| has_label(&shape.shape, "Both versions")),
+            "{kind}"
+        );
+        output.textures_delta.clear();
+    }
+}
+
+#[test]
 fn layers_match_only_project_styles_and_import_global_templates_from_separate_menu() {
     let mut fixture = Fixture::new();
     let mut entity = fixture.editor.document().entities(EntityKind::Achievement)[0].clone();

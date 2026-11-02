@@ -4,6 +4,8 @@ Add Explosion from the layer picker. The effect builds shapes on a periodic rect
 
 New explosion layers start with the bundled boom recipe. Existing layers and saved presets keep their own settings.
 
+Explosion Explorer thumbnails render each saved recipe at 96 by 96 pixels. A tile accepts only pixels from its own current recipe; the full preview can retain its previous image while a new render completes. MCP can list named presets with their exact layer recipes and apply one preset to selected achievements in one undo step.
+
 The construction preview explains the source shapes; the main preview shows the projected result. The construction strip grows with the Properties panel. Open construction editor for a resizable window with the explosion controls, a larger strip, and whole-effect Offset X, Offset Y and Angle. Edits update the selected layer immediately.
 
 ## Main controls
@@ -52,7 +54,7 @@ Older triangle recipes retain their appearance until Use deltoid is selected exp
 
 ## Presets
 
-Explosion Explorer keeps the live preview visible on the left while the preset library and editing controls scroll on the right. It supports search, save, duplicate, rename, removal/undo removal and .achexplosions collection import/export.
+Explosion Explorer keeps the live preview visible on the left while the preset library and editing controls scroll on the right. The library displays a grid of rendered effect previews with names below the images, at a default size of 96 by 96 pixels. It supports search, save, duplicate, rename, removal/undo removal and .achexplosions collection import/export.
 
 When exporting a collection to an existing file, confirm Replace to update it, or choose another filename. The existing file stays intact if export fails.
 

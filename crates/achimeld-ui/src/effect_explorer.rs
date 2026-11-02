@@ -70,6 +70,72 @@ fn preset_icon(ctx: &egui::Context, preset: &EffectPreset, size: f32) -> egui::I
     ctx.data_mut(|data| data.insert_temp(id, (preset.layer.clone(), texture.clone())));
     egui::Image::new((texture.id(), egui::Vec2::splat(size)))
 }
+fn effect_tile(
+    ui: &mut egui::Ui,
+    port: &mut dyn EditorPort,
+    preset: &EffectPreset,
+    selected: bool,
+    edge: f32,
+) -> egui::Response {
+    let tile = egui::vec2(edge + 16.0, edge + 34.0);
+    let response = ui.add_sized(
+        [tile.x, tile.y],
+        Button::selectable(selected, "")
+            .id(ui.make_persistent_id(("effect-tile", &preset.id)))
+            .bar(),
+    );
+    let image_rect = egui::Rect::from_min_size(
+        response.rect.min + egui::vec2(8.0, 4.0),
+        egui::Vec2::splat(edge),
+    );
+    crate::gradient::checker(ui, image_rect);
+    if let Some(preview) = port.effect_thumbnail(preset) {
+        let id = egui::Id::new(("effect-tile-texture", &preset.id));
+        let texture = ui
+            .ctx()
+            .data(|data| data.get_temp::<(String, egui::TextureHandle)>(id));
+        let texture = if let Some((fingerprint, texture)) = texture
+            && fingerprint == preview.fingerprint
+        {
+            texture
+        } else {
+            let image = egui::ColorImage::from_rgba_unmultiplied(
+                [preview.width, preview.height],
+                &preview.rgba,
+            );
+            let texture = ui.ctx().load_texture(
+                format!("effect-tile-{}", preset.id),
+                image,
+                egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
+            );
+            ui.ctx()
+                .data_mut(|data| data.insert_temp(id, (preview.fingerprint, texture.clone())));
+            texture
+        };
+        egui::Image::new((texture.id(), image_rect.size())).paint_at(ui, image_rect);
+    }
+    let style = if selected {
+        buttons::ButtonStyle::Accent
+    } else {
+        buttons::ButtonStyle::Quiet
+    };
+    let (_, ink) = buttons::colors(ui, &response, style);
+    let name = if preset.name.chars().count() > 15 {
+        format!("{}...", preset.name.chars().take(12).collect::<String>())
+    } else {
+        preset.name.clone()
+    };
+    ui.painter()
+        .with_clip_rect(response.rect.shrink2(egui::vec2(4.0, 0.0)))
+        .text(
+            egui::pos2(response.rect.center().x, image_rect.bottom() + 13.0),
+            egui::Align2::CENTER_CENTER,
+            name,
+            egui::TextStyle::Button.resolve(ui.style()),
+            ink,
+        );
+    response.on_hover_text(&preset.name)
+}
 #[derive(Default)]
 pub(crate) struct Explorer {
     pub open: bool,
@@ -344,15 +410,15 @@ impl Explorer {
                 .desired_width(ui.available_width()),
         );
         let mut size =
-            serde_json::json!({"size": if self.icon_size < 24.0 { 40.0 } else { self.icon_size }});
+            serde_json::json!({"size": if self.icon_size < 24.0 { 96.0 } else { self.icon_size }});
         crate::knobs::bank(
             ui,
             port.preferences(),
             &mut size,
-            &serde_json::json!({"size":40.0}),
+            &serde_json::json!({"size":96.0}),
             &[crate::knobs::Parameter::new("Icon size", "size", 24.0..=96.0, 0).integer()],
         );
-        self.icon_size = size["size"].as_f64().unwrap_or(40.0).clamp(24.0, 96.0);
+        self.icon_size = size["size"].as_f64().unwrap_or(96.0).clamp(24.0, 96.0);
         let needle = self.filter.to_lowercase();
         let presets: Vec<_> = port
             .effect_presets()
@@ -360,58 +426,51 @@ impl Explorer {
             .filter(|p| p.kind == kind && p.name.to_lowercase().contains(&needle))
             .cloned()
             .collect();
+        let preset_count = presets.len();
         let mut choose = None;
+        let edge = self.icon_size as f32;
+        let columns = ((ui.available_width() - 16.0) / (edge + 16.0))
+            .floor()
+            .max(1.0) as usize;
+        let mut tiles = Vec::with_capacity(presets.len() + 1);
+        if let Some(unsaved) = &self.unsaved {
+            let mut unsaved = unsaved.clone();
+            unsaved.name = "Unsaved changes".into();
+            tiles.push((unsaved, true));
+        }
+        tiles.extend(presets.into_iter().map(|preset| (preset, false)));
         egui::ScrollArea::vertical()
             .id_salt("effect-library")
-            .max_height(150.0)
+            .max_height((edge + 34.0) * 2.0)
             .auto_shrink([false, false])
             .show(ui, |ui| {
                 ui.weak(format!(
                     "{} {}",
-                    presets.len(),
-                    if presets.len() == 1 {
+                    preset_count,
+                    if preset_count == 1 {
                         "preset"
                     } else {
                         "presets"
                     }
                 ));
-                ui.spacing_mut().item_spacing.y = 0.0;
-                let icon = self
-                    .unsaved
-                    .as_ref()
-                    .map(|preset| preset_icon(ui.ctx(), preset, self.icon_size as f32))
-                    .unwrap_or_else(|| {
-                        crate::particles::glyph(
-                            ui.ctx(),
-                            "effect-unsaved-icon",
-                            include_bytes!("../assets/toolbar/layer-folder.rgba"),
-                        )
+                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+                for row in tiles.chunks(columns) {
+                    ui.horizontal(|ui| {
+                        for (preset, unsaved) in row {
+                            let selected = if *unsaved {
+                                self.selected.is_none()
+                            } else {
+                                self.selected.as_deref() == Some(&preset.id)
+                            };
+                            if effect_tile(ui, port, preset, selected, edge).clicked() {
+                                choose = Some(if *unsaved {
+                                    String::new()
+                                } else {
+                                    preset.id.clone()
+                                });
+                            }
+                        }
                     });
-                if ui
-                    .add_sized(
-                        [ui.available_width(), self.icon_size as f32 + 8.0],
-                        Button::selectable(self.selected.is_none(), (icon, "Unsaved changes"))
-                            .bar(),
-                    )
-                    .clicked()
-                {
-                    choose = Some(String::new());
-                }
-                for preset in presets {
-                    let icon = preset_icon(ui.ctx(), &preset, self.icon_size as f32);
-                    if ui
-                        .add_sized(
-                            [ui.available_width(), self.icon_size as f32 + 8.0],
-                            Button::selectable(
-                                self.selected.as_deref() == Some(&preset.id),
-                                (icon, &preset.name),
-                            )
-                            .bar(),
-                        )
-                        .clicked()
-                    {
-                        choose = Some(preset.id);
-                    }
                 }
             });
         if let Some(id) = choose
