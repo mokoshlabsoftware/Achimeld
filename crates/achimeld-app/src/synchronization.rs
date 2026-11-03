@@ -113,6 +113,7 @@ pub(crate) enum Event {
     Banner(Box<Document>),
     Review(Value),
     Progress(String),
+    WaitingForSignIn(bool),
     Complete(Result<Document, String>),
 }
 
@@ -224,6 +225,7 @@ pub(crate) struct Pending {
     pub activity: &'static str,
     pub completion_message: Option<String>,
     pub handshake_only: bool,
+    pub waiting_for_sign_in: bool,
     pub cancel: Cancellation,
     pub events: mpsc::Receiver<Event>,
     pub approval: mpsc::SyncSender<Vec<(String, String)>>,
@@ -375,7 +377,7 @@ impl Pending {
                 let result = reader
                     .delete_steam(document.project().clone(), json!(targets))
                     .map_err(|_| "Steam deletion stopped. Some entries may already have been deleted. Validate and refresh Steam before retrying.".to_owned())?;
-                close_steam(&mut reader, &progress, &mut stage)?;
+                close_steam(&mut reader, &progress, &mut stage, false)?;
                 stop.check().map_err(|e| e.to_string())?;
                 stage = "checking verified deletion results";
                 let mut project = document.project().clone();
@@ -439,6 +441,7 @@ impl Pending {
             activity: "Deleting Steam entries",
             completion_message: None,
             handshake_only: false,
+            waiting_for_sign_in: false,
             cancel,
             events,
             approval,
@@ -531,6 +534,7 @@ impl Pending {
             },
             completion_message: None,
             handshake_only,
+            waiting_for_sign_in: false,
             cancel,
             events,
             approval,
@@ -572,21 +576,25 @@ fn connect_steam(
     )))?;
     reader.open_app(app_id).map_err(|e| e.to_string())?;
     *stage = "waiting for Steam sign-in";
+    progress(Event::WaitingForSignIn(true))?;
     progress(Event::Progress(
         "Waiting for Steam sign-in · complete sign-in in the dedicated browser".into(),
     ))?;
     reader
         .wait_for_authentication(Duration::from_secs(600))
         .map_err(|e| e.to_string())?;
+    progress(Event::WaitingForSignIn(false))?;
     *stage = "opening the Steamworks destination";
     progress(Event::Progress(format!(
         "Opening Steamworks destination · App ID {}",
         app_id.value()
     )))?;
     reader.open_app(app_id).map_err(|e| e.to_string())?;
+    progress(Event::WaitingForSignIn(true))?;
     reader
         .wait_for_authentication(Duration::from_secs(30))
         .map_err(|e| e.to_string())?;
+    progress(Event::WaitingForSignIn(false))?;
     Ok(reader)
 }
 
@@ -624,7 +632,7 @@ fn handshake(
             "Steam game banner unavailable; connection validation continues".into(),
         ))?;
     }
-    close_steam(&mut reader, progress, stage)?;
+    close_steam(&mut reader, progress, stage, true)?;
     if let Some(name) = name
         && result.project()["displayName"]
             .as_str()
@@ -644,12 +652,17 @@ fn close_steam(
     reader: &mut SteamReader,
     progress: &dyn Fn(Event) -> Result<(), String>,
     stage: &mut &'static str,
+    wait_for_cleanup: bool,
 ) -> Result<(), String> {
     *stage = "closing the dedicated Steam browser";
     progress(Event::Progress(
         "Closing the dedicated Steam browser…".into(),
     ))?;
-    let cleanup_complete = reader.stop().map_err(|e| e.to_string())?;
+    let mut cleanup_complete = reader.stop().map_err(|e| e.to_string())?;
+    if !cleanup_complete && wait_for_cleanup {
+        reader.await_cleanup().map_err(|e| e.to_string())?;
+        cleanup_complete = true;
+    }
     progress(Event::Progress(
         if cleanup_complete {
             "Dedicated Steam browser cleanup completed"
@@ -978,7 +991,7 @@ fn run_once(
         "Verifying final Steam synchronization results…".into(),
     ))?;
     let mut result = reader.finish_sync(token).map_err(|e| e.to_string())?;
-    close_steam(&mut reader, progress, stage)?;
+    close_steam(&mut reader, progress, stage, false)?;
     *stage = "checking verified synchronization results";
     bind_result_artwork(&document, &mut result["project"], &mut references)?;
     if let Some(banner) = &banner {

@@ -92,8 +92,9 @@ try
                 await Task.Delay(TimeSpan.FromSeconds(1), shutdown.Token);
                 break;
             }
-            // Confirm the stop request before Chromium teardown. The host owns
-            // the worker Job and waits for its exit after receiving this reply.
+            // Stop is acknowledged after graceful Chromium teardown. The host
+            // bounds this call to fifteen seconds and retains owned Job cleanup
+            // as the fallback if teardown stalls or the acknowledgement fails.
             // No further requests may be dispatched after acknowledgement.
             if (request.Operation == "stop") break;
         }
@@ -155,7 +156,9 @@ static async Task<object> ExecuteAsync(ReadAction action, PlaywrightChromeDriver
             return PortalDocumentSanitizer.ForTransport(await driver.ReadCompleteConfigurationAsync(new SteamAppId(action.AppId)));
         case ReadOperation.ReadGameBanner:
             return await driver.ReadGameDetailsAsync(action.AppId);
-        case ReadOperation.Stop: return true;
+        case ReadOperation.Stop:
+            await driver.StopAsync();
+            return true;
         case ReadOperation.CheckPublicVersion: return await CheckPublicVersionAsync(session, cancellationToken);
         case ReadOperation.NetworkSelfTest: return await NetworkProbeAsync(action.Hold, driver, session, cancellationToken);
         default: throw new InvalidDataException("Read session command rejected.");

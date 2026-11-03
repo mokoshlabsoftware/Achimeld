@@ -2,6 +2,65 @@
 
 The host renders, hashes and retains each available synchronized achievement icon pair as bounded PNG bytes during preparation. The receiver compares those hashes with the saved baseline and fresh Steam icon identity, so an artwork-only edit appears as a separate Icon row. The review shows the frozen action plan; one explicit Synchronize click submits selected rows without a second confirmation. The worker uploads those captured bytes and verifies Steam read-back. A user can edit and save the project during the review and transfer; completion merges independent local and Steam changes. This source and fixture check does not establish live Steam compatibility.
 
+## Fresh project conversion and graceful stop (2026-11-03)
+
+The 0.3.4.6 live empty-project test completed sign-in but failed preparation with
+the closed `io` category. A synthetic project using the same modern
+desaturation/gradient settings reproduced `ProjectDataException` before the
+first portal read: the legacy mapper expected an obsolete locked-icon mode.
+The synchronization-specific mapper now uses neutral legacy rendering settings
+only in its temporary DTO. Actual rendered hashes remain supplied by the host;
+the raw project and its modern settings remain unchanged in synchronization
+results. The same projection covers the separately authorized deletion path.
+Regression fixtures cover import-only achievement/artwork transfer with zero
+portal writes, preservation of modern settings, synthetic selected deletion,
+and rejection of unsupported project enums before any portal access. Mapping
+errors use the existing closed project-format failure code without exception text.
+
+The worker now awaits Chromium shutdown before acknowledging Stop. The host's
+existing five-second Stop deadline, health/cancellation checks and owned Job
+termination fallback remain intact; no new process authority or retries are
+introduced. Earlier acknowledgement allowed immediate Job termination before
+Chromium finished closing. Live browser exit timing and retained Steam sign-in
+must be verified in the rebuilt package; source order alone does not establish
+those outcomes. The original unexpected editor exit remains unexplained.
+
+The exact 0.3.5.1 desktop subsequently imported and saved 20 achievements,
+17 stats and 40 artwork files, retaining the existing banner and all referenced
+files. Reopening the browser for synchronization retained the authenticated
+session. Stop still exceeded its five-second deadline and used owned cleanup:
+approximately 55 seconds total after validation and 22 seconds after import.
+This proves the project-format correction and observed sign-in continuity, not
+prompt browser shutdown. Audit 646599b49e4342bb947579b19f41f95b passed all selected
+offline source/fixture checks; installed enforcement and live cleanup remain
+separate qualification scopes.
+
+## Imported General image structure (2026-11-03)
+
+## Bounded graceful browser closure (2026-11-03)
+
+A synthetic persistent Chromium context reproduced closure exceeding the old
+five-second Stop budget without using Steam or its profile. A later measured
+normal close completed in 12.1 seconds. Shutdown now first sets the dedicated
+context offline and closes its pages with RunBeforeUnload=false, then closes
+the persistent context. The host allows fifteen seconds for Stop, preserving
+cancellation, health polling and owned Job termination on failure or expiry.
+The fixture activates an unload prompt, confirms no prompt is shown, and
+requires completed closure within that same allowance. This is not a claim
+that every Windows teardown finishes within fifteen seconds; incomplete exit
+still gates reopening and remains visible. Exact rebuilt live timing is pending.
+
+## Imported General image structure (2026-11-03)
+
+The worker keeps imported bytes hash-pinned and host-owned, with the unchanged
+SteamImportedArtwork asset classification. Achieved artwork is referenced by
+General image slot 0; its new recipe uses AchievementImage at generalImageIndex
+0, full opacity and no effects. Other slots survive reimport, and previous
+immutable bank assets are retained. Host file binding and protocol shapes are
+unchanged. Managed import/reimport and rename fixtures cover the structure;
+renderer comparisons cover achieved and locked pixel equivalence at square and
+rectangular output sizes. Live rebuilt structure and persistence remain pending.
+
 ## Live icon conversion correction (2026-11-01)
 
 The reviewed Steam artwork snapshot renders its upload PNG pairs at 256 by 256 pixels, independent of the project's atlas export size. This matches the saved Steam achievement icon dimensions observed in the live waifus6 draft. The worker downloads and hashes each pre-upload Steam icon, then after one authorized POST retries the saved configuration and CDN download until a changed image hash appears. A full snapshot read must report that same hash for the selected achievement's achieved and unachieved images. It never repeats the POST. An unchanged hash is an uncertain stale outcome; a changed hash proves new saved bytes, not their visual meaning. Public preview inspection supplies visual QA when needed.
@@ -373,3 +432,35 @@ no process-name lookup, detached browser or protocol operation is introduced.
 The real C# process fixture exercises prompt handoff, eventual process exit, reopening,
 and survival of a separate worker. This is not proof of graceful Chromium shutdown
 latency or live Steam write correctness.
+
+## Validation readiness and slow cleanup (0.3.4.6)
+
+A live 0.3.4.1 session validated successfully but retained browser cleanup at
+12:07:57 UTC. Synchronization started ten seconds later and exhausted its
+90-second cleanup wait at 12:09:37. The reaper confirmed all owned processes
+exited at 12:09:59. No achievement read or draft write occurred in that attempt.
+The editor later disappeared and its log ended at 12:11:33 without an exit
+record. No matching dump or Windows application error was found; the cause of
+that separate exit is not established.
+
+Validation now keeps its cancellable closing stage active until owned cleanup
+is confirmed. Reader startup waits for cleanup with cancellation and periodic
+supervisor health checks rather than failing solely because 90 seconds elapsed.
+The final spawn guard, owned-handle termination, Job accounting, capacity bound
+and fail-closed health behavior remain unchanged. Completed draft operations
+retain background teardown to avoid delaying their verified local result.
+No request is replayed and no process-name termination is added.
+
+Synthetic wait regressions cover delayed readiness beyond the former wait,
+cancellation and health failure. They do not establish actual Chromium shutdown
+latency or explain the unexpected editor exit. Rebuilt live qualification is
+tracked in the wiki change register.
+
+The rebuilt 0.3.4.6 desktop reached authenticated Steam validation with one
+dedicated browser tree. After Stop acknowledged, validation remained active in
+the closing stage beyond the former 90-second startup limit, while editor
+heartbeats and MCP queries continued. The remaining main Chromium process
+outlived its worker and other browser processes. The operator then closed the
+editor for a separate headless test; the captured supervisor reported normal
+closure. That interruption is not evidence of a crash, and no import was
+completed. The original 0.3.4.1 unexplained exit remains a separate open finding.

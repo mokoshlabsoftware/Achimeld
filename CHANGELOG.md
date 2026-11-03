@@ -2,21 +2,89 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.8.0 (2026-11-03)
+
+- Fix MCP status during editor reconnection
+
+## 0.3.7.1 (2026-11-03)
+
+- Keep MCP status available while the editor reconnects
+
+## 0.3.7.0 (2026-11-03)
+
+- Fix Steam browser shutdown and verify visible browser closure
+
+## 0.3.6.3 (2026-11-03)
+
+- No user-facing changes.
+
+## 0.3.6.2 (2026-11-03)
+
+- Prevent Steam browser shutdown from stalling when its last tab closes
+
+## 0.3.6.1 (2026-11-03)
+
+- Allow slow Steam browser shutdown to finish before forced cleanup
+
+## 0.3.6.0 (2026-11-03)
+
+- Improve Steam import artwork and browser shutdown
+
+## 0.3.5.3 (2026-11-03)
+
+- Close dedicated Steam tabs without unload prompts and allow more time for graceful browser shutdown
+
+## 0.3.5.2 (2026-11-03)
+
+- Import Steam artwork into General image slot 0 with a matching General Image layer
+
+## 0.3.5.1 (2026-11-03)
+
+- Fix Steam synchronization for fresh projects and allow the dedicated browser to finish closing before forced cleanup
+
+## 0.3.5.0 (2026-11-03)
+
+- Improve MCP setup, square controls, sign-in feedback and the first-run experience
+
+## 0.3.4.7 (2026-11-03)
+
+- Welcome new users with project choices, the Valve disclaimer, wiki help and AI agent setup.
+
+## 0.3.4.6 (2026-11-03)
+
+- Wait for Steam browser cleanup before reporting validation ready and keep slow cleanup cancellable
+
+## 0.3.4.5 (2026-11-03)
+
+- Set up MCP from the installer and work in a supervised headless session
+
+## 0.3.4.4 (2026-11-03)
+
+- Show an animated orange sign-in banner while Steam authentication is waiting
+
+## 0.3.4.3 (2026-11-03)
+
+- Use square corners for all application buttons and panels
+
+## 0.3.4.2 (2026-11-03)
+
+- Keep the in-app change history focused on public product changes
+
 ## 0.3.4.1 (2026-11-02)
 
-- Add private release status command for working, GitHub and Gumroad versions
+- No user-facing changes.
 
 ## 0.3.4.0 (2026-11-02)
 
-- Publish Steam, MCP, installer and delivery improvements
+- Improve Steam, MCP and installation
 
 ## 0.3.3.6 (2026-11-02)
 
-- Keep offline audit preview checks stable under test load
+- No user-facing changes.
 
 ## 0.3.3.5 (2026-11-02)
 
-- Offer verified assisted Gumroad installer replacement
+- No user-facing changes.
 
 ## 0.3.3.4 (2026-11-02)
 
@@ -36,7 +104,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.3.3.0 (2026-11-02)
 
-- Commit Steam audit fixes, MCP controls and bulk achievement import
+- Improve Steam synchronization, MCP controls and bulk achievement import
 
 ## 0.3.2.10 (2026-11-02)
 
@@ -68,7 +136,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.3.2.3 (2026-11-02)
 
-- Keep workstation diagnostics path in private guidance and use the public log location in UI previews
+- Show the public log location in UI previews
 
 ## 0.3.2.2 (2026-11-02)
 
@@ -80,7 +148,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.3.2.0 (2026-11-02)
 
-- Commit MCP reconnection fix after publishing audit
+- Improve MCP reconnection
 
 ## 0.3.1.2 (2026-11-02)
 
@@ -88,11 +156,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.3.1.1 (2026-11-02)
 
-- Prepare source publication for manual Gumroad installer delivery
+- No user-facing changes.
 
 ## 0.3.1.0 (2026-11-02)
 
-- Commit audited Steam synchronization, MCP and editor changes
+- Improve Steam synchronization, MCP and editor controls
 
 ## 0.3.0.11 (2026-11-02)
 
@@ -180,19 +248,19 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.39.0 (2026-11-01)
 
-- Bind signed installer verification to isolated release output
+- No user-facing changes.
 
 ## 0.2.38.1 (2026-11-01)
 
-- Keep signed installer binaries on the isolated release target
+- No user-facing changes.
 
 ## 0.2.38.0 (2026-11-01)
 
-- Stabilize the audited Chromium startup fixture
+- No user-facing changes.
 
 ## 0.2.37.1 (2026-11-01)
 
-- Stabilize the audited Chromium startup check under load
+- No user-facing changes.
 
 ## 0.2.37.0 (2026-11-01)
 
@@ -204,11 +272,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.36.0 (2026-11-01)
 
-- Verify installer identity and isolate audited package builds
+- No user-facing changes.
 
 ## 0.2.35.4 (2026-11-01)
 
-- Isolate installer release binaries and package archive from concurrent builds
+- No user-facing changes.
 
 ## 0.2.35.3 (2026-11-01)
 
@@ -224,19 +292,19 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.35.0 (2026-11-01)
 
-- Restore source-only GitHub publication policy
+- No user-facing changes.
 
 ## 0.2.34.1 (2026-11-01)
 
-- Restore source-only GitHub releases and remove installer upload option
+- No user-facing changes.
 
 ## 0.2.34.0 (2026-11-01)
 
-- Prepare verified Achimeld installer and source publication
+- No user-facing changes.
 
 ## 0.2.33.23 (2026-11-01)
 
-- Allow verified installer delivery through an explicitly selected GitHub release
+- No user-facing changes.
 
 ## 0.2.33.22 (2026-11-01)
 
@@ -344,11 +412,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.31.0 (2026-10-30)
 
-- Fix source formatting required by installer audit
+- No user-facing changes.
 
 ## 0.2.30.1 (2026-10-30)
 
-- Apply required source formatting so audited installer builds can proceed
+- No user-facing changes.
 
 ## 0.2.30.0 (2026-10-30)
 
@@ -360,7 +428,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.29.26 (2026-10-30)
 
-- Audit wiki publication readiness, reconcile article identities and validate all screenshot manifests
+- No user-facing changes.
 
 ## 0.2.29.25 (2026-10-30)
 
@@ -456,7 +524,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.29.2 (2026-10-30)
 
-- Track wiki maintenance impact and documented application versions
+- No user-facing changes.
 
 ## 0.2.29.1 (2026-10-30)
 
@@ -468,19 +536,19 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.28.1 (2026-10-29)
 
-- Prepare bundled particle icons at build time to preserve UI authority boundaries
+- No user-facing changes.
 
 ## 0.2.28.0 (2026-10-29)
 
-- Fix compact effect row regression blocking publication
+- No user-facing changes.
 
 ## 0.2.27.1 (2026-10-29)
 
-- Keep compact effect selection regression compatible with icon-only rows
+- No user-facing changes.
 
 ## 0.2.27.0 (2026-10-29)
 
-- Fix worker cleanup handle validation blocking publication
+- No user-facing changes.
 
 ## 0.2.26.36 (2026-10-29)
 
@@ -584,7 +652,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.26.11 (2026-10-29)
 
-- Fix Rust source formatting that blocked the publishing audit
+- No user-facing changes.
 
 ## 0.2.26.10 (2026-10-29)
 
@@ -628,11 +696,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.26.0 (2026-10-28)
 
-- Fix the Steam delete action lint error blocking publication.
+- No user-facing changes.
 
 ## 0.2.25.17 (2026-10-28)
 
-- Fix the Steam delete action lint error blocking publication.
+- No user-facing changes.
 
 ## 0.2.25.16 (2026-10-28)
 
@@ -660,7 +728,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.25.10 (2026-10-28)
 
-- Prevent development packages from reusing stale compiled files after source snapshot changes.
+- No user-facing changes.
 
 ## 0.2.25.9 (2026-10-28)
 
@@ -676,7 +744,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.25.6 (2026-10-28)
 
-- Close idle development connectors after Build and Run and before installer package replacement
+- Close idle editor connectors before replacing application files
 
 ## 0.2.25.5 (2026-10-28)
 
@@ -772,7 +840,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.22.0 (2026-10-27)
 
-- Include the animated startup loading bar in the diagnostic build.
+- Show the animated loading bar during startup.
 
 ## 0.2.21.0 (2026-10-27)
 
@@ -796,7 +864,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.19.6 (2026-10-27)
 
-- Show the final installer destination and centralize verified installer handoff and temporary-copy cleanup.
+- Show the final installation destination and clean up temporary setup files.
 
 ## 0.2.19.5 (2026-10-27)
 
@@ -880,7 +948,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.12.0 (2026-10-26)
 
-- Fix installer document layout and guard uninstall records, with installed removal acceptance checks.
+- Fix installer document layout and protect uninstall records.
 
 ## 0.2.11.3 (2026-10-26)
 
@@ -896,11 +964,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.11.0 (2026-10-26)
 
-- Unify installer output and reuse fresh builds before compilation.
+- No user-facing changes.
 
 ## 0.2.10.15 (2026-10-26)
 
-- Keep one versioned installer in the install folder, reuse unchanged builds, and replace the previous installer only after success.
+- No user-facing changes.
 
 ## 0.2.10.14 (2026-10-26)
 
@@ -960,31 +1028,31 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.10.0 (2026-10-25)
 
-- Separate manual publishing sign-in from browser automation
+- No user-facing changes.
 
 ## 0.2.9.1 (2026-10-25)
 
-- Use a normal Edge window for manual Google sign-in before installer uploads
+- No user-facing changes.
 
 ## 0.2.9.0 (2026-10-25)
 
-- Add versioned Lemon Squeezy installer delivery and standalone upload
+- No user-facing changes.
 
 ## 0.2.8.1 (2026-10-25)
 
-- Automate verified Lemon Squeezy installer delivery with versioned filenames and an upload-only launcher
+- No user-facing changes.
 
 ## 0.2.8.0 (2026-10-25)
 
-- Automate safe GitLab source synchronization during publishing
+- No user-facing changes.
 
 ## 0.2.7.1 (2026-10-25)
 
-- Push committed source to GitLab automatically before publishing
+- No user-facing changes.
 
 ## 0.2.7.0 (2026-10-25)
 
-- Fix publishing checks for gradient collection and inspector width
+- Improve gradient collection and inspector width checks
 
 ## 0.2.6.21 (2026-10-25)
 
@@ -992,11 +1060,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.6.20 (2026-10-25)
 
-- Fix the 2D gradient collection code check that blocked publishing
+- Improve 2D gradient collection validation
 
 ## 0.2.6.19 (2026-10-25)
 
-- Close background editor connectors when the last Achimeld window closes so package files no longer block builds
+- Close background editor connectors when the last Achimeld window closes
 
 ## 0.2.6.18 (2026-10-25)
 
@@ -1028,11 +1096,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.6.11 (2026-10-25)
 
-- Show file counts and verification phases while capturing build source
+- No user-facing changes.
 
 ## 0.2.6.10 (2026-10-25)
 
-- Keep development builds stable while source edits continue and detect in-use packages before compiling
+- No user-facing changes.
 
 ## 0.2.6.9 (2026-10-25)
 
@@ -1068,7 +1136,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.6.1 (2026-10-25)
 
-- Document Lemon Squeezy test installer delivery and pending store activation
+- No user-facing changes.
 
 ## 0.2.6.0 (2026-10-24)
 
@@ -1080,27 +1148,27 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.5.0 (2026-10-23)
 
-- Enforce source-only GitHub releases and keep paid installers local
+- No user-facing changes.
 
 ## 0.2.4.1 (2026-10-23)
 
-- Keep paid installers local and publish all non-private source without installer downloads
+- Make the complete public source available separately from ready-made installers
 
 ## 0.2.4.0 (2026-10-23)
 
-- Use plain versioned GitHub release labels
+- No user-facing changes.
 
 ## 0.2.3.1 (2026-10-23)
 
-- Use plain versioned release names without preview labels
+- No user-facing changes.
 
 ## 0.2.3.0 (2026-10-23)
 
-- Update text-source layout regression for two buttons
+- No user-facing changes.
 
 ## 0.2.2.2 (2026-10-23)
 
-- Validate both text-source buttons across narrow layouts and display scales
+- No user-facing changes.
 
 ## 0.2.2.1 (2026-10-23)
 
@@ -1108,19 +1176,19 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.2.0 (2026-10-23)
 
-- Fix installer recipe compilation
+- No user-facing changes.
 
 ## 0.2.1.1 (2026-10-23)
 
-- Fix installer compilation of installation-folder text
+- No user-facing changes.
 
 ## 0.2.1.0 (2026-10-23)
 
-- Fix publication authentication and complete approved source exports
+- No user-facing changes.
 
 ## 0.2.0.30 (2026-10-23)
 
-- Include required build helpers and original toolbar artwork in public releases
+- No user-facing changes.
 
 ## 0.2.0.29 (2026-10-23)
 
@@ -1136,23 +1204,23 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.0.26 (2026-10-23)
 
-- Recover missing publishing sign-in through browser login
+- No user-facing changes.
 
 ## 0.2.0.25 (2026-10-23)
 
-- Document GitHub sign-in troubleshooting for publishing
+- No user-facing changes.
 
 ## 0.2.0.24 (2026-10-23)
 
-- Check GitHub sign-in before starting publication
+- No user-facing changes.
 
 ## 0.2.0.23 (2026-10-23)
 
-- Point the desktop shortcut directly to the current local test build and remove installation options from generated launchers.
+- No user-facing changes.
 
 ## 0.2.0.22 (2026-10-23)
 
-- Fix installer source authentication and release formatting checks
+- No user-facing changes.
 
 ## 0.2.0.21 (2026-10-23)
 
@@ -1160,7 +1228,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.0.20 (2026-10-23)
 
-- Keep Build and Run in current build output and require separate installation for ready builds.
+- No user-facing changes.
 
 ## 0.2.0.19 (2026-10-23)
 
@@ -1184,7 +1252,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.0.14 (2026-10-23)
 
-- Show cumulative installer build time in minutes and seconds throughout the build
+- No user-facing changes.
 
 ## 0.2.0.13 (2026-10-23)
 
@@ -1192,35 +1260,35 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.0.12 (2026-10-23)
 
-- Prevent overlapping development builds from locking the package signing tool
+- No user-facing changes.
 
 ## 0.2.0.11 (2026-10-23)
 
-- Show detailed source capture and verification progress during installer creation
+- No user-facing changes.
 
 ## 0.2.0.10 (2026-10-23)
 
-- Build installers from isolated source snapshots so ongoing edits cannot invalidate the build
+- No user-facing changes.
 
 ## 0.2.0.9 (2026-10-23)
 
-- Add a quick local installer build that skips test suites and allows uncommitted source
+- No user-facing changes.
 
 ## 0.2.0.8 (2026-10-23)
 
-- Stop installer builds on early validation errors and remove an unnecessary storage-check tool dependency
+- No user-facing changes.
 
 ## 0.2.0.7 (2026-10-23)
 
-- Show installer build stages, file progress, live output and elapsed time
+- No user-facing changes.
 
 ## 0.2.0.6 (2026-10-23)
 
-- Reuse verified current installers when building or publishing
+- No user-facing changes.
 
 ## 0.2.0.5 (2026-10-23)
 
-- Add a local installer build shortcut without GitHub publication
+- No user-facing changes.
 
 ## 0.2.0.4 (2026-10-23)
 
@@ -1228,11 +1296,11 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.2.0.3 (2026-10-23)
 
-- Document the GitHub PuTTY key location and SSH publishing option.
+- No user-facing changes.
 
 ## 0.2.0.2 (2026-10-23)
 
-- Keep the current published installer in the build root install folder.
+- No user-facing changes.
 
 ## 0.2.0.1 (2026-10-23)
 
@@ -1284,55 +1352,55 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.1.4.4 (2026-10-23)
 
-- Document the complete private publishing setup and recovery workflow in a dedicated guide
+- No user-facing changes.
 
 ## 0.1.4.3 (2026-10-23)
 
-- Provide one fixed location for the latest published installer with verified checksums and source identity
+- No user-facing changes.
 
 ## 0.1.4.2 (2026-10-23)
 
-- Record the permanent public GitHub checkout and synchronize it after publishing
+- No user-facing changes.
 
 ## 0.1.4.1 (2026-10-23)
 
-- Automatically resize oversized toolbar PNG icons to 128 pixels before builds with smooth antialiased filtering; retain original artwork.
+- No user-facing changes.
 
 ## 0.1.4.0 (2026-10-23)
 
-- Publish through the authenticated GitHub CLI connection
+- No user-facing changes.
 
 ## 0.1.3.1 (2026-10-23)
 
-- Reuse GitHub CLI sign-in for publishing without SSH passphrase prompts
+- No user-facing changes.
 
 ## 0.1.3.0 (2026-10-23)
 
-- Support the dedicated GitLab SSH connection for publishing
+- No user-facing changes.
 
 ## 0.1.2.1 (2026-10-23)
 
-- Use the separate GitLab SSH key while preserving GitHub publishing authentication
+- No user-facing changes.
 
 ## 0.1.2.0 (2026-10-23)
 
-- Add GitLab-only installer publishing and public release snapshots
+- No user-facing changes.
 
 ## 0.1.1.22 (2026-10-23)
 
-- Fix publishing startup with installed tools and pin the GitHub SSH host identity
+- No user-facing changes.
 
 ## 0.1.1.21 (2026-10-23)
 
-- Add GitLab-only publishing tools for self-extracting development installers and public GitHub release snapshots
+- No user-facing changes.
 
 ## 0.1.1.20 (2026-10-21)
 
-- Add a desktop build-guide shortcut alongside the build-and-run and app-only shortcuts.
+- No user-facing changes.
 
 ## 0.1.1.19 (2026-10-21)
 
-- Keep the build shortcut usable after deleting generated outputs and clarify which build folders are disposable.
+- No user-facing changes.
 
 ## 0.1.1.18 (2026-10-20)
 
@@ -1384,7 +1452,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.1.1.6 (2026-10-20)
 
-- Identify files changed during a build and explain when to retry source archiving and compilation.
+- No user-facing changes.
 
 ## 0.1.1.5 (2026-10-20)
 
@@ -1500,7 +1568,7 @@ The newest entry is the current working version. History starts here; earlier wo
 
 ## 0.1.0.2 (2026-10-18)
 
-- Remove stale generated test outputs and old build copies while retaining current packages and audit evidence.
+- No user-facing changes.
 
 ## 0.1.0.1 (2026-10-18)
 

@@ -446,7 +446,7 @@ impl Desktop {
                 egui::vec2(4.0, 36.0),
             );
             ui.painter()
-                .rect_filled(grip, 2.0, ui.visuals().weak_text_color());
+                .rect_filled(grip, 0.0, ui.visuals().weak_text_color());
         } else {
             // Narrow windows keep two independently scrollable stacked panes.
             let grid_height = (height * 0.4)

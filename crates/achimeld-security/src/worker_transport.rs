@@ -292,6 +292,15 @@ impl WorkerChild {
     pub fn require_cleanup_complete() -> Result<(), SecurityError> {
         Self::wait_for_cleanup(Duration::from_secs(15), &mut || Ok(()))
     }
+    /// Interactive callers keep their cancellable progress view open until the
+    /// owned processes have actually exited. Slow cleanup is not a failed read.
+    pub fn await_cleanup(
+        check: &mut impl FnMut() -> Result<(), SecurityError>,
+    ) -> Result<(), SecurityError> {
+        await_cleanup(check, retry_pending_cleanup, || {
+            std::thread::sleep(Duration::from_millis(100));
+        })
+    }
     pub fn wait_for_cleanup(
         timeout: Duration,
         check: &mut impl FnMut() -> Result<(), SecurityError>,
@@ -463,6 +472,24 @@ impl WorkerChild {
             let mut code = 0;
             (GetExitCodeProcess(self.process.0, &mut code) != 0).then_some(code)
         }
+    }
+}
+fn await_cleanup(
+    check: &mut impl FnMut() -> Result<(), SecurityError>,
+    mut ready: impl FnMut() -> bool,
+    mut pause: impl FnMut(),
+) -> Result<(), SecurityError> {
+    let mut reported = false;
+    loop {
+        check()?;
+        if ready() {
+            return Ok(());
+        }
+        if !reported {
+            log::info!("Waiting for the previous owned Steam browser to finish cleanup");
+            reported = true;
+        }
+        pause();
     }
 }
 impl Drop for WorkerChild {
@@ -736,6 +763,48 @@ fn owned_job_processes(job: HANDLE) -> Result<Vec<Handle>, SecurityError> {
 mod tests {
     use super::*;
     use rand::RngCore;
+    #[test]
+    fn interactive_cleanup_waits_past_the_old_startup_deadline() {
+        let polls = std::cell::Cell::new(0);
+        let mut checks = 0;
+        await_cleanup(
+            &mut || {
+                checks += 1;
+                Ok(())
+            },
+            || {
+                polls.set(polls.get() + 1);
+                polls.get() > 1_200
+            },
+            || {}, // Simulate two minutes of 100-ms polling without sleeping.
+        )
+        .unwrap();
+        assert_eq!(checks, 1_201);
+    }
+    #[test]
+    fn interactive_cleanup_stops_on_cancellation_or_supervision_loss() {
+        for reason in ["cancelled", "supervisor lost"] {
+            let mut checks = 0;
+            let mut polls = 0;
+            let result = await_cleanup(
+                &mut || {
+                    checks += 1;
+                    if checks == 3 {
+                        Err(SecurityError(reason))
+                    } else {
+                        Ok(())
+                    }
+                },
+                || {
+                    polls += 1;
+                    false
+                },
+                || {},
+            );
+            assert_eq!(result.unwrap_err().to_string(), reason);
+            assert_eq!(polls, 2);
+        }
+    }
     fn name() -> String {
         let mut value = [0; 16];
         rand::thread_rng().fill_bytes(&mut value);

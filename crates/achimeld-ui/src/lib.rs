@@ -47,6 +47,7 @@ mod particles;
 mod perlin;
 mod settings;
 mod shape_explorer;
+mod sign_in_banner;
 mod sliders;
 mod sorting;
 mod source_picker;

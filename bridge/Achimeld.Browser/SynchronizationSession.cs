@@ -87,7 +87,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         V1ProjectDto dto = mapped.Deserialize<V1ProjectDto>(ProjectJson) ?? throw Rejected();
         if (dto.SteamAppId != pinnedAppId || dto.SchemaVersion != 1 || dto.ProjectId == Guid.Empty ||
             dto.Stats.Count + dto.Achievements.Count > 10_000) throw Rejected();
-        project = V1ProjectMapper.FromDto(dto);
+        project = V1ProjectMapper.FromSynchronizationDto(dto);
         catalog = request.Catalog;
         icons = request.Icons;
         foreach (var row in catalog.Values)
@@ -640,8 +640,26 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                 raw!["assets"]!["images"]!.AsArray().Add(new JsonObject { ["id"] = JsonValue.Create(imageId), ["displayName"] = step.ApiName + (pair.Locked ? " · Locked" : ""), ["kind"] = "SteamImportedArtwork", ["image"] = null });
                 artwork.Add(new(imageId, bytes));
                 if (pair.Locked) value["unachievedImageId"] = JsonValue.Create(imageId);
-                else value["icon"] = new JsonObject { ["layers"] = new JsonArray(new JsonObject { ["id"] = JsonValue.Create(Guid.NewGuid()), ["kind"] = "StandaloneImage",
-                    ["imageId"] = JsonValue.Create(imageId), ["displayName"] = "Steam artwork", ["visible"] = true, ["opacity"] = 1, ["effects"] = new JsonArray() }) };
+                else
+                {
+                    JsonArray inputs = value["generalImageEntries"] is JsonArray savedInputs
+                        ? (JsonArray)savedInputs.DeepClone() : new();
+                    if (inputs.Count == 0)
+                    {
+                        if (value["generalImageId"] is JsonNode legacyImage)
+                            inputs.Add(new JsonObject { ["id"] = 0, ["imageId"] = legacyImage.DeepClone() });
+                        if (value["generalAtlasId"] is JsonNode legacyAtlas)
+                            inputs.Add(new JsonObject { ["id"] = inputs.Count, ["atlasId"] = legacyAtlas.DeepClone(),
+                                ["tileIndex"] = value["generalTileIndex"]?.DeepClone() ?? JsonValue.Create(0) });
+                    }
+                    var importedInput = new JsonObject { ["id"] = 0, ["imageId"] = JsonValue.Create(imageId), ["atlasId"] = null, ["tileIndex"] = 0 };
+                    if (inputs.Count == 0) inputs.Add(importedInput);
+                    else inputs[0] = importedInput;
+                    value["generalImageEntries"] = inputs;
+                    foreach (string key in new[] { "generalImageId", "generalAtlasId", "generalTileIndex" }) value[key] = null;
+                    value["icon"] = new JsonObject { ["layers"] = new JsonArray(new JsonObject { ["id"] = JsonValue.Create(Guid.NewGuid()), ["kind"] = "AchievementImage",
+                        ["generalImageIndex"] = 0, ["displayName"] = "General image", ["visible"] = true, ["opacity"] = 1, ["effects"] = new JsonArray() }) };
+                }
             }
         }
         UpdateBaseline(stat, step.ApiName);

@@ -318,7 +318,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
             if (_context is not null)
             {
                 _context.Page -= OnContextPage;
-                await _context.CloseAsync().ConfigureAwait(false);
+                await BrowserShutdown.CloseAsync(_context).ConfigureAwait(false);
             }
         }
         finally

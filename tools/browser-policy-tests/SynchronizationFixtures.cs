@@ -15,6 +15,7 @@ internal static class SynchronizationFixtures
 
     internal static async Task RunAsync()
     {
+        await ModernEmptyProjectAsync();
         await PendingRenameAsync();
         await DeletedHistoryAsync();
         int checks = 0;
@@ -486,7 +487,8 @@ internal static class SynchronizationFixtures
         oldCard["steamSyncStatus"] = "Retired";
         Check(cards.Count == 2 && JsonNode.DeepEquals(cards[0], oldCard) && portal.Writes == 0);
         Check(cards[1]!["id"]!.GetValue<Guid>() != AchievementIdValue && imported.Artwork.Length == 2);
-        Check(cards[1]!["icon"]!["layers"]!.AsArray().Count == 1 && cards[1]!["icon"]!["layers"]![0]!["kind"]!.GetValue<string>() == "StandaloneImage");
+        Check(cards[1]!["icon"]!["layers"]!.AsArray().Count == 1 && cards[1]!["icon"]!["layers"]![0]!["kind"]!.GetValue<string>() == "AchievementImage");
+        Check(cards[1]!["icon"]!["layers"]![0]!["generalImageIndex"]!.GetValue<int>() == 0 && cards[1]!["generalImageEntries"]!.AsArray().Count == 1);
         Check(cards[1]!["tileIndex"]!.GetValue<int>() != cards[0]!["tileIndex"]!.GetValue<int>());
         JsonObject retainedProject = JsonNode.Parse(result.GetProperty("project").GetRawText())!.AsObject();
         // The host binds returned bytes into owned project-relative files.
@@ -584,6 +586,73 @@ internal static class SynchronizationFixtures
         }
     }
 
+    private static async Task ModernEmptyProjectAsync()
+    {
+        var request = Request(localStat: false);
+        JsonObject raw = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+        raw["atlas"]!["unachievedIcon"] = new JsonObject {
+            ["desaturation"] = 0.75m, ["opacity"] = 0.8m,
+            ["gradientOverlay"] = new JsonObject { ["enabled"] = true, ["opacity"] = 0.25m,
+                ["darkColorHex"] = "#4E4778", ["lightColorHex"] = "#D8CAE8" },
+        };
+        JsonNode originalAtlas = raw["atlas"]!.DeepClone();
+        var portal = new FakePortal();
+        portal.AddAchievement(withIcons: true);
+        var session = new SynchronizationSession(portal);
+        var review = await session.PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(raw) }, 480);
+        if (review.Rows.Length == 0 || review.Rows.Any(row => row.DefaultAction != "Import"))
+            throw new Exception("A fresh modern project must offer Steam imports.");
+        var steps = await session.BeginAsync(new(review.Token, review.Rows.Select(row => new SyncChoice(row.Key, "Import")).ToArray()));
+        foreach (var step in steps) await session.StepAsync(new(review.Token, step.Key));
+        JsonNode result = JsonSerializer.SerializeToNode(await session.FinishAsync(new(review.Token)), SecurityWire.Json)!;
+        JsonNode importedAchievement = result["project"]!["achievements"]![0]!;
+        JsonNode importedLayer = importedAchievement["icon"]!["layers"]![0]!;
+        JsonNode importedInput = importedAchievement["generalImageEntries"]![0]!;
+        if (importedLayer["kind"]!.GetValue<string>() != "AchievementImage" ||
+            importedLayer["generalImageIndex"]!.GetValue<int>() != 0 || importedLayer["imageId"] is not null ||
+            importedInput["id"]!.GetValue<int>() != 0 ||
+            !result["project"]!["assets"]!["images"]!.AsArray().Any(asset => JsonNode.DeepEquals(asset!["id"], importedInput["imageId"])))
+            throw new Exception("Steam artwork must use General image slot zero through a General Image layer.");
+        if (portal.Writes != 0 || result["project"]!["achievements"]!.AsArray().Count != 1 ||
+            !JsonNode.DeepEquals(originalAtlas, result["project"]!["atlas"]))
+            throw new Exception("Modern project import must preserve artwork settings and never write to Steam.");
+        JsonNode savedImport = result["project"]!.DeepClone();
+        foreach (JsonNode? asset in savedImport["assets"]!["images"]!.AsArray())
+            asset!["image"] = new JsonObject { ["kind"] = "RelativeToProject", ["path"] = "fixture.png" };
+        JsonNode extraInput = importedInput.DeepClone();
+        extraInput["id"] = 1;
+        savedImport["achievements"]![0]!["generalImageEntries"]!.AsArray().Add(extraInput.DeepClone());
+        portal.AddAchievementText("ACH_WIN", "Changed title");
+        var repeated = new SynchronizationSession(portal);
+        var repeatedReview = await repeated.PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(savedImport) }, 480);
+        var repeatedSteps = await repeated.BeginAsync(new(repeatedReview.Token, repeatedReview.Rows.Select(row => new SyncChoice(row.Key, row.Key == "Achievement:ACH_WIN" ? "Import" : "Skip")).ToArray()));
+        if (!repeatedSteps.Any(step => step.ApiName == "ACH_WIN" && step.Action == "Import"))
+            throw new Exception("Changed Steam text must offer an achievement reimport.");
+        foreach (var step in repeatedSteps) await repeated.StepAsync(new(repeatedReview.Token, step.Key));
+        JsonNode repeatedResult = JsonSerializer.SerializeToNode(await repeated.FinishAsync(new(repeatedReview.Token)), SecurityWire.Json)!;
+        JsonArray repeatedInputs = repeatedResult["project"]!["achievements"]![0]!["generalImageEntries"]!.AsArray();
+        if (portal.Writes != 0 || repeatedInputs.Count != 2 || !JsonNode.DeepEquals(repeatedInputs[1], extraInput) ||
+            JsonNode.DeepEquals(repeatedInputs[0]!["imageId"], importedInput["imageId"]))
+            throw new Exception("Reimport must replace slot zero and preserve other General image slots.");
+        // The separately authorized deletion path uses the same projection.
+        // Exercise it only against the synthetic portal after the import checks.
+        raw["lastRemoteSnapshot"] = result["project"]!["lastRemoteSnapshot"]!.DeepClone();
+        await new SteamDeletionSession(portal).RunAsync(new(
+            JsonSerializer.SerializeToElement(raw), [new("Achievement", "ACH_WIN")]), 480);
+        if (portal.Writes != 1 || portal.Snapshot.Achievements.Count != 0)
+            throw new Exception("Modern project settings blocked an explicitly selected fixture deletion.");
+        raw["atlas"]!["traversal"] = "Unsupported";
+        var invalidPortal = new FakePortal();
+        try {
+            await new SynchronizationSession(invalidPortal).PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(raw) }, 480);
+            throw new Exception("Invalid project settings were accepted.");
+        }
+        catch (JsonException) {
+            if (invalidPortal.Reads != 0 || invalidPortal.Writes != 0)
+                throw new Exception("Invalid project settings reached Steam.");
+        }
+    }
+
     private static PrepareSyncRequest Request(bool localStat = true, bool achievement = false)
     {
         JsonObject project = new()
@@ -611,6 +680,7 @@ internal static class SynchronizationFixtures
         public Task<byte[]?> ReadGameBannerAsync(uint appId) { BannerAppId = appId; return Task.FromResult(Banner); }
         public RemoteSnapshot Snapshot { get; private set; } = new(new(480), DateTimeOffset.UtcNow, "fixture-v1", true, [], [], [], []) { SupportsDisplayOrder = false };
         public int Writes { get; private set; }
+        public int Reads { get; private set; }
         public int Verifications { get; private set; }
         public bool SuppressSave { get; init; }
         public bool ConvertIcons { get; init; }
@@ -650,7 +720,7 @@ internal static class SynchronizationFixtures
             Snapshot = Snapshot with { Achievements = [value], Icons = Snapshot.Icons.Select(i => i with { AchievementApiName = new(name) }).ToArray(),
                 Localizations = Snapshot.Localizations.Select(l => l.EntityType == ProjectEntityType.Achievement ? l with { ApiName = new(name) } : l).ToArray() };
         }
-        public Task<RemoteSnapshot> ReadAsync(SteamAppId appId) => Task.FromResult(Snapshot);
+        public Task<RemoteSnapshot> ReadAsync(SteamAppId appId) { Reads++; return Task.FromResult(Snapshot); }
         public void RemoveAchievement() => Snapshot = Snapshot with { Achievements = [], Icons = [], Localizations = Snapshot.Localizations.Where(l => l.EntityType != ProjectEntityType.Achievement).ToArray() };
         public void ChangeDeletionIdentity() => Snapshot = Snapshot with { Achievements = Snapshot.Achievements.Select(a => a with { SteamId = "99" }).ToArray() };
         public void MakeIncomplete() => Snapshot = Snapshot with { IsComplete = false };

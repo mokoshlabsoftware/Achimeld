@@ -69,6 +69,7 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
         std::process::exit(0);
     }
     let read_argument = commands::read_argument(arguments)?;
+    let headless = arguments == ["--mcp-headless"];
     let self_test = matches!(
         arguments.first().map(String::as_str),
         Some("--self-test" | "--self-test-hold")
@@ -127,6 +128,7 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
         Some("--user-self-test")
             if arguments.len() == 1 && package.manifest().mode == "development" => {}
         Some("--read-steam") if read_argument.is_some() => {}
+        Some("--mcp-headless") if headless => {}
         Some(_) => return Err("unsupported bootstrapper command".into()),
         None => {}
     }
@@ -238,7 +240,9 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
             monitor_job.terminate();
         }
     });
-    let editor_arguments: Vec<String> = if user_self_test {
+    let editor_arguments: Vec<String> = if headless {
+        vec!["--headless".into()]
+    } else if user_self_test {
         vec!["--security-user-self-test".into()]
     } else if hold_test {
         vec!["--security-self-test-hold".into()]
@@ -250,6 +254,15 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
     let editor_arguments: Vec<&std::ffi::OsStr> =
         editor_arguments.iter().map(std::ffi::OsStr::new).collect();
     let editor = job.launch(&root, &pipe_name, &editor_arguments)?;
+    let (mcp_done, mcp_completion) = std::sync::mpsc::sync_channel(1);
+    if headless {
+        // SAFETY: The process handle is owned and live for this query.
+        let pid = unsafe { windows_sys::Win32::System::Threading::GetProcessId(editor.raw()) };
+        std::thread::spawn(move || {
+            let _ = mcp_done.send(achimeld_mcp::run_owned(pid));
+        });
+    }
+    let mut mcp_result = None;
     if let Some(splash) = splash {
         // The splash belongs to the bootstrapper, never to the supervised Job.
         // SAFETY: The editor process handle remains owned and live through this query.
@@ -266,6 +279,19 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
     let mut rejected_connections = 0;
     // SAFETY: editor is an owned live process handle for the entire bounded wait loop.
     while unsafe { WaitForSingleObject(editor.raw(), 10) } == 258 {
+        if headless {
+            match mcp_completion.try_recv() {
+                Ok(result) => {
+                    mcp_result = Some(result);
+                    break;
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    mcp_result = Some(Err("Headless MCP dispatcher stopped".into()));
+                    break;
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {}
+            }
+        }
         if !healthy.load(Ordering::Acquire) || broker.is_finished() || monitor.is_finished() {
             failure = true;
             job.terminate();
@@ -338,6 +364,8 @@ fn run(splash: Option<&splash::Splash>) -> Result<(), String> {
     }
     if security_failed {
         Err("Mandatory security supervision failed. Automation was stopped; reconcile any interrupted Steam changes before retrying.".into())
+    } else if let Some(result) = mcp_result {
+        result
     } else if exit_code != 0 {
         Err("The Achimeld editor stopped unexpectedly. Check the redacted startup diagnostics before retrying.".into())
     } else {
@@ -405,6 +433,10 @@ fn main() {
                 splash.show_failure();
             }
             std::process::exit(125);
+        }
+        if arguments == ["--mcp-headless"] || arguments == ["--protected", "--mcp-headless"] {
+            // A disconnected client may leave the bounded stdout writer blocked.
+            std::process::exit(0);
         }
         if desktop {
             desktop_status(

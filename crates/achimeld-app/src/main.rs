@@ -90,6 +90,10 @@ fn run(stage: &mut &'static str) -> Result<(), Box<dyn std::error::Error>> {
             }
             reader.stop()?;
         }
+        [command] if command == "--headless" => {
+            *stage = "headless-host";
+            desktop::run_headless(session)?;
+        }
         [] => {
             *stage = "desktop-window";
             desktop::run(session)?;

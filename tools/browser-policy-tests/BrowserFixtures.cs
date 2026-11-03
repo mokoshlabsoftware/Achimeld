@@ -61,16 +61,19 @@ internal static class BrowserFixtures
             Environment.SetEnvironmentVariable("PLAYWRIGHT_NODEJS_PATH", nodePath);
             foreach (string name in new[] { "PLAYWRIGHT_DRIVER_SEARCH_PATH", "NODE_OPTIONS", "NODE_PATH", "NODE_EXTRA_CA_CERTS", "NODE_TLS_REJECT_UNAUTHORIZED" }) Environment.SetEnvironmentVariable(name, null);
             using IPlaywright playwright = await Playwright.CreateAsync();
-            string startupProfile = Path.Combine(artifacts, "browser-startup-" + Guid.NewGuid().ToString("N"));
-            await using (IBrowserContext persistent = await playwright.Chromium.LaunchPersistentContextAsync(startupProfile,
+            foreach (bool headless in new[] { false, true })
+            {
+                string startupProfile = Path.Combine(artifacts, "browser-startup-" + Guid.NewGuid().ToString("N"));
+                // Close explicitly below. An implicit asynchronous disposal after a
+                // timeout would await the same stalled close again without a bound.
+                IBrowserContext persistent = await playwright.Chromium.LaunchPersistentContextAsync(startupProfile,
                 new BrowserTypeLaunchPersistentContextOptions {
-                    ExecutablePath = browserPath, Headless = true, ChromiumSandbox = true,
+                    ExecutablePath = browserPath, Headless = headless, ChromiumSandbox = true,
                     Offline = true, ServiceWorkers = ServiceWorkerPolicy.Block, AcceptDownloads = false,
                     Proxy = new Proxy { Server = $"http://127.0.0.1:{((IPEndPoint)proxy.LocalEndpoint).Port}" },
                     Args = BrowserStartup.LaunchArguments,
                     Timeout = 15000,
-                }))
-            {
+                });
                 if (persistent.Pages.Count == 0) throw new Exception("Persistent browser fixture must begin with a restored page.");
                 await persistent.NewPageAsync();
                 SteamBrowserRequestPolicy startupPolicy = new();
@@ -89,6 +92,21 @@ internal static class BrowserFixtures
                 if (Volatile.Read(ref proxyConnections) <= beforeConnect)
                     throw new Exception("Dedicated browser could not reach the rejecting loopback broker with the production launch recipe.");
                 Console.WriteLine("PASS: dedicated browser reaches the rejecting loopback broker; no upstream connection is permitted.");
+                await persistent.SetOfflineAsync(true);
+                await owned.GotoAsync("about:blank");
+                await owned.SetContentAsync("<button onclick='window.onbeforeunload = () => \"unsaved fixture\"'>Arm unload prompt</button>");
+                await owned.Locator("button").ClickAsync();
+                bool unloadDialog = false;
+                owned.Dialog += (_, _) => unloadDialog = true;
+                var closeTimer = System.Diagnostics.Stopwatch.StartNew();
+                bool contextClosed = false;
+                persistent.Close += (_, _) => contextClosed = true;
+                await BrowserShutdown.CloseAsync(persistent).WaitAsync(TimeSpan.FromSeconds(65));
+                if (!owned.IsClosed || unloadDialog)
+                    throw new Exception("Owned browser shutdown must close its page without an unload prompt.");
+                if (!contextClosed || persistent.Browser is { IsConnected: true })
+                    throw new Exception("Persistent browser shutdown did not acknowledge context closure and browser disconnection.");
+                Console.WriteLine($"PASS: {(headless ? "headless" : "visible")} persistent browser acknowledges closure without unload prompts ({closeTimer.ElapsedMilliseconds} ms).");
             }
             await using IBrowser browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {

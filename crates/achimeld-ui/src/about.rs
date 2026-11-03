@@ -4,12 +4,19 @@ use achimeld_application::UiRequest;
 
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum HelpPage {
+    Welcome,
     About,
     Changes,
     ConnectMcp,
 }
 
 impl Desktop {
+    pub fn open_welcome(&mut self) {
+        self.update_notes = false;
+        self.about = true;
+        self.help_page = HelpPage::Welcome;
+    }
+
     pub fn help_open(&self) -> bool {
         self.about
     }
@@ -33,6 +40,7 @@ impl Desktop {
     }
 
     pub fn open_connect_mcp(&mut self) {
+        self.update_notes = false;
         self.about = true;
         self.help_page = HelpPage::ConnectMcp;
     }
@@ -41,6 +49,8 @@ impl Desktop {
         if !self.about {
             return;
         }
+        let mut welcome_action = None;
+        let mut connect_agent = false;
         let response = egui::Modal::new(egui::Id::new("about-dialog"))
             .frame(
                 egui::Frame::popup(&ctx.global_style())
@@ -52,7 +62,7 @@ impl Desktop {
                 let connect_mcp = self.help_page == HelpPage::ConnectMcp;
                 // The setup steps and executable path need more than the shared
                 // prompt width, or the last instructions fall below the fold.
-                let width = if connect_mcp { 680.0_f32 } else { 468.0 };
+                let width = if connect_mcp || self.help_page == HelpPage::Welcome { 680.0_f32 } else { 468.0 };
                 let width = width.min((ctx.content_rect().width() - 32.0).max(0.0));
                 ui.set_width(width);
                 ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
@@ -79,7 +89,7 @@ impl Desktop {
                         });
                     }).response.rect.height()
                 } else {
-                    let title = text(ctx, match self.help_page { HelpPage::About => "About", HelpPage::Changes => "Change log", HelpPage::ConnectMcp => "Connect MCP" });
+                    let title = text(ctx, match self.help_page { HelpPage::Welcome => "Welcome to Achimeld", HelpPage::About => "About", HelpPage::Changes => "Change log", HelpPage::ConnectMcp => "Connect MCP" });
                     let title = ui.painter().layout(
                         title,
                         egui::TextStyle::Heading.resolve(ui.style()),
@@ -124,14 +134,25 @@ impl Desktop {
                                 });
                                 let width = ui.available_width();
                                 ui.image((banner.id(), egui::vec2(width, width * 205.0 / 734.0)));
-                            } else if !self.update_notes {
+                            } else if !self.update_notes && self.help_page != HelpPage::Welcome {
                                 ui.heading("Achimeld");
                             }
                             if !self.update_notes {
                                 centered(ui, format!("{} {}", text(ctx, "Version"), crate::change_log::current_version()));
                                 ui.add_space(4.0);
                             }
-                            if self.help_page == HelpPage::About {
+                            if self.help_page == HelpPage::Welcome {
+                                centered(ui, text(ctx, "Abt002"));
+                                centered(ui, text(ctx, "Open an existing Achimeld project or start with an empty project. Connect it to your game from Sync when you are ready."));
+                                if ui.link(text(ctx, "Read the Achimeld wiki")).clicked() {
+                                    self.request(UiRequest::OpenWiki);
+                                }
+                                centered(ui, text(ctx, "Want a hand? You can connect your AI agent to Achimeld."));
+                                if ui.link(text(ctx, "Connect your AI agent")).clicked() {
+                                    connect_agent = true;
+                                }
+                                centered(ui, text(ctx, "Have fun!"));
+                            } else if self.help_page == HelpPage::About {
                                 centered(ui, text(ctx, "Abt000"));
                                 centered(ui, "Licensed under the Apache License, Version 2.0.");
                                 ui.collapsing("Apache License 2.0 (full text)", |ui| {
@@ -183,6 +204,25 @@ impl Desktop {
                     });
                 });
                 divider(ui);
+                if self.help_page == HelpPage::Welcome {
+                    let labels = [text(ctx, "Open project…"), text(ctx, "New project"), text(ctx, "Close")];
+                    let font = egui::TextStyle::Button.resolve(ui.style());
+                    let natural = labels.each_ref().map(|label| ui.painter().layout_no_wrap(label.clone(), font.clone(), ui.visuals().text_color()).size().x + 2.0 * ui.spacing().button_padding.x);
+                    let total: f32 = natural.iter().sum();
+                    return ui.allocate_ui_with_layout(egui::vec2(width, action_height), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        let mut left = 0.0;
+                        let mut close = false;
+                        for (index, label) in labels.iter().enumerate() {
+                            let right = if index == 2 { width } else { ((left + width * natural[index] / total) * ctx.pixels_per_point()).round() / ctx.pixels_per_point() };
+                            if ui.add_sized([right - left, action_height], Button::new(label.clone()).bar()).clicked() {
+                                welcome_action = match index { 0 => Some(UiRequest::OpenProject), 1 => Some(UiRequest::NewProject), _ => None };
+                                close = true;
+                            }
+                            left = right;
+                        }
+                        close
+                    }).inner;
+                }
                 if self.help_page == HelpPage::ConnectMcp || self.update_notes {
                     return ui.add_sized([width, action_height], Button::new(text(ctx, if self.update_notes { "StartupUpdateOkay" } else { "Close" })).bar()).clicked();
                 }
@@ -206,10 +246,16 @@ impl Desktop {
                 input.consume_key(egui::Modifiers::NONE, egui::Key::Escape)
                     || input.consume_key(egui::Modifiers::NONE, egui::Key::Enter)
             });
-        if response.inner || keyboard_close {
+        if response.inner || keyboard_close || connect_agent {
             self.about = false;
             self.update_notes = false;
             self.request(UiRequest::AboutDismissed);
+            if let Some(action) = welcome_action {
+                self.request(action);
+            }
+            if connect_agent {
+                self.open_connect_mcp();
+            }
         }
     }
 }
@@ -282,6 +328,96 @@ fn connect_mcp_body(ui: &mut egui::Ui) {
 #[cfg(test)]
 mod startup_tests {
     use super::*;
+
+    #[test]
+    fn welcome_links_and_project_actions_use_existing_flows() {
+        for (label, expected) in [
+            ("Open project…", "open"),
+            ("New project", "new"),
+            ("Close", "close"),
+            ("Read the Achimeld wiki", "wiki"),
+            ("Connect your AI agent", "agent"),
+        ] {
+            let ctx = egui::Context::default();
+            let mut desktop = Desktop::default();
+            desktop.open_welcome();
+            let input = |events| egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1000.0, 800.0),
+                )),
+                events,
+                ..Default::default()
+            };
+            let mut output = ctx.run_ui(input(vec![]), |ui| desktop.about_window(ui.ctx()));
+            output.textures_delta.clear();
+            output = ctx.run_ui(input(vec![]), |ui| desktop.about_window(ui.ctx()));
+            output.textures_delta.clear();
+            let mut labels = Vec::new();
+            for shape in &output.shapes {
+                collect_text(&shape.shape, &mut labels);
+            }
+            assert!(labels.iter().any(|text| text == "Welcome to Achimeld"));
+            assert!(
+                labels
+                    .iter()
+                    .any(|text| text.contains("not affiliated with"))
+            );
+            assert!(labels.iter().any(|text| text == "Have fun!"));
+            assert!(desktop.requests.is_empty());
+            let position = output
+                .shapes
+                .iter()
+                .find_map(|shape| match &shape.shape {
+                    egui::Shape::Text(text) if text.galley.text() == label => {
+                        Some(text.pos + text.galley.size() / 2.0)
+                    }
+                    _ => None,
+                })
+                .expect("welcome action is visible");
+            for pressed in [true, false] {
+                let mut output = ctx.run_ui(
+                    input(vec![
+                        egui::Event::PointerMoved(position),
+                        egui::Event::PointerButton {
+                            pos: position,
+                            button: egui::PointerButton::Primary,
+                            pressed,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ]),
+                    |ui| desktop.about_window(ui.ctx()),
+                );
+                output.textures_delta.clear();
+            }
+            match expected {
+                "open" => assert!(matches!(
+                    desktop.requests.as_slice(),
+                    [UiRequest::AboutDismissed, UiRequest::OpenProject]
+                )),
+                "new" => assert!(matches!(
+                    desktop.requests.as_slice(),
+                    [UiRequest::AboutDismissed, UiRequest::NewProject]
+                )),
+                "wiki" => {
+                    assert!(matches!(desktop.requests.as_slice(), [UiRequest::OpenWiki]));
+                    assert!(desktop.help_page == HelpPage::Welcome && desktop.about);
+                }
+                "agent" => {
+                    assert!(matches!(
+                        desktop.requests.as_slice(),
+                        [UiRequest::AboutDismissed]
+                    ));
+                    assert!(desktop.help_page == HelpPage::ConnectMcp && desktop.about);
+                    assert!(!desktop.update_notes);
+                }
+                _ => assert!(matches!(
+                    desktop.requests.as_slice(),
+                    [UiRequest::AboutDismissed]
+                )),
+            }
+        }
+    }
 
     fn collect_text(shape: &egui::Shape, labels: &mut Vec<String>) {
         match shape {

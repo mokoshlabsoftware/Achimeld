@@ -4,6 +4,50 @@ use image::{Rgba, RgbaImage};
 use serde_json::{Value, json};
 struct Assets;
 #[test]
+fn steam_artwork_in_general_slot_zero_matches_direct_image_pixels() {
+    struct Imported;
+    impl AssetSource for Imported {
+        fn image(&mut self, _: &Value) -> Result<std::sync::Arc<RgbaImage>, String> {
+            Ok(std::sync::Arc::new(RgbaImage::from_fn(19, 13, |x, y| {
+                Rgba([(x * 11) as u8, (y * 17) as u8, 90, ((x + y) * 7) as u8])
+            })))
+        }
+        fn font(&mut self, _: &str) -> Option<std::sync::Arc<crate::Font>> {
+            None
+        }
+    }
+    let mut editor = Editor::default();
+    editor
+        .execute("Add", Command::Add(EntityKind::Achievement), None)
+        .unwrap();
+    let mut project = editor.document().project().clone();
+    let image_id = new_id();
+    let id = project["achievements"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    project["assets"]["images"] = json!([{"id":image_id,"kind":"SteamImportedArtwork","displayName":"Steam artwork","image":{"kind":"RelativeToProject","path":"import.png"}}]);
+    project["achievements"][0]["icon"] = json!({"layers":[{"id":new_id(),"kind":"StandaloneImage","imageId":image_id,"visible":true,"opacity":1.0,"effects":[]}]});
+    let direct = achimeld_application::Document::from_parts(
+        project.clone(),
+        editor.document().catalog().clone(),
+    )
+    .unwrap();
+    project["achievements"][0]["generalImageEntries"] =
+        json!([{"id":0,"imageId":image_id,"atlasId":null,"tileIndex":0}]);
+    project["achievements"][0]["icon"] = json!({"layers":[{"id":new_id(),"kind":"AchievementImage","generalImageIndex":0,"visible":true,"opacity":1.0,"effects":[]}]});
+    let general =
+        achimeld_application::Document::from_parts(project, editor.document().catalog().clone())
+            .unwrap();
+    for size in [(32, 32), (48, 24)] {
+        let before = render(&direct, &id, Some(size), &mut Imported).unwrap();
+        let after = render(&general, &id, Some(size), &mut Imported).unwrap();
+        assert_eq!(before.achieved, after.achieved);
+        assert_eq!(before.unachieved, after.unachieved);
+    }
+}
+
+#[test]
 fn locked_artwork_is_derived_from_current_icon_despite_legacy_override() {
     struct Imported;
     impl AssetSource for Imported {

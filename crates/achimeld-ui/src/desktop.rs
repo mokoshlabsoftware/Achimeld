@@ -1468,6 +1468,7 @@ impl Desktop {
                 );
             });
         });
+        crate::sign_in_banner::show(root, port.waiting_for_sign_in(), &preferences);
         if self.view.is_editor() {
             self.sync_canvas_camera(port);
         } else {

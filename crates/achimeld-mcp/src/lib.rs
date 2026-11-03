@@ -32,7 +32,7 @@ pub fn tools() -> Vec<Value> {
     for (name, description, required, fields) in [
         (
             "list_instances",
-            "List running Achimeld windows. Each window states uptime, the open project name, achievement count, how many achievements sync with Steam, and the stat count.",
+            "List running Achimeld project hosts (desktop or headless), with uptime, project name, achievement count, Steam-sync count and stat count. Use the headless field to distinguish sessions.",
             "",
             "",
         ),
@@ -80,9 +80,9 @@ pub fn tools() -> Vec<Value> {
         ),
         (
             "save_project",
-            "Save the open project to its existing .achv path through the editor's normal storage checks.",
+            "Save the open project through normal storage checks. For an unsaved project, supply an unused absolute local-drive .achv path. Omit path for an existing project.",
             "",
-            "",
+            "path:s",
         ),
         (
             "set_project_settings",
@@ -212,7 +212,7 @@ pub fn tools() -> Vec<Value> {
         ),
         (
             "close_editor",
-            "Request a normal editor close. Unsaved work uses the in-app Save, Discard, Cancel prompt; active synchronization is cancelled first.",
+            "Request a normal editor close. Desktop unsaved work uses Save, Discard, Cancel; headless work must be saved or exported first. Active synchronization is cancelled first.",
             "",
             "",
         ),
@@ -799,6 +799,9 @@ fn status_value(pid: u32, uptime: Option<&str>, facts: Option<&Value>) -> Value 
             "editorSessionId",
             "revision",
             "workingVersion",
+            "headless",
+            "waitingForSignIn",
+            "diagnosticFailure",
             "steamAppId",
             "isDirty",
             "validationVerified",
@@ -967,6 +970,50 @@ pub fn run() -> Result<(), String> {
     })
 }
 
+/// Serve only the supervised host created by this bootstrapper. No desktop
+/// discovery fallback is allowed, even if another editor is running.
+#[cfg(windows)]
+pub fn run_owned(pid: u32) -> Result<(), String> {
+    use std::os::windows::io::AsHandle;
+    let started = std::time::Instant::now();
+    while known_editor(pid).is_err() {
+        if started.elapsed() >= std::time::Duration::from_secs(60) {
+            return Err("Headless host did not become ready".into());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    let output = std::io::stdout()
+        .as_handle()
+        .try_clone_to_owned()
+        .map_err(|_| "MCP output unavailable")?;
+    lifetime::run(
+        move || {
+            serve_cancellable(
+                std::io::BufReader::new(std::io::stdin()),
+                &mut std::fs::File::from(output),
+                move |operation, args, cancelled| {
+                    if operation == "list_instances" {
+                        let facts = query_listing_facts(pid, cancelled)?;
+                        return Ok(match facts {
+                            Some(facts) => json!([status_value(pid, None, Some(&facts))]),
+                            None => json!([]),
+                        });
+                    }
+                    if args["processId"].as_u64() != Some(u64::from(pid)) {
+                        return Err(
+                            "This connection owns a different headless host; call list_instances"
+                                .into(),
+                        );
+                    }
+                    call_editor_cancellable(operation, args, cancelled)
+                },
+            )
+        },
+        move || Ok(known_editor(pid).is_ok()),
+        std::time::Duration::from_secs(2),
+    )
+}
+
 #[cfg(windows)]
 fn run_with_discovery(
     editor_available: impl FnMut() -> Result<bool, String>,
@@ -1009,7 +1056,8 @@ pub fn call_editor_cancellable(
     }
     let pid = args["processId"].as_u64().ok_or("Invalid processId")? as u32;
     if operation == "status" {
-        known_editor(pid)?;
+        // Discovery can briefly miss the endpoint between client connections.
+        // The transport already waits for replacement and authenticates its PID.
         let facts = query_status(pid, cancelled)?;
         let uptime = achimeld_security::editor_transport::process_uptime(pid).map(format_uptime);
         return Ok(status_value(pid, uptime.as_deref(), Some(&facts)));

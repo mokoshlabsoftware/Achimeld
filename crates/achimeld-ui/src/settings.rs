@@ -518,9 +518,6 @@ impl Desktop {
                 });
                 ui.data_mut(|data| data.insert_temp(preview_id, selected));
                 ui.separator();
-                crate::fields::row(ui, "Control corner radius", |ui| {
-                    ui.add(egui::DragValue::new(&mut preferences.control_radius).range(0..=24));
-                });
                 for (label, size, min, max) in [
                     (
                         "Heading font size",

@@ -496,6 +496,7 @@
       "claim": "Local editor automation accepts only declared tools, binds mutations to the current editor session/project/revision, retains bounded successful retry responses, and commits validated project changes through shared history while keeping portable collection authoring separate, without exposing browser or process dispatch.",
       "enforcement": [
         { "file": "crates/achimeld-mcp/src/lib.rs", "symbol": "validate_arguments" },
+        { "file": "crates/achimeld-mcp/src/lib.rs", "symbol": "run_owned" },
         { "file": "crates/achimeld-security/src/editor_transport.rs", "symbol": "GetNamedPipeServerProcessId" },
         { "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "preflight" },
         { "file": "crates/achimeld-application/src/automation.rs", "symbol": "prepare" },
@@ -504,6 +505,7 @@
       ],
       "evidence": [
         { "scope": "source", "file": "crates/achimeld-mcp/src/lib.rs", "symbol": "schema_rejects_extra_authority_malformed_batches_and_invalid_enums" },
+        { "scope": "source", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "headless_first_save_rejects_unsafe_paths_and_dirty_close" },
         { "scope": "source", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "retry_staleness_busy_and_same_project_reopen_use_the_live_editor_session" },
         { "scope": "fixture", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "real_windows_pipe_serves_the_stdio_facade_and_survives_disconnection" },
         { "scope": "source", "file": "crates/achimeld-app/src/desktop/automation.rs", "symbol": "collection_edits_are_revision_pinned_and_import_is_one_undo_step" },

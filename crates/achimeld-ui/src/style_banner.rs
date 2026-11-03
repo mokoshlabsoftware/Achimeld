@@ -124,7 +124,7 @@ fn paint_impl(
             ),
             galley.size() + egui::vec2(12.0, 8.0),
         );
-        painter.rect_filled(text.intersect(rect), 3.0, fill);
+        painter.rect_filled(text.intersect(rect), 0.0, fill);
     }
     painter.add(
         egui::epaint::TextShape::new(

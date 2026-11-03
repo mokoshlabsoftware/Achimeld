@@ -59,7 +59,10 @@ mod tests {
             Duration::from_millis(150),
         )
         .unwrap();
-        assert!(polls >= 7);
+        // Scheduling can consume the whole 150 ms grace between two polls.
+        // We must survive the first gap and observe the final absence twice;
+        // the exact number of later timer ticks is not part of the contract.
+        assert!(polls >= 6);
         assert!(started.elapsed() < Duration::from_secs(5));
         drop(release);
     }

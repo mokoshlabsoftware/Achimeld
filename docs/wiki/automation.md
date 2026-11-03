@@ -1,12 +1,12 @@
 # Local editor automation with MCP
 
-Achimeld's MCP connection lets a compatible client inspect and edit an already open editor. It shares local project undo history. Save in the desktop to keep project changes.
+Achimeld's MCP connection lets an agent inspect and edit a supervised project, with or without an editor window. Save changes before ending the connection.
 
 ## Connect
 
-Open Achimeld normally, then use Help > Connect MCP for the executable path and configuration. Setup's finish screen also offers Connect MCP beside Launch Achimeld, with the installed path and a copyable JSON configuration. The command is the verified Achimeld.exe with argument --mcp, running under the same Windows account as the desktop.
+Setup MCP, below Launch Achimeld on the installer finish screen, provides a copyable agent prompt and exact installed configuration. By default the agent launches the visible editor and connects using --mcp. Only on your explicit request, use --protected --mcp-headless for an installed windowless host, or --mcp-headless for a development package. Run as your normal Windows user. The connection owns its host and stops it on disconnect. Use save_project with an unused absolute local-drive .achv path for the first save, then omit path for later saves.
 
-The connector does not open the desktop. Validation and synchronization use the editor's supervised Steam browser workflow. Reconnect after reopening the editor. It exits shortly after no editor remains, so a stale connector may need restarting.
+For visual editing, an agent can launch the verified Achimeld.exe with --protected for an installed package. Help > Connect MCP describes the separate --mcp desktop connector. Save and close the current session before launching the other mode, then reopen the project; unsaved state is not shared. Desktop and headless sessions cannot run together because they use the same supervised network port. The --mcp connector does not open the desktop. Validation and synchronization use the editor's supervised Steam browser workflow. Reconnect after reopening the editor. It exits shortly after no editor remains, so a stale connector may need restarting.
 
 ## Read before editing
 
@@ -88,7 +88,7 @@ Icon export differs from desktop export in formats, names and replacement behavi
 
 ## Desktop boundaries
 
-The connector can list the editor's recent projects, open one of those paths, or open another absolute local-drive .achv project without reparse points when the current document is clean. reload_project reopens the current saved path and explicitly discards unsaved changes when discardUnsaved is true; it resets the project session without closing the editor. save_project writes the current existing project path; Save As remains in the desktop. File destinations must follow the selected tool's local-path rules.
+The connector can list the editor's recent projects, open one of those paths, or open another absolute local-drive .achv project without reparse points when the current document is clean. reload_project reopens the current saved path and explicitly discards unsaved changes when discardUnsaved is true; it resets the project session without closing the editor. save_project writes the current existing project path, or accepts an unused absolute local-drive .achv path for the first save. Save As remains in the desktop. File destinations must follow the selected tool's local-path rules.
 
 Preferences > MCP lists every command in themed folders. Each is allowed by default. A folder switch enables or disables every command in that folder, including commands hidden by the current filter; individual switches remain available. The red Sensitive folder contains browser profile deletion, forgetting Steam validation, and the reviewed Steam deletion commands. Allow all resets the list. Save Preferences to apply changes. The editor enforces this policy for reads, writes, discovery and health. A blocked command returns a permission error. Connected local clients can edit the open project. Connect only clients you intend to give that local editing access.
 

@@ -973,11 +973,7 @@ impl Desktop {
             }
             let painter = ui.painter_at(card.intersect(rect));
             let selected = self.selection.contains(&id);
-            let corner_radius = if self.kind == EntityKind::Achievement {
-                0
-            } else {
-                p.control_radius
-            };
+            let corner_radius = 0;
             let retired = entity.status == Some(AchievementStatus::Retired);
             painter.rect_filled(
                 card,

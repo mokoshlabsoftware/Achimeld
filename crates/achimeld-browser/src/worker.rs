@@ -57,7 +57,10 @@ enum Transport {
 const MAXIMUM_READ_CALLS: usize = 9_000;
 const WORKER_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const WORKER_CALL_TIMEOUT: Duration = Duration::from_secs(300);
-const WORKER_STOP_TIMEOUT: Duration = Duration::from_secs(5);
+// A healthy Windows Chromium close can exceed five seconds while its process
+// and temporary artifacts finish. Keep cancellation/health polling active and
+// give it bounded grace before revoking the owned Job.
+const WORKER_STOP_TIMEOUT: Duration = Duration::from_secs(65);
 #[cfg(windows)]
 impl SteamReader {
     pub fn connect(
@@ -73,10 +76,15 @@ impl SteamReader {
         if session.status().network_enforced {
             session.check_network_denial()?;
         }
-        WorkerChild::wait_for_cleanup(Duration::from_secs(90), &mut || {
+        let mut last_health = Instant::now();
+        WorkerChild::await_cleanup(&mut || {
             cancellation.check()?;
             cancellation::check_console()?;
-            session.require_healthy()
+            if last_health.elapsed() >= Duration::from_secs(1) {
+                session.require_healthy()?;
+                last_health = Instant::now();
+            }
+            Ok(())
         })?;
         let name = format!("Achimeld.Steam.{}", request_id().replace('-', ""));
         let mut pipe = PrivatePipe::create(&name)?;
@@ -356,6 +364,20 @@ impl SteamReader {
     }
     pub fn session_id(&self) -> &str {
         &self.session.status().session_id
+    }
+    /// Keep validation busy until its browser is gone, with cancellation and
+    /// supervisor checks still active. Never reopen or replay a Steam request.
+    pub fn await_cleanup(&mut self) -> Result<(), SecurityError> {
+        let mut last_health = Instant::now();
+        achimeld_security::worker_transport::WorkerChild::await_cleanup(&mut || {
+            self.cancellation.check()?;
+            cancellation::check_console()?;
+            if last_health.elapsed() >= Duration::from_secs(1) {
+                self.session.require_healthy()?;
+                last_health = Instant::now();
+            }
+            Ok(())
+        })
     }
     pub fn development_network_test(&mut self, hold: bool) -> Result<(), SecurityError> {
         if self.session.status().package_mode != "development"

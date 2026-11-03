@@ -429,7 +429,7 @@ impl WorkerResponse {
                     Some("Import the progress stat before its dependent achievement.")
                 }
                 Some("steam.project.invalid") => Some(
-                    "The Steam worker could not read this saved project format; check artwork and synchronization settings",
+                    "Achimeld could not read this project's synchronization settings. Retrying Steam sign-in will not resolve this error.",
                 ),
                 Some("steam.snapshot.incomplete") => Some(
                     "Steamworks returned an incomplete configuration; validate again before continuing",
@@ -443,7 +443,7 @@ impl WorkerResponse {
             }
             if self.error_code.as_deref() == Some("steam.sync.failed") {
                 return Err(
-                    "Synchronization stopped. Steam may have changed or a selected value could not be verified. Prepare a fresh plan before continuing.",
+                    "Synchronization could not finish. Check the Terminal for details and review any unverified Steam changes before retrying.",
                 );
             }
             return Err("Steam worker failed; uncertain operations must not be replayed");

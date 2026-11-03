@@ -4,7 +4,9 @@ Achimeld brings achievement definitions, stat definitions, icon design and revie
 
 Start by understanding three parts of an achievement: its settings describe what it is, its General Images supply reusable artwork, and its icon recipe builds the finished image.
 
-After installation, Setup's finish screen offers **Launch Achimeld** and **Connect MCP**. Connect MCP opens instructions and a copyable JSON configuration for connecting an MCP client to the installed application. You can also open these instructions later from Help > Connect MCP in Achimeld. Open Achimeld before connecting the client.
+After installation, Setup offers **Setup MCP** below **Launch Achimeld**. Setup MCP opens copyable instructions for your agent, including the installed path and headless configuration. The agent launches the visible editor by default. Only if you explicitly ask for headless mode, MCP starts its own supervised project host without an editor window. You can also launch Achimeld for visual editing and use Help > Connect MCP to connect to that desktop. Save and close the current session before launching the other mode, then reopen the project. Run one mode at a time.
+
+On first launch, **Welcome to Achimeld** explains that Achimeld is independent of Valve. Choose **Open project…** for an existing Achimeld project, **New project** for an empty one, or **Close** to continue. The welcome links to the wiki and **Connect your AI agent**, which opens the built-in MCP instructions. Connect your project to your game from Sync when ready. Dismissing the welcome is remembered; later application updates show change notes instead. These resources remain available from Help.
 
 ## Find your way around
 

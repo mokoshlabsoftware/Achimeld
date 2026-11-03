@@ -4,6 +4,17 @@ namespace Achimeld.Persistence;
 
 internal static class V1ProjectMapper
 {
+    internal static AchimeldProject FromSynchronizationDto(V1ProjectDto dto)
+    {
+        // Locked-icon rendering belongs to the host, which supplies the actual
+        // rendered hashes. The legacy model cannot represent modern
+        // desaturation/gradient settings. Use neutral mapper-only values;
+        // synchronization retains the untouched raw project for its result.
+        dto.Atlas.UnachievedIcon = new() { Mode = "Grayscale", Opacity = 1, TintHex = "#808080" };
+        try { return FromDto(dto); }
+        catch (ProjectDataException) { throw new System.Text.Json.JsonException("Unsupported synchronization project settings."); }
+    }
+
     public static V1ProjectDto ToDto(AchimeldProject project, string catalogHash) => new()
     {
         Format = project.Format,

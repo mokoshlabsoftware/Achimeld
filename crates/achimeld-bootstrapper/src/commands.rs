@@ -5,10 +5,13 @@ pub fn session_arguments(arguments: &[String]) -> Result<(bool, &[String]), Stri
         return Ok((false, arguments));
     }
     let remaining = &arguments[1..];
-    if remaining.is_empty() || read_argument(remaining)?.is_some() {
+    if remaining.is_empty()
+        || remaining == ["--mcp-headless"]
+        || read_argument(remaining)?.is_some()
+    {
         Ok((true, remaining))
     } else {
-        Err("Usage: Achimeld.exe --protected [--read-steam APP_ID]".into())
+        Err("Usage: Achimeld.exe --protected [--mcp-headless | --read-steam APP_ID]".into())
     }
 }
 
@@ -38,6 +41,19 @@ mod tests {
         assert_eq!(session_arguments(&empty).unwrap(), (false, &[][..]));
         let protected = vec!["--protected".into()];
         assert_eq!(session_arguments(&protected).unwrap(), (true, &[][..]));
+        let headless = vec!["--protected".into(), "--mcp-headless".into()];
+        assert_eq!(
+            session_arguments(&headless).unwrap(),
+            (true, &headless[1..])
+        );
+        assert!(
+            session_arguments(&[
+                "--protected".into(),
+                "--mcp-headless".into(),
+                "other.exe".into()
+            ])
+            .is_err()
+        );
         let read = vec!["--protected".into(), "--read-steam".into(), "480".into()];
         assert_eq!(session_arguments(&read).unwrap(), (true, &read[1..]));
         for command in [

@@ -25,12 +25,15 @@ mod automation;
 mod browser_profile;
 mod effects;
 mod gradients;
+mod headless;
+pub use headless::run as run_headless;
 mod image_drop;
 mod particles;
 mod style_viewer;
 mod version_check;
 
 enum StartupNotice {
+    Welcome,
     LocalChanges,
     PublicUpdate(String),
 }
@@ -271,7 +274,11 @@ impl NativeApp {
         let ui = achimeld_ui::Desktop::default();
         let mut startup_notices = VecDeque::new();
         if !host.about_seen {
-            startup_notices.push_back(StartupNotice::LocalChanges);
+            startup_notices.push_back(if load_acknowledged_version().unwrap_or(None).is_none() {
+                StartupNotice::Welcome
+            } else {
+                StartupNotice::LocalChanges
+            });
         }
         let public_version = version_check::start(cc.egui_ctx.clone());
         Self {
@@ -357,6 +364,7 @@ impl eframe::App for NativeApp {
             && let Some(notice) = self.startup_notices.pop_front()
         {
             match notice {
+                StartupNotice::Welcome => self.ui.open_welcome(),
                 StartupNotice::LocalChanges => self
                     .ui
                     .open_update_notes(load_acknowledged_version().unwrap_or(None)),
@@ -396,6 +404,7 @@ struct PendingExport {
     thread: Option<std::thread::JoinHandle<()>>,
 }
 struct Host {
+    headless: bool,
     editor_session_id: String,
     settings: Option<crate::settings_location::SettingsLocation>,
     editor: Editor,
@@ -475,6 +484,7 @@ impl Host {
         let previews = PreviewWorker::new(ctx.clone());
         Self {
             editor_session_id: new_id(),
+            headless: false,
             recent_projects: RecentProjects::for_user(
                 settings
                     .as_ref()
@@ -1193,6 +1203,9 @@ impl Host {
                     Ok(crate::synchronization::Event::Progress(message)) => {
                         // The producer records every stage before enqueueing it.
                         self.status = message
+                    }
+                    Ok(crate::synchronization::Event::WaitingForSignIn(waiting)) => {
+                        pending.waiting_for_sign_in = waiting;
                     }
                     Ok(crate::synchronization::Event::Complete(result)) => {
                         finished = Some(result);
@@ -2392,6 +2405,11 @@ impl EditorPort for Host {
     fn status(&self) -> &str {
         &self.status
     }
+    fn waiting_for_sign_in(&self) -> bool {
+        self.synchronization
+            .as_ref()
+            .is_some_and(|pending| pending.waiting_for_sign_in && pending.cancel.check().is_ok())
+    }
     fn style_viewer(&self) -> Option<&achimeld_application::style_viewer::StyleViewerState> {
         self.style_viewer.as_ref().map(|viewer| &viewer.state)
     }
@@ -3112,8 +3130,10 @@ mod dialog_tests {
         let boundary = std::path::absolute(crate::test_output::root()).unwrap();
         assert!(output.starts_with(&boundary) && output.extension().is_some_and(|s| s == "png"));
         let picker = std::env::var_os("ACHIMELD_SCREENSHOT_PICKER").is_some();
+        let welcome = std::env::var_os("ACHIMELD_SCREENSHOT_WELCOME").is_some();
         let unsaved = std::env::var_os("ACHIMELD_SCREENSHOT_UNSAVED").is_some();
         let validation = std::env::var_os("ACHIMELD_SCREENSHOT_VALIDATION").is_some();
+        let sign_in = std::env::var_os("ACHIMELD_SCREENSHOT_SIGN_IN").is_some();
         let notice = std::env::var("ACHIMELD_SCREENSHOT_NOTICE").ok();
         let scale: f32 = std::env::var("ACHIMELD_SCREENSHOT_SCALE")
             .ok()
@@ -3155,21 +3175,43 @@ mod dialog_tests {
                         .unwrap();
                 }
                 host.file_dialog = rfd::FileDialog::new().set_parent(cc);
-                if let Some(notice) = &notice {
+                if sign_in {
+                    let (_, events) = mpsc::sync_channel(1);
+                    let (approval, _) = mpsc::sync_channel(1);
+                    host.status = "Waiting for Steam sign-in · complete sign-in in the dedicated browser".into();
+                    host.synchronization = Some(crate::synchronization::Pending {
+                        snapshot: host.editor.document().clone(),
+                        baseline: host.editor.document().clone(),
+                        activity: "Validating Steam connection",
+                        completion_message: None,
+                        handshake_only: true,
+                        waiting_for_sign_in: true,
+                        cancel: Cancellation::default(),
+                        events, approval, review: None,
+                        revision: host.editor.revision(),
+                        path: boundary.join("preview-only.achv"),
+                        thread: None,
+                        previews: Default::default(),
+                    });
+                } else if let Some(notice) = &notice {
                     host.start_dialog(if notice == "running" { Dialog::AlreadyRunning } else {
                         Dialog::DiagnosticFailure("File logging is unavailable. Your session output is retained in memory and will be written when logging recovers. Open Preferences > General to inspect the log folder.".into())
                     });
                 } else if validation {
                     host.request(UiRequest::PrepareSynchronization);
-                } else {
+                } else if !welcome {
                     host.start_dialog(if picker {
                         Dialog::Open
                     } else {
                         Dialog::Discard(UiRequest::Exit)
                     });
                 }
+                let mut desktop = achimeld_ui::Desktop::default();
+                if welcome {
+                    desktop.open_welcome();
+                }
                 Ok(Box::new(Window {
-                    desktop: achimeld_ui::Desktop::default(),
+                    desktop,
                     host,
                     output,
                     frames: 0,
@@ -3314,7 +3356,7 @@ mod dialog_tests {
     fn an_active_sync_keeps_project_edits_available_and_cancel_is_terminal_to_review() {
         let mut host = dirty_host();
         let before = host.editor.document().clone();
-        let (_sender, events) = mpsc::sync_channel(1);
+        let (sender, events) = mpsc::sync_channel(1);
         let (approval, receiver) = mpsc::sync_channel(1);
         host.synchronization = Some(crate::synchronization::Pending {
             snapshot: before.clone(),
@@ -3322,6 +3364,7 @@ mod dialog_tests {
             activity: "Synchronizing Steam",
             completion_message: None,
             handshake_only: false,
+            waiting_for_sign_in: false,
             cancel: Cancellation::default(),
             events,
             approval,
@@ -3331,6 +3374,21 @@ mod dialog_tests {
             thread: None,
             previews: Default::default(),
         });
+        assert!(!host.waiting_for_sign_in());
+        sender
+            .send(crate::synchronization::Event::WaitingForSignIn(true))
+            .unwrap();
+        host.poll_synchronization();
+        assert!(host.waiting_for_sign_in());
+        sender
+            .send(crate::synchronization::Event::WaitingForSignIn(false))
+            .unwrap();
+        host.poll_synchronization();
+        assert!(!host.waiting_for_sign_in());
+        sender
+            .send(crate::synchronization::Event::WaitingForSignIn(true))
+            .unwrap();
+        host.poll_synchronization();
         assert!(
             host.execute("Concurrent edit", Command::Add(EntityKind::Stat), None)
                 .is_ok()
@@ -3349,6 +3407,7 @@ mod dialog_tests {
         assert_eq!(receiver.try_recv().unwrap().len(), 1);
         assert!(host.synchronization.as_ref().unwrap().review.is_none());
         host.request(UiRequest::CancelSynchronization);
+        assert!(!host.waiting_for_sign_in());
         assert!(
             host.synchronization
                 .as_ref()
@@ -3384,6 +3443,7 @@ mod dialog_tests {
             activity: "Synchronizing Steam",
             completion_message: None,
             handshake_only: false,
+            waiting_for_sign_in: false,
             cancel: Cancellation::default(),
             events,
             approval,
@@ -3437,6 +3497,7 @@ mod dialog_tests {
             activity: "Deleting Steam entries",
             completion_message: None,
             handshake_only: false,
+            waiting_for_sign_in: false,
             cancel: Cancellation::default(),
             events,
             approval,
@@ -3493,6 +3554,7 @@ mod dialog_tests {
                 activity: "Synchronizing Steam",
                 completion_message: None,
                 handshake_only: false,
+                waiting_for_sign_in: false,
                 cancel: Cancellation::default(),
                 events,
                 approval,
@@ -3574,6 +3636,7 @@ mod dialog_tests {
                 activity: "Synchronizing Steam",
                 completion_message: None,
                 handshake_only: true,
+                waiting_for_sign_in: false,
                 cancel,
                 events,
                 approval,
@@ -3626,6 +3689,7 @@ mod dialog_tests {
                 activity: "Synchronizing Steam",
                 completion_message: Some("Deletion fixture completed".into()),
                 handshake_only: true,
+                waiting_for_sign_in: false,
                 cancel: Cancellation::default(),
                 events,
                 approval,

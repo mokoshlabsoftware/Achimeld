@@ -4,6 +4,8 @@ General Images are the artwork inputs attached to an achievement. A General Imag
 
 This lets the same composition use different artwork for different achievements. The source image and the finished icon remain separate.
 
+Steam achievement imports place the achieved artwork in General image slot 0 and create one General Image layer referencing that slot at full opacity. The artwork remains owned by the Art Data Bank. Reimporting an achievement replaces slot 0 and its imported icon recipe while retaining any other General image slots. The previous image remains in the bank.
+
 ## Follow an image from input to output
 
 1. In achievement General settings, find the image in the General Images area.

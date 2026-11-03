@@ -136,6 +136,8 @@ the Cargo/package version or a hard-coded duplicate.
 
 Use four-part application working versions: `major.minor.commit.change` (for example `0.1.0.1`). The newest entry in root `CHANGELOG.md` is the single source of truth; Help > About and Help > Change log embed it at compile time. Rebuild to show a changed version. Cargo/package versions and authenticated installer identities are separate contracts; do not change them merely to advance the working version.
 
+Root `CHANGELOG.md` is public, embedded in the app and exported with public source. Write only user-facing product changes there. Never include private tooling, publishing or delivery operations, storefront administration, authentication, keys, workstation paths, private repository details or internal operator workflows. Keep those details under `private/` (including `private/CHANGELOG-INTERNAL.md`). For a version containing only private work, use the neutral public entry "No user-facing changes." Preserve historical version numbers and dates when removing accidentally disclosed details; do not invent product changes to replace them. Review every new changelog bullet for public suitability before completing work or committing.
+
 After completing each coherent agent feature, fix, or other requested change, run `build/Update-Version.ps1 -Kind Change -Summary '<user-facing description>'` exactly once. This increments only the fourth component. Count completed work, not individual file edits, test runs, intermediate attempts, or builds. Do not bump for unfinished work or read-only reviews. Preserve all older entries and record what actually changed; do not invent history for work predating this log.
 
 Disk-space cleanup of generated test outputs, build artifacts, old packages and duplicate audit runtimes is exempt from change-history and version updates. Do not add a `CHANGELOG.md` entry or run `build/Update-Version.ps1 -Kind Change` for cleanup-only work.
@@ -153,6 +155,8 @@ Update that register in the same work as each completed change, or record a spec
 The wiki must retain its documented application version, each article's last verified version and screenshot versions. Advance these only after relevant review and verification, never by copying the newest application version automatically. Follow the register's metadata and publication contract when implementing the website.
 
 # Graphical responsiveness
+
+MCP workflows must launch or use the visible Achimeld desktop by default. Use headless mode only when the user explicitly requests it. Setup instructions and agent prompts must preserve this default and explain saving and reopening when switching between independent desktop and headless sessions.
 
 For achievement-style collection authoring through MCP, follow
 [Agent style authoring](docs/agent-style-authoring.md). Create and preview portable
@@ -193,7 +197,7 @@ Buttons have only a filled body and text/icon, with no outline in any state. Key
 
 Use standard Windows dialogs for file and folder selection. Application prompts, confirmations and error dialogs must be rendered inside Achimeld using the application's style, fonts, colors and shared buttons; do not use operating-system message boxes or unstyled framework prompts. Preserve Save/Discard/Cancel behavior, cancellation, validation, and host ownership of filesystem I/O; changing presentation does not authorize new protocol operations or bypass storage checks.
 
-Hovered and keyboard-focused button labels must remain visible against the inverted fill and retain their resting font weight, without changing layout or button width. Apply the animated text color to the actual rendered glyphs, overriding any cached theme color. The top title-bar menu buttons (File, Edit, Tools, Help), window controls, menu items, and option-bar tabs and action buttons have square corners; other buttons retain the configured corner radius. Dropdowns, nested menus, and context menus have square, borderless panels with no outer padding or gaps between buttons.
+Hovered and keyboard-focused button labels must remain visible against the inverted fill and retain their resting font weight, without changing layout or button width. Apply the animated text color to the actual rendered glyphs, overriding any cached theme color. The top title-bar menu buttons (File, Edit, Tools, Help), window controls, menu items, and option-bar tabs and action buttons have square corners; all other buttons and panels also have square corners. Never introduce rounded button, field, card, popup, prompt or panel bodies, and do not expose a corner-radius preference. Circular slider handles, artwork and icons retain their intended geometry. Dropdowns, nested menus, and context menus have square, borderless panels with no outer padding or gaps between buttons.
 
 Color hex values are permitted in the movable color editor, alongside its visual controls, using RGB or alpha-inclusive hex. Keep other property fields, labels and tooltips visual rather than exposing stored color encodings.
 

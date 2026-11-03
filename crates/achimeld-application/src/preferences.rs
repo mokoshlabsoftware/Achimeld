@@ -68,7 +68,7 @@ impl Default for Preferences {
         ];
         Self {
             language: "English".into(),
-            control_radius: 6,
+            control_radius: 0,
             header_size: 18.0,
             normal_size: 13.0,
             small_size: 11.0,

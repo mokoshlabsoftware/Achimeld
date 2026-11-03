@@ -22,7 +22,7 @@ Edit palette entries using swatches. Restore default colors returns the default 
 
 | Setting | Exposed range |
 | --- | --- |
-| Control corner radius | 0-24 |
+| Control corners | Square for all buttons and panels |
 | Heading font size | 10-48 |
 | Normal font size | 9-32 |
 | Small font size | 8-24 |

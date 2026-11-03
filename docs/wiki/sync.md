@@ -22,6 +22,12 @@ Forget validation clears saved validation/snapshot/banner data after its confirm
 
 Open profile folder and Delete browser profile manage the dedicated Steam browser profile. Deleting it removes saved sign-in, not your Steam account or project.
 
+The browser is given time to finish closing before forced cleanup is used. A new browser starts only after the previous owned browser has exited. Keep the project open while validation or synchronization is active, or use Cancel to stop it.
+
+Fresh projects can import existing Steam achievements, stats and artwork while retaining their local locked-icon settings. If Achimeld reports that it cannot read the project's synchronization settings, signing in again will not fix that format error. Check the Terminal and retain the diagnostic log when reporting it. A generic synchronization failure does not by itself mean Steam changed.
+
+Imported achievement artwork uses General image slot 0 with a matching General Image layer. This keeps the imported appearance while making the source available to reusable styles. Reimport replaces slot 0 and the imported recipe; other General image slots remain available.
+
 ## Review differences
 
 The square review modal identifies the validated App ID and lists every proposed definition or icon change before Steamworks is updated. Artwork-only edits appear as Icon changes. Filter by API name and scroll through the full list without page breaks.
@@ -53,7 +59,7 @@ The review uses a frozen project snapshot and caches achieved and unachieved ico
 
 Progress shows stage and elapsed time in a movable nonmodal window. Cancel uses the active operation's cancellation path. Project replacement, Save As, and Steam App ID changes remain guarded while the snapshot is active.
 
-Browser cleanup may continue briefly after validation or synchronization reports completion. Achimeld keeps a new Steam worker gated until the previous owned browser Job reports no active processes; changing process membership during cleanup does not require a manual retry when that Job check can finish in the background.
+Validation stays in Closing the dedicated Steam browser until its owned processes have exited. Cancel remains available during this wait. A later operation waits for outstanding cleanup instead of failing after a fixed startup wait. Synchronization can retain cleanup in the background after applying its result; Achimeld keeps a new Steam worker gated until the previous owned browser Job reports no active processes. It never repeats a Steam write to recover from slow cleanup.
 
 Exit during an active synchronization cancels the frozen operation and continues to the normal Save/Discard/Cancel choice for unsaved local edits. A visible dialog does not pause synchronization cancellation or completion. After an interrupted draft write, validate and prepare a fresh review to reconcile Steam.
 
@@ -75,3 +81,5 @@ Local edits remain dirty when appropriate after a merge. Conflicting changes pre
 
 Fresh live validation, draft writes and interruption recovery still require controlled acceptance before these draft instructions can be marked fully runtime verified.
 
+
+While Steam needs authentication, an animated orange Waiting for sign-in strip appears below the navigation bar, even after changing tabs. Complete sign-in in the dedicated browser. The strip disappears when authentication completes or the operation stops.

@@ -6,6 +6,16 @@ Build and Run also recovers connectors from older packages: if only exact `Achim
 
 Achimeld implements the original Achiever MCP workflow against its open Rust editor. The original checkout is a behavioral reference, never a build dependency.
 
+## Optional headless connection
+
+Use the visible desktop by default. Only when the user explicitly requests headless operation, use `Achimeld.exe --mcp-headless` to start a windowless supervised project host owned by the MCP connection. Installed configurations use `["--protected", "--mcp-headless"]`; development packages use `["--mcp-headless"]`. No editor window is required. Setup MCP, below Launch Achimeld on the installer finish page, copies an agent prompt and the exact installed desktop configuration, with headless instructions as an explicit alternative.
+
+The headless connector lists and accepts requests only for its own host. An agent may launch the verified `Achimeld.exe` normally (with `--protected` for installed packages) and use the existing `--mcp` connection for visual work. Only one supervised session can own the fixed network broker port at a time. Save and close the current session before launching the other mode, then reopen the project. Sessions do not share unsaved state. Existing storage conflict checks still reject changed files.
+
+Call `list_instances`, then `get_scene`. For a new project, `save_project` accepts an optional unused absolute local-drive `.achv` `path`; omit it on later saves. Existing project and companion files cannot be replaced by this first-save operation. Save before disconnecting: closing the connection terminates its host and unsaved work is lost. `close_editor` rejects dirty headless projects instead of hiding a Save/Discard prompt. Menu tools require the desktop. Steam authentication can still require interaction with the dedicated supervised browser; headless does not mean unattended sign-in.
+
+The following desktop-connection instructions apply to `--mcp` only.
+
 Build a fresh verified package with `build-and-run.bat --offline --build-only`, then open Achimeld normally. Configure an MCP client with the absolute verified package path:
 
 ```json

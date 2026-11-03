@@ -254,6 +254,9 @@ fn remote_icon_api_name(icon: &Value) -> Option<&str> {
 fn status_data(host: &Host, ui: &achimeld_ui::Desktop) -> Value {
     let document = host.editor.document();
     let mut result = json!({
+        "headless": host.headless,
+        "waitingForSignIn": host.waiting_for_sign_in(),
+        "diagnosticFailure": crate::diagnostics::failure(),
         "projectName": document.project()["displayName"].as_str().unwrap_or(""),
         "workingVersion": achimeld_ui::current_version(),
         "steamAppId": document.app_id(),
@@ -973,11 +976,29 @@ impl Engine {
                 Ok(json!({"reloaded":true,"path":path}))
             }
             "save_project" => {
-                let path = host
-                    .store
-                    .path()
-                    .ok_or("Save the project in the editor first")?
-                    .to_path_buf();
+                let path = match (host.store.path(), args["path"].as_str()) {
+                    (Some(path), None) => path.to_path_buf(),
+                    (None, Some(path)) => {
+                        let path = PathBuf::from(path);
+                        if !local_path(&path) {
+                            return Err("Supply an absolute local-drive .achv path".into());
+                        }
+                        if std::fs::symlink_metadata(&path).is_ok() {
+                            return Err("Choose an unused project filename".into());
+                        }
+                        achimeld_security::windows::reject_reparse(
+                            path.parent().ok_or("Project directory unavailable")?,
+                        )
+                        .map_err(|e| e.to_string())?;
+                        path
+                    }
+                    (Some(_), Some(_)) => {
+                        return Err("Omit path when saving an existing project".into());
+                    }
+                    (None, None) => {
+                        return Err("Supply an unused .achv path for the first save".into());
+                    }
+                };
                 host.save_to(&path)?;
                 Ok(json!({"saved":true,"path":path}))
             }
@@ -1259,6 +1280,9 @@ impl Engine {
                 Ok(json!({"cancelled":true}))
             }
             "open_menu" => {
+                if host.headless {
+                    return Err("Menus require the desktop editor".into());
+                }
                 ui.automation_open_menu(args["menu"].as_str().ok_or("Missing menu")?);
                 Ok(json!({"menu":args["menu"]}))
             }
@@ -1283,6 +1307,23 @@ impl Engine {
                 Ok(json!({"cancelled":true,"status":host.status}))
             }
             "close_editor" => {
+                if host.headless && host.editor.is_dirty() {
+                    return Err("Save the project before closing the headless host".into());
+                }
+                if host.headless
+                    && host.style_viewer.as_ref().is_some_and(|viewer| {
+                        viewer.state.dirty
+                            || viewer
+                                .state
+                                .collections
+                                .iter()
+                                .any(|collection| collection.dirty)
+                    })
+                {
+                    return Err(
+                        "Export changed style collections before closing the headless host".into(),
+                    );
+                }
                 host.request(UiRequest::Exit);
                 Ok(json!({"requested":true,"status":host.status}))
             }
@@ -2425,6 +2466,83 @@ mod tests {
         } else {
             engine.complete(&pending(request), host, ui)
         }
+    }
+    #[test]
+    fn headless_first_save_rejects_unsafe_paths_and_dirty_close() {
+        let (mut host, mut ui, mut engine) = fixture();
+        host.headless = true;
+        engine.observe(&host, &ui);
+        let create = request(
+            &host,
+            &engine,
+            "create_achievement",
+            json!({
+                "apiName":"HEADLESS", "displayName":"Headless", "description":"Test", "column":0,"row":0
+            }),
+        );
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, create)["success"],
+            true
+        );
+        let close = request(&host, &engine, "close_editor", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, close)["success"],
+            false
+        );
+        assert!(host.dialog.is_none());
+        assert!(!host.exit_allowed);
+        for path in [
+            "relative.achv",
+            r"\\server\share\project.achv",
+            r"C:\bad.txt",
+        ] {
+            let save = request(&host, &engine, "save_project", json!({"path":path}));
+            assert_eq!(
+                dispatch(&mut engine, &mut host, &mut ui, save)["success"],
+                false
+            );
+        }
+        let directory = crate::test_output::root().join(new_id());
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("headless.achv");
+        let save = request(&host, &engine, "save_project", json!({"path":path}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, save)["success"],
+            true
+        );
+        assert!(!host.editor.is_dirty());
+        assert_eq!(
+            ProjectStore::new()
+                .load(&path)
+                .unwrap()
+                .entities(EntityKind::Achievement)
+                .len(),
+            1
+        );
+        let (mut other, mut other_ui, mut other_engine) = fixture();
+        other_engine.observe(&other, &other_ui);
+        let overwrite = request(&other, &other_engine, "save_project", json!({"path":path}));
+        assert_eq!(
+            dispatch(&mut other_engine, &mut other, &mut other_ui, overwrite)["success"],
+            false
+        );
+        host.ensure_style_viewer().unwrap();
+        host.style_viewer.as_mut().unwrap().state.dirty = true;
+        engine.observe(&host, &ui);
+        let close = request(&host, &engine, "close_editor", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, close)["success"],
+            false
+        );
+        assert!(host.dialog.is_none());
+        host.style_viewer.as_mut().unwrap().state.dirty = false;
+        engine.observe(&host, &ui);
+        let close = request(&host, &engine, "close_editor", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, close)["success"],
+            true
+        );
+        assert!(host.exit_allowed);
     }
     #[test]
     fn retry_staleness_busy_and_same_project_reopen_use_the_live_editor_session() {

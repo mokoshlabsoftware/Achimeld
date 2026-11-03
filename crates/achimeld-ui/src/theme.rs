@@ -56,7 +56,8 @@ pub fn apply(ctx: &egui::Context, p: &Preferences) {
     v.text_edit_bg_color = Some(color(p, "Window"));
     v.code_bg_color = color(p, "Control");
     v.text_cursor.stroke = Stroke::new(2.0, color(p, "Accent"));
-    v.window_corner_radius = egui::CornerRadius::same(p.control_radius);
+    v.window_corner_radius = egui::CornerRadius::ZERO;
+    v.menu_corner_radius = egui::CornerRadius::ZERO;
     v.window_shadow.color = color(p, "Window").gamma_multiply(0.4);
     v.popup_shadow.color = color(p, "Window").gamma_multiply(0.4);
     v.panel_fill = color(p, "Panel");
@@ -74,7 +75,7 @@ pub fn apply(ctx: &egui::Context, p: &Preferences) {
         widget.weak_bg_fill = widget.bg_fill;
         widget.bg_stroke = Stroke::new(1.0, color(p, "Border"));
         widget.fg_stroke = Stroke::new(1.0, color(p, "Primary text"));
-        widget.corner_radius = egui::CornerRadius::same(p.control_radius);
+        widget.corner_radius = egui::CornerRadius::ZERO;
     };
     configure(&mut v.widgets.noninteractive, 0.0);
     configure(&mut v.widgets.inactive, 0.0);
@@ -82,4 +83,28 @@ pub fn apply(ctx: &egui::Context, p: &Preferences) {
     configure(&mut v.widgets.active, 0.30);
     configure(&mut v.widgets.open, 0.20);
     ctx.set_global_style(style);
+}
+
+#[cfg(test)]
+#[test]
+fn legacy_radius_cannot_round_application_controls() {
+    let ctx = egui::Context::default();
+    let preferences = Preferences {
+        control_radius: 24,
+        ..Default::default()
+    };
+    apply(&ctx, &preferences);
+    let style = ctx.global_style();
+    let v = &style.visuals;
+    assert_eq!(v.window_corner_radius, egui::CornerRadius::ZERO);
+    assert_eq!(v.menu_corner_radius, egui::CornerRadius::ZERO);
+    for widget in [
+        &v.widgets.inactive,
+        &v.widgets.hovered,
+        &v.widgets.active,
+        &v.widgets.open,
+        &v.widgets.noninteractive,
+    ] {
+        assert_eq!(widget.corner_radius, egui::CornerRadius::ZERO);
+    }
 }

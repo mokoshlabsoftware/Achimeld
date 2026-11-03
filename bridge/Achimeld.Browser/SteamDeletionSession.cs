@@ -35,7 +35,7 @@ public sealed class SteamDeletionSession(ISynchronizationPortal portal)
         mapped["achievements"] = new System.Text.Json.Nodes.JsonArray();
         mapped["stats"] = new System.Text.Json.Nodes.JsonArray();
         var dto = mapped.Deserialize<V1ProjectDto>(options) ?? throw new InvalidDataException();
-        var project = V1ProjectMapper.FromDto(dto);
+        var project = V1ProjectMapper.FromSynchronizationDto(dto);
         if (project.AppId.Value != appId)
             throw new InvalidDataException("Deletion requires a matching Steam snapshot.");
         string Resolve(RemoteSnapshot s, SteamDeletionTarget t) => t.Kind == "Stat"

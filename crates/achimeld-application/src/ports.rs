@@ -186,6 +186,9 @@ pub trait EditorPort {
     fn redo(&mut self);
     fn request(&mut self, request: UiRequest);
     fn status(&self) -> &str;
+    fn waiting_for_sign_in(&self) -> bool {
+        false
+    }
     fn preview(&mut self, entity_id: &str) -> Option<Preview>;
     /// Preview a hovered layer blend mode until the menu item is left or dismissed.
     fn set_layer_blend_preview(&mut self, _preview: Option<LayerBlendPreview>) {}

@@ -239,7 +239,6 @@ pub struct Button<'a> {
     selected: Option<bool>,
     min_size: Vec2,
     tint_image: bool,
-    square_corners: bool,
     primary_outline: bool,
     center_glyph: bool,
     subtle_body_opacity: Option<f32>,
@@ -258,7 +257,6 @@ impl<'a> Button<'a> {
             selected: None,
             min_size: Vec2::ZERO,
             tint_image: false,
-            square_corners: false,
             primary_outline: false,
             center_glyph: false,
             subtle_body_opacity: None,
@@ -325,12 +323,10 @@ impl<'a> Button<'a> {
     }
     /// Special treatment for the primary Steam validation/synchronization action.
     pub(crate) fn primary_outline(mut self) -> Self {
-        self.square_corners = true;
         self.primary_outline = true;
         self
     }
-    pub(crate) fn square_corners(mut self) -> Self {
-        self.square_corners = true;
+    pub(crate) fn square_corners(self) -> Self {
         self
     }
     pub(crate) fn subtle_body(mut self, resting_opacity: f32) -> Self {
@@ -353,7 +349,6 @@ impl<'a> Button<'a> {
         } else {
             ButtonStyle::Quiet
         };
-        self.square_corners = true;
         self
     }
 }
@@ -368,11 +363,7 @@ impl Widget for Button<'_> {
         let text = layout.text().map(|text| text.into_owned());
         let frame = Frame::new()
             .inner_margin(ui.spacing().button_padding)
-            .corner_radius(if self.square_corners || in_popup {
-                egui::CornerRadius::ZERO
-            } else {
-                ui.visuals().widgets.inactive.corner_radius
-            });
+            .corner_radius(egui::CornerRadius::ZERO);
         let mut prepared = layout
             .frame(frame)
             .min_size(
@@ -1108,7 +1099,7 @@ mod tests {
         );
         assert!(hover.2.iter().any(|rect| rect.rect == hover.0[0]
             && rect.fill == primary
-            && rect.corner_radius == egui::CornerRadius::same(preferences.control_radius)));
+            && rect.corner_radius == egui::CornerRadius::ZERO));
         assert!(
             hover
                 .2
