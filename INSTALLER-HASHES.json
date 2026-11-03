@@ -72,6 +72,12 @@
       "installerSha256": "871d67994702bf022457c4e3594777a3a133aeaf7323ffae35e8c4854e9ee4e8",
       "gitlabSourceCommit": "bd6e35f3731c89f013d3891a91222b91373deea8",
       "sourceTag": "v0.3.4.0"
+    },
+    {
+      "workingVersion": "0.3.4.1",
+      "installerSha256": "275982de463e04a2b3dee66b08211c2a0f2c421fea2906d3df4b97358810cf91",
+      "gitlabSourceCommit": "7c0b4a0b36db845d902e6cbc6e64e895b7777774",
+      "sourceTag": "v0.3.4.1"
     }
   ]
 }

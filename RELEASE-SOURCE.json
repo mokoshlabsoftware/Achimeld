@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "workingVersion": "0.3.4.0",
-  "gitlabSourceCommit": "bd6e35f3731c89f013d3891a91222b91373deea8",
-  "packageManifestSha256": "b6364d90cc5a74ae33d06a0c059bd13a4f9b249cdcc5dd158cc82e6703024c39",
-  "verifierSha256": "07c9ee09ff5d0af03ba3b9f7e7fb25f183c9a763f00c08a1c387d5b537124d1b",
-  "installerSha256": "871d67994702bf022457c4e3594777a3a133aeaf7323ffae35e8c4854e9ee4e8",
+  "workingVersion": "0.3.4.1",
+  "gitlabSourceCommit": "7c0b4a0b36db845d902e6cbc6e64e895b7777774",
+  "packageManifestSha256": "291cefe0312b5854c996588c85cb402b2f70eebccf4511578171e4a4ed834670",
+  "verifierSha256": "7179905b96f630c7dd827240bc64d8f713b160fadae4271ca8b77136b339a246",
+  "installerSha256": "275982de463e04a2b3dee66b08211c2a0f2c421fea2906d3df4b97358810cf91",
   "packageMode": "development",
   "files": [
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "a795a64dc90572946e64b4047b59081b59739d04f2793ae30e2d35624cb74f4b"
+      "sha256": "5b506e56641c1b5775db9e33b500e0d575fb1ef11c70639783ebeb1dc7c3ace5"
     },
     {
       "path": "Cargo.lock",
@@ -4029,7 +4029,7 @@
     },
     {
       "path": "docs/wiki-maintenance.md",
-      "sha256": "3277c4c76a638876f4343f6eae68bfae9302da7c0bde6f997e7c55fd216a2007"
+      "sha256": "e29941a6bcc364f087839737b879d750db19f133c9d9ee1796f93d216b6af85b"
     },
     {
       "path": "docs/wiki/README.md",

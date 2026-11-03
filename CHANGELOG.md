@@ -2,6 +2,10 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.4.1 (2026-11-02)
+
+- Add private release status command for working, GitHub and Gumroad versions
+
 ## 0.3.4.0 (2026-11-02)
 
 - Publish Steam, MCP, installer and delivery improvements
