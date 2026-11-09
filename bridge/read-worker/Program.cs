@@ -80,7 +80,9 @@ try
                 string code = WorkerFailure.Code(request.Operation, exception, driver.RequestRejection);
                 response = new(request.RequestId, false, WorkerFailure.Details(
                     request.Operation == "navigate" ? driver.DiagnosticStage : "operation",
-                    exception, operationTimer.ElapsedMilliseconds, driver.RequestRejectionDetails), code);
+                    exception, operationTimer.ElapsedMilliseconds, driver.RequestRejectionDetails,
+                    request.Operation is "prepareSync" or "beginSync" or "syncStep" or "finishSync"
+                        ? driver.SyncDiagnostic : null), code);
             }
             await SecurityWire.WriteAsync(pipe, response, shutdown.Token);
             if (!response.Success)

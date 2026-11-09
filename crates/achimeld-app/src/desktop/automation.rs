@@ -1267,9 +1267,41 @@ impl Engine {
                 if selected.values().all(|action| action == "Skip") {
                     return Err("Select at least one change to synchronize".into());
                 }
-                host.request(UiRequest::ApplySynchronization(
-                    selected.into_iter().collect(),
-                ));
+                if selected.values().any(|action| action == "Delete")
+                    && args["confirmDeletion"] != true
+                {
+                    return Err(
+                        "Set confirmDeletion=true for selected Steam draft deletions".into(),
+                    );
+                }
+                let remote_count = review["remoteAchievementCount"].as_u64().ok_or(
+                    "Synchronization review is missing the Steam achievement count; validate again",
+                )?;
+                let deleted = selected
+                    .iter()
+                    .filter(|(key, action)| key.starts_with("Achievement:") && *action == "Delete")
+                    .count() as u64;
+                let created = selected
+                    .iter()
+                    .filter(|(key, action)| {
+                        key.starts_with("Achievement:")
+                            && *action == "Upload"
+                            && rows.iter().any(|row| {
+                                row["key"].as_str() == Some(key.as_str())
+                                    && row["state"] == "LocalOnly"
+                            })
+                    })
+                    .count() as u64;
+                if remote_count.saturating_sub(deleted) + created > 100
+                    && args["allowAbove100"] != true
+                {
+                    return Err("The plan exceeds 100 Steam achievements; set allowAbove100=true only for an eligible app".into());
+                }
+                host.request(UiRequest::ApplySynchronization {
+                    choices: selected.into_iter().collect(),
+                    confirm_deletion: args["confirmDeletion"] == true,
+                    allow_above_100: args["allowAbove100"] == true,
+                });
                 Ok(json!({"started":true,"status":host.status}))
             }
             "cancel_synchronization" => {

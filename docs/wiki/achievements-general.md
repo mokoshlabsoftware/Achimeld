@@ -31,7 +31,7 @@ Keep the template when you want the wording to follow the value. The Localizatio
 
 The unlock controls let you choose who sets the achievement and whether it follows a progress stat. The authority choices are game client, game server and official game server.
 
-When the achievement is tied to a stat, choose the progress stat and set the unlock value. The numeric kind follows the linked stat: Int uses an integer value; the other stat types use floating-point values.
+When the achievement is tied to a stat, choose the progress stat from the alphabetical, screen-fitting columns and set the unlock value. Scroll across if the list needs more than three columns. The numeric kind follows the linked stat: Int uses an integer value; the other stat types use floating-point values.
 
 An achievement without a stat link has its own integer or float unlock-value kind. The unlock value can still supply text templates and value-linked icon text. Defining it in Achimeld does not by itself implement game code that reports progress or unlocks achievements.
 

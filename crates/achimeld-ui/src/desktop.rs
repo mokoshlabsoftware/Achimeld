@@ -279,6 +279,8 @@ pub struct Desktop {
     pub(crate) sync_review_elapsed: std::time::Duration,
     pub(crate) sync_confirmation: Option<(String, u32)>,
     pub(crate) sync_plan_token: Option<String>,
+    pub(crate) sync_warning: Option<crate::synchronization_target::SyncWarning>,
+    pub(crate) validation_followup: Option<crate::synchronization_target::ValidationFollowup>,
     pub(crate) steam_marks: BTreeSet<(EntityKind, String)>,
     pub(crate) steam_delete_review: bool,
     pub(crate) steam_delete_fresh: bool,
@@ -368,6 +370,8 @@ impl Default for Desktop {
             sync_review_elapsed: std::time::Duration::ZERO,
             sync_confirmation: None,
             sync_plan_token: None,
+            sync_warning: None,
+            validation_followup: None,
             steam_marks: BTreeSet::new(),
             steam_delete_review: false,
             steam_delete_fresh: false,
@@ -829,6 +833,16 @@ impl Desktop {
             }
         }
         self.project_id = Some(project_id);
+        if root.is_enabled()
+            && !self.about
+            && self.error.is_none()
+            && self.sync_app_id_edit.is_none()
+            && root
+                .ctx()
+                .memory(|memory| memory.top_modal_layer().is_none())
+        {
+            self.continue_validation_followup(port);
+        }
         if std::mem::take(&mut self.layout_reset_requested) {
             self.reset_window_layout(root.ctx(), port);
         }

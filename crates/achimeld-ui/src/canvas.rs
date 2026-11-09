@@ -826,7 +826,15 @@ impl Desktop {
                         } else {
                             api.to_owned()
                         },
-                        name: document.display_name(entity, &p.language),
+                        name: if self.kind == EntityKind::Stat {
+                            entity["internalName"]
+                                .as_str()
+                                .or(entity["apiName"].as_str())
+                                .unwrap_or("")
+                                .to_owned()
+                        } else {
+                            document.display_name(entity, &p.language)
+                        },
                         description: if achimeld_application::art_images::is_art_image(entity) {
                             String::new()
                         } else {

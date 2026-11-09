@@ -50,12 +50,17 @@ public sealed partial class PlaywrightChromeDriver
             if (row[1..] != operation.ExpectedSteamId) throw new InvalidDataException("Steam deletion identity changed.");
             await EnsureUniqueAsync(delete, "reviewed deletion control").ConfigureAwait(false);
             Uri deletionUri = _requestPolicy.ArmReviewedDeletion(operation.AppId.Value, row[1..]);
+            SetSyncDiagnosticEndpoint(stat ? "deletestat" : "deleteachievement");
+            SetSyncDiagnosticWriteState("delete-armed");
             EventHandler<IDialog> confirm = (_, dialog) => { if (dialog.Type == "confirm") _ = dialog.AcceptAsync(); else _ = dialog.DismissAsync(); };
             page.Dialog += confirm;
             try
             {
-                await page.RunAndWaitForResponseAsync(() => delete.ClickAsync(), response =>
+                IResponse deleted = await page.RunAndWaitForResponseAsync(() => delete.ClickAsync(), response =>
                     response.Url == deletionUri.AbsoluteUri).ConfigureAwait(false);
+                SetSyncDiagnosticResponseStatus(deleted.Status);
+                if (!deleted.Ok) throw new InvalidOperationException("Steamworks did not confirm the draft deletion.");
+                SetSyncDiagnosticWriteState("delete-confirmed");
             }
             finally { page.Dialog -= confirm; }
             await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
@@ -144,13 +149,17 @@ public sealed partial class PlaywrightChromeDriver
         SteamworksUrlGuard.EnsureAllowed(new Uri(page.Url), operation.AppId);
         string endpoint = stat ? "savestat" : "saveachievement";
         _requestPolicy.ArmReviewedPost(operation.AppId.Value);
+        SetSyncDiagnosticEndpoint(endpoint);
+        SetSyncDiagnosticWriteState("save-armed");
         IResponse saved = await page.RunAndWaitForResponseAsync(async () =>
             await name.Locator("xpath=ancestor::tr").Locator("input[value='Save']").ClickAsync().ConfigureAwait(false),
             response => response.Url == $"{SteamworksUrlGuard.AllowedOrigin}/apps/{endpoint}/{operation.AppId.Value}").ConfigureAwait(false);
+        SetSyncDiagnosticResponseStatus(saved.Status);
         using JsonDocument result = JsonDocument.Parse(await saved.TextAsync().ConfigureAwait(false));
         if (!saved.Ok || !result.RootElement.TryGetProperty("saved", out JsonElement didSave) ||
             didSave.ToString() is not ("True" or "true" or "1"))
             throw new InvalidOperationException("Steamworks did not confirm the draft save.");
+        SetSyncDiagnosticWriteState("save-confirmed");
         await RejectUnexpectedPopupsAsync().ConfigureAwait(false);
     }
 
@@ -193,10 +202,14 @@ public sealed partial class PlaywrightChromeDriver
             Task<IResponse> refreshed = page.WaitForResponseAsync(response => response.Url ==
                 $"{SteamworksUrlGuard.AllowedOrigin}/apps/fetchachievement/{operation.AppId.Value}/{statId}/{bitId}");
             _requestPolicy.ArmReviewedPost(operation.AppId.Value);
+            SetSyncDiagnosticEndpoint("uploadachievement");
+            SetSyncDiagnosticWriteState("save-armed");
             IResponse response = await page.RunAndWaitForResponseAsync(async () =>
                 await form.Locator("input[type='submit'][value='Upload']").ClickAsync().ConfigureAwait(false),
                 response => response.Url == SteamworksUrlGuard.AllowedOrigin + "/images/uploadachievement").ConfigureAwait(false);
+            SetSyncDiagnosticResponseStatus(response.Status);
             if (!response.Ok) throw new InvalidOperationException("Steamworks rejected the achievement icon upload.");
+            SetSyncDiagnosticWriteState("save-confirmed");
             IResponse readback = await refreshed.ConfigureAwait(false);
             using JsonDocument savedIcon = JsonDocument.Parse(await readback.TextAsync().ConfigureAwait(false));
             string savedSource = savedIcon.RootElement.GetProperty(requestType == "achievement" ? "icon" : "icon_gray").GetString() ?? "";

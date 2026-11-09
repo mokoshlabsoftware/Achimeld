@@ -380,7 +380,7 @@ impl Desktop {
                 ui.add_space(6.0);
                 self.general_explorer(ui, port, entity, None);
                 ui.add_space(8.0);
-                let stats: Vec<_> = port
+                let mut stats: Vec<_> = port
                     .editor()
                     .document()
                     .entities(EntityKind::Stat)
@@ -393,6 +393,7 @@ impl Desktop {
                         )
                     })
                     .collect();
+                sort_stats(&mut stats);
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 8.0;
                     let width = ui.available_width();
@@ -455,12 +456,10 @@ impl Desktop {
                             |s| s.1.clone(),
                         );
                         dropdown(ui, "InProg", &title, None, large, |ui| {
-                            for (id, name, _) in &stats {
-                                if ui.app_selectable_label(id == &selected, name).clicked() {
-                                    entity["progressStatId"] = json!(id);
-                                    self.manual_stat_link = None;
-                                    ui.close();
-                                }
+                            if let Some(id) = stat_selector(ui, &stats, &selected) {
+                                entity["progressStatId"] = json!(id);
+                                self.manual_stat_link = None;
+                                ui.close();
                             }
                         });
                         // Choosing a stat derives the numeric kind, as in the original.
@@ -530,6 +529,89 @@ impl Desktop {
             });
     }
 }
+fn sort_stats(stats: &mut [(String, String, String)]) {
+    stats.sort_by(|left, right| {
+        left.1
+            .to_lowercase()
+            .cmp(&right.1.to_lowercase())
+            .then_with(|| left.1.cmp(&right.1))
+            .then_with(|| left.0.cmp(&right.0))
+    });
+}
+
+fn stat_selector_columns(
+    count: usize,
+    viewport: Vec2,
+    row_height: f32,
+    column_width: f32,
+) -> (usize, usize, usize) {
+    // Leave room for the popup title and separator above the selector.
+    let max_height = ((viewport.y * 0.75).min(560.0) - 48.0).max(row_height);
+    let rows = ((max_height / row_height).floor() as usize).max(1);
+    let columns = count.div_ceil(rows);
+    let visible = ((viewport.x / column_width).floor() as usize)
+        .clamp(1, 3)
+        .min(columns.max(1));
+    (rows, columns, visible)
+}
+
+/// Fill each column from top to bottom so keyboard order follows the sorted list.
+/// The viewport is reported in logical points, accounting for display scale and
+/// the actual space available to the application window.
+fn stat_selector(
+    ui: &mut egui::Ui,
+    stats: &[(String, String, String)],
+    selected: &str,
+) -> Option<String> {
+    let viewport = ui.ctx().content_rect().shrink(8.0);
+    let row_height = buttons::bar_height(ui, 0.0).max(28.0);
+    let font = egui::TextStyle::Button.resolve(ui.style());
+    let text_width = stats
+        .iter()
+        .map(|(_, name, _)| {
+            ui.fonts_mut(|fonts| {
+                fonts
+                    .layout_no_wrap(name.clone(), font.clone(), egui::Color32::WHITE)
+                    .size()
+                    .x
+            })
+        })
+        .fold(0.0_f32, f32::max);
+    let column_width = (text_width + 32.0).max(180.0).min(viewport.width());
+    let (rows, columns, visible_columns) =
+        stat_selector_columns(stats.len(), viewport.size(), row_height, column_width);
+    let display_width = column_width * visible_columns as f32;
+    let mut chosen = None;
+    egui::ScrollArea::horizontal()
+        .id_salt("progress-stat-columns")
+        .max_width(display_width)
+        .auto_shrink([false, true])
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing = Vec2::ZERO;
+                for column in 0..columns {
+                    ui.vertical(|ui| {
+                        ui.spacing_mut().item_spacing = Vec2::ZERO;
+                        ui.set_width(column_width);
+                        for (id, name, _) in stats.iter().skip(column * rows).take(rows) {
+                            if ui
+                                .add(
+                                    buttons::Button::selectable(id == selected, name.as_str())
+                                        .min_size(Vec2::new(column_width, row_height))
+                                        .wrap_mode(egui::TextWrapMode::Truncate),
+                                )
+                                .clicked()
+                            {
+                                chosen = Some(id.clone());
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    chosen
+}
+
 fn full_number(ui: &mut egui::Ui, entity: &mut Value, key: &str, integer: bool) {
     let mut value = entity[key]
         .as_f64()
@@ -617,4 +699,30 @@ fn dropdown(
         ink,
     );
     response.on_hover_text(title)
+}
+
+#[cfg(test)]
+mod stat_selector_tests {
+    use super::*;
+
+    #[test]
+    fn alphabetical_order_and_screen_fitting_columns() {
+        let mut stats = vec![
+            ("3".into(), "Zulu".into(), "Int".into()),
+            ("2".into(), "alpha".into(), "Float".into()),
+            ("1".into(), "Beta".into(), "Int".into()),
+        ];
+        sort_stats(&mut stats);
+        assert_eq!(
+            stats.iter().map(|stat| stat.1.as_str()).collect::<Vec<_>>(),
+            ["alpha", "Beta", "Zulu"]
+        );
+        let (rows, columns, visible) =
+            stat_selector_columns(61, Vec2::new(1200.0, 800.0), 28.0, 240.0);
+        assert_eq!((rows, columns, visible), (18, 4, 3));
+        let (_, columns, visible) = stat_selector_columns(61, Vec2::new(420.0, 800.0), 28.0, 240.0);
+        assert_eq!((columns, visible), (4, 1));
+        let (rows, _, _) = stat_selector_columns(61, Vec2::new(420.0, 320.0), 28.0, 240.0);
+        assert!(rows <= 8);
+    }
 }

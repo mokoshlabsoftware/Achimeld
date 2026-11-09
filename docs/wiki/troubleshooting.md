@@ -20,6 +20,7 @@ Start with the visible status/error and the operation that produced it. Preserve
 | Counts match but Sync has differences | Counts do not compare field values or icon artwork |
 | Previous-session validation is shown | Re-validate; the saved snapshot is not fresh connectivity evidence |
 | Interrupted synchronization | Read again and review the reconciliation plan |
+| Steam synchronization exceeds 100 achievements | Review selected deletions and new uploads. Unvetted apps are limited to 100; an eligible vetted app can explicitly continue above 100. Deletion requires separate confirmation |
 | Save was interrupted/files changed externally | Preserve project, companion catalog and artwork; follow recovery guidance rather than overwriting |
 
 ## Terminal and logs
@@ -29,6 +30,8 @@ Open Tools > Terminal or Preferences > General > View logs. Select the current s
 Pause output/Resume output controls display updates. Clear applies to the current in-app view; use the log folder for retained files. The Terminal is a bounded view, not the full retained history. Its timestamps are UTC.
 
 Preferences > General > Open log folder opens Windows Public Documents/Achimeld/Logs. The current session normally uses log.txt and the previous session log_bak.txt; concurrent/test sessions can use numbered instance files.
+
+A failed reviewed Steam step records its closed synchronization phase, fixed endpoint category, elapsed time, and whether a draft save was armed, confirmed or verified by read-back. The log does not contain Steam page content or prove why an upstream request stalled. After an uncertain step, perform a fresh review rather than repeating the old plan.
 
 A logging failure is shown in the app. Logs retry and bounded in-memory output can remain available; copy relevant output before exit if persistence is failing.
 

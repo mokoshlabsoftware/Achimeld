@@ -1,5 +1,7 @@
 # Local editor MCP
 
+The initialize instructions point agents to the embedded [achievement-authoring guide](agent-achievement-authoring.md), available through `resources/list` and `resources/read` at `achimeld://guides/achievement-authoring`. It distinguishes record names from optional icon lettering, requires clarification of ambiguous text, and treats requests for styles or icon styles as native Achimeld work by default. Ordinary image generation belongs to the agent's tools, not Achimeld. This is agent guidance, not semantic enforcement of natural-language intent by the tool dispatcher.
+
 The [MCP guidelines](mcp-guidelines.md) define the expected minimized-window, handshake, reconnect, health, and error behavior. The current implementation and live qualification are tracked separately in the [MCP audit](security/mcp-audit.md).
 
 Build and Run also recovers connectors from older packages: if only exact `Achimeld.exe --mcp` processes remain in the current development package, it closes those connectors before building. Any editor, supervisor, worker or other command preserves the save-and-close build guard. Cleanup validates the executable path and process start time against a retained process handle; it does not terminate processes from other packages.

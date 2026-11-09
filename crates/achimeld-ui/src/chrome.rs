@@ -83,9 +83,36 @@ pub(crate) fn title_menu_bar_requested<const N: usize>(
 }
 
 pub(crate) fn drag_window(response: &egui::Response) {
-    if response.double_clicked() {
+    // egui's modal backdrop owns pointer interaction outside the prompt. The
+    // native title strip still needs to move the whole application window.
+    let modal = response.ctx.memory(|memory| memory.top_modal_layer());
+    let title_press = response.ctx.input(|input| {
+        input.pointer.button_pressed(PointerButton::Primary)
+            && input
+                .pointer
+                .press_origin()
+                .is_some_and(|pos| response.rect.contains(pos))
+    });
+    let title_double_click = response.ctx.input(|input| {
+        input.pointer.button_double_clicked(PointerButton::Primary)
+            && input
+                .pointer
+                .interact_pos()
+                .is_some_and(|pos| response.rect.contains(pos))
+    });
+    let bypass_modal = modal.is_some() || !response.enabled();
+    let pointer_pos = response.ctx.input(|input| input.pointer.interact_pos());
+    let outside_modal = modal.is_none_or(|layer| {
+        response.ctx.memory(|memory| {
+            memory
+                .area_rect(layer.id)
+                .is_none_or(|rect| pointer_pos.is_none_or(|pos| !rect.contains(pos)))
+        })
+    });
+    if response.double_clicked() || (bypass_modal && outside_modal && title_double_click) {
         toggle_maximized(&response.ctx);
-    } else if response.is_pointer_button_down_on()
+    } else if (response.is_pointer_button_down_on()
+        || (bypass_modal && outside_modal && title_press))
         && response
             .ctx
             .input(|i| i.pointer.button_pressed(PointerButton::Primary))
@@ -272,6 +299,67 @@ pub(crate) fn resize_window(ui: &mut egui::Ui, rect: Rect) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn modal_does_not_block_application_title_drag() {
+        let ctx = egui::Context::default();
+        let mut time = 0.0;
+        let mut frame = |events| {
+            time += 0.05;
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    time: Some(time),
+                    screen_rect: Some(Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(900.0, 600.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ui| {
+                    ui.add_enabled_ui(false, |ui| {
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(900.0, 24.0), Sense::hover());
+                        let response = ui.interact(
+                            rect,
+                            egui::Id::new("test-title-drag"),
+                            Sense::click_and_drag(),
+                        );
+                        drag_window(&response);
+                    });
+                    crate::modal::dialog(&ctx, egui::Id::new("test-title-modal")).show(
+                        &ctx,
+                        |ui| {
+                            ui.set_width(320.0);
+                            ui.label("Modal prompt");
+                        },
+                    );
+                },
+            );
+            output.textures_delta.clear();
+            output
+                .viewport_output
+                .remove(&egui::ViewportId::ROOT)
+                .unwrap()
+                .commands
+        };
+        frame(vec![]);
+        frame(vec![]);
+        let pos = egui::pos2(100.0, 12.0);
+        let commands = frame(vec![
+            egui::Event::PointerMoved(pos),
+            egui::Event::PointerButton {
+                pos,
+                button: PointerButton::Primary,
+                pressed: true,
+                modifiers: egui::Modifiers::NONE,
+            },
+        ]);
+        assert!(
+            commands.contains(&ViewportCommand::StartDrag),
+            "{commands:?}"
+        );
+    }
 
     #[test]
     fn open_title_menu_follows_hover_in_both_directions_and_dismisses() {

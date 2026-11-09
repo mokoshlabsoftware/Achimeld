@@ -22,6 +22,7 @@ public sealed record SyncReview(Guid Token, uint AppId, SyncReviewRow[] Rows, st
     // The validated CDN references allow exact post-write artwork inspection without
     // exposing a browser session, portal response, or credentials to the editor.
     public RemoteIconMetadata[] RemoteIcons { get; init; } = [];
+    public int RemoteAchievementCount { get; init; }
 }
 public sealed record SyncStep(string Key, string Action, string ApiName, bool NeedsIcons);
 public sealed record SyncArtwork(Guid Id, byte[] Bytes);
@@ -32,6 +33,8 @@ public interface ISynchronizationPortal
     Task<RemoteSnapshot> ReadAsync(SteamAppId appId);
     Task ApplyAsync(PortalWriteOperation operation);
     Task<byte[]> DownloadArtworkAsync(Uri uri);
+    void SetDiagnosticPhase(string phase) { }
+    void SetDiagnosticWriteState(string state) { }
     Task<byte[]?> ReadGameBannerAsync(uint appId) => Task.FromResult<byte[]?>(null);
     Task<bool> VerifyIconsAsync(PortalWriteOperation operation, RemoteIconMetadata? actual) =>
         throw new InvalidDataException("This portal cannot verify uploaded icon content.");
@@ -61,6 +64,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
 
     public async Task<SyncReview> PrepareAsync(PrepareSyncRequest request, uint pinnedAppId)
     {
+        portal.SetDiagnosticPhase("prepare");
         if (review is not null || terminal || pinnedAppId == 0 || request.Project.GetRawText().Length > 16 * 1024 * 1024 ||
             request.Catalog.Count > 100_000 || request.Icons.Count > 10_000) throw Rejected();
         raw = JsonNode.Parse(request.Project.GetRawText())?.AsObject() ?? throw Rejected();
@@ -196,7 +200,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                             state = Merge(state, textState);
                         }
                     }
-                string[] actions = local is null ? ["Skip", "Import"] : remoteHash == SyncFingerprint.Absent ? ["Skip", "Upload"] : ["Skip", "Upload", "Import"];
+                string[] actions = local is null ? ["Skip", "Import", "Delete"] : remoteHash == SyncFingerprint.Absent ? ["Skip", "Upload"] : ["Skip", "Upload", "Import"];
                 string initial = state is SyncState.LocalOnly or SyncState.LocalChanged ? "Upload" : state == SyncState.SteamOnly ? "Import" : "Skip";
                 if (recoveredRenames.Contains(kind + ":" + name)) { state = SyncState.LocalChanged; initial = "Upload"; }
                 string? uploadError = null;
@@ -222,7 +226,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                     bool available = icons.TryGetValue(name, out SyncIconHashes? pair);
                     RemoteIconMetadata? remoteIcon = current.Icons.SingleOrDefault(i => i.AchievementApiName.Value == name);
                     string? localIcon = pair is null || pair.Deferred ? null : PairFingerprint(pair);
-                    SyncState iconState = baseline?.Icons is IconSyncBaseline previous && localIcon == previous.LocalFingerprint && remoteIcon?.ContentFingerprint == previous.RemoteFingerprint
+                    SyncState iconState = localIcon is not null && localIcon == remoteIcon?.ContentFingerprint
+                        ? SyncState.InSync : baseline?.Icons is IconSyncBaseline previous && localIcon == previous.LocalFingerprint && remoteIcon?.ContentFingerprint == previous.RemoteFingerprint
                         ? SyncState.InSync : remoteIcon is null || remoteIcon.AchievedIdentity is null ? SyncState.LocalOnly
                         : baseline?.Icons is IconSyncBaseline old && remoteIcon.ContentFingerprint == old.RemoteFingerprint ? SyncState.LocalChanged : SyncState.Conflict;
                     rows.Add(new("Icon:" + name, "Icon", name, available ? iconState.ToString() : "ArtworkUnavailable",
@@ -234,12 +239,13 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         byte[]? banner = await portal.ReadGameBannerAsync(pinnedAppId);
         if (banner is not null && (banner.Length > 2 * 1024 * 1024 || !BoundedRaster.HasSafeDimensions(banner, 1024))) banner = null;
         review = new(Guid.NewGuid(), pinnedAppId, rows.ToArray(), Fingerprint(current), banner)
-            { RemoteIcons = current.Icons.ToArray() };
+            { RemoteIcons = current.Icons.ToArray(), RemoteAchievementCount = current.Achievements.Count };
         return review;
     }
 
     public async Task<SyncStep[]> BeginAsync(BeginSyncRequest request)
     {
+        portal.SetDiagnosticPhase("review-precheck");
         RequireToken(request.Token);
         if (steps is not null || request.Choices.Length > review!.Rows.Length || request.Choices.Select(c => c.Key).Distinct().Count() != request.Choices.Length) throw Rejected();
         Dictionary<string, SyncReviewRow> rows = review.Rows.ToDictionary(r => r.Key);
@@ -249,7 +255,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         if (Fingerprint(fresh) != review.RemoteFingerprint) throw new InvalidDataException("Steam changed after review; prepare a new synchronization plan.");
         current = fresh;
         SyncStep[] selectedSteps = request.Choices.Where(c => c.Action != "Skip").Select(c => new SyncStep(c.Key, c.Action, rows[c.Key].ApiName, rows[c.Key].Kind == "Icon"))
-            .OrderBy(s => s.Key.StartsWith("Stat:", StringComparison.Ordinal) ? 0 : s.Key.StartsWith("Achievement:", StringComparison.Ordinal) ? 1 : 2).ToArray();
+            .OrderBy(s => s.Action == "Delete" ? s.Key.StartsWith("Achievement:", StringComparison.Ordinal) ? 0 : 1
+                : s.Key.StartsWith("Stat:", StringComparison.Ordinal) ? 2 : s.Key.StartsWith("Achievement:", StringComparison.Ordinal) ? 3 : 4).ToArray();
         var uploadStats = selectedSteps.Where(s => s.Key.StartsWith("Stat:", StringComparison.Ordinal) && s.Action == "Upload").Select(s => s.ApiName).ToHashSet(StringComparer.Ordinal);
         var importStats = selectedSteps.Where(s => s.Key.StartsWith("Stat:", StringComparison.Ordinal) && s.Action == "Import").Select(s => s.ApiName).ToHashSet(StringComparer.Ordinal);
         var uploadAchievements = selectedSteps.Where(s => s.Key.StartsWith("Achievement:", StringComparison.Ordinal) && s.Action == "Upload").Select(s => s.ApiName).ToHashSet(StringComparer.Ordinal);
@@ -259,7 +266,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         var remoteAchievementNames = current.Achievements.Select(a => a.ApiName.Value).ToHashSet(StringComparer.Ordinal);
         foreach (SyncStep step in selectedSteps)
         {
-            if (step.Key.StartsWith("Achievement:", StringComparison.Ordinal))
+            if (step.Action != "Delete" && step.Key.StartsWith("Achievement:", StringComparison.Ordinal))
             {
                 string? progress = step.Action == "Import" ? current.Achievements.Single(a => a.ApiName.Value == step.ApiName).ProgressStatApiName?.Value
                     : project!.Achievements.Single(a => a.ApiName.Value == step.ApiName).ProgressStatId is StatId id ? project!.Stats.Single(s => s.Id == id).ApiName.Value : null;
@@ -278,6 +285,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
 
     public async Task<SyncStepResult> StepAsync(SyncStepRequest request)
     {
+        portal.SetDiagnosticPhase("step-precheck");
         RequireToken(request.Token);
         if (steps is null || next >= steps.Length || steps[next].Key != request.Key) throw Rejected();
         SyncStep step = steps[next];
@@ -286,7 +294,24 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         terminal = true;
         await RequireUnchangedAsync();
         SyncArtwork[] artwork = [];
-        if (step.Action == "Import")
+        if (step.Action == "Delete")
+        {
+            if (request.Achieved is not null || request.Unachieved is not null ||
+                !step.Key.StartsWith("Achievement:", StringComparison.Ordinal) &&
+                !step.Key.StartsWith("Stat:", StringComparison.Ordinal)) throw Rejected();
+            bool stat = step.Key.StartsWith("Stat:", StringComparison.Ordinal);
+            if (Local(stat, step.ApiName) is not null ||
+                stat && current!.Achievements.Any(a => a.ProgressStatApiName?.Value == step.ApiName))
+                throw Rejected();
+            PortalEntityKind kind = stat ? PortalEntityKind.Stat : PortalEntityKind.Achievement;
+            string? identity = stat ? current!.Stats.Single(s => s.ApiName.Value == step.ApiName).SteamId
+                : current!.Achievements.Single(a => a.ApiName.Value == step.ApiName).SteamId;
+            if (string.IsNullOrEmpty(identity)) throw Rejected();
+            await WriteAsync(new(Guid.NewGuid(), project!.AppId, new(kind, new(step.ApiName)),
+                Resolve(current!, kind, step.ApiName), SyncFingerprint.Absent, new Dictionary<string, string>(),
+                new Dictionary<string, byte[]>(), Delete: true, ExpectedSteamId: identity));
+        }
+        else if (step.Action == "Import")
         {
             if (request.Achieved is not null || request.Unachieved is not null) throw Rejected();
             artwork = await ImportAsync(step);
@@ -330,11 +355,13 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         }
         next++;
         terminal = false;
+        portal.SetDiagnosticPhase("step-complete");
         return new(artwork);
     }
 
     public async Task<object> FinishAsync(FinishSyncRequest request)
     {
+        portal.SetDiagnosticPhase("finish-precheck");
         RequireToken(request.Token);
         if (steps is null || next != steps.Length) throw Rejected();
         terminal = true;
@@ -346,10 +373,13 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
 
     private async Task WriteAsync(PortalWriteOperation operation)
     {
+        portal.SetDiagnosticPhase("write-precheck");
         await RequireUnchangedAsync();
         if (operation.Target.Kind != PortalEntityKind.Icon && Resolve(current!, operation.Target.Kind, operation.Target.ApiName.Value, operation.Target.LocalizationField) == operation.DesiredFingerprint) return;
         RemoteSnapshot before = current!;
+        portal.SetDiagnosticPhase("write-apply");
         await portal.ApplyAsync(operation);
+        portal.SetDiagnosticPhase("write-readback");
         RemoteSnapshot after = await ReadAsync();
         async Task<bool> Matches(RemoteSnapshot snapshot) => operation.Target.Kind == PortalEntityKind.Icon
             ? await portal.VerifyIconsAsync(operation, snapshot.Icons.SingleOrDefault(i => i.AchievementApiName == operation.Target.ApiName))
@@ -371,6 +401,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         }
         RequireOtherTargetsUnchanged(before, after, operation.Target);
         current = after;
+        portal.SetDiagnosticWriteState("readback-verified");
     }
 
     private async Task<RemoteSnapshot> ReadAsync()
@@ -449,16 +480,18 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
             : JsonSerializer.SerializeToNode(current!.Achievements.SingleOrDefault(a => a.ApiName.Value == name), ProjectJson);
         Dictionary<string, string>? localFields = local is null ? null : DefinitionFields(stat, name);
         List<object> fields = [];
+        string? localProgress = stat || local is null ? null : localFields!["progressStatApiName"];
+        string? remoteProgress = stat ? null : current!.Achievements.SingleOrDefault(a => a.ApiName.Value == name)?.ProgressStatApiName?.Value;
         foreach (string key in stat ? new[] { "type", "setBy", "incrementOnly", "minimum", "maximum", "defaultValue", "maximumChange", "aggregated", "averageRateWindowSeconds" }
             : new[] { "hidden", "setBy", "unlockValue" })
         {
+            // A standalone local threshold affects icon text, not the Steam definition.
+            if (key == "unlockValue" && string.IsNullOrEmpty(localProgress) && string.IsNullOrEmpty(remoteProgress)) continue;
             string a = localFields?.GetValueOrDefault(key) ?? "—", b = remote is null ? "—" : remote[key]?.ToString() ?? "";
             if (a != b) fields.Add(new { field = key, local = a, steam = b });
         }
         if (!stat)
         {
-            string? localProgress = local is null ? null : DefinitionFields(false, name)["progressStatApiName"];
-            string? remoteProgress = current!.Achievements.SingleOrDefault(a => a.ApiName.Value == name)?.ProgressStatApiName?.Value;
             if ((localProgress ?? "") != (remoteProgress ?? "")) fields.Add(new { field = "progressStatApiName", local = localProgress ?? "—", steam = remoteProgress ?? "—" });
         }
         var localText = local is null ? new Dictionary<LocalizationField, Dictionary<string, string>>() : Localizations(stat, name).ToDictionary(t => t.Field, t => TextFields(t.Row));
@@ -681,6 +714,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
 
 public sealed class DriverSynchronizationPortal(PlaywrightChromeDriver driver) : ISynchronizationPortal, ICompletePortalDocumentSource
 {
+    public void SetDiagnosticPhase(string phase) => driver.SetSyncDiagnosticPhase(phase);
+    public void SetDiagnosticWriteState(string state) => driver.SetSyncDiagnosticWriteState(state);
     public Task<byte[]?> ReadGameBannerAsync(uint appId) => driver.ReadGameBannerAsync(appId);
     public Task<ManagedPageDocument> ReadCompleteConfigurationAsync(SteamAppId appId, CancellationToken cancellationToken = default) => driver.ReadCompleteConfigurationAsync(appId);
     public Task<RemoteSnapshot> ReadAsync(SteamAppId appId) => new SteamworksSnapshotReader(this).ReadSnapshotAsync(appId);

@@ -13,6 +13,21 @@ pub(crate) struct AppIdEdit {
     error: Option<String>,
 }
 
+pub(crate) struct SyncWarning {
+    token: String,
+    choices: Vec<(String, String)>,
+    delete_achievements: usize,
+    delete_stats: usize,
+    projected_achievements: u64,
+    above_default_limit: bool,
+}
+
+pub(crate) struct ValidationFollowup {
+    pub project_id: String,
+    pub app_id: u32,
+    pub saw_validation: bool,
+}
+
 pub(crate) fn parse_app_id(text: &str) -> Option<u32> {
     let text = text.trim();
     if text.is_empty() || !text.bytes().all(|byte| byte.is_ascii_digit()) {
@@ -24,6 +39,19 @@ pub(crate) fn parse_app_id(text: &str) -> Option<u32> {
 
 pub(crate) fn steamworks_destination(app_id: u32) -> String {
     format!("https://partner.steamgames.com/apps/achievements/{app_id}")
+}
+
+pub(crate) fn sync_review_group(row: &serde_json::Value) -> u8 {
+    if row["state"] == "InSync" {
+        2
+    } else if row["fields"]
+        .as_array()
+        .is_some_and(|fields| !fields.is_empty())
+    {
+        0
+    } else {
+        1
+    }
 }
 
 /// How far the open project has confirmed access to its Steam partner destination.
@@ -198,6 +226,47 @@ impl Desktop {
         }
     }
 
+    pub(crate) fn validate_and_synchronize(&mut self, port: &dyn EditorPort) {
+        if !self.sync_action_enabled(port)
+            || port.synchronization_verified()
+            || port.synchronization_review().is_some()
+            || SteamAppId::new(port.editor().document().app_id()).is_err()
+        {
+            return;
+        }
+        self.validation_followup = Some(ValidationFollowup {
+            project_id: port.editor().document().project()["projectId"]
+                .as_str()
+                .unwrap_or("")
+                .to_owned(),
+            app_id: port.editor().document().app_id(),
+            saw_validation: false,
+        });
+        self.run_sync_action(port);
+    }
+
+    pub(crate) fn continue_validation_followup(&mut self, port: &dyn EditorPort) {
+        let Some(mut followup) = self.validation_followup.take() else {
+            return;
+        };
+        if port.editor().document().project()["projectId"].as_str()
+            != Some(followup.project_id.as_str())
+            || port.editor().document().app_id() != followup.app_id
+            || port.synchronization_error().is_some()
+        {
+            return;
+        }
+        if port.synchronizing() {
+            followup.saw_validation = true;
+            self.validation_followup = Some(followup);
+        } else if followup.saw_validation && port.synchronization_verified() {
+            self.sync_confirmation = None;
+            self.request(UiRequest::PrepareSynchronization);
+        } else if !followup.saw_validation {
+            self.validation_followup = Some(followup);
+        }
+    }
+
     pub(crate) fn confirm_sync_plan(&mut self, port: &dyn EditorPort) {
         let Some(review) = port.synchronization_review() else {
             self.sync_plan_token = None;
@@ -209,18 +278,70 @@ impl Desktop {
             self.sync_plan_token = None;
             return;
         }
+        let choices: Vec<(String, String)> = review["rows"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| {
+                let key = row["key"].as_str()?;
+                Some((key.into(), self.sync_choices.get(key)?.clone()))
+            })
+            .collect();
+        let (delete_achievements, delete_stats, projected_achievements) =
+            self.sync_warning_counts(review);
+        let above_default_limit = projected_achievements > 100;
+        if delete_achievements + delete_stats > 0 || above_default_limit {
+            self.sync_review_started = None;
+            self.sync_review_paused = true;
+            self.sync_warning = Some(SyncWarning {
+                token: review["token"].as_str().unwrap_or("").into(),
+                choices,
+                delete_achievements,
+                delete_stats,
+                projected_achievements,
+                above_default_limit,
+            });
+            return;
+        }
         self.sync_plan_token = None;
-        self.request(UiRequest::ApplySynchronization(
-            review["rows"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(|row| {
-                    let key = row["key"].as_str()?;
-                    Some((key.into(), self.sync_choices.get(key)?.clone()))
-                })
-                .collect(),
-        ));
+        self.request(UiRequest::ApplySynchronization {
+            choices,
+            confirm_deletion: false,
+            allow_above_100: false,
+        });
+    }
+
+    fn sync_warning_counts(&self, review: &serde_json::Value) -> (usize, usize, u64) {
+        let mut deleted_achievements = 0;
+        let mut deleted_stats = 0;
+        let mut created_achievements = 0;
+        for row in review["rows"].as_array().into_iter().flatten() {
+            let key = row["key"].as_str().unwrap_or("");
+            let action = self
+                .sync_choices
+                .get(key)
+                .map(String::as_str)
+                .unwrap_or("Skip");
+            if action == "Delete" {
+                if row["kind"] == "Achievement" {
+                    deleted_achievements += 1;
+                }
+                if row["kind"] == "Stat" {
+                    deleted_stats += 1;
+                }
+            } else if action == "Upload"
+                && row["kind"] == "Achievement"
+                && row["state"] == "LocalOnly"
+            {
+                created_achievements += 1;
+            }
+        }
+        let remote = review["remoteAchievementCount"].as_u64().unwrap_or(0);
+        (
+            deleted_achievements,
+            deleted_stats,
+            remote.saturating_sub(deleted_achievements as u64) + created_achievements,
+        )
     }
 
     pub(crate) fn planned_sync_lines(
@@ -256,27 +377,22 @@ impl Desktop {
                 created.insert(api.to_owned());
             }
         }
-        let deletions = self
-            .marked_steam_entries(port)
-            .into_iter()
-            .map(|entry| {
-                let kind = if entry.kind == achimeld_application::EntityKind::Achievement {
-                    "Achievement"
-                } else {
-                    "Stat"
-                };
-                if entry.name.is_empty() {
-                    format!("Delete · {kind} · {}", entry.api)
-                } else {
-                    format!("Delete · {kind} · {} · {}", entry.name, entry.api)
-                }
+        let deletions = rows
+            .iter()
+            .filter(|row| choice(row["key"].as_str().unwrap_or("")) == "Delete")
+            .map(|row| {
+                format!(
+                    "Delete · {} · {}",
+                    row["kind"].as_str().unwrap_or(""),
+                    row["apiName"].as_str().unwrap_or("")
+                )
             })
             .collect();
         let mut other = Vec::new();
         for row in rows {
             let key = row["key"].as_str().unwrap_or("");
             let action = choice(key);
-            if action == "Skip" {
+            if action == "Skip" || action == "Delete" {
                 continue;
             }
             let api = row["apiName"].as_str().unwrap_or("");
@@ -340,8 +456,22 @@ impl Desktop {
             .as_array()
             .map(Vec::as_slice)
             .unwrap_or_default();
+        let differences = rows.iter().filter(|row| row["state"] != "InSync").count();
+        let achievement_differences = rows
+            .iter()
+            .filter(|row| row["kind"] == "Achievement" && row["state"] != "InSync")
+            .count();
+        let stat_differences = rows
+            .iter()
+            .filter(|row| row["kind"] == "Stat" && row["state"] != "InSync")
+            .count();
+        let icon_differences = rows
+            .iter()
+            .filter(|row| row["kind"] == "Icon" && row["state"] != "InSync")
+            .count();
         if self.sync_token != token {
             self.sync_token = token.clone();
+            self.sync_warning = None;
             self.sync_plan_token = Some(token.clone());
             self.sync_confirmation = Some((token.clone(), app_id));
             self.sync_filter.clear();
@@ -354,9 +484,99 @@ impl Desktop {
                     ))
                 })
                 .collect();
+            for row in rows {
+                let kind = match row["kind"].as_str() {
+                    Some("Achievement") => Some(achimeld_application::EntityKind::Achievement),
+                    Some("Stat") => Some(achimeld_application::EntityKind::Stat),
+                    _ => None,
+                };
+                if row["state"] == "SteamOnly"
+                    && row["actions"]
+                        .as_array()
+                        .is_some_and(|actions| actions.iter().any(|action| action == "Delete"))
+                    && kind
+                        .zip(row["apiName"].as_str())
+                        .is_some_and(|(kind, api)| {
+                            self.steam_marks.contains(&(kind, api.to_owned()))
+                        })
+                    && let Some(key) = row["key"].as_str()
+                {
+                    self.sync_choices.insert(key.into(), "Delete".into());
+                }
+            }
+            if review["reconciliation"] == true {
+                for row in rows {
+                    if row["state"] != "InSync"
+                        && row["actions"]
+                            .as_array()
+                            .is_some_and(|actions| actions.iter().any(|action| action == "Upload"))
+                        && let Some(key) = row["key"].as_str()
+                    {
+                        self.sync_choices.insert(key.into(), "Upload".into());
+                    }
+                }
+            }
             self.sync_review_elapsed = Duration::ZERO;
-            self.sync_review_paused = false;
-            self.sync_review_started = (self.sync_selected_count(port) > 0).then(Instant::now);
+            self.sync_review_paused = review["reconciliation"] == true;
+            self.sync_review_started =
+                (!self.sync_review_paused && self.sync_selected_count(port) > 0).then(Instant::now);
+        }
+        if let Some(warning) = self.sync_warning.take() {
+            let same_choices = warning.token == token
+                && warning
+                    .choices
+                    .iter()
+                    .all(|(key, action)| self.sync_choices.get(key) == Some(action));
+            if same_choices {
+                let decision = steam::review_prompt(
+                    ctx,
+                    "sync-plan-warning",
+                    "Confirm Steam draft changes",
+                    if warning.delete_achievements + warning.delete_stats > 0 {
+                        Glyph::Delete.image(ctx, 24.0)
+                    } else {
+                        Glyph::Validate.image(ctx, 24.0)
+                    },
+                    &[
+                        steam::ReviewAction {
+                            colors: None,
+                            enabled: true,
+                            label: "Continue",
+                            icon: Glyph::Approve.image(ctx, 20.0),
+                        },
+                        steam::ReviewAction {
+                            colors: None,
+                            enabled: true,
+                            label: "Back to review",
+                            icon: Glyph::Cancel.image(ctx, 20.0),
+                        },
+                    ],
+                    |ui| {
+                        if warning.delete_achievements + warning.delete_stats > 0 {
+                            ui.label(format!("Synchronization will delete {} Steam achievements and {} Steam stats before other changes. These draft deletions can affect players after you publish in Steamworks.",
+                                warning.delete_achievements, warning.delete_stats));
+                        }
+                        if warning.above_default_limit {
+                            ui.label(format!("The reviewed plan would leave {} Steam achievements. Apps that have not been vetted are limited to 100. Continue only if this app can exceed that limit.",
+                                warning.projected_achievements));
+                        }
+                    },
+                );
+                match decision {
+                    steam::ReviewChoice::Action(0) => {
+                        self.sync_plan_token = None;
+                        self.request(UiRequest::ApplySynchronization {
+                            choices: warning.choices,
+                            confirm_deletion: warning.delete_achievements + warning.delete_stats
+                                > 0,
+                            allow_above_100: warning.above_default_limit,
+                        });
+                    }
+                    steam::ReviewChoice::Idle => self.sync_warning = Some(warning),
+                    _ => {}
+                }
+            }
+            return;
         }
         {
             let snapshot = &port.editor().document().project()["lastRemoteSnapshot"];
@@ -365,6 +585,14 @@ impl Desktop {
         let (creations, deletions, other) = self.planned_sync_lines(port);
         self.sync_plan_token = Some(token);
         let selected = self.sync_selected_count(port);
+        let (delete_achievements, delete_stats, projected_achievements) =
+            self.sync_warning_counts(review);
+        let requires_explicit =
+            delete_achievements + delete_stats > 0 || projected_achievements > 100;
+        if requires_explicit {
+            self.sync_review_started = None;
+            self.sync_review_paused = true;
+        }
         if selected > 0 && !self.sync_review_paused && self.sync_review_started.is_none() {
             self.sync_review_started = Some(Instant::now());
         }
@@ -390,8 +618,14 @@ impl Desktop {
             &[
                 steam::ReviewAction {
                     colors: None,
-                    enabled: running || selected > 0,
-                    label: if running { "Stop" } else { "Start 5 s" },
+                    enabled: !requires_explicit && (running || selected > 0),
+                    label: if requires_explicit {
+                        "Confirmation required"
+                    } else if running {
+                        "Stop"
+                    } else {
+                        "Start 5 s"
+                    },
                     icon: Glyph::Cancel.image(ctx, 20.0),
                 },
                 steam::ReviewAction {
@@ -420,6 +654,9 @@ impl Desktop {
                 widgets.active.corner_radius = egui::CornerRadius::ZERO;
                 ui.label(format!("Validated destination: Steam App ID {app_id}"));
                 ui.label(steamworks_destination(app_id));
+                ui.strong(format!(
+                    "Differences found: {differences} (achievements: {achievement_differences}, stats: {stat_differences}, icons: {icon_differences})"
+                ));
                 ui.label(format!(
                     "{selected} selected {}. {}",
                     if selected == 1 { "change" } else { "changes" },
@@ -428,6 +665,9 @@ impl Desktop {
                             "Synchronization starts in {:.1} s. Press Stop to edit the plan.",
                             remaining.as_secs_f32()
                         )
+                    } else if requires_explicit {
+                        "Select Synchronize now to review the deletion or achievement limit warning."
+                            .into()
                     } else if self.sync_review_paused {
                         "Countdown stopped. Edit the plan, then start it again or synchronize now."
                             .into()
@@ -438,27 +678,46 @@ impl Desktop {
                 if review["reconciliation"] == true {
                     ui.colored_label(
                         crate::theme::color(port.preferences(), "Warning"),
-                        "The previous synchronization was interrupted. This plan uses a fresh Steam read.",
+                        "The previous synchronization was interrupted. A fresh Steam read prepared project uploads where available. Review the choices below before starting synchronization.",
                     );
                 }
                 ui.label("Artwork for this upload is cached. You can keep editing the project after synchronization starts.");
-                steam::review_section(ui, "New achievements", &creations);
-                steam::review_section(ui, "Marked for deletion", &deletions);
-                steam::review_section(ui, "Other selected changes", &other);
-                ui.separator();
+                if selected > 0 {
+                    ui.strong(format!(
+                        "Selected plan: new achievements: {}, deletions: {}, other changes: {}",
+                        creations.len(),
+                        deletions.len(),
+                        other.len()
+                    ));
+                }
                 ui.add(
                     egui::TextEdit::singleline(&mut self.sync_filter)
                         .hint_text("Filter by API name"),
                 );
                 let query = self.sync_filter.to_lowercase();
-                for row in rows.iter().filter(|row| {
-                    row["state"] != "InSync"
-                        && row["apiName"]
+                let mut visible_rows = rows
+                    .iter()
+                    .filter(|row| {
+                        row["apiName"]
                             .as_str()
                             .unwrap_or("")
                             .to_lowercase()
                             .contains(&query)
-                }) {
+                    })
+                    .collect::<Vec<_>>();
+                visible_rows.sort_by_key(|row| sync_review_group(row));
+                let mut group = None;
+                for row in visible_rows {
+                    let next_group = sync_review_group(row);
+                    if group != Some(next_group) {
+                        ui.add_space(8.0);
+                        ui.strong(match next_group {
+                            0 => "Field differences",
+                            1 => "Other differences",
+                            _ => "Up to date",
+                        });
+                        group = Some(next_group);
+                    }
                     let key = row["key"].as_str().unwrap_or("");
                     ui.push_id(key, |ui| {
                         egui::Frame::new()
@@ -474,6 +733,7 @@ impl Desktop {
                                         row["kind"].as_str().unwrap_or(""),
                                         row["apiName"].as_str().unwrap_or("")
                                     ));
+                                    ui.add_space(8.0);
                                     ui.weak(match row["state"].as_str().unwrap_or("") {
                                         "LocalOnly" => "Only in project",
                                         "SteamOnly" => "Only on Steam",
@@ -485,6 +745,7 @@ impl Desktop {
                                         "RenamedOnSteam" => "Renamed on Steam · import keeps the old entry as Retired",
                                         value => value,
                                     });
+                                    ui.add_space(8.0);
                                     let entry = self.sync_choices.entry(key.into()).or_insert_with(|| "Skip".into());
                                     if let Some(default) = row["defaultAction"]
                                         .as_str()
@@ -496,6 +757,7 @@ impl Desktop {
                                             imported = included && default == "Import";
                                             changed = true;
                                         }
+                                        ui.add_space(8.0);
                                     }
                                     for action in row["actions"]
                                         .as_array()
@@ -507,6 +769,7 @@ impl Desktop {
                                             "Upload" => "Use project",
                                             "Skip" => "Leave unchanged",
                                             "Import" => "Use Steam",
+                                            "Delete" => "Delete on Steam",
                                             _ => action,
                                         };
                                         if ui.add(buttons::Button::selectable(entry == action, label).bar()).clicked() {
@@ -613,7 +876,7 @@ impl Desktop {
         let current = edit.revision == port.editor().revision();
         let mut save = false;
         let mut cancel = false;
-        let response = egui::Modal::new(egui::Id::new("sync-app-id-editor"))
+        let response = crate::modal::dialog(ctx, egui::Id::new("sync-app-id-editor"))
             .frame(egui::Frame::new().fill(Color32::BLACK).corner_radius(0)
                 .stroke(egui::Stroke::new(1.0, ctx.global_style().visuals.widgets.noninteractive.bg_stroke.color)))
             .show(ctx, |ui| {
@@ -630,6 +893,7 @@ impl Desktop {
                 let title = ui.painter().layout_no_wrap(localization::text(ctx, "Edit Steam App ID"),
                     egui::TextStyle::Heading.resolve(ui.style()), ui.visuals().text_color());
                 let (header, _) = ui.allocate_exact_size(Vec2::new(width, title.size().y.max(24.0) + 24.0), Sense::hover());
+                crate::modal::drag_header(ui, header);
                 Glyph::Rename.image(ctx, 24.0).tint(ui.visuals().text_color()).paint_at(ui,
                     Rect::from_center_size(egui::pos2(header.left() + 36.0, header.center().y), Vec2::splat(24.0)));
                 ui.painter().galley(header.center() - title.size() / 2.0, title, ui.visuals().text_color());
@@ -686,7 +950,7 @@ impl Desktop {
             return;
         }
         // Reparse after the field has consumed this frame's text input.
-        if save
+        if (save || crate::modal::enter(ctx, &response))
             && let Some(app_id) = parse_app_id(&edit.text)
             && !edit.project_name.trim().is_empty()
             && edit.project_name.len() <= 1024

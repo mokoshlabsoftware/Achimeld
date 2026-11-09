@@ -18,6 +18,8 @@ internal static class WorkerFailure
         "Steam changed after review; prepare a new synchronization plan." => "steam.sync.review-changed",
         "Steam changed during synchronization; prepare a fresh plan." => "steam.sync.remote-changed",
         "Steam draft read-back did not match the approved change." => "steam.sync.readback-mismatch",
+        "Steamworks did not confirm the draft save." => "steam.sync.save-unconfirmed",
+        "Steamworks did not confirm the draft deletion." => "steam.sync.delete-unconfirmed",
         "Steamworks rejected the achievement icon upload." => "steam.sync.icon-post-rejected",
         "Steamworks did not save the achievement icon." => "steam.sync.icon-not-saved",
         "Steamworks saved icon artwork that does not match the approved upload." => "steam.sync.icon-verify-failed",
@@ -36,8 +38,8 @@ internal static class WorkerFailure
         _ => null,
     };
     internal static System.Text.Json.JsonElement Details(string stage, Exception exception, long elapsed,
-        BrowserRequestDiagnostic? request) => System.Text.Json.JsonSerializer.SerializeToElement(new {
-            stage, kind = Kind(exception), elapsedMs = Math.Clamp(elapsed, 0, 300000), request,
+        BrowserRequestDiagnostic? request, SyncOperationDiagnostic? sync = null) => System.Text.Json.JsonSerializer.SerializeToElement(new {
+            stage, kind = Kind(exception), elapsedMs = Math.Clamp(elapsed, 0, 300000), request, sync,
         }, Achimeld.Security.SecurityWire.Json);
 
     internal static string Kind(Exception exception) => exception switch {

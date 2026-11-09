@@ -69,7 +69,7 @@ impl Desktop {
                 self.sync_game_banner(ui, port);
                 let project = port.editor().document().project();
                 ui.label(format!("{} · Steam App ID {}", project["displayName"].as_str().unwrap_or("Project"), project["steamAppId"].as_u64().unwrap_or(0)));
-                ui.label("Validate checks Steam sign-in and downloads the game banner. Synchronize prepares achievement artwork and imports existing Steam entries for review.");
+                ui.label("Validate checks Steam sign-in and downloads the game banner. Validate and synchronize continues into the existing review after that check. Synchronize prepares achievement artwork and imports existing Steam entries for review.");
                 ui.weak("Uploads save to the Steamworks draft. Publish manually in Steamworks.");
                 ui.checkbox(&mut self.terminal.show_during_sync, "Show Terminal during validation and synchronization");
                 ui.add_space(8.0);
@@ -97,6 +97,21 @@ impl Desktop {
                             crate::buttons::Button::new(self.sync_action_label(port))
                         };
                         if ui.add_enabled(self.sync_action_enabled(port), action.bar().primary_outline().id(egui::Id::new("sync-primary-action")).wants_click(self.sync_validate_wants_click(port)).icon_spacing(5.0).image_tint_follows_text_color(true)).clicked() { self.run_sync_action(port); }
+                        if valid_id && !port.synchronization_verified() && port.synchronization_review().is_none()
+                            && ui.add_enabled(
+                                self.sync_action_enabled(port),
+                                crate::buttons::Button::new((
+                                    crate::style_picker::Glyph::Validate.image(ui.ctx(), 20.0),
+                                    "Validate and synchronize",
+                                ))
+                                .bar()
+                                .id(egui::Id::new("sync-validate-and-synchronize"))
+                                .icon_spacing(5.0)
+                                .image_tint_follows_text_color(true),
+                            ).clicked()
+                        {
+                            self.validate_and_synchronize(port);
+                        }
                         if !compact_actions { self.steam_page_buttons(ui, port); }
                     });
                     if compact_actions {

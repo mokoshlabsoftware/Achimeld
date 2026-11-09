@@ -2,6 +2,42 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.9.7 (2026-11-07)
+
+- Validate the Steam connection and continue to synchronization review in one action
+
+## 0.3.9.6 (2026-11-07)
+
+- Move modal prompts and support Enter approval and Escape cancellation
+
+## 0.3.9.5 (2026-11-07)
+
+- Propose Steam uploads after interruption and prioritize changed rows
+
+## 0.3.9.4 (2026-11-07)
+
+- Confirm Steam synchronization deletions and achievement limits with clearer failure diagnostics
+
+## 0.3.9.3 (2026-11-07)
+
+- Show detected Steam differences separately from selected changes
+
+## 0.3.9.2 (2026-11-07)
+
+- Update Stats canvas cards when internal names change
+
+## 0.3.9.1 (2026-11-07)
+
+- Fit alphabetical progress stat choices to the screen
+
+## 0.3.9.0 (2026-11-03)
+
+- Add discoverable AI achievement and icon authoring guidance
+
+## 0.3.8.1 (2026-11-03)
+
+- Guide AI achievement authoring with separate names, optional icon text and native style workflows
+
 ## 0.3.8.0 (2026-11-03)
 
 - Fix MCP status during editor reconnection

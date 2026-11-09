@@ -298,12 +298,13 @@ impl Host {
                 | ImageImportTarget::NewAchievementBatch { .. }
         );
         let mut import = false;
-        let response = egui::Modal::new(egui::Id::new("photoshop-drop-picker"))
+        let response = achimeld_ui::modal::dialog(ctx, egui::Id::new("photoshop-drop-picker"))
             .frame(egui::Frame::popup(&ctx.global_style()).inner_margin(24))
             .show(ctx, |ui| {
                 use achimeld_ui::buttons::{Button, ButtonStyle, UiButtonExt as _};
                 ui.set_width(700.0_f32.min(ctx.content_rect().width() - 64.0));
-                ui.heading("Import Photoshop artwork");
+                let header = ui.heading("Import Photoshop artwork");
+                achimeld_ui::modal::drag_header(ui, header.rect);
                 egui::ScrollArea::vertical()
                     .max_height((ctx.content_rect().height() - 210.0).max(180.0))
                     .show(ui, |ui| {
@@ -391,7 +392,12 @@ impl Host {
                     }
                 });
             });
-        if import {
+        if import
+            || (achimeld_ui::modal::enter(ctx, &response)
+                && files
+                    .iter()
+                    .all(|file| file.entire || !file.selected.is_empty()))
+        {
             let Some(mut job) = self.image_drop.take() else {
                 return;
             };

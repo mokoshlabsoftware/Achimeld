@@ -942,7 +942,7 @@ impl Desktop {
         }
         let mut approve = false;
         let mut cancel = false;
-        let response = egui::Modal::new(egui::Id::new("delete-artwork-prompt"))
+        let response = crate::modal::dialog(ctx, egui::Id::new("delete-artwork-prompt"))
             .frame(egui::Frame::new().fill(egui::Color32::BLACK).corner_radius(0)
                 .stroke(egui::Stroke::new(1.0, ctx.global_style().visuals.widgets.noninteractive.bg_stroke.color)))
             .show(ctx, |ui| {
@@ -957,6 +957,7 @@ impl Desktop {
                 let title = ui.painter().layout_no_wrap(localization::text(ctx, "Delete artwork"), egui::TextStyle::Heading.resolve(ui.style()), ui.visuals().text_color());
                 let header_height = title.size().y.max(24.0) + 24.0;
                 let (header, _) = ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
+                crate::modal::drag_header(ui, header);
                 art_action_image(ctx, "delete", 24.0).tint(ui.visuals().text_color()).paint_at(ui,
                     egui::Rect::from_center_size(egui::pos2(header.left() + 36.0, header.center().y), egui::Vec2::splat(24.0)));
                 ui.painter().galley(header.center() - title.size() / 2.0, title, ui.visuals().text_color());
@@ -991,7 +992,7 @@ impl Desktop {
         if cancel || response.should_close() {
             return;
         }
-        if approve
+        if (approve || (crate::modal::enter(ctx, &response) && !port.art_busy()))
             && self.apply(
                 port,
                 "Delete artwork",

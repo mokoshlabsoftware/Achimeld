@@ -55,7 +55,11 @@ pub enum UiRequest {
     DeleteSteam(Vec<(EntityKind, String)>),
     CancelRead,
     PrepareSynchronization,
-    ApplySynchronization(Vec<(String, String)>),
+    ApplySynchronization {
+        choices: Vec<(String, String)>,
+        confirm_deletion: bool,
+        allow_above_100: bool,
+    },
     CancelSynchronization,
     OpenBrowserProfile,
     DeleteBrowserProfile,

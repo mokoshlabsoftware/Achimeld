@@ -3,10 +3,15 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Net;
+using System.Diagnostics;
 using Achimeld.Core;
 using Microsoft.Playwright;
 
 namespace Achimeld.Browser;
+
+// Closed, content-free facts about a reviewed synchronization operation.
+public sealed record SyncOperationDiagnostic(string Phase, long PhaseElapsedMs, string Endpoint,
+    string WriteState, string ResponseClass);
 
 public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 {
@@ -28,7 +33,41 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
     public BrowserRequestRejection RequestRejection => _requestPolicy.Rejection;
     private BrowserRequestDiagnostic? _lastRequestFailure;
     public BrowserRequestDiagnostic? RequestRejectionDetails => _requestPolicy.RejectionDetails ?? Volatile.Read(ref _lastRequestFailure);
-    public void BeginDiagnosticOperation() => Volatile.Write(ref _lastRequestFailure, null);
+    private string _syncPhase = "none";
+    private long _syncPhaseStarted = Stopwatch.GetTimestamp();
+    private string _syncEndpoint = "none";
+    private string _syncWriteState = "none";
+    private string _syncResponseClass = "none";
+    public SyncOperationDiagnostic SyncDiagnostic => new(_syncPhase,
+        Math.Clamp((long)Stopwatch.GetElapsedTime(_syncPhaseStarted).TotalMilliseconds, 0, 300000),
+        _syncEndpoint, _syncWriteState, _syncResponseClass);
+    public void BeginDiagnosticOperation()
+    {
+        Volatile.Write(ref _lastRequestFailure, null);
+        _syncPhase = "none";
+        _syncPhaseStarted = Stopwatch.GetTimestamp();
+        _syncEndpoint = "none";
+        _syncWriteState = "none";
+        _syncResponseClass = "none";
+    }
+    public void SetSyncDiagnosticPhase(string phase)
+    {
+        _syncPhase = phase;
+        _syncPhaseStarted = Stopwatch.GetTimestamp();
+        _syncEndpoint = "none";
+        _syncResponseClass = "none";
+    }
+    public void SetSyncDiagnosticWriteState(string state) => _syncWriteState = state;
+    public void SetSyncDiagnosticEndpoint(string endpoint)
+    {
+        _syncEndpoint = endpoint;
+        _syncResponseClass = "none";
+    }
+    public void SetSyncDiagnosticResponseStatus(int status) => _syncResponseClass = status switch
+    {
+        >= 200 and < 300 => "2xx", >= 300 and < 400 => "3xx",
+        >= 400 and < 500 => "4xx", >= 500 and < 600 => "5xx", _ => "other",
+    };
     public string DiagnosticStage { get; private set; } = "idle";
 
 
@@ -233,6 +272,8 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 
     private async Task<string> ReadConfigurationJsonAsync(SteamAppId appId, string endpoint)
     {
+        SetSyncDiagnosticEndpoint(endpoint);
+        Volatile.Write(ref _lastRequestFailure, null);
         Uri uri = _requestPolicy.ConfigurationUri(appId.Value, endpoint);
         IPage page = await EnsurePageAsync().ConfigureAwait(false);
         return await page.EvaluateAsync<string>(FixedReadScripts.Configuration, new { url = uri.AbsoluteUri, maximumBytes = 16 * 1024 * 1024,

@@ -430,7 +430,7 @@ impl Desktop {
         let header_glyph = if creating { Glyph::Save } else { Glyph::Rename };
         let mut approve = false;
         let mut cancel = false;
-        let response = egui::Modal::new(egui::Id::new("rename-project-style"))
+        let response = crate::modal::dialog(ctx, egui::Id::new("rename-project-style"))
             .frame(
                 egui::Frame::popup(&ctx.global_style())
                     .fill(Color32::BLACK)
@@ -480,6 +480,7 @@ impl Desktop {
                     Vec2::new(width, title.size().y.max(24.0) + 24.0),
                     Sense::hover(),
                 );
+                crate::modal::drag_header(ui, header);
                 header_glyph
                     .image(ctx, 24.0)
                     .tint(ui.visuals().text_color())
@@ -664,7 +665,12 @@ impl Desktop {
         if cancel || response.should_close() {
             return;
         }
-        if approve {
+        if approve
+            || (crate::modal::enter(ctx, &response)
+                && exists
+                && !edit.name.trim().is_empty()
+                && edit.name.trim().len() <= 256)
+        {
             if let Some(recipe) = edit.recipe.clone() {
                 let style = IconStyle {
                     id: edit.style.clone(),

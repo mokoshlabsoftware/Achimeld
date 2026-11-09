@@ -134,6 +134,17 @@ impl WorkerResponse {
             elapsed_ms: u64,
             #[serde(default)]
             request: Option<RequestDetails>,
+            #[serde(default)]
+            sync: Option<SyncDetails>,
+        }
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
+        struct SyncDetails {
+            phase: String,
+            phase_elapsed_ms: u64,
+            endpoint: String,
+            write_state: String,
+            response_class: String,
         }
         #[derive(Deserialize)]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -180,6 +191,51 @@ impl WorkerResponse {
             "Worker rejection details · stage={} · category={} · worker elapsed={} ms",
             details.stage, details.kind, details.elapsed_ms
         );
+        if let Some(sync) = details.sync {
+            if !matches!(
+                sync.phase.as_str(),
+                "none"
+                    | "prepare"
+                    | "review-precheck"
+                    | "step-precheck"
+                    | "write-precheck"
+                    | "write-apply"
+                    | "write-readback"
+                    | "step-complete"
+                    | "finish-precheck"
+            ) || sync.phase_elapsed_ms > 300_000
+                || !matches!(
+                    sync.endpoint.as_str(),
+                    "none"
+                        | "fetchstats"
+                        | "fetchachievements"
+                        | "savestat"
+                        | "saveachievement"
+                        | "deletestat"
+                        | "deleteachievement"
+                        | "uploadachievement"
+                )
+                || !matches!(
+                    sync.write_state.as_str(),
+                    "none"
+                        | "save-armed"
+                        | "save-confirmed"
+                        | "delete-armed"
+                        | "delete-confirmed"
+                        | "readback-verified"
+                )
+                || !matches!(
+                    sync.response_class.as_str(),
+                    "none" | "2xx" | "3xx" | "4xx" | "5xx" | "other"
+                )
+            {
+                return None;
+            }
+            message.push_str(&format!(
+                " · sync-phase={} · phase elapsed={} ms · endpoint={} · write-state={} · response-class={}",
+                sync.phase, sync.phase_elapsed_ms, sync.endpoint, sync.write_state, sync.response_class
+            ));
+        }
         if let Some(request) = details.request {
             if !matches!(
                 request.method.as_str(),
@@ -383,6 +439,12 @@ impl WorkerResponse {
                 Some("steam.sync.readback-mismatch") => {
                     Some("Steam draft read-back did not match the approved change.")
                 }
+                Some("steam.sync.save-unconfirmed") => Some(
+                    "Steamworks did not confirm the reviewed draft save. Read Steam again before retrying.",
+                ),
+                Some("steam.sync.delete-unconfirmed") => Some(
+                    "Steamworks did not confirm the reviewed draft deletion. Read Steam again before retrying.",
+                ),
                 Some("steam.sync.icon-post-rejected") => Some(
                     "Steamworks rejected the reviewed icon upload. Read Steam again before retrying.",
                 ),
@@ -603,6 +665,32 @@ mod tests {
         response.data["request"]["url"] = serde_json::json!("secret-marker");
         assert!(response.failure_details("request").is_none());
     }
+    #[test]
+    fn synchronization_diagnostics_accept_only_closed_phase_and_status() {
+        let details = serde_json::json!({
+            "stage":"operation", "kind":"timeout", "elapsedMs":35604,
+            "sync":{"phase":"write-precheck", "phaseElapsedMs":30010,
+                "endpoint":"fetchachievements", "writeState":"none", "responseClass":"none"}
+        });
+        let mut response = WorkerResponse {
+            request_id: "request".into(),
+            success: false,
+            data: details.clone(),
+            error_code: Some("steam.operation.timeout".into()),
+        };
+        let logged = response.failure_details("request").unwrap();
+        assert!(logged.contains("sync-phase=write-precheck"));
+        assert!(logged.contains("endpoint=fetchachievements"));
+        assert!(logged.contains("write-state=none"));
+        for field in ["phase", "endpoint", "writeState", "responseClass"] {
+            response.data = details.clone();
+            response.data["sync"][field] = serde_json::json!("secret-marker");
+            assert!(response.failure_details("request").is_none());
+        }
+        response.data = details;
+        response.data["sync"]["url"] = serde_json::json!("private");
+        assert!(response.failure_details("request").is_none());
+    }
 
     #[test]
     fn worker_diagnostics_use_declared_static_messages_and_never_echo_unknown_codes() {
@@ -664,6 +752,14 @@ mod tests {
             (
                 "steam.sync.readback-mismatch",
                 "Steam draft read-back did not match the approved change.",
+            ),
+            (
+                "steam.sync.save-unconfirmed",
+                "Steamworks did not confirm the reviewed draft save. Read Steam again before retrying.",
+            ),
+            (
+                "steam.sync.delete-unconfirmed",
+                "Steamworks did not confirm the reviewed draft deletion. Read Steam again before retrying.",
             ),
             (
                 "steam.sync.icon-post-rejected",
@@ -742,6 +838,8 @@ mod tests {
             "steam.sync.review-changed",
             "steam.sync.remote-changed",
             "steam.sync.readback-mismatch",
+            "steam.sync.save-unconfirmed",
+            "steam.sync.delete-unconfirmed",
             "steam.sync.icon-post-rejected",
             "steam.sync.icon-not-saved",
             "steam.sync.icon-verify-failed",

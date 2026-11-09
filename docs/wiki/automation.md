@@ -20,6 +20,8 @@ The initialization handshake includes structured editor facts. Status includes u
 
 ## Available work
 
+MCP advertises an achievement-authoring guide at `achimeld://guides/achievement-authoring`. Agents can discover it with `resources/list` and read it with `resources/read`. Achievement names and descriptions are separate from text drawn on icons. The guide asks agents to clarify ambiguous "text" requests and supports icons with no lettering. Requests for "styles" or "icon styles" normally use Achimeld's native recipes; ordinary image generation uses the agent's own image tools. Preview and save remain part of the workflow. These instructions guide the agent rather than enforce its interpretation.
+
 | Task | Tools |
 | --- | --- |
 | Inspect | list_instances, status, get_editor_health, get_scene, get_node, list_recent_projects |
@@ -63,6 +65,8 @@ Undo/redo include manual history, not an isolated automation stack.
 ## Validate and synchronize
 
 Save the project in the desktop or with save_project, then call validate_steam. Poll get_synchronization until verified or an error appears. Call prepare_synchronization and poll until the review appears. Inspect its Steam App ID, rows and available actions. The review captures artwork and project fields before it appears; later edits remain for the next sync. Apply by supplying the exact review token and one `{key,action}` choice for every row, including rows left unchanged. Poll again for completion or an error. cancel_synchronization cancels an active check or review. These calls use the same supervised Steam workflow as the Sync screen; uploads save to the Steamworks draft and publication is still manual.
+
+Remote-only achievement and stat rows may offer Delete. It is never the default. If any row is selected for Delete, apply_synchronization requires `confirmDeletion=true`; selected achievement deletions run before selected stat deletions, and both run before uploads and imports. The review also reports `remoteAchievementCount`. If the selected plan would leave more than 100 remote achievements, apply_synchronization requires `allowAbove100=true` for an eligible vetted app. Neither flag selects a deletion or upload by itself. Inspect the complete plan before setting either flag.
 
 The desktop shows a square review modal with a five-second countdown and Stop control. Status reports this as a review modal that cannot be acknowledged with acknowledge_modal. MCP apply_synchronization remains an explicit call with all row choices; the desktop countdown does not submit on behalf of an MCP client.
 

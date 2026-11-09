@@ -1,6 +1,68 @@
 use super::*;
 
 #[test]
+fn stat_canvas_label_tracks_internal_name_even_with_localized_display_text() {
+    let mut fixture = Fixture::new();
+    let mut stat = fixture.editor.document().entities(EntityKind::Stat)[0].clone();
+    let id = stat["id"].as_str().unwrap().to_owned();
+    let localization_id = stat["displayNameLocalizationId"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    fixture
+        .editor
+        .execute(
+            "Localized stat name",
+            Command::SetLocalization {
+                id: localization_id,
+                language: "English".into(),
+                text: "Localized label".into(),
+            },
+            None,
+        )
+        .unwrap();
+    stat["internalName"] = json!("Updated internal stat");
+    fixture
+        .editor
+        .execute(
+            "Rename stat",
+            Command::ReplaceEntity {
+                kind: EntityKind::Stat,
+                id,
+                value: stat,
+            },
+            None,
+        )
+        .unwrap();
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    desktop.kind = EntityKind::Stat;
+    let preferences = fixture.preferences().clone();
+    let mut output = ctx.run_ui(
+        egui::RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(
+                egui::Pos2::ZERO,
+                egui::vec2(1200.0, 800.0),
+            )),
+            ..Default::default()
+        },
+        |ui| desktop.canvas(ui, &mut fixture, &preferences, None),
+    );
+    let labels: Vec<_> = output
+        .shapes
+        .iter()
+        .filter_map(|shape| match &shape.shape {
+            egui::Shape::Text(text) => Some(text.galley.text().to_owned()),
+            _ => None,
+        })
+        .collect();
+    output.textures_delta.clear();
+    assert!(labels.iter().any(|label| label == "Updated internal stat"));
+    assert!(!labels.iter().any(|label| label == "Localized label"));
+}
+
+#[test]
 fn holding_alt_paints_temporary_unachieved_icons_over_card_text() {
     fn has_texture(shape: &egui::Shape, id: egui::TextureId) -> bool {
         match shape {

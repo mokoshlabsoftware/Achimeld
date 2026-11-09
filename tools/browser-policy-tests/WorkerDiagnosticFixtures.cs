@@ -13,6 +13,12 @@ internal static class WorkerDiagnosticFixtures
             requestDetail.GetProperty("method").GetString() != "POST" || detail.GetProperty("elapsedMs").GetInt64() != 12 ||
             detail.GetRawText().Contains("hidden", StringComparison.Ordinal))
             throw new Exception("Production failure details lost wire casing or exposed request data.");
+        var sync = WorkerFailure.Details("operation", new TimeoutException(secret), 35000, null,
+            new SyncOperationDiagnostic("write-precheck", 30000, "fetchachievements", "none", "none"));
+        if (sync.GetProperty("sync").GetProperty("endpoint").GetString() != "fetchachievements" ||
+            sync.GetProperty("sync").GetProperty("phaseElapsedMs").GetInt64() != 30000 ||
+            sync.GetRawText().Contains(secret, StringComparison.Ordinal))
+            throw new Exception("Synchronization diagnostics lost closed phase information or exposed exception text.");
         (Exception Error, string Code)[] cases = [
             (new InvalidDataException("The synchronization snapshot has inconsistent identities, ownership or fingerprints."), "steam.sync.snapshot-invalid"),
             (new InvalidDataException("Reviewed synchronization command rejected."), "steam.sync.command-invalid"),
@@ -21,6 +27,8 @@ internal static class WorkerDiagnosticFixtures
             (new InvalidDataException("Steam changed after review; prepare a new synchronization plan."), "steam.sync.review-changed"),
             (new InvalidDataException("Steam changed during synchronization; prepare a fresh plan."), "steam.sync.remote-changed"),
             (new InvalidDataException("Steam draft read-back did not match the approved change."), "steam.sync.readback-mismatch"),
+            (new InvalidOperationException("Steamworks did not confirm the draft save."), "steam.sync.save-unconfirmed"),
+            (new InvalidOperationException("Steamworks did not confirm the draft deletion."), "steam.sync.delete-unconfirmed"),
             (new InvalidOperationException("Steamworks rejected the achievement icon upload."), "steam.sync.icon-post-rejected"),
             (new InvalidOperationException("Steamworks did not save the achievement icon."), "steam.sync.icon-not-saved"),
             (new InvalidOperationException("Steamworks saved icon artwork that does not match the approved upload."), "steam.sync.icon-verify-failed"),

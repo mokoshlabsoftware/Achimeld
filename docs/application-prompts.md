@@ -16,6 +16,8 @@ Only the bottom action row has a gray background. The header and body use opaque
 
 Use a centered in-app modal with a dimmed backdrop, square corners, and no outer content padding. Keep the thin palette-colored outer edge and one-physical-pixel horizontal dividers between the three sections. Padding belongs inside the header and body; it must never surround the action row. Do not place a second framework title bar, close button, or floating action panel around this layout.
 
+Drag the existing header to move a modal within the application window. The application title strip also moves the whole window while a modal is open. Escape cancels or dismisses the front modal. Enter activates its primary enabled action, subject to the same validation as a button click. A nested dropdown keeps ownership of its own keyboard input.
+
 ## Sizing and alignment
 
 The reference prompt uses logical UI units:

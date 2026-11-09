@@ -409,7 +409,7 @@ impl AppDialog {
             .fill(egui::Color32::BLACK)
             .inner_margin(0)
             .corner_radius(0);
-        let response = egui::Modal::new(egui::Id::new("app-dialog"))
+        let response = achimeld_ui::modal::dialog(ctx, egui::Id::new("app-dialog"))
             .frame(frame)
             .show(ctx, |ui| {
                 if let Some(error) = &self.error {
@@ -477,6 +477,21 @@ impl AppDialog {
             });
         if choice.is_none() && response.should_close() {
             choice = Some(SaveChoice::Cancel);
+        }
+        if choice.is_none() && achimeld_ui::modal::enter(ctx, &response) {
+            choice = Some(if self.error.is_some() {
+                SaveChoice::Discard
+            } else if matches!(
+                kind,
+                Dialog::PublicUpdate(_)
+                    | Dialog::AlreadyRunning
+                    | Dialog::DiagnosticFailure(_)
+                    | Dialog::SavedProjectRequired
+            ) {
+                SaveChoice::Cancel
+            } else {
+                SaveChoice::Save
+            });
         }
         if let Some(choice) = choice {
             if matches!(choice, SaveChoice::Discard)
@@ -558,7 +573,7 @@ impl AppDialog {
             .fill(egui::Color32::BLACK)
             .inner_margin(0)
             .corner_radius(0);
-        let response = egui::Modal::new(egui::Id::new("app-dialog"))
+        let response = achimeld_ui::modal::dialog(ctx, egui::Id::new("app-dialog"))
             .frame(frame)
             .show(ctx, |ui| {
                 choice = if let Some(error) = &self.error {
@@ -577,6 +592,21 @@ impl AppDialog {
             });
         if choice.is_none() && response.should_close() {
             choice = Some(SaveChoice::Cancel);
+        }
+        if choice.is_none() && achimeld_ui::modal::enter(ctx, &response) {
+            choice = Some(if self.error.is_some() {
+                SaveChoice::Cancel
+            } else if self.bulk_entries.as_ref().is_some_and(|entries| {
+                entries.iter().all(|entry| {
+                    !entry.name.trim().is_empty()
+                        && entry.name.len() <= 256
+                        && entry.description.len() <= 1024
+                })
+            }) {
+                SaveChoice::Save
+            } else {
+                SaveChoice::Cancel
+            });
         }
         match choice {
             Some(SaveChoice::Save) => Some(DialogResult::BulkAchievements {
@@ -762,6 +792,7 @@ fn app_prompt(
     let header_height = title.size().y.max(24.0) + 24.0;
     let (header, _) =
         ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
+    achimeld_ui::modal::drag_header(ui, header);
     header_icon
         .image(ui.ctx(), 24.0)
         .tint(header_tint)
@@ -865,6 +896,7 @@ fn achievement_image_prompt(
     let header_height = title.size().y.max(24.0) + 24.0;
     let (header, _) =
         ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
+    achimeld_ui::modal::drag_header(ui, header);
     PromptIcon::Save
         .image(ui.ctx(), 24.0)
         .tint(ui.visuals().text_color())
@@ -1041,6 +1073,53 @@ fn validate_target(kind: &Dialog, mut path: PathBuf) -> Result<PathBuf, String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn enter_approves_confirmation_and_closes_notice() {
+        for (kind, expected) in [
+            (
+                Dialog::DeleteBrowserProfile,
+                DialogResult::DeleteBrowserProfile(true),
+            ),
+            (Dialog::SavedProjectRequired, DialogResult::Acknowledged),
+        ] {
+            let ctx = egui::Context::default();
+            let mut dialog =
+                AppDialog::new(kind, crate::test_output::root(), rfd::FileDialog::new());
+            let mut frame = |events| {
+                let mut result = None;
+                let mut output = ctx.run_ui(
+                    egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(
+                            egui::Pos2::ZERO,
+                            egui::vec2(1100.0, 700.0),
+                        )),
+                        events,
+                        ..Default::default()
+                    },
+                    |ui| result = dialog.show(ui.ctx()),
+                );
+                output.textures_delta.clear();
+                result
+            };
+            frame(vec![]);
+            frame(vec![]);
+            let result = frame(vec![egui::Event::Key {
+                key: egui::Key::Enter,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }]);
+            assert!(matches!(
+                (result, expected),
+                (
+                    Some(DialogResult::DeleteBrowserProfile(true)),
+                    DialogResult::DeleteBrowserProfile(true)
+                ) | (Some(DialogResult::Acknowledged), DialogResult::Acknowledged)
+            ));
+        }
+    }
     #[test]
     fn image_batch_defaults_each_name_and_description_and_rejects_duplicates() {
         let entries = achievement_image_drafts(vec![

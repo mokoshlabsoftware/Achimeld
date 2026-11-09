@@ -33,7 +33,7 @@ impl Desktop {
             .count();
         let mut approve = false;
         let mut cancel = false;
-        let response = egui::Modal::new(egui::Id::new("delete-project-style"))
+        let response = crate::modal::dialog(ctx, egui::Id::new("delete-project-style"))
             .frame(egui::Frame::popup(&ctx.global_style()).fill(egui::Color32::BLACK).inner_margin(0).corner_radius(0))
             .show(ctx, |ui| {
                 let width = 520.0_f32.min((ctx.content_rect().width()-32.0).max(1.0));
@@ -42,6 +42,7 @@ impl Desktop {
                 let font = egui::TextStyle::Heading.resolve(ui.style());
                 let title = ui.painter().layout_no_wrap("Delete project style".into(), font, ui.visuals().text_color());
                 let (header, _) = ui.allocate_exact_size(egui::vec2(width, title.size().y.max(24.0)+24.0), egui::Sense::hover());
+                crate::modal::drag_header(ui, header);
                 icons::paint(ui.painter(), egui::Rect::from_center_size(egui::pos2(header.left()+36.0,header.center().y),egui::Vec2::splat(24.0)), icons::Icon::Delete, ui.visuals().text_color());
                 ui.painter().galley(header.center()-title.size()*0.5,title,ui.visuals().text_color());
                 divider(ui);
@@ -76,7 +77,7 @@ impl Desktop {
                     cancel = ui.add_sized([total-width,height],buttons::Button::new((glyph(ui.ctx(),"cancel-style-delete",include_bytes!("../../assets/toolbar/style-cancel.rgba")),"Cancel")).id(egui::Id::new("delete-style-cancel")).bar().icon_spacing(8.0).image_tint_follows_text_color(true)).clicked();
                 });
             });
-        if approve {
+        if approve || crate::modal::enter(ctx, &response) {
             match achimeld_application::style_management::remove(
                 port.editor().document(),
                 &draft.style,

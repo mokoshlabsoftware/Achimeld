@@ -6,7 +6,7 @@ Stats define values that your game can report and achievements can follow. Open 
 
 ## Identity and type
 
-Internal name describes the stat inside the project. Steam API name identifies the game/Steam stat. Localization edits its displayed name. Display order is separate from the card's canvas position.
+Internal name labels the stat card on the Stats canvas and updates as you edit it. Steam API name appears beneath it and identifies the game/Steam stat. Localization edits its displayed name for other uses. Display order is separate from the card's canvas position.
 
 | Type | Intended value |
 | --- | --- |
@@ -33,7 +33,7 @@ Do not assume that changing a local field changes existing player values. Game b
 
 ## Link an achievement
 
-Create or select the stat, then return to achievement General settings. Choose the stat-linked mode, select the progress stat and set its unlock threshold.
+Create or select the stat, then return to achievement General settings. Choose the stat-linked mode, select the progress stat and set its unlock threshold. The selector lists API names alphabetically in screen-fitting columns; scroll across when more than three columns are needed.
 
 An Int link uses an integer unlock kind; other types use float. Check linked achievements when changing a stat's type or range. The automation interface rejects inconsistent linked thresholds rather than silently repairing them.
 

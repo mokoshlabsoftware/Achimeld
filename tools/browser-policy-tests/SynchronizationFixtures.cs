@@ -18,6 +18,7 @@ internal static class SynchronizationFixtures
         await ModernEmptyProjectAsync();
         await PendingRenameAsync();
         await DeletedHistoryAsync();
+        await ReviewedDeletionOrderAsync();
         int checks = 0;
         void Check(bool value) { if (!value) throw new Exception("Synchronization fixture assertion failed."); checks++; }
         async Task Reject(Func<Task> action)
@@ -144,6 +145,21 @@ internal static class SynchronizationFixtures
         var again = await new SynchronizationSession(portal).PrepareAsync(againRequest, 480);
         Check(again.Rows.Single().State == "InSync" && again.Rows.Single().DefaultAction == "Skip");
 
+        // A local threshold without a progress stat drives icon text only.
+        // It must not appear as a Steam definition difference.
+        var standaloneRequest = Request(achievement: true);
+        JsonObject standaloneProject = JsonNode.Parse(standaloneRequest.Project.GetRawText())!.AsObject();
+        standaloneProject["achievements"]![0]!["progressStatId"] = null;
+        standaloneProject["achievements"]![0]!["unlockValue"] = 1;
+        var standalonePortal = new FakePortal();
+        standalonePortal.AddAchievement();
+        standalonePortal.ClearAchievementProgress();
+        var standaloneReview = await new SynchronizationSession(standalonePortal).PrepareAsync(
+            standaloneRequest with { Project = JsonSerializer.SerializeToElement(standaloneProject) }, 480);
+        JsonElement standaloneFields = JsonSerializer.SerializeToElement(
+            standaloneReview.Rows.Single(r => r.Key == "Achievement:ACH_WIN").Fields, SecurityWire.Json);
+        Check(!standaloneFields.EnumerateArray().Any(f => f.GetProperty("field").GetString() == "unlockValue"));
+
         portal = new(); session = new(portal); review = await session.PrepareAsync(Request(), 480);
         portal.AddStat("OTHER");
         await Reject(() => session.BeginAsync(new(review.Token, [new("Stat:SCORE", "Upload")])));
@@ -181,7 +197,7 @@ internal static class SynchronizationFixtures
         // A remote-only import creates local data without any portal write.
         portal = new(); portal.AddStat("REMOTE"); session = new(portal);
         review = await session.PrepareAsync(Request(localStat: false), 480);
-        Check(review.Rows.Single().Actions.SequenceEqual(new[] { "Skip", "Import" }));
+        Check(review.Rows.Single().Actions.SequenceEqual(new[] { "Skip", "Import", "Delete" }));
         Check(review.Rows.Single().DefaultAction == "Import");
         await session.BeginAsync(new(review.Token, [new("Stat:REMOTE", "Import")]));
         await session.StepAsync(new(review.Token, "Stat:REMOTE"));
@@ -243,6 +259,9 @@ internal static class SynchronizationFixtures
         await Reject(() => new SynchronizationSession(new FakePortal()).PrepareAsync(
             deferredRequest with { Icons = new() { ["ACH_WIN"] = new(hash, "", true) } }, 480));
         var iconRequest = Request(achievement: true) with { Icons = new() { ["ACH_WIN"] = new(hash, hash) } };
+        var matchingPortal = new FakePortal(); matchingPortal.AddAchievement(withIcons: true);
+        var matchingReview = await new SynchronizationSession(matchingPortal).PrepareAsync(iconRequest, 480);
+        Check(matchingReview.Rows.Single(r => r.Kind == "Icon").State == "InSync" && matchingPortal.Writes == 0);
         review = await session.PrepareAsync(iconRequest, 480);
         await session.BeginAsync(new(review.Token, [new("Icon:ACH_WIN", "Upload")]));
         await Reject(() => session.StepAsync(new(review.Token, "Icon:ACH_WIN", Png, new byte[24])));
@@ -673,6 +692,35 @@ internal static class SynchronizationFixtures
         return new(JsonSerializer.SerializeToElement(project), new() { ["Aa1111"] = new() { ["English"] = "Score" }, ["Bb2222"] = new() { ["English"] = "Winner" }, ["Cc3333"] = new() { ["English"] = "Get {0} points" } }, new());
     }
 
+    private static async Task ReviewedDeletionOrderAsync()
+    {
+        var portal = new FakePortal();
+        portal.AddAchievement();
+        var session = new SynchronizationSession(portal);
+        var review = await session.PrepareAsync(Request(localStat: false), 480);
+        if (review.RemoteAchievementCount != 1 ||
+            !review.Rows.Single(r => r.Key == "Achievement:ACH_WIN").Actions.Contains("Delete") ||
+            !review.Rows.Single(r => r.Key == "Stat:SCORE").Actions.Contains("Delete"))
+            throw new Exception("Remote-only rows did not offer an explicit reviewed deletion.");
+        var steps = await session.BeginAsync(new(review.Token,
+            [new("Stat:SCORE", "Delete"), new("Achievement:ACH_WIN", "Delete")]));
+        if (steps.Length != 2 || steps[0].Key != "Achievement:ACH_WIN" || steps[1].Key != "Stat:SCORE")
+            throw new Exception("Reviewed deletion order did not remove achievements before dependent stats.");
+        foreach (var step in steps) await session.StepAsync(new(review.Token, step.Key));
+        await session.FinishAsync(new(review.Token));
+        if (portal.Writes != 2 || portal.Snapshot.Achievements.Count != 0 || portal.Snapshot.Stats.Count != 0)
+            throw new Exception("Reviewed deletion did not verify both remote removals.");
+
+        portal = new FakePortal();
+        portal.AddAchievement();
+        session = new SynchronizationSession(portal);
+        review = await session.PrepareAsync(Request(localStat: false), 480);
+        await session.BeginAsync(new(review.Token, [new("Stat:SCORE", "Delete")]));
+        try { await session.StepAsync(new(review.Token, "Stat:SCORE")); throw new Exception("Dependent stat was deleted."); }
+        catch (InvalidDataException) { }
+        if (portal.Writes != 0) throw new Exception("Dependent stat deletion reached Steam.");
+    }
+
     private sealed class FakePortal : ISynchronizationPortal
     {
         public byte[]? Banner { get; init; }
@@ -712,6 +760,12 @@ internal static class SynchronizationFixtures
                 Snapshot = Snapshot with { Icons = [new(new("ACH_WIN"), hash, hash, new Uri("https://cdn.steamstatic.com/a.png"), new Uri("https://cdn.steamstatic.com/b.png"),
                     CanonicalFingerprint.Compute([new("achievedIdentity", hash), new("unachievedIdentity", hash)]).EntityFingerprint)] };
             }
+        }
+        public void ClearAchievementProgress()
+        {
+            RemoteAchievement value = Snapshot.Achievements.Single() with { ProgressStatApiName = null, UnlockValue = null };
+            value = value with { ContentFingerprint = CanonicalFingerprint.For(value, false).EntityFingerprint };
+            Snapshot = Snapshot with { Achievements = [value] };
         }
         public void RenameAchievement(string name)
         {

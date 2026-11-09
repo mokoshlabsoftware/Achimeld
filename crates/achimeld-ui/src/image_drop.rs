@@ -253,7 +253,7 @@ impl Desktop {
             return;
         }
         let mut accept = false;
-        let response = egui::Modal::new(egui::Id::new("image-drop-choice"))
+        let response = crate::modal::dialog(ctx, egui::Id::new("image-drop-choice"))
             .frame(
                 egui::Frame::popup(&ctx.global_style())
                     .fill(Color32::BLACK)
@@ -285,6 +285,7 @@ impl Desktop {
                     Vec2::new(width, title.size().y.max(24.0) + 24.0),
                     egui::Sense::hover(),
                 );
+                crate::modal::drag_header(ui, header);
                 import_glyph(ctx, false, 24.0)
                     .tint(ui.visuals().text_color())
                     .paint_at(
@@ -371,7 +372,7 @@ impl Desktop {
                     },
                 );
             });
-        if accept {
+        if accept || crate::modal::enter(ctx, &response) {
             let target = match choice.zone {
                 DropZone::Achievement(achievement_id) if choice.general => {
                     ImageImportTarget::General {

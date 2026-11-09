@@ -292,11 +292,41 @@ operation authority changes. Waiting operations report elapsed time every five
 seconds while checking worker lifetime and supervisor health. Chromium timeout,
 network-change, disconnected and generic failure markers map to static text.
 
+Reviewed synchronization failures may also carry a closed `sync` object in that
+same failure data slot: `phase`, `phaseElapsedMs`, `endpoint`, `writeState`, and
+`responseClass`. The phase distinguishes preparation, fresh review checks,
+step checks, write prechecks, the draft action, and read-back. Endpoint values
+name only fixed configuration, save, deletion and upload routes; response classes retain
+only broad HTTP classes. `save-armed` records that Achimeld armed the reviewed
+request before triggering the page control, not that Steam received or saved it.
+`save-confirmed` requires Steam's acknowledged save response;
+`delete-armed` and `delete-confirmed` record the corresponding deletion
+attempt and acknowledged response. `readback-verified` requires the subsequent
+fresh snapshot match. The host
+rejects unknown fields and values and never receives URLs, headers, bodies,
+cookies, exception messages, or portal text. The last failed browser request
+category remains contextual evidence rather than proof that it caused the
+operation failure.
+
 Synchronization failures map exact source-owned validation reasons to closed
 `steam.sync.*` error codes and static host messages, including rename conflicts,
 case aliases, invalid snapshots, changed reviews, read-back and artwork failures.
 Unknown exception messages retain the generic fallback; exception text and portal
-values never cross the boundary. The response shape is unchanged.
+values never cross the boundary. The response envelope is unchanged.
+
+The ordinary synchronization review may offer `Delete` only for a complete,
+remote-only achievement or stat row. The default remains import or skip. The
+desktop requires a separate count-based confirmation before submitting selected
+deletions; MCP requires `confirmDeletion=true`. The receiver executes selected
+achievement deletions, then stat deletions, then stat and achievement imports or
+uploads and icon uploads. Each deletion rechecks exact remote identity and fresh
+snapshot, and a stat still used by a remaining achievement cannot be deleted.
+The result is verified by read-back; failed steps are never replayed. The
+review also reports the fresh remote achievement count. The host projects
+deletions and new achievements before submission. A plan ending above 100 needs
+an explicit desktop Continue or MCP `allowAbove100=true`; this is a warning
+because vetted Steam apps can have a higher limit. These approvals add no
+automatic deletion, publication, or new browser route.
 
 After a verified deletion, the host checks the complete matching snapshot and
 batch results before clearing only the selected entity namespace's matching

@@ -299,6 +299,7 @@ fn prompt(
             Vec2::new(width, title_galley.size().y.max(24.0) + 24.0),
             Sense::hover(),
         );
+        crate::modal::drag_header(ui, header);
         header_icon
             .clone()
             .tint(ui.visuals().text_color())
@@ -387,14 +388,24 @@ fn prompt(
             },
         );
     };
-    let dismissed = egui::Modal::new(egui::Id::new(id))
+    let response = crate::modal::dialog(ctx, egui::Id::new(id))
         .frame(frame)
-        .show(ctx, content)
-        .should_close();
+        .show(ctx, content);
+    let dismissed = response.should_close();
     if let Some(index) = choice {
         ReviewChoice::Action(index)
     } else if dismissed {
         ReviewChoice::Dismissed
+    } else if crate::modal::enter(ctx, &response) {
+        let preferred = actions
+            .iter()
+            .position(|action| action.enabled && action.label == "Synchronize now")
+            .or_else(|| {
+                actions.iter().position(|action| {
+                    action.enabled && action.label != "Stop" && action.label != "Start 5 s"
+                })
+            });
+        preferred.map_or(ReviewChoice::Idle, ReviewChoice::Action)
     } else {
         ReviewChoice::Idle
     }

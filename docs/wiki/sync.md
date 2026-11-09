@@ -1,6 +1,6 @@
 # Synchronization review and recovery
 
-Sync connects a saved local project with a Steamworks destination. Validate checks sign-in and access. Synchronize prepares fresh information, artwork and a review.
+Sync connects a saved local project with a Steamworks destination. Validate checks sign-in and access. Synchronize prepares fresh information, artwork and a review. Validate and synchronize sits beside Validate or Re-validate in Sync; it runs the check, then opens the same review if the check succeeds. It stops if validation fails or is cancelled.
 
 Uploads save to a Steamworks draft. Publishing remains a manual Steamworks step.
 
@@ -32,6 +32,8 @@ Imported achievement artwork uses General image slot 0 with a matching General I
 
 The square review modal identifies the validated App ID and lists every proposed definition or icon change before Steamworks is updated. Artwork-only edits appear as Icon changes. Filter by API name and scroll through the full list without page breaks.
 
+The review reports the total detected differences separately from the number of selected actions, with achievement, stat and icon counts. After an interrupted synchronization, a fresh read proposes Use project for differences that allow upload. Steam-only entries and rows with upload errors remain unselected. The countdown stays stopped until you choose Start 5 s or Synchronize now, so inspect the proposed directions and field values first. Rows with field differences appear first, followed by other detected differences such as artwork, with up-to-date rows at the bottom. The selected-plan summary stays compact so it does not bury the difference list. An identical local and Steam icon pair can be recognized as up to date without a previous icon baseline.
+
 | State | What it asks you to inspect |
 | --- | --- |
 | Only in project | A local definition absent from the read |
@@ -43,7 +45,7 @@ The square review modal identifies the validated App ID and lists every proposed
 | Artwork unavailable | Repair its source before an icon upload |
 | Renamed on Steam | Import preserves the old entry as Retired |
 
-Use project, Use Steam and Leave unchanged appear according to the entry and review state. Choose Leave unchanged to unselect a proposed upload or import; you can select it again before synchronizing. These choices do not delete remote entries. Do not assume every row offers all choices.
+Use project, Use Steam and Leave unchanged appear according to the entry and review state. Choose Leave unchanged to unselect a proposed upload or import; you can select it again before synchronizing. A row that exists only on Steam can also offer Delete on Steam. Delete is never the default. Do not assume every row offers all choices.
 
 Expand field differences and inspect the actual values. An import choice can change the associated icon choice so incompatible import/upload combinations are not retained.
 
@@ -51,9 +53,11 @@ Expand field differences and inspect the actual values. An import choice can cha
 
 Check the destination, field choices and selected-change count. Planned Steam draft actions and editable choices share one scrolling modal. A thin bar counts down five seconds after a plan is ready, then synchronization starts automatically. Press Stop to pause the countdown and edit choices. Start 5 s begins a new countdown; Synchronize now submits immediately; Cancel discards the review. Another notice pauses the countdown so it cannot submit behind a blocking prompt. The review token and Steam App ID bind the operation to the captured project and destination.
 
+Selected Steam deletions or a projected total above 100 achievements stop automatic submission. Synchronize now opens a confirmation showing how many Steam achievements and stats will be deleted and, when applicable, the projected achievement count. Continue authorizes this exact reviewed plan; Back to review leaves it unsubmitted. Achimeld deletes selected remote-only achievements first, then selected remote-only stats, before imports and uploads. A stat still used by a remaining Steam achievement cannot be deleted. Valve limits apps that have not yet been vetted to 100 achievements; a vetted app may exceed 100, so the warning requires an explicit decision instead of assuming every app has the same limit. Steamworks publication remains manual.
+
 An MCP client can perform the same supervised workflow for a saved project. It validates first, prepares a fresh review, then supplies the review token and an explicit action for every row. The client can poll the current review, activity and errors, filter returned rows by kind, state or API name, cancel active work, and forget saved validation before revalidating. Filtering does not reduce the choices required when applying a review. See [Local editor automation](automation.md) for the tool sequence. Steamworks publication remains manual.
 
-A deliberate Steam draft deletion is separate from the difference review. MCP clients first review exact achievement or stat API names against a verified full Steam snapshot, then apply the same target list with the returned token and explicit deletion confirmation. Achimeld reads the draft again and saves the verified result. A completed synchronization submission closes its review; if an import reveals more differences, start another review explicitly.
+A separate deletion workflow remains available from the Steam view and MCP for exact reviewed targets. In the ordinary synchronization review, MCP clients can select Delete for remote-only rows with `confirmDeletion=true`. A plan ending above 100 achievements also requires `allowAbove100=true` for an eligible app. Achimeld reads the draft again and saves the verified result. A completed synchronization submission closes its review; if an import reveals more differences, start another review explicitly.
 
 The review uses a frozen project snapshot and caches achieved and unachieved icon PNG bytes before showing choices. Editing and ordinary Save remain available. Later edits are retained for the next synchronization, and the current upload uses the captured artwork. A conflicting completion retains local edits and asks for a fresh review.
 

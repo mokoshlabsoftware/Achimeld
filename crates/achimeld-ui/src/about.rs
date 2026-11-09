@@ -51,7 +51,7 @@ impl Desktop {
         }
         let mut welcome_action = None;
         let mut connect_agent = false;
-        let response = egui::Modal::new(egui::Id::new("about-dialog"))
+        let response = crate::modal::dialog(ctx, egui::Id::new("about-dialog"))
             .frame(
                 egui::Frame::popup(&ctx.global_style())
                     .fill(egui::Color32::BLACK)
@@ -98,6 +98,7 @@ impl Desktop {
                     );
                     let header_height = title.size().y.max(24.0) + 24.0;
                     let (header, _) = ui.allocate_exact_size(egui::vec2(width, header_height), egui::Sense::hover());
+                    crate::modal::drag_header(ui, header);
                     let icon_id = egui::Id::new("help-brand-icon");
                     let icon = ctx.data(|data| data.get_temp::<egui::TextureHandle>(icon_id)).unwrap_or_else(|| {
                         let icon = ctx.load_texture("help-brand", crate::chrome::brand_image(), egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)));

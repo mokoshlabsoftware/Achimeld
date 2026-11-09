@@ -21,6 +21,8 @@ On first launch, **Welcome to Achimeld** explains that Achimeld is independent o
 
 Selecting a card opens its properties. The inspector tabs depend on the selected item: an ordinary achievement has General, Localization and Icon tabs.
 
+When a prompt is open, drag its header to move it aside. You can still drag the main Achimeld window by its title bar. Escape cancels the prompt; Enter chooses its primary enabled action. Complete required fields before using Enter to save or approve.
+
 ![Achievement canvas fitted to the example project](screenshots/0.2.29.0/08-achievements-overview.jpg)
 
 Use the filter to find a card by its name or API name. Use the bottom zoom controls and Fit all to frame the canvas. A canvas can include a style helper node as well as ordinary achievements, so its item count need not equal the Steam synchronization count.

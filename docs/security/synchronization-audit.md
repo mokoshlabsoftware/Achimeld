@@ -1,5 +1,54 @@
 # Reviewed Steam synchronization implementation audit
 
+## Recovery plan proposals and review ordering (2026-11-07)
+
+The first review visibility fix still left the 121 detected differences in the live editor unselected after an interrupted write. That made every Steam draft action disabled until the user chose a direction row by row. The desktop now proposes Upload for each fresh difference whose receiver-owned action list permits it. Remote-only entries and rows with upload errors remain unselected. Recovery pauses the countdown before the modal is drawn; only Start 5 s or Synchronize now can submit the proposed plan. The receiver still checks the exact reviewed token, selected row IDs, dependencies and fresh remote state before each write. No protocol or worker authority changed.
+
+The modal now shows a compact selected-plan count and orders field differences first, other differences next, and InSync rows last. The focused UI regression confirms proposed directions, excluded rows, ordering and no automatic submission after the countdown duration. The offline fixture audit `audit-b528ba8df6024923a387dc18a8a74aac` passed formatting, lint, full Rust tests, managed browser policy, bridge fixtures and worker build. Its synthetic browser request fixture timed out during Chromium closure after the request checks passed, so the full audit did not pass. Live Steam submission and installed runtime qualification remain separate.
+
+## Difference review visibility and icon identity (2026-11-07)
+
+The live 0.3.9.0 editor prepared 234 review rows after an interrupted synchronization. Its receiver classified 121 rows as Conflict or LocalOnly, but recovery set every default action to Skip. The desktop prominently showed zero selected changes and three empty selected-plan sections above the actual difference rows. The UI now reports detected achievement, stat and icon differences separately from selected actions, explains recovery's unselected upload/import defaults, and moves difference rows up when the plan is empty. It does not submit or preselect recovery uploads or imports.
+
+One InSync achievement row also displayed a standalone local unlock threshold as a field difference, even though Steam has no threshold without a progress-stat link. Field review now excludes that nonexported value when both sides lack a progress link. For icons with no baseline, matching local and remote content fingerprints now classify as InSync; unlike a merely similar preview, this requires the exact paired content hash to match. Managed fixtures cover both cases and the UI regression covers the interrupted empty plan. Exact rebuilt live review and Steam draft writes remain unqualified.
+
+The first offline fixture audit (`audit-e4f39c84e27d4db6ad3b435e073d9488`) passed lint and source contracts but had one preview timing failure and shared managed build output collisions. The preview test passed alone in 0.84 seconds. The second run (`audit-8df4925bc9804058aed09b41237d7c25`) passed the full Rust suite, lint, worker build and bridge fixtures; browser policy still hit a shared `.deps.json` file lock, and the synthetic Chromium fixture timed out during browser closure. Its browser read and request checks had passed before that closure timeout. The full audit therefore did not pass; these failures do not establish a synchronization review defect or live Steam qualification.
+
+## Redacted phase evidence and reviewed capacity/deletion plan (2026-11-07)
+
+The 0.3.9.0 live editor's first of six selected steps stopped after a 30-second
+client deadline on a Steamworks configuration GET. The host log retained a
+generic operation timeout and the last failed request category, but not the
+specific read phase or whether a draft save had been armed. Its local recovery
+journal correctly marked step zero outcome-uncertain. The saved remote snapshot
+contained 100 achievements; the chosen plan would add two absent definitions
+and import two existing entries locally, so it would project 102 remote
+achievements without a deletion. This capacity concern did not establish the
+cause of the observed GET timeout.
+
+The receiver now emits only closed synchronization phase, fixed endpoint,
+phase elapsed, write-state, and broad response-class fields in failure details.
+The host validates those fields before logging. `save-armed` does not claim
+delivery or persistence; only an acknowledged response advances to
+`save-confirmed`, and a fresh matching snapshot advances to
+`readback-verified`. Deletion has corresponding armed and confirmed states;
+its endpoint and broad response class are recorded before read-back. The
+existing last failed browser-request category remains
+contextual. No URL, body, cookie, arbitrary exception text or Steam response
+content crosses the diagnostic boundary.
+
+Remote-only review rows can now be explicitly selected for deletion. The
+receiver orders achievement deletion before dependent stat deletion, then
+imports/uploads and icons; each selected target is checked against the fresh
+snapshot and verified by read-back. The desktop confirmation names deletion
+counts and projects the final remote achievement count. It requires explicit
+Continue for any deletion or a plan above 100; MCP requires the corresponding
+confirmation flags. Apps vetted by Steam may exceed 100, so the 100 threshold
+is a warning, not a universal block. Synthetic managed fixtures cover deletion
+order, dependent-stat refusal and diagnostic serialization. Rebuilt desktop,
+exact-package live Steam and installed enforcement remain unqualified until
+recorded separately.
+
 The host renders, hashes and retains each available synchronized achievement icon pair as bounded PNG bytes during preparation. The receiver compares those hashes with the saved baseline and fresh Steam icon identity, so an artwork-only edit appears as a separate Icon row. The review shows the frozen action plan; one explicit Synchronize click submits selected rows without a second confirmation. The worker uploads those captured bytes and verifies Steam read-back. A user can edit and save the project during the review and transfer; completion merges independent local and Steam changes. This source and fixture check does not establish live Steam compatibility.
 
 ## Fresh project conversion and graceful stop (2026-11-03)

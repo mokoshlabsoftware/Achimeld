@@ -176,9 +176,9 @@ pub fn tools() -> Vec<Value> {
         ),
         (
             "apply_synchronization",
-            "Apply explicit choices from the current review to the Steamworks draft. Supply the exact review token and one action for every row. Steamworks publication remains manual.",
+            "Apply explicit choices from the current review to the Steamworks draft. Supply the exact review token and one action for every row. Delete choices require confirmDeletion=true; a projected count above 100 requires allowAbove100=true for a vetted app. Steamworks publication remains manual.",
             "token choices",
-            "token:s choices:a",
+            "token:s choices:a confirmDeletion:b allowAbove100:b",
         ),
         (
             "cancel_synchronization",
@@ -290,7 +290,7 @@ pub fn tools() -> Vec<Value> {
         ),
         (
             "create_achievement",
-            "Create and select an achievement near column/row without overlapping cards, in one undo step. Text is English.",
+            "Create and select an achievement near column/row without overlapping cards, in one undo step. displayName and description are English record metadata; apiName is its unique identifier. These do not specify icon lettering or colors. Read achimeld://guides/achievement-authoring and clarify ambiguous text before editing.",
             "apiName displayName description column row",
             "apiName:s displayName:s description:s column:i row:i",
         ),
@@ -308,7 +308,7 @@ pub fn tools() -> Vec<Value> {
         ),
         (
             "update_node",
-            "Patch API name or English text; preserve omitted values and translations.",
+            "Patch API name or English achievement name/description, not icon lettering; preserve omitted values and translations. Read achimeld://guides/achievement-authoring for ambiguous text requests.",
             "nodeId",
             "nodeId:s apiName:s displayName:s description:s hidden:b",
         ),
@@ -425,6 +425,9 @@ pub fn tools() -> Vec<Value> {
                 schema["enum"] = json!([true]);
             }
             if key == "confirmDeletion" {
+                schema["enum"] = json!([true]);
+            }
+            if key == "allowAbove100" {
                 schema["enum"] = json!([true]);
             }
             if key == "targets" && matches!(name, "review_steam_deletion" | "apply_steam_deletion")
@@ -619,7 +622,10 @@ fn server_info() -> Value {
     })
 }
 
-const HANDSHAKE: &str = "Controls an already open supervised Achimeld editor. Initialization includes bounded structured editor facts. Call list_instances then get_scene before edits. Local edits share undo history. Steam writes require a reviewed synchronization token and explicit row choices. Steamworks publication remains manual.";
+const AUTHORING_GUIDE_URI: &str = "achimeld://guides/achievement-authoring";
+const AUTHORING_GUIDE: &str = include_str!("../../../docs/agent-achievement-authoring.md");
+
+const HANDSHAKE: &str = "Read achimeld://guides/achievement-authoring before authoring achievements or icons. Distinguish achievement names and descriptions from optional text drawn on icons. Ask whether ambiguous text means names, icon lettering, or both before editing; no icon text is valid. Image generation belongs to the agent, not Achimeld. Requests for styles or icon styles normally mean native Achimeld recipes. Controls an already open supervised Achimeld editor. Initialization includes bounded structured editor facts. Call list_instances then get_scene before edits. Local edits share undo history. Steam writes require a reviewed synchronization token and explicit row choices. Steamworks publication remains manual.";
 
 fn handshake_instructions(instances: Result<Value, String>) -> String {
     let Ok(instances) = instances else {
@@ -881,7 +887,7 @@ impl Protocol {
                     .unwrap_or_default();
                 json!({
                     "protocolVersion": version,
-                    "capabilities": {"tools": {"listChanged": false}},
+                    "capabilities": {"tools": {"listChanged": false}, "resources": {"subscribe": false, "listChanged": false}},
                     "serverInfo": server_info(),
                     "instructions": handshake_instructions(instances),
                     "_meta": {"achimeld": {"handshakeVersion": 1, "editors": editors}}
@@ -889,6 +895,18 @@ impl Protocol {
             }
             "ping" => json!({}),
             _ if !self.ready => return Some(error(-32000, "Initialize the MCP connection first")),
+            "resources/list" => json!({"resources":[{
+                "uri": AUTHORING_GUIDE_URI,
+                "name": "achievement-authoring",
+                "description": "Achievement names versus optional icon text, agent-side image generation versus native styles, previews and saving.",
+                "mimeType": "text/markdown"
+            }]}),
+            "resources/read" => {
+                if message["params"]["uri"].as_str() != Some(AUTHORING_GUIDE_URI) {
+                    return Some(error(-32602, "Unknown resource URI"));
+                }
+                json!({"contents":[{"uri":AUTHORING_GUIDE_URI,"mimeType":"text/markdown","text":AUTHORING_GUIDE}]})
+            }
             "tools/list" => json!({"tools":tools()}),
             "tools/call" => {
                 let Some(name) = message["params"]["name"].as_str() else {
@@ -1693,6 +1711,45 @@ mod tests {
             instructions.contains("2 achievement nodes, 2 nodes that sync with Steam, 1 stat.")
         );
         assert!(validate_arguments("status", &json!({"processId":1})).is_ok());
+    }
+    #[test]
+    fn authoring_resource_is_discoverable_and_local() {
+        let mut protocol = Protocol::default();
+        let mut call = |operation: &str, _: &Value| {
+            assert_eq!(operation, "list_instances");
+            Ok(json!([]))
+        };
+        let initialize = protocol.respond(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}), &mut call).unwrap();
+        assert!(initialize["result"]["capabilities"]["resources"].is_object());
+        assert!(
+            initialize["result"]["instructions"]
+                .as_str()
+                .unwrap()
+                .contains(AUTHORING_GUIDE_URI)
+        );
+        let early = protocol.respond(json!({"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":AUTHORING_GUIDE_URI}}), &mut call).unwrap();
+        assert_eq!(early["error"]["code"], -32000);
+        protocol.respond(
+            json!({"jsonrpc":"2.0","method":"notifications/initialized"}),
+            &mut call,
+        );
+        let listed = protocol
+            .respond(
+                json!({"jsonrpc":"2.0","id":3,"method":"resources/list"}),
+                &mut call,
+            )
+            .unwrap();
+        let uri = &listed["result"]["resources"][0]["uri"];
+        assert_eq!(uri, AUTHORING_GUIDE_URI);
+        let read = protocol
+            .respond(
+                json!({"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri":uri}}),
+                &mut call,
+            )
+            .unwrap();
+        assert_eq!(read["result"]["contents"][0]["text"], AUTHORING_GUIDE);
+        let unknown = protocol.respond(json!({"jsonrpc":"2.0","id":5,"method":"resources/read","params":{"uri":"file:///private"}}), &mut call).unwrap();
+        assert_eq!(unknown["error"]["code"], -32602);
     }
     #[test]
     fn initialize_advertises_the_embedded_application_icon() {

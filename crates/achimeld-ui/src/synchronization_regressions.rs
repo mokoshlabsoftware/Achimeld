@@ -6,6 +6,7 @@ struct ReviewPort {
     show_review: bool,
     banner_ready: bool,
     verified: bool,
+    validating: bool,
     error: Option<String>,
 }
 impl ReviewPort {
@@ -29,10 +30,11 @@ impl ReviewPort {
             show_review: true,
             banner_ready: false,
             verified: false,
+            validating: false,
             error: None,
-            review: json!({"token":"fixture-review","appId":480,"rows":[
+            review: json!({"token":"fixture-review","appId":480,"remoteAchievementCount":1,"rows":[
                 {"key":"Stat:SCORE","kind":"Stat","apiName":"SCORE","state":"LocalOnly","defaultAction":"Upload","actions":["Skip","Upload"],"fields":[{"field":"Maximum","local":"100","steam":"—"}]},
-                {"key":"Achievement:STEAM_FIRST","kind":"Achievement","apiName":"STEAM_FIRST","state":"SteamOnly","defaultAction":"Skip","actions":["Skip","Import"],"fields":[]},
+                {"key":"Achievement:STEAM_FIRST","kind":"Achievement","apiName":"STEAM_FIRST","state":"SteamOnly","defaultAction":"Skip","actions":["Skip","Import","Delete"],"fields":[]},
                 {"key":"Icon:LOCAL_WIN","kind":"Icon","apiName":"LOCAL_WIN","state":"ArtworkUnavailable","defaultAction":"Skip","actions":["Skip"],"fields":[]},
                 {"key":"Icon:COIN","kind":"Icon","apiName":"COIN","state":"InSync","defaultAction":"Skip","actions":["Skip","Upload"],"hasArtwork":true,"fields":[]}
             ]}),
@@ -82,7 +84,7 @@ impl EditorPort for ReviewPort {
         self.error.as_deref()
     }
     fn synchronizing(&self) -> bool {
-        self.show_review
+        self.show_review || self.validating
     }
     fn asset_preview(&mut self, _atlas: bool, id: Option<&str>) -> Option<Preview> {
         (self.banner_ready && id == Some("fixture-banner")).then(|| Preview {
@@ -118,6 +120,74 @@ impl EditorPort for ReviewPort {
             fingerprint: format!("fixture-icon-{locked}"),
         })
     }
+}
+
+#[test]
+fn validate_and_synchronize_prepares_review_only_after_successful_validation() {
+    let mut port = ReviewPort::new();
+    port.show_review = false;
+    let mut desktop = Desktop::default();
+    desktop.validate_and_synchronize(&port);
+    assert!(matches!(
+        desktop.requests.as_slice(),
+        [UiRequest::PrepareSynchronization]
+    ));
+    desktop.requests.clear();
+
+    port.validating = true;
+    desktop.continue_validation_followup(&port);
+    assert!(desktop.requests.is_empty());
+    port.validating = false;
+    port.verified = true;
+    desktop.continue_validation_followup(&port);
+    assert!(matches!(
+        desktop.requests.as_slice(),
+        [UiRequest::PrepareSynchronization]
+    ));
+    assert!(desktop.validation_followup.is_none());
+
+    desktop.requests.clear();
+    port.verified = false;
+    desktop.validate_and_synchronize(&port);
+    desktop.requests.clear();
+    port.validating = true;
+    desktop.continue_validation_followup(&port);
+    port.validating = false;
+    port.error = Some("Validation failed".into());
+    desktop.continue_validation_followup(&port);
+    assert!(desktop.requests.is_empty());
+    assert!(desktop.validation_followup.is_none());
+}
+
+#[test]
+fn validate_and_synchronize_button_sits_next_to_validate() {
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut port = ReviewPort::new();
+    port.show_review = false;
+    let mut desktop = Desktop::default();
+    for _ in 0..2 {
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1000.0, 800.0),
+                )),
+                ..Default::default()
+            },
+            |ui| desktop.synchronization_view(ui, &mut port),
+        );
+        output.textures_delta.clear();
+    }
+    let validate = ctx
+        .read_response(egui::Id::new("sync-primary-action"))
+        .unwrap();
+    let combined = ctx
+        .read_response(egui::Id::new("sync-validate-and-synchronize"))
+        .unwrap();
+    assert_eq!(validate.rect.center().y, combined.rect.center().y);
+    assert!((validate.rect.right() - combined.rect.left()).abs() < 2.0);
+    assert!(combined.enabled());
 }
 
 #[test]
@@ -158,6 +228,48 @@ fn artwork_only_review_can_be_unselected_and_reselected() {
     );
     assert_eq!(desktop.sync_selected_count(&port), 1);
     assert_eq!(desktop.sync_choices["Icon:COIN"], "Upload");
+}
+
+#[test]
+fn interrupted_review_proposes_uploads_and_sorts_differences_without_auto_submission() {
+    let mut port = ReviewPort::new();
+    port.review["reconciliation"] = json!(true);
+    for row in port.review["rows"].as_array_mut().unwrap() {
+        row["defaultAction"] = json!("Skip");
+    }
+    port.review["rows"].as_array_mut().unwrap().push(json!({
+        "key":"Achievement:CONFLICT","kind":"Achievement","apiName":"CONFLICT",
+        "state":"Conflict","defaultAction":"Skip","actions":["Skip","Upload","Import"],
+        "fields":[{"field":"English name","local":"Project name","steam":"Steam name"}]
+    }));
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let has = |text: &str| labels.iter().any(|(label, _)| label == text);
+    assert_eq!(desktop.sync_selected_count(&port), 2);
+    assert_eq!(desktop.sync_choices["Stat:SCORE"], "Upload");
+    assert_eq!(desktop.sync_choices["Achievement:CONFLICT"], "Upload");
+    assert_eq!(desktop.sync_choices["Achievement:STEAM_FIRST"], "Skip");
+    assert_eq!(desktop.sync_choices["Icon:LOCAL_WIN"], "Skip");
+    assert_eq!(desktop.sync_choices["Icon:COIN"], "Skip");
+    assert!(desktop.sync_review_paused);
+    assert!(has(
+        "Differences found: 4 (achievements: 2, stats: 1, icons: 1)"
+    ));
+    assert!(has("Field differences"));
+    let mut ordered = port.review["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .collect::<Vec<_>>();
+    ordered.sort_by_key(|row| crate::synchronization_target::sync_review_group(row));
+    assert_eq!(ordered.first().unwrap()["key"], "Stat:SCORE");
+    assert_eq!(ordered.last().unwrap()["key"], "Icon:COIN");
+    desktop.sync_review_elapsed = std::time::Duration::from_secs(6);
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!(desktop.requests.is_empty());
 }
 
 #[test]
@@ -671,7 +783,7 @@ fn review_is_side_effect_free_and_only_selected_prepared_rows_are_submitted() {
         "The five-second countdown submits the visible plan"
     );
     let request = desktop.requests.pop().unwrap();
-    let UiRequest::ApplySynchronization(choices) = request else {
+    let UiRequest::ApplySynchronization { choices, .. } = request else {
         panic!("Expected typed synchronization selection");
     };
     assert_eq!(choices.len(), 4);
@@ -724,6 +836,10 @@ fn sync_plan_lists_creations_deletions_and_other_selected_actions() {
     let mut port = ReviewPort::new();
     let rows = port.review["rows"].as_array_mut().unwrap();
     rows.push(json!({
+        "key":"Stat:STEAM_DISTANCE","kind":"Stat","apiName":"STEAM_DISTANCE",
+        "state":"SteamOnly","defaultAction":"Skip","actions":["Skip","Import","Delete"],"fields":[]
+    }));
+    rows.push(json!({
         "key":"Achievement:NEW_BADGE","kind":"Achievement","apiName":"NEW_BADGE",
         "state":"LocalOnly","defaultAction":"Upload","actions":["Skip","Upload"],"fields":[]
     }));
@@ -742,26 +858,83 @@ fn sync_plan_lists_creations_deletions_and_other_selected_actions() {
     frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     desktop.sync_confirmation = desktop.sync_review_identity(&port);
     desktop
-        .steam_marks
-        .insert((EntityKind::Achievement, "STEAM_FIRST".into()));
+        .sync_choices
+        .insert("Achievement:STEAM_FIRST".into(), "Delete".into());
     desktop
-        .steam_marks
-        .insert((EntityKind::Stat, "STEAM_DISTANCE".into()));
+        .sync_choices
+        .insert("Stat:STEAM_DISTANCE".into(), "Delete".into());
     desktop.sync_plan_token = Some("fixture-review".into());
     frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     let has = |label: &str| labels.iter().any(|(text, _)| text == label);
     assert!(has("Review synchronization"));
-    assert!(has("New achievements (1)"));
-    assert!(has("Create · NEW_BADGE · icon included"));
-    assert!(has("Marked for deletion (2)"));
     assert!(has(
-        "Delete · Achievement · First steps on Steam · STEAM_FIRST"
+        "Selected plan: new achievements: 1, deletions: 2, other changes: 1"
     ));
-    assert!(has("Delete · Stat · Distance on Steam · STEAM_DISTANCE"));
-    assert!(has("Other selected changes (1)"));
-    assert!(has("Upload · Stat · SCORE"));
-    assert!(!has("Import · Achievement · STEAM_FIRST"));
+    let (creations, deletions, other) = desktop.planned_sync_lines(&port);
+    assert_eq!(creations, ["Create · NEW_BADGE · icon included"]);
+    assert_eq!(
+        deletions,
+        [
+            "Delete · Achievement · STEAM_FIRST",
+            "Delete · Stat · STEAM_DISTANCE"
+        ]
+    );
+    assert_eq!(other, ["Upload · Stat · SCORE"]);
+}
+
+#[test]
+fn destructive_and_over_limit_sync_require_explicit_continue() {
+    for over_limit in [false, true] {
+        let mut port = ReviewPort::new();
+        if over_limit {
+            port.review["remoteAchievementCount"] = json!(100);
+            port.review["rows"].as_array_mut().unwrap().push(json!({
+                "key":"Achievement:NEW_BADGE","kind":"Achievement","apiName":"NEW_BADGE",
+                "state":"LocalOnly","defaultAction":"Upload","actions":["Skip","Upload"],"fields":[]
+            }));
+        }
+        let ctx = egui::Context::default();
+        configure_test_fonts(&ctx);
+        let mut desktop = Desktop::default();
+        frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+        frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+        desktop.sync_confirmation = desktop.sync_review_identity(&port);
+        if !over_limit {
+            desktop
+                .sync_choices
+                .insert("Achievement:STEAM_FIRST".into(), "Delete".into());
+        }
+        desktop.confirm_sync_plan(&port);
+        assert!(desktop.requests.is_empty());
+        assert!(desktop.sync_warning.is_some());
+        frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+        let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+        let continue_button = labels
+            .iter()
+            .find(|(label, _)| label == "Continue")
+            .unwrap_or_else(|| {
+                panic!(
+                    "warning labels: {:?}; token={}; warning={}",
+                    labels.iter().map(|(label, _)| label).collect::<Vec<_>>(),
+                    desktop.sync_token,
+                    desktop.sync_warning.is_some()
+                )
+            })
+            .1
+            .center();
+        click(&ctx, &mut desktop, &mut port, continue_button);
+        let Some(UiRequest::ApplySynchronization {
+            confirm_deletion,
+            allow_above_100,
+            ..
+        }) = desktop.requests.pop()
+        else {
+            panic!("Continue did not submit the approved plan");
+        };
+        assert_eq!(confirm_deletion, !over_limit);
+        assert_eq!(allow_above_100, over_limit);
+    }
 }
 
 #[test]

@@ -2113,10 +2113,67 @@ impl EditorPort for Host {
                     self.save(false, Some(UiRequest::PrepareSynchronization));
                 }
             }
-            UiRequest::ApplySynchronization(choices) => {
+            UiRequest::ApplySynchronization {
+                choices,
+                confirm_deletion,
+                allow_above_100,
+            } => {
                 if let Some(pending) = &mut self.synchronization
                     && pending.review.is_some()
                 {
+                    let review = pending.review.as_ref().unwrap();
+                    let rows = review["rows"].as_array();
+                    let deletion_count = choices
+                        .iter()
+                        .filter(|(_, action)| action == "Delete")
+                        .count();
+                    if deletion_count > 0 && !confirm_deletion {
+                        self.set_sync_error(
+                            "Confirm the selected Steam draft deletions before synchronizing"
+                                .into(),
+                        );
+                        return;
+                    }
+                    let Some(remote_count) = review["remoteAchievementCount"].as_u64() else {
+                        self.set_sync_error(
+                            "Synchronization review is missing the Steam achievement count; validate again".into(),
+                        );
+                        return;
+                    };
+                    let deleted = choices
+                        .iter()
+                        .filter(|(key, action)| {
+                            key.starts_with("Achievement:") && action == "Delete"
+                        })
+                        .count();
+                    let created = choices
+                        .iter()
+                        .filter(|(key, action)| {
+                            key.starts_with("Achievement:")
+                                && action == "Upload"
+                                && rows.is_some_and(|rows| {
+                                    rows.iter().any(|row| {
+                                        row["key"].as_str() == Some(key.as_str())
+                                            && row["state"] == "LocalOnly"
+                                    })
+                                })
+                        })
+                        .count();
+                    if remote_count.saturating_sub(deleted as u64) + created as u64 > 100
+                        && !allow_above_100
+                    {
+                        self.set_sync_error("Confirm that this Steam app can exceed 100 achievements before synchronizing".into());
+                        return;
+                    }
+                    achimeld_application::diagnostics::record(
+                        "INFO",
+                        "synchronization",
+                        &format!(
+                            "Reviewed plan approved: remote achievements={remote_count}; delete achievements={deleted}; delete stats={}; create achievements={created}; projected achievements={}; above-100 continuation={allow_above_100}",
+                            deletion_count.saturating_sub(deleted),
+                            remote_count.saturating_sub(deleted as u64) + created as u64
+                        ),
+                    );
                     match pending.approval.try_send(choices) {
                         Ok(()) => {
                             pending.review = None;
@@ -3368,7 +3425,7 @@ mod dialog_tests {
             cancel: Cancellation::default(),
             events,
             approval,
-            review: Some(json!({"token":"review"})),
+            review: Some(json!({"token":"review","remoteAchievementCount":0})),
             revision: host.editor.revision(),
             path: crate::test_output::root().join("unused-sync.achv"),
             thread: None,
@@ -3400,10 +3457,11 @@ mod dialog_tests {
         assert_ne!(host.editor.document(), &before);
         host.request(UiRequest::NewProject);
         assert_ne!(host.editor.document(), &before);
-        host.request(UiRequest::ApplySynchronization(vec![(
-            "Stat:SCORE".into(),
-            "Upload".into(),
-        )]));
+        host.request(UiRequest::ApplySynchronization {
+            choices: vec![("Stat:SCORE".into(), "Upload".into())],
+            confirm_deletion: false,
+            allow_above_100: false,
+        });
         assert_eq!(receiver.try_recv().unwrap().len(), 1);
         assert!(host.synchronization.as_ref().unwrap().review.is_none());
         host.request(UiRequest::CancelSynchronization);

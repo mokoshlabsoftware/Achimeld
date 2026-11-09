@@ -40,6 +40,7 @@ mod layer_palette;
 mod layer_toolbar;
 mod layers;
 mod localization;
+pub mod modal;
 mod node_navigation;
 mod opacity;
 mod operation_progress;
