@@ -2,6 +2,10 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.3.9.8 (2026-11-10)
+
+- Recognize edited achievement display names in older projects during Steam synchronization
+
 ## 0.3.9.7 (2026-11-07)
 
 - Validate the Steam connection and continue to synchronization review in one action

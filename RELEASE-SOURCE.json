@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "workingVersion": "0.3.9.7",
-  "gitlabSourceCommit": "267dcdaecfdb02523fd3a86b7600fa57e2856fc9",
-  "packageManifestSha256": "3cbf337a3a65f3e9d7f6b58856eeba9bfd91d205f17c0ab865aaf7887338cceb",
-  "verifierSha256": "819aeedb9d74865cced28293ce18086fcaf5d73304ecb373940b9a86250970ca",
-  "installerSha256": "6989bb8455f6a1a1ef488c30f30508458af862ee3e81d8a9cec6d31fe0d16d95",
+  "workingVersion": "0.3.9.8",
+  "gitlabSourceCommit": "e368d684e0e25cfdd6813e650b18878f4d39606b",
+  "packageManifestSha256": "fc7c651eee00c8e616425e44aaf6696f04f2cfc4967f77ecd31da1e32ef913d5",
+  "verifierSha256": "81b8f98e94cb48aeb67190df1900f9f90672c179fee772c50cc58d60dfe31d46",
+  "installerSha256": "ab21b09925d3aaa975b9752405625a4c75ac8bdc9074fcfc7ba47d5b32c1cad1",
   "packageMode": "development",
   "files": [
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "c689b14762230abb23196a183850cfc48690a4e4b47a6a2e9c408ba66f66ff33"
+      "sha256": "feb0e31bb69afcca8db59c051bda04ed45d38ffe43946a79d6a5f3d1ad61acbf"
     },
     {
       "path": "Cargo.lock",
@@ -189,7 +189,7 @@
     },
     {
       "path": "bridge/Achimeld.Browser/SynchronizationSession.cs",
-      "sha256": "f7d3c0fc82e2cfae7d3d3b1d0038fdd6ad51bb1c1a1679bd1954e05e46074cf1"
+      "sha256": "b61bee75061eb3dda2d24c9ed58199579ef331bfaef59f17db4e49f14eaa1815"
     },
     {
       "path": "bridge/Achimeld.Browser/SynchronizationSnapshotPolicy.cs",
@@ -4049,7 +4049,7 @@
     },
     {
       "path": "docs/wiki-maintenance.md",
-      "sha256": "58ebd4a0338f406d2e39f5e88115e459a5c5ad9c5e5b74dcaa62d11a1eac5656"
+      "sha256": "e21f50779d7a57547671d5f30b26b0bd2da064d0183c829a7d6436aa5fc1a1f4"
     },
     {
       "path": "docs/wiki/README.md",
@@ -4057,7 +4057,7 @@
     },
     {
       "path": "docs/wiki/achievements-general.md",
-      "sha256": "338734fcf6f4154cf5b41d0dc6d70e3b31d6017a479a4808f952c533b5fba4a1"
+      "sha256": "ee72b2b8a61146bf4d494855bc62e738a8cf388d094802d01852318b05788c70"
     },
     {
       "path": "docs/wiki/art-data-bank.md",
@@ -4249,7 +4249,7 @@
     },
     {
       "path": "docs/wiki/sync.md",
-      "sha256": "f85d2f8d585c5c6834e1623326bfc2962dd66ec978c7d16f5b019dbbaef5fac7"
+      "sha256": "32df8824273b73e38cafdebead47e25f1a25716030e8925e8c5c86b3c13383a6"
     },
     {
       "path": "docs/wiki/text-3d.md",
@@ -4377,7 +4377,7 @@
     },
     {
       "path": "tools/browser-policy-tests/SynchronizationFixtures.cs",
-      "sha256": "8f815dc12d84d0d20429532ce4774fb7ecc400a8f4260e3d3639b7fdb50415ec"
+      "sha256": "e182f25be7b5782f176c0053ce8f00e612e0911db1fac89f39cca1ebb1a99f73"
     },
     {
       "path": "tools/browser-policy-tests/Text3dFixtures.cs",

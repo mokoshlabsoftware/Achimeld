@@ -99,6 +99,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         foreach (SyncIconHashes pair in icons.Values)
             if (pair.Deferred ? pair.Achieved != "" || pair.Unachieved != "" : !Hash(pair.Achieved) || !Hash(pair.Unachieved)) throw Rejected();
         current = await ReadAsync();
+        var previousLocalizations = PreviousLocalizationFingerprints(request.Project, pinnedAppId);
         foreach (bool stat in new[] { true, false })
         foreach (JsonObject entity in Entities(stat).OfType<JsonObject>().Where(e => stat || Active(e)))
         {
@@ -195,7 +196,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                         string actual = Resolve(current, PortalEntityKind.Localization, name, text.Field);
                         if (desired != actual)
                         {
-                            string? previous = baseline?.FieldFingerprints.GetValueOrDefault("localization:" + text.Field);
+                            string? previous = baseline?.FieldFingerprints.GetValueOrDefault("localization:" + text.Field)
+                                ?? previousLocalizations.GetValueOrDefault((stat ? "Stat" : "Achievement", name, text.Field));
                             SyncState textState = SyncPlanner.Classify(desired, actual, previous);
                             state = Merge(state, textState);
                         }
@@ -409,6 +411,46 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         RemoteSnapshot snapshot = await portal.ReadAsync(project!.AppId);
         SynchronizationSnapshotPolicy.Validate(snapshot, project.AppId);
         return snapshot;
+    }
+    private static Dictionary<(string EntityType, string ApiName, LocalizationField Field), string>
+        PreviousLocalizationFingerprints(JsonElement project, uint appId)
+    {
+        var result = new Dictionary<(string, string, LocalizationField), string>();
+        if (!project.TryGetProperty("lastRemoteSnapshot", out JsonElement snapshot) || snapshot.ValueKind != JsonValueKind.Object)
+            return result;
+        static string? Scalar(JsonElement value) => value.ValueKind switch
+        {
+            JsonValueKind.String or JsonValueKind.Number => value.ToString(),
+            JsonValueKind.Object when value.TryGetProperty("value", out JsonElement inner) &&
+                inner.ValueKind is JsonValueKind.String or JsonValueKind.Number => inner.ToString(),
+            _ => null,
+        };
+        bool managed = snapshot.TryGetProperty("steamAppId", out JsonElement savedApp);
+        if (!managed && !snapshot.TryGetProperty("appId", out savedApp) ||
+            Scalar(savedApp) != appId.ToString(CultureInfo.InvariantCulture) ||
+            (managed ? !snapshot.TryGetProperty("isComplete", out JsonElement complete) || complete.ValueKind != JsonValueKind.True
+                : !snapshot.TryGetProperty("revision", out JsonElement revision) || revision.ValueKind != JsonValueKind.String ||
+                    revision.GetString() != LiveSteamworksConfiguration.Revision) ||
+            !snapshot.TryGetProperty("localizations", out JsonElement rows) || rows.ValueKind != JsonValueKind.Array)
+            return result;
+        foreach (JsonElement row in rows.EnumerateArray())
+        {
+            if (row.ValueKind != JsonValueKind.Object ||
+                !row.TryGetProperty("entityType", out JsonElement type) || type.ValueKind != JsonValueKind.String ||
+                type.GetString() is not ("Achievement" or "Stat") ||
+                !row.TryGetProperty("apiName", out JsonElement name) || Scalar(name) is not string apiName ||
+                !row.TryGetProperty("field", out JsonElement fieldValue) || fieldValue.ValueKind != JsonValueKind.String ||
+                !Enum.TryParse(fieldValue.GetString(), out LocalizationField field) || !Enum.IsDefined(field) ||
+                !row.TryGetProperty("contentFingerprint", out JsonElement fingerprintValue) ||
+                fingerprintValue.ValueKind != JsonValueKind.String || fingerprintValue.GetString() is not string fingerprint || !Hash(fingerprint) ||
+                !row.TryGetProperty("values", out JsonElement values) || values.ValueKind != JsonValueKind.Object ||
+                values.EnumerateObject().Any(value => !Languages.Contains(value.Name) || value.Value.ValueKind != JsonValueKind.String) ||
+                fingerprint != CanonicalFingerprint.Compute(Languages.Select(language =>
+                    new CanonicalField(language, values.TryGetProperty(language, out JsonElement value) ? value.GetString() : ""))).EntityFingerprint ||
+                !result.TryAdd((type.GetString()!, apiName, field), fingerprint))
+                return new();
+        }
+        return result;
     }
     private async Task RequireUnchangedAsync()
     {

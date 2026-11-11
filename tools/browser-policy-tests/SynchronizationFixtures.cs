@@ -15,6 +15,7 @@ internal static class SynchronizationFixtures
 
     internal static async Task RunAsync()
     {
+        await LegacyLocalizationBaselineAsync();
         await ModernEmptyProjectAsync();
         await PendingRenameAsync();
         await DeletedHistoryAsync();
@@ -672,6 +673,70 @@ internal static class SynchronizationFixtures
         }
     }
 
+    private static async Task LegacyLocalizationBaselineAsync()
+    {
+        foreach (bool managedSnapshot in new[] { false, true })
+        {
+            var portal = new FakePortal();
+            portal.AddAchievement();
+            portal.AddAchievementText("ACH_WIN", "Winner");
+            portal.AddAchievementText("ACH_WIN", "Get 10 points", LocalizationField.AchievementDescription);
+            PrepareSyncRequest request = Request(achievement: true);
+            JsonObject project = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+            JsonObject snapshot = JsonSerializer.SerializeToNode(portal.Snapshot, SecurityWire.Json)!.AsObject();
+            if (managedSnapshot)
+            {
+                snapshot["steamAppId"] = 480;
+                snapshot["isComplete"] = true;
+                snapshot.Remove("appId");
+                foreach (string collection in new[] { "stats", "achievements", "localizations" })
+                    foreach (JsonNode? entry in snapshot[collection]!.AsArray())
+                        entry!["apiName"] = entry["apiName"]!["value"]!.GetValue<string>();
+            }
+            else snapshot["revision"] = LiveSteamworksConfiguration.Revision;
+            project["lastRemoteSnapshot"] = snapshot;
+            RemoteAchievement achievement = portal.Snapshot.Achievements.Single();
+            project["syncBaselines"]!.AsArray().Add(new JsonObject {
+                ["entityType"] = "Achievement", ["localId"] = JsonValue.Create(AchievementIdValue),
+                ["apiName"] = "ACH_WIN", ["entityFingerprint"] = achievement.ContentFingerprint,
+                ["fieldFingerprints"] = JsonSerializer.SerializeToNode(CanonicalFingerprint.For(achievement, false).FieldFingerprints, SecurityWire.Json),
+                ["verifiedAtUtc"] = JsonValue.Create(DateTimeOffset.UtcNow),
+            });
+            request.Catalog["Bb2222"]["English"] = "Winner renamed";
+            request = request with { Project = JsonSerializer.SerializeToElement(project) };
+            var session = new SynchronizationSession(portal);
+            SyncReview review = await session.PrepareAsync(request, 480);
+            SyncReviewRow row = review.Rows.Single(r => r.Key == "Achievement:ACH_WIN");
+            if (row.State != "LocalChanged" || row.DefaultAction != "Upload" || row.Fields.Length != 1)
+                throw new Exception("An edited display name with a legacy text baseline was not proposed for upload.");
+            SyncStep[] steps = await session.BeginAsync(new(review.Token, [new(row.Key, "Upload")]));
+            foreach (SyncStep step in steps) await session.StepAsync(new(review.Token, step.Key));
+            await session.FinishAsync(new(review.Token));
+            if (portal.Writes != 1 || portal.Snapshot.Localizations.Single(l => l.Field == LocalizationField.AchievementDisplayName).Values["English"] != "Winner renamed")
+                throw new Exception("The selected display name was not written to the Steam draft.");
+
+            // A changed destination or a newer Steam text edit cannot supply a
+            // trustworthy fallback baseline and must keep the choice explicit.
+            portal = new FakePortal();
+            portal.AddAchievement();
+            portal.AddAchievementText("ACH_WIN", "Steam renamed");
+            portal.AddAchievementText("ACH_WIN", "Get 10 points", LocalizationField.AchievementDescription);
+            row = (await new SynchronizationSession(portal).PrepareAsync(request, 480)).Rows.Single(r => r.Key == "Achievement:ACH_WIN");
+            if (row.State != "Conflict" || row.DefaultAction != "Skip")
+                throw new Exception("A changed Steam name was treated as a local-only edit.");
+            JsonObject wrongApp = (JsonObject)project.DeepClone();
+            wrongApp["lastRemoteSnapshot"]![managedSnapshot ? "steamAppId" : "appId"] =
+                managedSnapshot ? JsonValue.Create(481) : new JsonObject { ["value"] = 481 };
+            portal = new FakePortal();
+            portal.AddAchievement();
+            portal.AddAchievementText("ACH_WIN", "Winner");
+            portal.AddAchievementText("ACH_WIN", "Get 10 points", LocalizationField.AchievementDescription);
+            row = (await new SynchronizationSession(portal).PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(wrongApp) }, 480)).Rows.Single(r => r.Key == "Achievement:ACH_WIN");
+            if (row.State != "Conflict" || row.DefaultAction != "Skip")
+                throw new Exception("A different App ID supplied a localization baseline.");
+        }
+    }
+
     private static PrepareSyncRequest Request(bool localStat = true, bool achievement = false)
     {
         JsonObject project = new()
@@ -735,12 +800,12 @@ internal static class SynchronizationFixtures
         public bool ChangeDownloadedArtwork { get; init; }
         public bool InjectUnrelatedChange { get; init; }
         public bool ChangeSameNameAchievementText { get; init; }
-        public void AddAchievementText(string name, string text)
+        public void AddAchievementText(string name, string text, LocalizationField field = LocalizationField.AchievementDisplayName)
         {
             Dictionary<string, string> values = new() { ["English"] = text };
             string hash = CanonicalFingerprint.Compute(new[] { "English", "Polish", "ChineseSimplified", "ChineseTraditional", "Japanese", "Korean", "French" }.Select(l => new CanonicalField(l, values.GetValueOrDefault(l, "")))).EntityFingerprint;
-            Snapshot = Snapshot with { Localizations = Snapshot.Localizations.Where(l => l.ApiName.Value != name || l.Field != LocalizationField.AchievementDisplayName)
-                .Append(new RemoteLocalization(ProjectEntityType.Achievement, new(name), LocalizationField.AchievementDisplayName, values, hash)).ToArray() };
+            Snapshot = Snapshot with { Localizations = Snapshot.Localizations.Where(l => l.ApiName.Value != name || l.Field != field)
+                .Append(new RemoteLocalization(ProjectEntityType.Achievement, new(name), field, values, hash)).ToArray() };
         }
         public void AddStat(string name, decimal maximum = 100)
         {

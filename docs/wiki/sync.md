@@ -47,6 +47,8 @@ The review reports the total detected differences separately from the number of 
 
 Use project, Use Steam and Leave unchanged appear according to the entry and review state. Choose Leave unchanged to unselect a proposed upload or import; you can select it again before synchronizing. A row that exists only on Steam can also offer Delete on Steam. Delete is never the default. Do not assume every row offers all choices.
 
+An edited achievement display name appears as a field difference. In an older project without a saved text baseline, Achimeld can propose Use project when its previous complete Steam read still matches the fresh Steam name. If Steam has changed since that read, review both versions and choose the intended direction.
+
 Expand field differences and inspect the actual values. An import choice can change the associated icon choice so incompatible import/upload combinations are not retained.
 
 ## Apply selected changes
