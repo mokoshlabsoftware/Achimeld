@@ -463,7 +463,10 @@ public sealed record RemoteAchievement(
     SteamApiName? ProgressStatApiName,
     decimal? UnlockValue,
     int DisplayOrder,
-    string ContentFingerprint);
+    string ContentFingerprint)
+{
+    public string? SetId { get; init; }
+}
 
 public sealed record RemoteStat(
     string? SteamId,

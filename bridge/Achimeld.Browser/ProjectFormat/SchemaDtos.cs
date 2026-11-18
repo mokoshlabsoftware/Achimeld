@@ -304,6 +304,7 @@ public sealed class V1RemoteStatDto
 public sealed class V1RemoteAchievementDto
 {
     public string? SteamId { get; set; }
+    public string? SetId { get; set; }
     public string ApiName { get; set; } = "";
     public string InternalName { get; set; } = "";
     public bool Hidden { get; set; }

@@ -6,7 +6,9 @@ Keep these files together when moving or backing up your work.
 
 ## Create open and save
 
-Use File > New project to start a project. Use File > Open project or Open Recent to return to existing work.
+Use File > New project to start a project. Use File > Open project or Open Recent to return to existing work. Opening the current file again reloads it from disk and clears the old filters. If you have unsaved edits, Achimeld asks whether to save, discard, or cancel before reopening.
+
+On the achievement canvas, right-click and choose **Create set**. Drag the title to move the box with its cards, or drag the bottom-right corner to resize it. Drag achievement cards in or out to change membership. Right-click an open area of the box to rename it or link it to a Steam set. When boxes overlap, the most recently created box takes precedence. Removing a box leaves its cards in the project.
 
 Use Save for the current destination. Save as chooses a new destination and rebases artwork references. Choose unused destination filenames when prompted.
 

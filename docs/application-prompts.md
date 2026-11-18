@@ -46,6 +46,13 @@ Selecting **Validate** for a project without a saved file shows **Saved project 
 
 ## Review
 
+The synchronization review and comparison start centered at about 80% of the
+previous review height. Drag an edge or corner to resize either axis. Their
+existing header includes Maximize/Restore and Close at the right. Maximize
+fills the application area and Restore returns to the chosen size. Close uses
+Cancel in the review and Back to review in the comparison. The resize and
+header-control exception applies only to these two review windows.
+
 Active Steam validation, synchronization, reviewed deletion, reading, and browser
 profile deletion use a movable, initially centered progress panel with the same black
 header/body and shared full-width action row. Show a large spinner, centered

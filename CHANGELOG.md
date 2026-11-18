@@ -2,6 +2,90 @@
 
 The newest entry is the current working version. History starts here; earlier work is not retroactively numbered.
 
+## 0.4.2.0 (2026-11-18)
+
+- No user-facing changes.
+
+## 0.4.1.1 (2026-11-18)
+
+- No user-facing changes.
+
+## 0.4.1.0 (2026-11-18)
+
+- Improve Steam achievement synchronization, linked achievement sets and MCP workflows
+
+## 0.4.0.10 (2026-11-17)
+
+- Create linked achievement sets and open the filtered Steam view through MCP
+
+## 0.4.0.9 (2026-11-17)
+
+- Assign achievements to Steam sets using named boxes on the achievement canvas
+
+## 0.4.0.8 (2026-11-17)
+
+- Group Steam achievement cards by set and show unassigned cards under Base game
+
+## 0.4.0.7 (2026-11-17)
+
+- Show the resolved English achievement description below its full-width template field
+
+## 0.4.0.6 (2026-11-17)
+
+- Reset filters when reopening a project and keep Steam search separate from the project canvas
+
+## 0.4.0.5 (2026-11-17)
+
+- Search Steam achievement descriptions with the hourglass filter
+
+## 0.4.0.4 (2026-11-17)
+
+- Find Steam achievements and stats with an hourglass filter beside Read Steam
+
+## 0.4.0.3 (2026-11-17)
+
+- Apply reviewed achievement definitions, text and artwork to Steamworks and resize the synchronization review window
+
+## 0.4.0.2 (2026-11-16)
+
+- Show the frozen project icons alongside Steam icons in synchronization comparisons
+
+## 0.4.0.1 (2026-11-16)
+
+- Expand synchronization artwork to fill the review entry and allow importing changed achievements assigned to Steam sets
+
+## 0.4.0.0 (2026-11-13)
+
+- Show dimmed artwork in synchronization entries and compare Achimeld and Steam versions side by side
+
+## 0.3.9.15 (2026-11-13)
+
+- Restore reviewed achievement name uploads through the current Steamworks editor
+
+## 0.3.9.14 (2026-11-11)
+
+- Recognize additional Steamworks page requests during synchronization
+
+## 0.3.9.13 (2026-11-11)
+
+- Prepare artwork before Steam validation and offer one-session MCP synchronization
+
+## 0.3.9.12 (2026-11-11)
+
+- Keep Steam validation and synchronization in one browser session
+
+## 0.3.9.11 (2026-11-11)
+
+- No user-facing changes.
+
+## 0.3.9.10 (2026-11-11)
+
+- Support current Steamworks achievement page reads during validation
+
+## 0.3.9.9 (2026-11-11)
+
+- Show achievement display name fields below their labels
+
 ## 0.3.9.8 (2026-11-10)
 
 - Recognize edited achievement display names in older projects during Steam synchronization

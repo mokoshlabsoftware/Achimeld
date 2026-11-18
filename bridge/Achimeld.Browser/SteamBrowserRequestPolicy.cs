@@ -20,6 +20,21 @@ public sealed class SteamBrowserRequestPolicy
     public BrowserRequestRejection Rejection { get { lock (gate) return rejection; } }
     private PortalEntityKind? draftKind;
     private string? armedPost;
+    private Dictionary<string, string>? armedModernForm;
+    private (string FileName, byte[] Image)? armedModernIcon;
+    private string? armedModernApiName;
+    private string? armedModernEnglish;
+    private uint modernWriteRejectionMask;
+    public uint ModernWriteRejectionMask { get { lock (gate) return modernWriteRejectionMask; } }
+    private uint modernWriteIdentityShape;
+    public uint ModernWriteIdentityShape { get { lock (gate) return modernWriteIdentityShape; } }
+    private uint modernWriteIdentityLocations;
+    public uint ModernWriteIdentityLocations { get { lock (gate) return modernWriteIdentityLocations; } }
+    private ulong modernWritePartSequence;
+    public ulong ModernWritePartSequence { get { lock (gate) return modernWritePartSequence; } }
+    private IReadOnlySet<string>? armedKnownApiNames;
+    private bool armedModernImport;
+    private int discardedStoreBrowseRequests;
 
     public void BeginAuthentication()
     {
@@ -69,13 +84,36 @@ public sealed class SteamBrowserRequestPolicy
                 uri.AbsoluteUri == "https://partner.steamgames.com/actions/CSPReport";
     }
 
+    // The new achievements editor asks Steam's store service for optional
+    // display metadata. Abort this exact request locally: it is never sent to
+    // the broker, and its query is not inspected, stored or trusted.
+    public bool DiscardsOptionalStoreBrowse(string method, Uri uri, string resourceType, bool navigation)
+    {
+        lock (gate)
+        {
+            if (rejected || appId is null || phase is not (Phase.Authentication or Phase.Read or Phase.ReviewedDraft) ||
+                method != "GET" || navigation || resourceType != "fetch" ||
+                uri.Scheme != Uri.UriSchemeHttps || uri.IdnHost != "partner.steamgames.com" ||
+                uri.AbsolutePath != "/um/StoreBrowse/GetItems/" || uri.Query.Length is < 1 or > 2048 ||
+                !uri.Query.StartsWith("?input_protobuf_encoded=", StringComparison.Ordinal) ||
+                discardedStoreBrowseRequests >= 16) return false;
+            discardedStoreBrowseRequests++;
+            return true;
+        }
+    }
+
     public Uri ConfigurationUri(uint selected, string endpoint)
     {
         lock (gate)
         {
             RequireRead(selected);
-            if (endpoint is not ("fetchstats" or "fetchachievements")) throw new InvalidDataException("Configuration endpoint rejected.");
-            return new Uri($"https://partner.steamgames.com/apps/{endpoint}/{selected.ToString(CultureInfo.InvariantCulture)}");
+            string route = endpoint switch
+            {
+                "fetchstats" or "fetchachievements" => "apps/" + endpoint,
+                "ajaxgetstatsschema" or "ajaxgetappinfo" => "achievements/" + endpoint,
+                _ => throw new InvalidDataException("Configuration endpoint rejected."),
+            };
+            return new Uri($"https://partner.steamgames.com/{route}/{selected.ToString(CultureInfo.InvariantCulture)}");
         }
     }
 
@@ -129,13 +167,71 @@ public sealed class SteamBrowserRequestPolicy
             if (phase != Phase.Read || kind is not (PortalEntityKind.Stat or PortalEntityKind.Achievement or PortalEntityKind.Icon)) throw new InvalidDataException("Draft scope unavailable.");
             draftKind = kind;
             armedPost = null;
+            armedModernForm = null;
+            armedModernIcon = null;
+            armedModernApiName = null;
+            armedModernEnglish = null;
+            modernWriteRejectionMask = 0;
+            modernWriteIdentityShape = 0;
+            modernWriteIdentityLocations = 0;
+            modernWritePartSequence = 0;
+            armedKnownApiNames = null;
+            armedModernImport = false;
             phase = Phase.ReviewedDraft;
         }
     }
 
     public void EndReviewedDraft()
     {
-        lock (gate) { RequireHealthy(); if (phase != Phase.ReviewedDraft) throw new InvalidDataException("Draft scope unavailable."); draftKind = null; armedPost = null; phase = Phase.Read; }
+        lock (gate) { RequireHealthy(); if (phase != Phase.ReviewedDraft) throw new InvalidDataException("Draft scope unavailable."); draftKind = null; armedPost = null; armedModernForm = null; armedModernIcon = null; armedModernApiName = null; armedModernEnglish = null; armedKnownApiNames = null; armedModernImport = false; phase = Phase.Read; }
+    }
+
+    internal Uri ArmReviewedModernForm(uint selected, bool moveSet, Dictionary<string, string> fields)
+    {
+        lock (gate)
+        {
+            RequireRead(selected);
+            if (phase != Phase.ReviewedDraft || draftKind != PortalEntityKind.Achievement || armedPost is not null)
+                throw new InvalidDataException("Modern achievement draft save is unavailable.");
+            string endpoint = moveSet ? "ajaxmoveachievements" : "ajaxcreateorupdateachievement";
+            armedPost = $"/achievements/{endpoint}/{selected.ToString(CultureInfo.InvariantCulture)}";
+            armedModernForm = new(fields, StringComparer.Ordinal);
+            return new Uri("https://partner.steamgames.com" + armedPost);
+        }
+    }
+
+    internal Uri ArmReviewedModernIcon(uint selected, Dictionary<string, string> fields, string fileName, byte[] image)
+    {
+        lock (gate)
+        {
+            RequireRead(selected);
+            if (phase != Phase.ReviewedDraft || draftKind != PortalEntityKind.Icon || armedPost is not null || image.Length is 0 or > 8 * 1024 * 1024)
+                throw new InvalidDataException("Modern achievement icon upload is unavailable.");
+            armedPost = "/images/uploadachievement";
+            armedModernForm = new(fields, StringComparer.Ordinal);
+            armedModernIcon = (fileName, image);
+            return new Uri("https://partner.steamgames.com" + armedPost);
+        }
+    }
+
+    public void ArmReviewedModernAchievementPost(uint selected, string apiName, string english,
+        IReadOnlySet<string>? knownApiNames = null, bool localizationImport = false)
+    {
+        lock (gate)
+        {
+            RequireRead(selected);
+            if (phase != Phase.ReviewedDraft || draftKind != PortalEntityKind.Achievement ||
+                armedPost is not null || apiName.Length is < 1 or > 80 ||
+                english.Length is < 1 or > 4096 ||
+                (localizationImport && (knownApiNames is null || !knownApiNames.Contains(apiName))) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(apiName, @"^ACHIEVEMENT_[A-Za-z0-9_]{1,68}$"))
+                throw new InvalidDataException("Modern achievement draft save is unavailable.");
+            armedPost = $"/achievements/ajaxcreateorupdateachievement/{selected.ToString(CultureInfo.InvariantCulture)}";
+            armedModernApiName = apiName;
+            armedModernEnglish = english;
+            armedKnownApiNames = knownApiNames;
+            armedModernImport = localizationImport;
+        }
     }
 
     public void ArmReviewedPost(uint selected)
@@ -181,7 +277,8 @@ public sealed class SteamBrowserRequestPolicy
             uri.AbsoluteUri == $"https://partner.steamgames.com/apps/stats/{id.ToString(CultureInfo.InvariantCulture)}";
     }
 
-    public bool Allows(string method, Uri uri, string resourceType, bool navigation)
+    public bool Allows(string method, Uri uri, string resourceType, bool navigation,
+        string? postBody = null, string? contentType = null, byte[]? postBytes = null)
     {
         lock (gate)
         {
@@ -198,15 +295,57 @@ public sealed class SteamBrowserRequestPolicy
             if (host == "api.steampowered.com")
                 return phase == Phase.Authentication && !navigation && resourceType is "xhr" or "fetch" &&
                     IsAuthenticationApi(method, path);
+            if (partner && appId is uint pinnedApp && method == "GET" && !navigation && resourceType == "fetch" &&
+                IsPinnedAchievementPlayerRead(uri, path, pinnedApp)) return true;
             if (partner && path.StartsWith("/um/", StringComparison.Ordinal))
                 return phase == Phase.Authentication && !navigation && resourceType is "xhr" or "fetch" &&
                     IsAuthenticationApi(method, path, browserApi: true);
             if (phase == Phase.Authentication && IsLoginPath(host, path)) return true;
-            if (phase == Phase.ReviewedDraft && partner && string.IsNullOrEmpty(uri.Query))
+            if (phase == Phase.ReviewedDraft && partner && appId is uint reviewedApp &&
+                string.IsNullOrEmpty(uri.Query))
             {
                 bool stat = draftKind == PortalEntityKind.Stat;
                 if (method == "POST" && armedPost == path &&
-                    (draftKind == PortalEntityKind.Icon || !navigation && resourceType is "xhr" or "fetch")) { armedPost = null; return true; }
+                    (draftKind == PortalEntityKind.Icon || !navigation && resourceType is "xhr" or "fetch"))
+                {
+                    if (armedModernForm is not null && (armedModernIcon is { } icon
+                        ? navigation || resourceType is not ("xhr" or "fetch") || !ModernAchievementDraft.MatchesIcon(contentType, postBytes, armedModernForm, icon.FileName, icon.Image)
+                        : !ModernAchievementDraft.MatchesForm(contentType, postBody, armedModernForm))) return false;
+                    if (armedModernApiName is string apiName &&
+                        !(armedModernImport
+                            ? SteamworksModernWriteShape.AllowsReviewedLocalizationImport(method,
+                                uri, resourceType, contentType, postBody, reviewedApp, apiName,
+                                armedModernEnglish!, armedKnownApiNames)
+                            : SteamworksModernWriteShape.AllowsReviewed(method, uri, resourceType,
+                                contentType, postBody, reviewedApp, apiName, armedModernEnglish!)))
+                    {
+                        int shape = SteamworksModernWriteShape.Read(method, uri, resourceType,
+                            contentType, postBody, reviewedApp, apiName, armedModernEnglish!);
+                        int structure = SteamworksModernWriteShape.ReadStructure(contentType, postBody);
+                        int guard = SteamworksModernWriteShape.ReadGuardConditions(contentType,
+                            postBody, apiName);
+                        modernWriteRejectionMask = (uint)shape | ((uint)structure << 14) |
+                            ((uint)guard << 30);
+                        if ((guard & 2) == 0)
+                        {
+                            modernWriteIdentityShape = (uint)SteamworksModernWriteShape.ReadIdentityShape(
+                                postBody, apiName);
+                            modernWriteIdentityLocations = SteamworksModernWriteShape.ReadIdentityLocations(
+                                contentType, postBody, apiName, armedModernEnglish!);
+                            modernWritePartSequence = SteamworksModernWriteShape.ReadMultipartSequence(
+                                contentType, postBody, apiName, armedModernEnglish!, armedKnownApiNames);
+                        }
+                        return false;
+                    }
+                    armedPost = null;
+                    armedModernForm = null;
+                    armedModernIcon = null;
+                    armedModernApiName = null;
+                    armedModernEnglish = null;
+                    armedKnownApiNames = null;
+                    armedModernImport = false;
+                    return true;
+                }
                 if (method == "GET" && navigation && stat && path == $"/apps/stats/{pinned}") return true;
                 // Steam's legacy editor uses POST for individual record reads.
                 // Keep them confined to canonical pinned-app metadata routes.
@@ -221,6 +360,17 @@ public sealed class SteamBrowserRequestPolicy
             if (method != "GET") return false;
             if (partner && string.IsNullOrEmpty(uri.Query))
             {
+                // The achievements editor loads these read-only views for
+                // the selected app after its document has loaded.
+                if (!navigation && resourceType == "xhr" && pinned is not null &&
+                    (path == $"/achievements/ajaxgetappinfo/{pinned}" ||
+                     path == $"/achievements/ajaxgetdlc/{pinned}" ||
+                     path == $"/achievements/ajaxgetstatsschema/{pinned}" ||
+                     path == $"/achievements/ajaxgetlanguagelist/{pinned}" ||
+                     path == $"/achievements/ajaxgetlanguageoptionslist/{pinned}")) return true;
+                if (phase == Phase.Read && !navigation && resourceType == "fetch" && pinned is not null &&
+                    (path == $"/achievements/ajaxgetstatsschema/{pinned}" ||
+                     path == $"/achievements/ajaxgetappinfo/{pinned}")) return true;
                 if (navigation && ((phase == Phase.Authentication && path == "/") ||
                     (pinned is not null && (path == $"/apps/achievements/{pinned}" ||
                         ((phase is Phase.Authentication or Phase.Read) && path == $"/apps/stats/{pinned}"))))) return true;
@@ -236,6 +386,30 @@ public sealed class SteamBrowserRequestPolicy
     }
     private static bool RecordPart(string text) => text.Length is > 0 and <= 10 &&
         uint.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out uint id) && text == id.ToString(CultureInfo.InvariantCulture);
+
+    private static bool IsPinnedAchievementPlayerRead(Uri uri, string path, uint pinnedApp)
+    {
+        bool game = path == "/um/Player/GetGameAchievements/";
+        if (!game && path != "/um/Player/GetGlobalAchievementPercentages/") return false;
+        // Steam encodes the App ID as protobuf field 1. The game-achievements
+        // request also contains the fixed English language field. Compare the
+        // complete payload so a page cannot select another app or add fields.
+        List<byte> payload = [0x08];
+        uint value = pinnedApp;
+        do
+        {
+            byte part = (byte)(value & 0x7f);
+            value >>= 7;
+            payload.Add(value == 0 ? part : (byte)(part | 0x80));
+        } while (value != 0);
+        if (game)
+        {
+            payload.Add(0x12);
+            payload.Add(0x07);
+            payload.AddRange(System.Text.Encoding.ASCII.GetBytes("english"));
+        }
+        return Uri.UnescapeDataString(uri.Query) == "?input_protobuf_encoded=" + Convert.ToBase64String([.. payload]);
+    }
 
     // Steam's public login component uses these anonymous authentication RPCs.
     // No account-management, token-administration or generic API authority.

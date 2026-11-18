@@ -109,7 +109,7 @@ The desktop rewrite is in progress. Local editing, undo, colors, layered preview
 
 ## Build and audit
 
-Use Windows x64, Rust 1.99.0 MSVC, Visual C++/Windows SDK, .NET 10 and PowerShell 7. Build outputs stay outside this source repository. `C:\Projects\AchimeldBuild\current\package` contains the latest verified package; every successful package is copied to `C:\Projects\AchimeldBuild\DD_MM_YYYY\build-TIME-ID` (for example `15_10_2026`). Multiple builds on one day retain separate copies. Rust and .NET intermediates and audit evidence live under `current`; reusable tools, downloads and dependencies live under `cache`. Set `ACHIMELD_BUILD_ROOT` to override the external root when using the PowerShell entry points or .NET; direct Cargo uses the default external `current\target` path. Source PNG/ICO/raw pixel artwork remains in the repository and is embedded in the compiled executables. First provision managed packages online:
+Use Windows x64, Rust 1.99.0 MSVC, Visual C++/Windows SDK, .NET 10 and PowerShell 7. Build outputs stay outside this source repository. `C:\Projects\AchimeldBuild\current\package` contains the latest verified development package. Rust and .NET intermediates and audit evidence live under `current`; reusable tools, downloads and dependencies live under `cache`. Set `ACHIMELD_BUILD_ROOT` to override the external root when using the PowerShell entry points or .NET; direct Cargo uses the default external `current\target` path. Source PNG/ICO/raw pixel artwork remains in the repository and is embedded in the compiled executables. First provision managed packages online:
 
 ```powershell
 dotnet restore bridge/read-worker/ReadWorker.csproj --locked-mode --packages C:/Projects/AchimeldBuild/cache/nuget
@@ -151,9 +151,9 @@ Run acceptance and reads as a normal user. Sign in manually in the dedicated vis
 
 Double-click `build-and-run.bat` to build a fresh signed development package and launch its Rust desktop as the current user, without administrator approval. The bootstrapper verifies and supervises the package directly in `current\package`. Start the batch file normally. It finds PowerShell 7 on PATH, in standard installation directories, or in the Codex bundled runtime. Its child build tools use that same PowerShell.
 
-Every build-and-run invocation (including `--build-only` and the desktop build shortcut) deletes obsolete worker fixtures, temporary package folders and signing inputs only after the new package passes verification. Rust/.NET outputs are retained for incremental builds, along with the current runnable package, dated archives, dependency/toolchain cache and audit evidence. Failed builds retain their temporary outputs for diagnosis until a later successful build. Running the current package without rebuilding does not clean artifacts. Cleanup stops on locked files or directory links. Compiler output and elapsed-time updates remain visible during packaging.
+Build and Run removes obsolete dated packages before compiling and keeps the current runnable package available until its replacement passes verification. Promotion removes the superseded package. Dependency and toolchain caches, incremental compiler outputs and audit evidence remain available. Running the current package does not perform cleanup. Cleanup rejects unsafe directory links and reports locked files. Compiler output and elapsed-time updates remain visible during packaging.
 
-After a successful build and archive verification, `achimeld.lnk` on your desktop points directly to `C:\Projects\AchimeldBuild\current\package\Achimeld.exe`. It follows the current verified package without rebuilding or installing. The desktop build-and-run shortcut points directly to the authoritative `C:\Projects\Achimeld\achimeld\build-and-run.bat` in this source repository. This builds into `C:\Projects\AchimeldBuild\current` by default. It survives deletion of the entire `current` directory and rebuilds it before archiving and launching. The permanent `build-and-run.bat` is in the repository root. Build-only runs refresh both shortcuts.
+After successful package verification, `achimeld.lnk` on your desktop points directly to `C:\Projects\AchimeldBuild\current\package\Achimeld.exe`. It follows the current verified package without rebuilding or installing. The desktop build-and-run shortcut points directly to the authoritative `C:\Projects\Achimeld\achimeld\build-and-run.bat` in this source repository. This builds into `C:\Projects\AchimeldBuild\current` by default. It survives deletion of the entire `current` directory and recreates it when building. The permanent `build-and-run.bat` is in the repository root. Build-only runs refresh both shortcuts.
 
 ### What can I delete?
 
@@ -164,7 +164,6 @@ Close Achimeld and wait for builds/audits to finish before deleting generated st
 | `C:\Projects\Achimeld\achimeld` | Keep: source, artwork, build scripts and permanent `build-and-run.bat` | Required to rebuild; this is not build output. |
 | `C:\Projects\AchimeldBuild\cache` | Keep for offline rebuilding | Contains reusable toolchains, SDK libraries and dependencies. Removing it requires provisioning those again. |
 | `C:\Projects\AchimeldBuild\current` | Disposable generated output | Can delete the whole folder. The normal run shortcut stops working until rebuilt; the build-and-run shortcut still works. A clean rebuild takes longer. Audit logs/evidence here are also lost. |
-| `C:\Projects\AchimeldBuild\DD_MM_YYYY` | Disposable saved packages | Delete dates you no longer need; those historical packages are lost. |
 
 To recover after deleting `current`, use the desktop **achimeld build and run** shortcut or double-click `C:\Projects\Achimeld\achimeld\build-and-run.bat`. Generated launcher copies inside `current` are disposable too; they are not the permanent build entry point. Keep projects and their sibling `.art-data-bank` folders outside these disposable output folders.
 
@@ -179,7 +178,7 @@ build-and-run.bat --offline
 build-and-run.bat --offline --build-only
 ```
 
-`--offline` requires cached dependencies and the verified browser archive. `--build-only` builds, verifies, archives and updates the current-build shortcut without installing or launching. The batch file requires the development tools listed above. A double-click run keeps the console open after exit to show diagnostics. Use `--help` for usage. Direct launch of `achimeld-app.exe` is rejected because mandatory supervision is part of the application contract.
+`--offline` requires cached dependencies and the verified browser archive. `--build-only` builds, verifies and updates the current-build shortcut without installing or launching. The batch file requires the development tools listed above. A double-click run keeps the console open after exit to show diagnostics. Use `--help` for usage. Direct launch of `achimeld-app.exe` is rejected because mandatory supervision is part of the application contract.
 
 ## Offline inspection and compatibility
 

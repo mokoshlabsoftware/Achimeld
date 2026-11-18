@@ -1,4 +1,5 @@
 use crate::EntityKind;
+use serde::{Deserialize, Serialize};
 
 // Project canvas coordinates are 20-DIP grid cells, as in the original editor.
 // Card dimensions and wrapping must use the same units for load, add and duplicate.
@@ -20,6 +21,120 @@ pub fn cell_span(kind: EntityKind) -> [i32; 2] {
 pub fn auto_position(kind: EntityKind, index: usize) -> [i32; 2] {
     let span = cell_span(kind);
     [(index % 5) as i32 * span[0], (index / 5) as i32 * span[1]]
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementSet {
+    pub id: String,
+    pub name: String,
+    pub position: [i32; 2],
+    pub size: [i32; 2],
+    pub steam_set_id: Option<u64>,
+}
+
+impl AchievementSet {
+    pub fn contains(&self, position: [i32; 2]) -> bool {
+        (0..2).all(|axis| {
+            position[axis] >= self.position[axis]
+                && position[axis] < self.position[axis].saturating_add(self.size[axis])
+        })
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if !crate::document::valid_id(&self.id)
+            || self.name.trim().is_empty()
+            || self.name.len() > 128
+            || self.name.chars().any(char::is_control)
+            || self
+                .position
+                .iter()
+                .any(|coordinate| !(-100_000..=100_000).contains(coordinate))
+            || self.size.iter().any(|size| !(4..=4096).contains(size))
+        {
+            return Err("Invalid achievement set name or bounds".into());
+        }
+        Ok(())
+    }
+}
+
+pub fn achievement_position(entity: &serde_json::Value, index: usize) -> [i32; 2] {
+    let automatic = auto_position(EntityKind::Achievement, index);
+    std::array::from_fn(|axis| {
+        entity[["canvasColumn", "canvasRow"][axis]]
+            .as_i64()
+            .and_then(|value| i32::try_from(value).ok())
+            .unwrap_or(automatic[axis])
+    })
+}
+
+pub fn steam_set_targets(document: &crate::Document) -> std::collections::BTreeMap<String, String> {
+    let sets = document.achievement_sets();
+    document
+        .entities(EntityKind::Achievement)
+        .iter()
+        .enumerate()
+        .filter(|(_, entity)| !crate::style_achievements::is_local_icon(entity))
+        .filter_map(|(index, entity)| {
+            let set_id = sets
+                .iter()
+                .rev()
+                .find(|set| set.contains(achievement_position(entity, index)))?
+                .steam_set_id?;
+            Some((entity["apiName"].as_str()?.to_owned(), set_id.to_string()))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+#[test]
+fn steam_set_targets_follow_canvas_membership_and_are_undoable() {
+    use crate::{Command, Editor, new_id};
+
+    let mut editor = Editor::default();
+    editor
+        .execute("Add", Command::Add(EntityKind::Achievement), None)
+        .unwrap();
+    let achievement = &editor.document().entities(EntityKind::Achievement)[0];
+    let id = achievement["id"].as_str().unwrap().to_owned();
+    let api = achievement["apiName"].as_str().unwrap().to_owned();
+    let position = achievement_position(achievement, 0);
+    let set = AchievementSet {
+        id: new_id(),
+        name: "Experience".into(),
+        position,
+        size: [20, 10],
+        steam_set_id: Some(5),
+    };
+    editor
+        .execute("Create set", Command::SaveAchievementSet(set), None)
+        .unwrap();
+    assert_eq!(
+        steam_set_targets(editor.document())
+            .get(&api)
+            .map(String::as_str),
+        Some("5")
+    );
+    editor
+        .execute(
+            "Move card",
+            Command::Move {
+                kind: EntityKind::Achievement,
+                id,
+                column: position[0] + 40,
+                row: position[1],
+            },
+            None,
+        )
+        .unwrap();
+    assert!(steam_set_targets(editor.document()).is_empty());
+    editor.undo();
+    assert_eq!(
+        steam_set_targets(editor.document())
+            .get(&api)
+            .map(String::as_str),
+        Some("5")
+    );
 }
 
 /// Find the closest unoccupied grid position, including cards outside the viewport/filter.

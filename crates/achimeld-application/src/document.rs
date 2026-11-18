@@ -258,6 +258,15 @@ impl Document {
     pub fn app_id(&self) -> u32 {
         self.project["steamAppId"].as_u64().unwrap_or(0) as u32
     }
+
+    pub fn achievement_sets(&self) -> Vec<crate::canvas::AchievementSet> {
+        self.project
+            .get("achievementSets")
+            .map_or_else(Vec::new, |sets| {
+                serde_json::from_value(sets.clone()).expect("validated achievement sets")
+            })
+    }
+
     pub fn validate(&self) -> Result<()> {
         if !matches!(
             self.project["format"].as_str(),
@@ -306,6 +315,20 @@ impl Document {
                 })
             {
                 return Err("Invalid icon export preferences".into());
+            }
+        }
+        if let Some(sets) = self.project.get("achievementSets") {
+            let sets: Vec<crate::canvas::AchievementSet> =
+                serde_json::from_value(sets.clone()).map_err(|_| "Invalid achievement sets")?;
+            if sets.len() > 256 {
+                return Err("Too many achievement sets".into());
+            }
+            let mut ids = BTreeSet::new();
+            for set in &sets {
+                set.validate()?;
+                if !ids.insert(&set.id) {
+                    return Err("Duplicate achievement set identity".into());
+                }
             }
         }
         let mut all_ids = BTreeSet::new();
@@ -704,6 +727,20 @@ impl Document {
                 entity["canvasColumn"] = json!(column);
                 entity["canvasRow"] = json!(row);
             }
+            Command::SaveAchievementSet(set) => {
+                let mut sets = self.achievement_sets();
+                if let Some(previous) = sets.iter_mut().find(|item| item.id == set.id) {
+                    *previous = set.clone();
+                } else {
+                    sets.push(set.clone());
+                }
+                self.project["achievementSets"] = json!(sets);
+            }
+            Command::RemoveAchievementSet(id) => {
+                let mut sets = self.achievement_sets();
+                sets.retain(|set| &set.id != id);
+                self.project["achievementSets"] = json!(sets);
+            }
             Command::StyleViewerPreview(value) => {
                 value.validate()?;
                 self.project["styleViewerPreview"] = json!(value);
@@ -744,6 +781,13 @@ impl Document {
                     self.project["lastVerifiedAtUtc"] = Value::Null;
                     self.project["syncBaselines"] = json!([]);
                     self.project["tombstones"] = json!([]);
+                    if self.project.get("achievementSets").is_some() {
+                        let mut sets = self.achievement_sets();
+                        for set in &mut sets {
+                            set.steam_set_id = None;
+                        }
+                        self.project["achievementSets"] = json!(sets);
+                    }
                     for kind in [EntityKind::Stat, EntityKind::Achievement] {
                         for entity in self.entities_mut(kind)? {
                             entity
@@ -1243,6 +1287,8 @@ pub enum Command {
         id: String,
     },
     SetRemoteSnapshot(Value),
+    SaveAchievementSet(crate::canvas::AchievementSet),
+    RemoveAchievementSet(String),
     ApplySynchronization(Box<Document>),
     /// Validated local editor automation, committed through the shared history.
     ApplyAutomation(Box<Document>),

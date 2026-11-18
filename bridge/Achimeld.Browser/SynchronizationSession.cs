@@ -16,12 +16,20 @@ public sealed record BeginSyncRequest(Guid Token, SyncChoice[] Choices);
 public sealed record SyncStepRequest(Guid Token, string Key, byte[]? Achieved = null, byte[]? Unachieved = null);
 public sealed record FinishSyncRequest(Guid Token);
 public sealed record SyncReviewRow(string Key, string Kind, string ApiName, string State, string DefaultAction,
-    string[] Actions, object[] Fields, bool HasArtwork, string? UploadError = null);
+    string[] Actions, object[] Fields, bool HasArtwork, string? UploadError = null)
+{
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public bool RequiresExplicitUpload { get; init; }
+}
+public sealed record SyncIconPreview(string ApiName, byte[]? Achieved, byte[]? Unachieved);
 public sealed record SyncReview(Guid Token, uint AppId, SyncReviewRow[] Rows, string RemoteFingerprint, byte[]? GameBanner = null)
 {
     // The validated CDN references allow exact post-write artwork inspection without
     // exposing a browser session, portal response, or credentials to the editor.
     public RemoteIconMetadata[] RemoteIcons { get; init; } = [];
+    // Review-only image bytes. The Rust host decodes and removes them before
+    // exposing the review to UI automation or saving a project.
+    public SyncIconPreview[] RemoteIconPreviews { get; init; } = [];
     public int RemoteAchievementCount { get; init; }
 }
 public sealed record SyncStep(string Key, string Action, string ApiName, bool NeedsIcons);
@@ -36,6 +44,8 @@ public interface ISynchronizationPortal
     void SetDiagnosticPhase(string phase) { }
     void SetDiagnosticWriteState(string state) { }
     Task<byte[]?> ReadGameBannerAsync(uint appId) => Task.FromResult<byte[]?>(null);
+    byte[]? CachedIconPreview(RemoteIconMetadata icon, bool unachieved) => null;
+    string? ModernAchievementIdentity(string name, string? setId) => null;
     Task<bool> VerifyIconsAsync(PortalWriteOperation operation, RemoteIconMetadata? actual) =>
         throw new InvalidDataException("This portal cannot verify uploaded icon content.");
 }
@@ -59,8 +69,30 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
     private readonly Dictionary<string, JsonObject> renamedAchievements = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (string OldName, string SteamId)> pendingRenames = new(StringComparer.Ordinal);
     private readonly HashSet<string> recoveredRenames = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> modernAchievementIds = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> achievementSetMoves = new(StringComparer.Ordinal);
 
     private static bool Active(JsonObject entity) => entity["steamSyncStatus"] is null || entity["steamSyncStatus"]!.GetValue<string>() != "Retired";
+
+    private static Dictionary<string, ModernAchievementIconPair> PriorIconPairs(JsonObject raw, uint appId)
+    {
+        Dictionary<string, ModernAchievementIconPair> pairs = new(StringComparer.Ordinal);
+        if (raw["lastRemoteSnapshot"] is not JsonObject snapshot ||
+            snapshot["steamAppId"]?.GetValue<uint>() != appId ||
+            snapshot["isComplete"]?.GetValue<bool>() != true ||
+            snapshot["icons"] is not JsonArray icons) return pairs;
+        foreach (JsonNode? item in icons)
+        {
+            if (item is not JsonObject icon) continue;
+            string? name = icon["achievementApiName"]?.GetValue<string>();
+            string? achieved = icon["achievedPreviewUri"]?.GetValue<string>();
+            string? unachieved = icon["unachievedPreviewUri"]?.GetValue<string>();
+            if (name is null || achieved is null || unachieved is null ||
+                achieved.Length > 2048 || unachieved.Length > 2048 || pairs.ContainsKey(name)) continue;
+            pairs.Add(name, new(achieved, unachieved));
+        }
+        return pairs;
+    }
 
     public async Task<SyncReview> PrepareAsync(PrepareSyncRequest request, uint pinnedAppId)
     {
@@ -68,6 +100,20 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         if (review is not null || terminal || pinnedAppId == 0 || request.Project.GetRawText().Length > 16 * 1024 * 1024 ||
             request.Catalog.Count > 100_000 || request.Icons.Count > 10_000) throw Rejected();
         raw = JsonNode.Parse(request.Project.GetRawText())?.AsObject() ?? throw Rejected();
+        var setTargets = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (raw.Remove("syncAchievementSetTargets", out JsonNode? suppliedSets))
+        {
+            if (suppliedSets is not JsonObject choices || choices.Count > 10_000) throw Rejected();
+            foreach (var pair in choices)
+            {
+                if (pair.Value is not JsonValue value || !value.TryGetValue(out string? text) ||
+                    !ulong.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out ulong number) ||
+                    text != number.ToString(System.Globalization.CultureInfo.InvariantCulture)) throw Rejected();
+                setTargets.Add(pair.Key, number == 0 ? SyncFingerprint.Absent : text);
+            }
+        }
+        if (portal is DriverSynchronizationPortal livePortal)
+            livePortal.SetPriorIconPairs(PriorIconPairs(raw, pinnedAppId));
         // The pure legacy mapper only needs synchronization fields. Preserve newer
         // recipe/asset properties in raw; never round-trip them through older DTOs.
         JsonObject mapped = (JsonObject)raw.DeepClone();
@@ -99,6 +145,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         foreach (SyncIconHashes pair in icons.Values)
             if (pair.Deferred ? pair.Achieved != "" || pair.Unachieved != "" : !Hash(pair.Achieved) || !Hash(pair.Unachieved)) throw Rejected();
         current = await ReadAsync();
+        var knownSets = current.Achievements.Select(a => a.SetId).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        if (setTargets.Keys.Any(name => Local(false, name) is null)) throw Rejected();
         var previousLocalizations = PreviousLocalizationFingerprints(request.Project, pinnedAppId);
         foreach (bool stat in new[] { true, false })
         foreach (JsonObject entity in Entities(stat).OfType<JsonObject>().Where(e => stat || Active(e)))
@@ -186,6 +234,14 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                 if (!stat && (local is not null && !Active(local) || renamedAchievements.Values.Any(old => old["apiName"]!.GetValue<string>() == name))) continue;
                 string localHash = local is null ? SyncFingerprint.Absent : DefinitionFingerprint(stat, name).EntityFingerprint;
                 string remoteHash = Resolve(current, stat ? PortalEntityKind.Stat : PortalEntityKind.Achievement, name);
+                bool assignedOnSteam = !stat && current.Achievements.Any(achievement =>
+                    achievement.ApiName.Value == name && achievement.SetId is not null);
+                RemoteAchievement? remoteAchievement = stat ? null : current.Achievements.SingleOrDefault(a => a.ApiName.Value == name);
+                string? modernIdentity = remoteAchievement is null ? null : portal.ModernAchievementIdentity(name, remoteAchievement.SetId);
+                string currentSet = remoteAchievement?.SetId ?? SyncFingerprint.Absent;
+                string targetSet = !stat ? setTargets.GetValueOrDefault(name, currentSet) : currentSet;
+                bool movesSet = targetSet != currentSet;
+                if (modernIdentity is not null) modernAchievementIds.Add(name, modernIdentity);
                 Guid? id = local?["id"]?.GetValue<Guid>();
                 FieldSyncBaseline? baseline = project.SyncBaselines.SingleOrDefault(b => b.LocalId == id && b.EntityType == (stat ? ProjectEntityType.Stat : ProjectEntityType.Achievement));
                 SyncState state = SyncPlanner.Classify(local is null ? null : localHash, remoteHash == SyncFingerprint.Absent ? null : remoteHash, baseline?.EntityFingerprint);
@@ -211,7 +267,30 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                     try { ValidateUpload(stat, name); }
                     catch (InvalidDataException exception) { uploadError = exception.Message; actions = actions.Where(a => a != "Upload").ToArray(); if (initial == "Upload") initial = "Skip"; }
                 }
+                if (assignedOnSteam && local is null)
+                {
+                    actions = ["Skip"];
+                    initial = "Skip";
+                }
+                if (local is not null && (assignedOnSteam || movesSet) && modernIdentity is null)
+                    uploadError ??= "Steamworks did not provide a verified identity for this achievement. Refresh the review before uploading.";
+                if (movesSet && targetSet != SyncFingerprint.Absent && !knownSets.Contains(targetSet))
+                    uploadError ??= "The linked destination set was not found in the current Steam configuration.";
+                if (uploadError is not null)
+                {
+                    actions = actions.Where(action => action != "Upload").ToArray();
+                    if (initial == "Upload") initial = "Skip";
+                }
+                if (movesSet)
+                {
+                    if (state == SyncState.InSync) state = SyncState.Conflict;
+                    initial = "Skip";
+                    if (actions.Contains("Upload", StringComparer.Ordinal)) achievementSetMoves.Add(name, targetSet);
+                }
                 object[] fields = FieldReview(stat, name, local);
+                if (movesSet)
+                    fields = fields.Append(new { field = "Steam achievement set", local = targetSet == SyncFingerprint.Absent ? "Base game" : "Set " + targetSet,
+                        steam = currentSet == SyncFingerprint.Absent ? "Base game" : "Set " + currentSet }).ToArray();
                 if (pendingRenames.TryGetValue(kind + ":" + name, out var pending))
                 {
                     actions = actions.Where(a => a != "Import").ToArray();
@@ -222,7 +301,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
                 bool renamed = !stat && predecessor is not null;
                 if (renamed) fields = fields.Append(new { field = "Previous API name (retained as Retired)", local = predecessor!["apiName"]!.GetValue<string>(), steam = name }).ToArray();
                 rows.Add(new(kind + ":" + name, kind, name, renamed ? "RenamedOnSteam" : state.ToString(), initial, actions,
-                    fields, !stat && current.Icons.Any(i => i.AchievementApiName.Value == name && i.AchievedPreviewUri is not null), uploadError));
+                    fields, !stat && current.Icons.Any(i => i.AchievementApiName.Value == name && i.AchievedPreviewUri is not null), uploadError)
+                    { RequiresExplicitUpload = movesSet && actions.Contains("Upload", StringComparer.Ordinal) });
                 if (!stat && local is not null)
                 {
                     bool available = icons.TryGetValue(name, out SyncIconHashes? pair);
@@ -241,8 +321,32 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         byte[]? banner = await portal.ReadGameBannerAsync(pinnedAppId);
         if (banner is not null && (banner.Length > 2 * 1024 * 1024 || !BoundedRaster.HasSafeDimensions(banner, 1024))) banner = null;
         review = new(Guid.NewGuid(), pinnedAppId, rows.ToArray(), Fingerprint(current), banner)
-            { RemoteIcons = current.Icons.ToArray(), RemoteAchievementCount = current.Achievements.Count };
+            { RemoteIcons = current.Icons.ToArray(), RemoteIconPreviews = ReviewIconPreviews(rows, current.Icons),
+                RemoteAchievementCount = current.Achievements.Count };
         return review;
+    }
+
+    private SyncIconPreview[] ReviewIconPreviews(IEnumerable<SyncReviewRow> rows, IReadOnlyList<RemoteIconMetadata> icons)
+    {
+        // The browser has already downloaded these exact pinned icon URLs. Bound
+        // the response independently of the worker's larger wire-frame limit.
+        const int maximumBytes = 4 * 1024 * 1024;
+        int bytesUsed = 0;
+        Dictionary<string, RemoteIconMetadata> byName = icons.ToDictionary(i => i.AchievementApiName.Value, StringComparer.Ordinal);
+        List<SyncIconPreview> previews = [];
+        foreach (string name in rows.Where(row => row.State != "InSync" &&
+                row.Kind is "Achievement" or "Icon").Select(row => row.ApiName).Distinct(StringComparer.Ordinal))
+        {
+            if (!byName.TryGetValue(name, out RemoteIconMetadata? icon)) continue;
+            byte[]? achieved = portal.CachedIconPreview(icon, false);
+            byte[]? unachieved = portal.CachedIconPreview(icon, true);
+            if (achieved?.Length > 256 * 1024 || unachieved?.Length > 256 * 1024) continue;
+            int size = (achieved?.Length ?? 0) + (unachieved?.Length ?? 0);
+            if (size == 0 || size > maximumBytes - bytesUsed) continue;
+            previews.Add(new(name, achieved, unachieved));
+            bytesUsed += size;
+        }
+        return previews.ToArray();
     }
 
     public async Task<SyncStep[]> BeginAsync(BeginSyncRequest request)
@@ -336,7 +440,9 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
             string desired = PairFingerprint(pair);
             await WriteAsync(new(Guid.NewGuid(), project!.AppId, new(PortalEntityKind.Icon, new(step.ApiName)),
                 Resolve(current!, PortalEntityKind.Icon, step.ApiName), desired, new Dictionary<string, string>(),
-                new Dictionary<string, byte[]> { ["achievedIcon"] = request.Achieved!, ["unachievedIcon"] = request.Unachieved! }));
+                new Dictionary<string, byte[]> { ["achievedIcon"] = request.Achieved!, ["unachievedIcon"] = request.Unachieved! },
+                ExpectedSteamId: modernAchievementIds.GetValueOrDefault(step.ApiName),
+                ReviewedIconBaseline: current!.Icons.SingleOrDefault(i => i.AchievementApiName.Value == step.ApiName)));
             UpdateIconBaseline(step.ApiName, desired);
         }
         else
@@ -346,13 +452,20 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
             ValidateUpload(stat, step.ApiName);
             PortalEntityKind kind = stat ? PortalEntityKind.Stat : PortalEntityKind.Achievement;
             pendingRenames.TryGetValue(step.Key, out var rename);
+            string? modernIdentity = !stat && rename.OldName is null ? modernAchievementIds.GetValueOrDefault(step.ApiName) : null;
+            Dictionary<string, string> definition = DefinitionFields(stat, step.ApiName);
             await WriteAsync(new(Guid.NewGuid(), project!.AppId, new(kind, new(step.ApiName)), Resolve(current!, kind, rename.OldName ?? step.ApiName),
-                DefinitionFingerprint(stat, step.ApiName).EntityFingerprint, DefinitionFields(stat, step.ApiName), new Dictionary<string, byte[]>(),
-                RenameFrom: rename.OldName, ExpectedSteamId: rename.SteamId));
+                DefinitionFingerprint(stat, step.ApiName).EntityFingerprint, definition, new Dictionary<string, byte[]>(),
+                RenameFrom: rename.OldName, ExpectedSteamId: rename.SteamId ?? modernIdentity));
             foreach (var text in Localizations(stat, step.ApiName))
                 await WriteAsync(new(Guid.NewGuid(), project.AppId, new(PortalEntityKind.Localization, new(step.ApiName), text.Field),
                     Resolve(current!, PortalEntityKind.Localization, step.ApiName, text.Field), CanonicalFingerprint.For(text.Row).EntityFingerprint,
-                    TextFields(text.Row), new Dictionary<string, byte[]>()));
+                    TextFields(text.Row), new Dictionary<string, byte[]>(), ExpectedSteamId: modernIdentity,
+                    ReviewedAchievementDefinition: modernIdentity is null ? null : definition));
+            string set = Resolve(current!, PortalEntityKind.AchievementSet, step.ApiName);
+            if (modernIdentity is not null && achievementSetMoves.TryGetValue(step.ApiName, out string? destination))
+                await WriteAsync(new(Guid.NewGuid(), project.AppId, new(PortalEntityKind.AchievementSet, new(step.ApiName)),
+                    set, destination, new Dictionary<string, string>(), new Dictionary<string, byte[]>(), ExpectedSteamId: modernIdentity));
             UpdateBaseline(stat, step.ApiName);
         }
         next++;
@@ -393,6 +506,11 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         }
         if (!await Matches(after))
             throw new InvalidDataException("Steam draft read-back did not match the approved change.");
+        if (operation.ExpectedSteamId is string modernId && operation.RenameFrom is null && !operation.Delete &&
+            modernAchievementIds.TryGetValue(operation.Target.ApiName.Value, out string? reviewedId) && reviewedId == modernId &&
+            portal.ModernAchievementIdentity(operation.Target.ApiName.Value,
+                after.Achievements.Single(a => a.ApiName == operation.Target.ApiName).SetId) != modernId)
+            throw new InvalidDataException("Steam did not preserve the reviewed achievement identity.");
         if (operation.RenameFrom is string oldName)
         {
             bool stat = operation.Target.Kind == PortalEntityKind.Stat;
@@ -595,6 +713,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
     {
         PortalEntityKind.Stat => snapshot.Stats.SingleOrDefault(s => s.ApiName.Value == name)?.ContentFingerprint,
         PortalEntityKind.Achievement => snapshot.Achievements.SingleOrDefault(a => a.ApiName.Value == name)?.ContentFingerprint,
+        PortalEntityKind.AchievementSet => snapshot.Achievements.SingleOrDefault(a => a.ApiName.Value == name)?.SetId,
         PortalEntityKind.Localization => snapshot.Localizations.SingleOrDefault(l => l.ApiName.Value == name && l.Field == field)?.ContentFingerprint,
         PortalEntityKind.Icon => snapshot.Icons.SingleOrDefault(i => i.AchievementApiName.Value == name)?.ContentFingerprint,
         _ => null,
@@ -608,6 +727,8 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
             Dictionary<string, string> result = [];
             foreach (var s in snapshot.Stats) if (target.Kind != PortalEntityKind.Stat || s.ApiName != target.ApiName) result["s:" + s.ApiName] = s.ContentFingerprint;
             foreach (var a in snapshot.Achievements) if (target.Kind != PortalEntityKind.Achievement || a.ApiName != target.ApiName) result["a:" + a.ApiName] = a.ContentFingerprint;
+            foreach (var a in snapshot.Achievements) if (a.SetId is not null &&
+                (target.Kind != PortalEntityKind.AchievementSet || a.ApiName != target.ApiName)) result["set:" + a.ApiName] = a.SetId;
             foreach (var l in snapshot.Localizations) if (!(l.ApiName == target.ApiName && (created && l.EntityType == (target.Kind == PortalEntityKind.Stat ? ProjectEntityType.Stat : ProjectEntityType.Achievement) || target.Kind == PortalEntityKind.Localization && l.Field == target.LocalizationField))) result["l:" + l.ApiName + ":" + l.Field] = l.ContentFingerprint;
             foreach (var i in snapshot.Icons) if (!(i.AchievementApiName == target.ApiName && (created && target.Kind == PortalEntityKind.Achievement || target.Kind == PortalEntityKind.Icon))) result["i:" + i.AchievementApiName] = i.ContentFingerprint;
             return result;
@@ -673,7 +794,7 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
         JsonObject definition = (stat ? JsonSerializer.SerializeToNode(current!.Stats.Single(s => s.ApiName.Value == step.ApiName), ProjectJson)
             : JsonSerializer.SerializeToNode(current!.Achievements.Single(a => a.ApiName.Value == step.ApiName), ProjectJson))!.AsObject();
         foreach (var pair in definition)
-            if (pair.Key is not ("apiName" or "steamId" or "contentFingerprint" or "progressStatApiName" or "displayOrder")) value[pair.Key] = pair.Value?.DeepClone();
+            if (pair.Key is not ("apiName" or "steamId" or "contentFingerprint" or "progressStatApiName" or "displayOrder" or "setId")) value[pair.Key] = pair.Value?.DeepClone();
         value["displayOrder"] ??= Entities(stat).Count;
         if (!stat)
         {
@@ -756,16 +877,25 @@ public sealed class SynchronizationSession(ISynchronizationPortal portal)
 
 public sealed class DriverSynchronizationPortal(PlaywrightChromeDriver driver) : ISynchronizationPortal, ICompletePortalDocumentSource
 {
+    public void SetPriorIconPairs(IReadOnlyDictionary<string, ModernAchievementIconPair> pairs) =>
+        driver.SetPriorIconPairs(pairs);
     public void SetDiagnosticPhase(string phase) => driver.SetSyncDiagnosticPhase(phase);
     public void SetDiagnosticWriteState(string state) => driver.SetSyncDiagnosticWriteState(state);
+    public string? ModernAchievementIdentity(string name, string? setId) => driver.ReviewedModernAchievementIdentity(name, setId);
     public Task<byte[]?> ReadGameBannerAsync(uint appId) => driver.ReadGameBannerAsync(appId);
+    public byte[]? CachedIconPreview(RemoteIconMetadata icon, bool unachieved) => driver.CachedIconPreview(icon, unachieved);
     public Task<ManagedPageDocument> ReadCompleteConfigurationAsync(SteamAppId appId, CancellationToken cancellationToken = default) => driver.ReadCompleteConfigurationAsync(appId);
     public Task<RemoteSnapshot> ReadAsync(SteamAppId appId) => new SteamworksSnapshotReader(this).ReadSnapshotAsync(appId);
     public Task<byte[]> DownloadArtworkAsync(Uri uri) => driver.ReadApprovedArtworkAsync(uri);
     public Task<bool> VerifyIconsAsync(PortalWriteOperation operation, RemoteIconMetadata? actual) => driver.VerifyIconPairAsync(operation, actual);
     public async Task ApplyAsync(PortalWriteOperation operation)
     {
-        PortalEntityKind scope = operation.Target.Kind == PortalEntityKind.Localization ? operation.Target.LocalizationField == LocalizationField.StatDisplayName ? PortalEntityKind.Stat : PortalEntityKind.Achievement : operation.Target.Kind;
+        PortalEntityKind scope = operation.Target.Kind switch
+        {
+            PortalEntityKind.Localization when operation.Target.LocalizationField == LocalizationField.StatDisplayName => PortalEntityKind.Stat,
+            PortalEntityKind.Localization or PortalEntityKind.AchievementSet => PortalEntityKind.Achievement,
+            _ => operation.Target.Kind,
+        };
         driver.BeginReviewedDraft(operation.AppId.Value, scope);
         try { await driver.ApplyLiveOperationAsync(operation); }
         finally { driver.EndReviewedDraft(); }

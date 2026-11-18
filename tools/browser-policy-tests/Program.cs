@@ -4,6 +4,7 @@ using Achimeld.Security;
 
 int checks = 0;
 checks += AuthenticationPolicyFixtures.Run();
+checks += ModernAchievementPageFixtures.Run();
 checks += CspReportFixtures.Run();
 checks += MediaPolicyFixtures.Run();
 checks += WorkerDiagnosticFixtures.Run();
@@ -24,6 +25,7 @@ void Request(bool expected, string method, string url, string type = "fetch", bo
 Request(false, "GET", "https://partner.steamgames.com/", "document", true);
 policy.BeginAuthentication();
 Request(false, "GET", "https://partner.steamgames.com/apps/getachievementcounts/480");
+Request(false, "GET", "https://partner.steamgames.com/achievements/ajaxgetstatsschema/480", "xhr");
 Request(true, "POST", "https://login.steampowered.com/jwt/finalizelogin");
 Request(true, "POST", "https://steamcommunity.com/openid/login");
 Request(true, "GET", "https://store.steampowered.com/login/?redir=partner", "document", true);
@@ -32,6 +34,8 @@ Request(false, "GET", "https://partner.steamgames.com/apps/achievements/480", "d
 Reject(() => policy.ConfigurationUri(480, "fetchstats"));
 policy.PinApp(480);
 Request(true, "GET", "https://partner.steamgames.com/apps/getachievementcounts/480", "xhr");
+foreach (string endpoint in new[] { "ajaxgetappinfo", "ajaxgetdlc", "ajaxgetstatsschema", "ajaxgetlanguagelist", "ajaxgetlanguageoptionslist" })
+    Request(true, "GET", $"https://partner.steamgames.com/achievements/{endpoint}/480", "xhr");
 Request(true, "GET", "https://partner.steamgames.com/apps/achievements/480", "document", true);
 Request(true, "GET", "https://partner.steamgames.com/apps/stats/480", "document", true);
 Request(false, "GET", "https://partner.steamgames.com/apps/stats/481", "document", true);
@@ -40,6 +44,18 @@ Request(false, "GET", "https://partner.steamgames.com/apps/achievements/481", "d
 Reject(() => policy.PinApp(481));
 policy.EnterRead();
 Request(true, "GET", "https://partner.steamgames.com/apps/getachievementcounts/480", "xhr");
+foreach (string endpoint in new[] { "ajaxgetappinfo", "ajaxgetdlc", "ajaxgetstatsschema", "ajaxgetlanguagelist", "ajaxgetlanguageoptionslist" })
+{
+    string route = $"https://partner.steamgames.com/achievements/{endpoint}/480";
+    Request(true, "GET", route, "xhr");
+    Request(endpoint is "ajaxgetstatsschema" or "ajaxgetappinfo", "GET", route, "fetch");
+    Request(false, "GET", route, "document", true);
+    Request(false, "POST", route, "xhr");
+    Request(false, "GET", route + "?appid=481", "xhr");
+    Request(false, "GET", route + "/", "xhr");
+    Request(false, "GET", $"https://partner.steamgames.com/achievements/{endpoint}/481", "xhr");
+}
+Request(false, "GET", "https://partner.steamgames.com/achievements/ajaxdeleteachievement/480", "xhr");
 foreach (string route in new[] { "https://partner.steamgames.com/apps/getachievementcounts/481", "https://partner.steamgames.com/apps/getachievementcounts/480?appid=481", "https://partner.steamgames.com/apps/getachievementcounts/480/" }) Request(false, "GET", route, "xhr");
 Request(false, "POST", "https://partner.steamgames.com/apps/getachievementcounts/480", "xhr");
 Request(false, "GET", "https://partner.steamgames.com/apps/getachievementcounts/480", "document", true);

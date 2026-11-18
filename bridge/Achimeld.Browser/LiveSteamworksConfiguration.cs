@@ -54,6 +54,7 @@ public static class LiveSteamworksConfiguration
                     Attr("steam-id", Required(achievement, "stat_id") + "_" + Required(achievement, "bit_id")),
                     Attr("hidden", Boolean(achievement, "hidden")), Attr("set-by", Permission(achievement)),
                     Attr("display-order", order++));
+                OptionalAttribute(item, "set-id", Text(achievement, "setid"));
                 if (achievement.TryGetProperty("progress", out JsonElement progress) && progress.ValueKind == JsonValueKind.Object)
                 {
                     JsonElement value = progress.GetProperty("value");

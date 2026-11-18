@@ -67,6 +67,65 @@ fn button(out: &egui::FullOutput, name: &str) -> Pos2 {
         .find_map(|s| label(&s.shape, name))
         .unwrap_or_else(|| panic!("Missing {name}"))
 }
+
+#[test]
+fn achievement_canvas_creates_and_moves_a_set_box() {
+    let mut fixture = Fixture::new();
+    let mut desktop = Desktop::default();
+    let ctx = egui::Context::default();
+    frame(&mut desktop, &mut fixture, &ctx, vec![], false);
+    let pos = egui::pos2(230.0, 420.0);
+    for pressed in [true, false] {
+        frame(
+            &mut desktop,
+            &mut fixture,
+            &ctx,
+            vec![
+                Event::PointerMoved(pos),
+                Event::PointerButton {
+                    pos,
+                    button: PointerButton::Secondary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+            false,
+        );
+    }
+    let out = frame(&mut desktop, &mut fixture, &ctx, vec![], false);
+    click(&mut desktop, &mut fixture, &ctx, button(&out, "Create set"));
+    let before = fixture.editor.document().achievement_sets();
+    assert_eq!(before.len(), 1);
+    let out = frame(&mut desktop, &mut fixture, &ctx, vec![], false);
+    let start = button(&out, "New set");
+    let end = start + egui::vec2(60.0, 40.0);
+    for events in [
+        vec![
+            Event::PointerMoved(start),
+            Event::PointerButton {
+                pos: start,
+                button: PointerButton::Primary,
+                pressed: true,
+                modifiers: egui::Modifiers::NONE,
+            },
+        ],
+        vec![Event::PointerMoved(end)],
+        vec![Event::PointerButton {
+            pos: end,
+            button: PointerButton::Primary,
+            pressed: false,
+            modifiers: egui::Modifiers::NONE,
+        }],
+    ] {
+        frame(&mut desktop, &mut fixture, &ctx, events, false);
+    }
+    let after = fixture.editor.document().achievement_sets();
+    assert_ne!(before[0].position, after[0].position);
+    assert_eq!(before[0].size, after[0].size);
+    fixture.undo();
+    assert_eq!(fixture.editor.document().achievement_sets(), before);
+}
+
 #[test]
 fn right_click_creates_a_local_style_achievement_with_general_and_style_tabs() {
     for sidebar in [true, false] {

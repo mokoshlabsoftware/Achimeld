@@ -1,8 +1,10 @@
 # Field label and abbreviation policy
 
 Abbreviations are allowed only on surfaces whose content width the user can
-resize. A fixed, unresizable UI must show complete localized labels, regardless
-of **Preferences > App style > Abbreviate field labels**. This applies to field
+resize. The English display name and English description in the achievement
+General panel use complete localized labels above their editable fields. The
+display name remains beside the icon. A fixed, unresizable UI must show complete
+localized labels, regardless of **Preferences > App style > Abbreviate field labels**. This applies to field
 labels, tab captions, and other descriptive controls. Established domain names
 such as **Steam App ID**, **RGB**, and **ID** remain valid; do not mechanically
 expand those names.

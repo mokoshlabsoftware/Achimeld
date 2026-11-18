@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "workingVersion": "0.3.9.8",
-  "gitlabSourceCommit": "e368d684e0e25cfdd6813e650b18878f4d39606b",
-  "packageManifestSha256": "fc7c651eee00c8e616425e44aaf6696f04f2cfc4967f77ecd31da1e32ef913d5",
-  "verifierSha256": "81b8f98e94cb48aeb67190df1900f9f90672c179fee772c50cc58d60dfe31d46",
-  "installerSha256": "ab21b09925d3aaa975b9752405625a4c75ac8bdc9074fcfc7ba47d5b32c1cad1",
+  "workingVersion": "0.4.2.0",
+  "gitlabSourceCommit": "cf09793e20775a3585569a439e16f860f53b535c",
+  "packageManifestSha256": "2cd35335a352a65ac7e0a9c8175bab0d04d544b18e695381c0296d70bdd42dbe",
+  "verifierSha256": "27007769695fd729ec6e6b7cd9496eaa21a3cf116da6a21809d6b7d00bf31fdf",
+  "installerSha256": "394b7ce5a0e87ea4d25c6b85065b568a6344b7bd91bb785f79f2450d13b99939",
   "packageMode": "development",
   "files": [
     {
@@ -29,11 +29,11 @@
     },
     {
       "path": "AGENTS.md",
-      "sha256": "c6f1a3f7abe146ed8dce5449db292f52f539a45b98c612eb5b4c4876281fefed"
+      "sha256": "952516a14aeb4ba5f6801e826ac0af116dd0ca27cc10bafb77a0592192a9345d"
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "feb0e31bb69afcca8db59c051bda04ed45d38ffe43946a79d6a5f3d1ad61acbf"
+      "sha256": "c582c5e9885f278ed121b4a345731e4224c0a3cbcda5d6657f465b24afde887f"
     },
     {
       "path": "Cargo.lock",
@@ -53,7 +53,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "3a34e8027a567489846f71a651eb3a4897f48d8bb22014b59d87b2a8a857bdf6"
+      "sha256": "2e48aefc0740b19f0eef4b7e4a133017f350d18afb088755cee3612d7134abd8"
     },
     {
       "path": "ROADMAP.md",
@@ -65,7 +65,7 @@
     },
     {
       "path": "bridge/Achimeld.Browser/Achimeld.Browser.csproj",
-      "sha256": "5ee9182cbdd2457465212cb0d00edcbb8a29d37326aa9141916fdbebdf3b07bb"
+      "sha256": "6877ed9197738a79ff8e9d63eb8331b51c7f44c7d11655ba3ea1303bc2c5a2f4"
     },
     {
       "path": "bridge/Achimeld.Browser/BoundedRaster.cs",
@@ -81,11 +81,11 @@
     },
     {
       "path": "bridge/Achimeld.Browser/BrowserRequestDiagnostic.cs",
-      "sha256": "347a63f4a2cf1232c6a593defb504f3d38fbf0b2c1359c0de06d4e3a9fd34cfd"
+      "sha256": "79087b05337d01acbb6a962331f04410d5e0ec24a0d89d2ee5e3732d0f285224"
     },
     {
       "path": "bridge/Achimeld.Browser/BrowserRequestGuard.cs",
-      "sha256": "d4cb6c9d0c5b38769e78aaf572e3e5979221a77f47e64d56b1a089ecea8cd6a2"
+      "sha256": "af08abd3e748f62718a9b0416464a74872e0b726cb7857dfb8359eec57cd7b0c"
     },
     {
       "path": "bridge/Achimeld.Browser/BrowserShutdown.cs",
@@ -97,15 +97,15 @@
     },
     {
       "path": "bridge/Achimeld.Browser/DraftModels.cs",
-      "sha256": "c445db412274776ef3fde96c8ba4eae4509d30134f6353e2e76c485ad287f52d"
+      "sha256": "65028df686c47c0ef3ceb89f43a187b6b51dd4264a7e30bf91095687dcc471bf"
     },
     {
       "path": "bridge/Achimeld.Browser/DraftSafety.cs",
-      "sha256": "2d13569aa0bce6cde9d2be69e5caf951a42e27b5785538c8664a48072e38d435"
+      "sha256": "229a323ae230a7f585620c2b6c51803a794a41f8f455485a12635ec685d74451"
     },
     {
       "path": "bridge/Achimeld.Browser/FixedReadScripts.cs",
-      "sha256": "0fb2e7db7319d7219a06b6199bb36cc8c4485dc53c4e8a96eca3e227da4de680"
+      "sha256": "c433c5d98294239995e394f62132b2c91a6b10c685440b871ecda5864e71c30f"
     },
     {
       "path": "bridge/Achimeld.Browser/IconUploadVerification.cs",
@@ -117,15 +117,27 @@
     },
     {
       "path": "bridge/Achimeld.Browser/LiveSteamworksConfiguration.cs",
-      "sha256": "87e646c28200e2566435ce8e5c981df99fc3e88d35d6aed8a83c5343b92d4834"
+      "sha256": "87043c867c43df2dd9a8996029f8a7788128ce6f8835e8170022c7ac08462fbb"
     },
     {
       "path": "bridge/Achimeld.Browser/LiveSteamworksDraftWriter.cs",
-      "sha256": "c8349cebbdf57247e69d75caffa3582f4998677de9be061304f9c6305a210f3e"
+      "sha256": "79aaa0a0150e26e5bb0bb74b2e4d03fad5dc07f668c0fb380da457a5a1bbff2b"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/LiveSteamworksModernDraftWriter.cs",
+      "sha256": "b5f20a8d3931704f4ad7c11d2c489e78cb5899320cdb67370275518c9b18adf0"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/ModernAchievementDraft.cs",
+      "sha256": "63dd8e2d20cac96ffb187849ef3a7f37c40e96634adf17356fc356662ad6aaf4"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/ModernSteamworksConfiguration.cs",
+      "sha256": "a6f9a8dd150d94a93c7298228183fde57121be120a5ba7c1ef8f1744837e2ca0"
     },
     {
       "path": "bridge/Achimeld.Browser/PlaywrightChromeDriver.cs",
-      "sha256": "3ad01138b966dc0b3be8ca7c48228d01370120df64a69f16500ad74872c54939"
+      "sha256": "1f823dc23fde7277b05eb4738b6fbc76b26f6c6d316bab34a857a8e4d81ed4a2"
     },
     {
       "path": "bridge/Achimeld.Browser/PlaywrightRuntimePolicy.cs",
@@ -141,11 +153,11 @@
     },
     {
       "path": "bridge/Achimeld.Browser/ProjectFormat/SchemaDtos.cs",
-      "sha256": "140428922f289683f47dfd6c0e8124407a4109e4d811fa8d7a1bc2de5fa68908"
+      "sha256": "a61a745c0f556b22aa9e4f0166b5737eebc982d217cfb4cb57af5c1f21f03622"
     },
     {
       "path": "bridge/Achimeld.Browser/ProjectFormat/V1ProjectMapper.cs",
-      "sha256": "fd7af72505f99f528ba8abb78e283c7625e68511babe6b16e92c0da1ba2caf69"
+      "sha256": "e9cafb7af12689f4a780d47ca84ee9f61bf4fef028d68788d1ca5a247edc4e16"
     },
     {
       "path": "bridge/Achimeld.Browser/ReadModels.cs",
@@ -161,7 +173,7 @@
     },
     {
       "path": "bridge/Achimeld.Browser/SteamBrowserRequestPolicy.cs",
-      "sha256": "2d01bb68f31b7733c58c73b3d8a5a01c28897125dff5623059f2f2c1efd229b0"
+      "sha256": "8b81543a7e9e09e5f2a6b966f60990a49cc74df815ed2c150f091397e8307b71"
     },
     {
       "path": "bridge/Achimeld.Browser/SteamDeletionSession.cs",
@@ -180,16 +192,40 @@
       "sha256": "92638b34fdc9a63f444ff8003f9af8821f2188993b651f783a657ad218082162"
     },
     {
+      "path": "bridge/Achimeld.Browser/SteamworksAchievementPageShape.cs",
+      "sha256": "16e6fcf7ff620cd81e61b64e268a400f7590e0829db69a9ec570b76ab9cc622c"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamworksCsvExportProbe.cs",
+      "sha256": "4ca3f07be1ae2c9feccb50a2f8a5b82282431fceb683a148e138b52a57f28796"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamworksModernAchievementCards.cs",
+      "sha256": "a5b242769e14dccedba74837c2ecd58ab21aa10853249b1416a7d868d15bae92"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamworksModernLocalizationImport.cs",
+      "sha256": "7ede8909d88313c8bd79a18a5c73af8abf3d4fa9cf0cd8cd51155d19161216bd"
+    },
+    {
+      "path": "bridge/Achimeld.Browser/SteamworksModernWriteShape.cs",
+      "sha256": "e034ba1363cbf5e9dd9259bd657cddc7ef4dd3b27dd2fda5a81aac70d13dfaaa"
+    },
+    {
       "path": "bridge/Achimeld.Browser/SteamworksPortalSafety.cs",
       "sha256": "d047c2ef17b6d07dac63c6ee4072472a5b937f66e940d61d9c8084f4bfdee1ab"
     },
     {
+      "path": "bridge/Achimeld.Browser/SteamworksSchemaShape.cs",
+      "sha256": "dad55fe4b2067983382b3a7ca64963abd1748cdd89d5d1edb779f0ea78a550cf"
+    },
+    {
       "path": "bridge/Achimeld.Browser/SteamworksSnapshotReader.cs",
-      "sha256": "c934ba81d55bf0e3501ebbe26c6d1ae3c13f6bda9db97103dff13527eee72e1c"
+      "sha256": "1da3800fb283bfa3e8d8d8475bc8f3a64e5b39f2570542f383c92361309f5748"
     },
     {
       "path": "bridge/Achimeld.Browser/SynchronizationSession.cs",
-      "sha256": "b61bee75061eb3dda2d24c9ed58199579ef331bfaef59f17db4e49f14eaa1815"
+      "sha256": "917195b2196b2055a6908437260df9908464d87b5dbe59a9c2069f336a220789"
     },
     {
       "path": "bridge/Achimeld.Browser/SynchronizationSnapshotPolicy.cs",
@@ -217,11 +253,11 @@
     },
     {
       "path": "bridge/Achimeld.Core/CanonicalFingerprint.cs",
-      "sha256": "69a89c6e5168f155da89de6913671e0dcdb2b0bd84a28d5df9a783aa50f9712a"
+      "sha256": "a9c535fa0a8bf97d24696b8c6d1e5a3993131319591da67c462404708e43bab8"
     },
     {
       "path": "bridge/Achimeld.Core/DomainModels.cs",
-      "sha256": "636a4c505e3b5ce61a9ed9e9f1f63eaa10f2a0cdc153601bcb294553e6872ed3"
+      "sha256": "0e0d95318e8c5afd72f55b8ff3eb9fc8da0ff95af36c3f4cdb4771621095b818"
     },
     {
       "path": "bridge/Achimeld.Core/IconArtifact3dStyle.cs",
@@ -313,7 +349,7 @@
     },
     {
       "path": "bridge/read-worker/Program.cs",
-      "sha256": "1e950a75f677263337538ee75cba8a6f207d260665f30227bacf7f8a6b28d94c"
+      "sha256": "73dfe3893fc98b044687907d1bce7b2515fb4e3dc4f47d3d47452a77723c1214"
     },
     {
       "path": "bridge/read-worker/ReadOnlyPolicy.cs",
@@ -337,15 +373,15 @@
     },
     {
       "path": "build/Audit.ps1",
-      "sha256": "b3f6b79e5e49d30fae8c9064d009d11ac157288aa02a67bb4b07765b8e7b6518"
+      "sha256": "f9fd10c1ce752c61e16ceefdb9d5d4c8d03c6b15fd4188e3ad98a761b623b9f1"
     },
     {
       "path": "build/BridgePackage.ps1",
-      "sha256": "e75526ee735e0895d97155536de2f24a67f3ff6bf6773baadafaed3e53baaf94"
+      "sha256": "452a70a673480a0047f98b50b8f2783378749db3e2705fb86f4cd13039baea12"
     },
     {
       "path": "build/Build-And-Run.ps1",
-      "sha256": "1cbbd728880afe303e53eb43535d4b6ebcd8b829fab8c9f31256f8f8250e2967"
+      "sha256": "d7d8d4e8108b8174ad2ca0a6188cc8f6e4b7db787c94f78d56608001d69fd5f8"
     },
     {
       "path": "build/Build-ReadWorker.ps1",
@@ -362,6 +398,14 @@
     {
       "path": "build/Clear-CodeArtifacts.ps1",
       "sha256": "0bb44584ff3df47426d74844138cdddc83983d3c4521ccdb5b68c4a82981a7bd"
+    },
+    {
+      "path": "build/Clear-ObsoleteBuildArtifacts.ps1",
+      "sha256": "25df92503b9e77f000e9a9c66b8b782a9a2d33e63ca10d8fe901128f574e9b32"
+    },
+    {
+      "path": "build/Clear-PreviousPackages.ps1",
+      "sha256": "283f9d4c61dfdc74dac85d2302da8431c52f25891d3a8304d920face3f83ea2b"
     },
     {
       "path": "build/DevelopmentProcesses.ps1",
@@ -393,7 +437,7 @@
     },
     {
       "path": "build/Publish-CurrentBuild.ps1",
-      "sha256": "0a87bcd7eb27f1f8776b0bda7fa96c06727b7e82033f6a11df2ec0515d8c5260"
+      "sha256": "a25fe78bd8707524efc246b04bc500b102c5064d3b78d4b7a76738a430494759"
     },
     {
       "path": "build/Read-Steam.ps1",
@@ -474,6 +518,10 @@
     {
       "path": "build/Test-Migration.ps1",
       "sha256": "5fa08c3d8280e093c61b9920e83b348f144632f80ff07196a165d5a4116c1d4f"
+    },
+    {
+      "path": "build/Test-ObsoleteBuildCleanup.ps1",
+      "sha256": "06a2cd4c6d9802d58bd26b7a16bf08704aa48325f612944870093d9805f8e770"
     },
     {
       "path": "build/Test-PlaywrightRuntime.ps1",
@@ -569,15 +617,15 @@
     },
     {
       "path": "crates/achimeld-app/src/desktop.rs",
-      "sha256": "bbbdb392800cd5c07a09d9c2a359f23c4a1cabc1fe3371a809bd497fb4a102fb"
+      "sha256": "bb8db8217bd2422367520a1517ddd089dbe3f8d8386213bb51359acec5e20750"
     },
     {
       "path": "crates/achimeld-app/src/desktop/automation.rs",
-      "sha256": "5322ea4e60de0db8d54736a05f923a975b844a38323d923542e6bdea5cb0e227"
+      "sha256": "33ef180cb06c6470b592333ce4a6bafb7631a63a662d0611f6328257bdca30bb"
     },
     {
       "path": "crates/achimeld-app/src/desktop/browser_profile.rs",
-      "sha256": "59748e2d22932a2fe6de901f74ce6482dc80736c6103e029037723179deb2a0e"
+      "sha256": "d5cfbe9ebe48d9863a2cc1dad06f8a31832302b5dd4764865ea161a7e24fede7"
     },
     {
       "path": "crates/achimeld-app/src/desktop/effects.rs",
@@ -669,11 +717,11 @@
     },
     {
       "path": "crates/achimeld-app/src/sync_previews.rs",
-      "sha256": "6d02564ce1aab2483ad69dc6db0b8431eb41d5a2bc79864df078a8f2f559bf95"
+      "sha256": "8e31eb094f3f7515dd73fde77ebb0538fc2d4ba5a617e8365776da571f8fdc03"
     },
     {
       "path": "crates/achimeld-app/src/synchronization.rs",
-      "sha256": "50c6c8823241ad84ff556f9a71f40bbbf6fc45b5954977d95bf2148ed87abac6"
+      "sha256": "d36751eb57a137b61b0161234ae238dd49564cfb250aa7882bcd50706ac2977a"
     },
     {
       "path": "crates/achimeld-app/src/system_fonts.rs",
@@ -737,11 +785,11 @@
     },
     {
       "path": "crates/achimeld-application/src/automation.rs",
-      "sha256": "851d10ebec9637c5abb54bba9074b1d9b4b8b47b9a653198dc9fecb105e03b78"
+      "sha256": "3aee5e0228c6269f9f8416990de2b60d3e9cd54cd48848bba969cee159bfe227"
     },
     {
       "path": "crates/achimeld-application/src/canvas.rs",
-      "sha256": "256803a4266b9409a570752d323dcd1a96637154105a893325733b7f63ad00b0"
+      "sha256": "a229c0f5d32523b5e931355194abcfa7c6d4f880a93f21e774598093e46fe674"
     },
     {
       "path": "crates/achimeld-application/src/delta.rs",
@@ -753,7 +801,7 @@
     },
     {
       "path": "crates/achimeld-application/src/document.rs",
-      "sha256": "eef58b9f465344a6da8d9cd1fe447ebd1d37afea53aad7a5a44d23219a911f70"
+      "sha256": "54a527807670f35315444468c71642f535cc40fb554cffcb6b5644a40c9ffaec"
     },
     {
       "path": "crates/achimeld-application/src/editor_state.rs",
@@ -813,7 +861,7 @@
     },
     {
       "path": "crates/achimeld-application/src/ports.rs",
-      "sha256": "139002d6d92060ea61c151a63cf4d934c0ee2b8d1c91a852ae77a19470d45f47"
+      "sha256": "0864a941d475a43882291e45b382b5f1b3fdb0f8a05e40d1808c949ae148a0f9"
     },
     {
       "path": "crates/achimeld-application/src/preferences.rs",
@@ -993,7 +1041,7 @@
     },
     {
       "path": "crates/achimeld-browser/src/protocol.rs",
-      "sha256": "f200d2f69c0a322c11f6c42118f7f0c7bfa773a5446ae7f50fd99e6374fb25d1"
+      "sha256": "2b0510248d556a2b6be51bf19cbb5805ca27ec7bf7bda54c3d7ca8ec01a3043a"
     },
     {
       "path": "crates/achimeld-browser/src/snapshot.rs",
@@ -1149,7 +1197,7 @@
     },
     {
       "path": "crates/achimeld-mcp/src/lib.rs",
-      "sha256": "2bf7b20a8b0118b5735c6681cfa41819a860b017de4dcde7425e65bafefeaa5c"
+      "sha256": "5d97600d6f7d5809f0c6b1ab4fd48e033fd558e3441a61f6b773779d24429e78"
     },
     {
       "path": "crates/achimeld-mcp/src/lifetime.rs",
@@ -3177,7 +3225,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/achievement_general.rs",
-      "sha256": "34a5f1a14f0ba507b6b7727e750b78b31162b058ed153ef9e7204e21668d1e7f"
+      "sha256": "2d860e7259bd624a80f44acc4c0fd355141c0b425d35d850814f6f77a5b1ff79"
     },
     {
       "path": "crates/achimeld-ui/src/art_bank.rs",
@@ -3205,7 +3253,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/canvas.rs",
-      "sha256": "130adba319c006182c90ccbdbf471ae05761442563be749af25e51a8297751b9"
+      "sha256": "fb821597f858fbf46fc344396323d2e17a822a975abde4ab0ddab552c8f6082b"
     },
     {
       "path": "crates/achimeld-ui/src/canvas_regressions.rs",
@@ -3217,7 +3265,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/chrome.rs",
-      "sha256": "655135c1aff76e60510cd1d588c47d7a7cb4f24d16b3aca5401f8b834f6ddd22"
+      "sha256": "2b87b796472d01e9ff58d790c96883ed989e189cac99c2518dd1d85134ca70aa"
     },
     {
       "path": "crates/achimeld-ui/src/color_picker.rs",
@@ -3229,7 +3277,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/desktop.rs",
-      "sha256": "939dba6901189845bdee5749b2d253ec099ab4cf70eacd4548970b1e7b4cf7ab"
+      "sha256": "aff17dac7d93a164b597254b54d302f328d2be4c90aab241385c52d690c0a1e4"
     },
     {
       "path": "crates/achimeld-ui/src/dropdown_navigation.rs",
@@ -3289,7 +3337,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/general_image_regressions.rs",
-      "sha256": "7c3c188d00627b2ebc9d730faf5dfda22cd3a2eabda17b447504e78cea6c70ce"
+      "sha256": "a794a0a47621669fb72feda19a741fe25a8a7e416dbe59c71df5177330e1c449"
     },
     {
       "path": "crates/achimeld-ui/src/general_images.rs",
@@ -3365,7 +3413,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/image_drop_regressions.rs",
-      "sha256": "cd72a96c3e19a3eb3461875e1e9eeb55f0ef372f60a37a9f4a981f55ec4d3978"
+      "sha256": "48cb7cc9356734ff4feb1bb3ca4e9b359e5da88e9d51a5baf6cd5349d3b424b2"
     },
     {
       "path": "crates/achimeld-ui/src/inspector.rs",
@@ -3525,7 +3573,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/steam.rs",
-      "sha256": "077ebb2f75fdbf32289038f8f0cb68213ccae768a7015ad1d5fdd92a98057e97"
+      "sha256": "45ca0f7c92ec90f4ee8be1a4700b76efa7c31fb5bd1349f9076a0753a2fa7cba"
     },
     {
       "path": "crates/achimeld-ui/src/style_banner.rs",
@@ -3557,15 +3605,15 @@
     },
     {
       "path": "crates/achimeld-ui/src/synchronization.rs",
-      "sha256": "8e711886c00318c18af73abe015c6c4539040b19b9cc429d6100eecede52b7e1"
+      "sha256": "f13755ad3835eb70d5454682e3e51a74d25ef75155392e0672df36d93fe9028a"
     },
     {
       "path": "crates/achimeld-ui/src/synchronization_regressions.rs",
-      "sha256": "08a2f7c3d6959577c5b0cef5e2252676ce1b900525edc922fd146d2f61db9631"
+      "sha256": "72d0c333b8b311fdd690d1fa4dc320c61d2c89d63a087fa9d1ae8c84eb8bda98"
     },
     {
       "path": "crates/achimeld-ui/src/synchronization_target.rs",
-      "sha256": "c808706f126a1d20e6d56139f1e2ecaeaccf8e02d820d602622473d38ea65a49"
+      "sha256": "fa41b8ead6d429fb1bf67135df65b0041a06d1dcafac207a9d3256fdc96bba69"
     },
     {
       "path": "crates/achimeld-ui/src/terminal.rs",
@@ -3577,7 +3625,7 @@
     },
     {
       "path": "crates/achimeld-ui/src/tests.rs",
-      "sha256": "4c1cc7bfe3b10b9e412ca5316f3532e1cd5d2a3a1885c7c95c77cea117c71312"
+      "sha256": "0bcbeb0b59050a0495c7abb2dbec6fda74489b2748d0d5b85a4118dcff9c905d"
     },
     {
       "path": "crates/achimeld-ui/src/text3d.rs",
@@ -3877,7 +3925,7 @@
     },
     {
       "path": "docs/application-prompts.md",
-      "sha256": "5a8caad852d8438ed52cca525e3de3bda6bb28b29435db55abd111c622a2095e"
+      "sha256": "bad56d32021ac368819b7f5f9cf29a91dcb8d80122e5dce79d8a6b82802cc977"
     },
     {
       "path": "docs/desktop-rewrite.md",
@@ -3897,7 +3945,7 @@
     },
     {
       "path": "docs/field-labels.md",
-      "sha256": "ed648ddcfd8560410ad40f4125d258feded202aa897f368c11f868261abfcfe5"
+      "sha256": "b82d413342fcc5feed15c16318bcdd286d1c818298621042120c8bc9e5793825"
     },
     {
       "path": "docs/gradient-explorer.md",
@@ -3921,7 +3969,7 @@
     },
     {
       "path": "docs/mcp-server.md",
-      "sha256": "2333cfd3257dd9aeb1ac41603acc47ac96cc07c4f517b9f0d52e17191ed4a7e4"
+      "sha256": "06988aa4dd718d67e750e31183f2003a82e52161c484c494382def4a0715960b"
     },
     {
       "path": "docs/numeric-sliders.md",
@@ -3973,7 +4021,7 @@
     },
     {
       "path": "docs/security/contracts.md",
-      "sha256": "e8955735f5547f581d4356f3b09bffa045cf5caa7db604bb7e1da679baf691d0"
+      "sha256": "14b4a4776f1f3633f501d6b6a295757e124c2fe26d8fe5278333160c3a0dd9b0"
     },
     {
       "path": "docs/security/dependency-exceptions.json",
@@ -4005,7 +4053,7 @@
     },
     {
       "path": "docs/security/mcp-audit.md",
-      "sha256": "741a6e804ac3eb8e5aa42780100304b14044e54b8a0c57ac7ba568b352fc4dd7"
+      "sha256": "9c4687db57acfee0f39229155db7f08410175177957cea871c2e8f4de6aca0d2"
     },
     {
       "path": "docs/security/migration-audit.md",
@@ -4045,11 +4093,11 @@
     },
     {
       "path": "docs/upper-application-bar.md",
-      "sha256": "a8d33e8b1c2cd6eafdc6d6887171e2891ecf987c260a938a0c4bc75fdeeedf5f"
+      "sha256": "affa68826e13d9ac2f1d31c40e956adab50b0480756799cde6b9ff882da806ed"
     },
     {
       "path": "docs/wiki-maintenance.md",
-      "sha256": "e21f50779d7a57547671d5f30b26b0bd2da064d0183c829a7d6436aa5fc1a1f4"
+      "sha256": "25cc8095b2e9f6834c00987d05ad611dc9cb5fe3181ab044331c45b202ab9a0f"
     },
     {
       "path": "docs/wiki/README.md",
@@ -4057,7 +4105,7 @@
     },
     {
       "path": "docs/wiki/achievements-general.md",
-      "sha256": "ee72b2b8a61146bf4d494855bc62e738a8cf388d094802d01852318b05788c70"
+      "sha256": "c9c86566b4cf0f945e7f34965136ea86984520730ea6d163b4c4ea3d3082d467"
     },
     {
       "path": "docs/wiki/art-data-bank.md",
@@ -4073,7 +4121,7 @@
     },
     {
       "path": "docs/wiki/automation.md",
-      "sha256": "c59c565bb177fa82e8a87af8be8e77864f08267c2f591ec7357796309ecc256c"
+      "sha256": "8ea560c01dcc95004f0c51229c3731a9de3cbde8bcd0d95ef5ba9f2c62d24a27"
     },
     {
       "path": "docs/wiki/explosions.md",
@@ -4141,7 +4189,7 @@
     },
     {
       "path": "docs/wiki/projects.md",
-      "sha256": "3c5fbd4de839bdef1d9ee26313ff4a989107aeb7d5a74686e850c1a7aaebe49a"
+      "sha256": "baa7ea22885c2fb942e480e95ea7843aef7f523f9ff1f1571871229ef005b47a"
     },
     {
       "path": "docs/wiki/readiness.json",
@@ -4241,7 +4289,7 @@
     },
     {
       "path": "docs/wiki/steam.md",
-      "sha256": "ed7cf0f5df8afc88d231e0929a372763163989e4db9e7bcf86353e2513295e71"
+      "sha256": "0a331db9b515cfcc765b8cdff43056ee214edffe3771efe78bd8514aba3ce3cd"
     },
     {
       "path": "docs/wiki/styles.md",
@@ -4249,7 +4297,7 @@
     },
     {
       "path": "docs/wiki/sync.md",
-      "sha256": "32df8824273b73e38cafdebead47e25f1a25716030e8925e8c5c86b3c13383a6"
+      "sha256": "fcde2e702e10982278fdf960ca65833c598083d2bf45f0c56f37ec6d3f7e1a30"
     },
     {
       "path": "docs/wiki/text-3d.md",
@@ -4257,7 +4305,7 @@
     },
     {
       "path": "docs/wiki/troubleshooting.md",
-      "sha256": "a5cbe5f0d981cc95a0dec6e57422c71eb8cfdfcdfa9682bc633930e28bb23ddd"
+      "sha256": "852962d3352c42f619c627d8cc455b6213a5c000b73ef50d1b532341bf61ea47"
     },
     {
       "path": "installer/Export-SetupLog.ps1",
@@ -4321,7 +4369,7 @@
     },
     {
       "path": "tools/browser-policy-tests/BrowserFixtures.cs",
-      "sha256": "18667ad2b787076703620b8a239a501eb59f46a7cb90b1c865fbb713b4b624b4"
+      "sha256": "d28a6bd0313958bedc89495360a9805f72a7cbd77993e79c7dd5f6abddf6e6fa"
     },
     {
       "path": "tools/browser-policy-tests/BrowserPolicyTests.csproj",
@@ -4348,6 +4396,10 @@
       "sha256": "789f986640591a42e9934d98ee203dc6b08be2a45417bfc140a5be87d6e70e0c"
     },
     {
+      "path": "tools/browser-policy-tests/ModernAchievementPageFixtures.cs",
+      "sha256": "ce11cb87a82c8a1706883ba613ad1f1c2d7682af8e8383ee3af2b4f98022eee5"
+    },
+    {
       "path": "tools/browser-policy-tests/NuGet.Config",
       "sha256": "2142cfb2dfa2c7feefbe40fabcc68b0dfecadafa99a1db9b70239d977cf2a7ef"
     },
@@ -4361,7 +4413,7 @@
     },
     {
       "path": "tools/browser-policy-tests/Program.cs",
-      "sha256": "ee0770a8847518104a462bd3467967811cca2116a198b0bab9ad1e5add5201a9"
+      "sha256": "3c64a11712bbb04f2c842aa1e2fb82d91222a2c84e08ee487f8539e583cf408d"
     },
     {
       "path": "tools/browser-policy-tests/RadialBlurFixtures.cs",
@@ -4377,7 +4429,7 @@
     },
     {
       "path": "tools/browser-policy-tests/SynchronizationFixtures.cs",
-      "sha256": "e182f25be7b5782f176c0053ce8f00e612e0911db1fac89f39cca1ebb1a99f73"
+      "sha256": "36fe613bee52a0a519ae85f251c5d4c6b83c6162f50b42f9e9901ef5d4dcef34"
     },
     {
       "path": "tools/browser-policy-tests/Text3dFixtures.cs",
@@ -4389,7 +4441,7 @@
     },
     {
       "path": "tools/browser-policy-tests/WorkerDiagnosticFixtures.cs",
-      "sha256": "a761ba3f857c85707d2e4c7b96596f3fe97e0b2895e7b1bb688f3adbb347773f"
+      "sha256": "1a06d75f7081d0c5d6fbe8a4549d6d669376111d52d8cbd020e0c966de77b333"
     },
     {
       "path": "tools/browser-policy-tests/packages.lock.json",

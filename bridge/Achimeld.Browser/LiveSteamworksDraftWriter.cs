@@ -12,9 +12,16 @@ public sealed partial class PlaywrightChromeDriver
         await RequireHealthyAsync().ConfigureAwait(false);
         if (operation.Target.Kind == PortalEntityKind.Icon)
         {
+            if (operation.ExpectedSteamId is not null)
+            {
+                await UploadReviewedModernIconsAsync(operation).ConfigureAwait(false);
+                return;
+            }
             await UploadLiveIconPairAsync(operation).ConfigureAwait(false);
             return;
         }
+        if (await TryApplyReviewedModernAchievementAsync(operation).ConfigureAwait(false)) return;
+        if (await TryApplyModernLocalizationAsync(operation).ConfigureAwait(false)) return;
         bool stat = operation.Target.Kind == PortalEntityKind.Stat ||
             operation.Target.LocalizationField == LocalizationField.StatDisplayName;
         string kind = stat ? "stats" : "achievements";

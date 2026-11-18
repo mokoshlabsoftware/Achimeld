@@ -28,14 +28,14 @@ MCP advertises an achievement-authoring guide at `achimeld://guides/achievement-
 | Create records | create_achievement, create_stat, create_stats |
 | Batch image import | review_achievement_image_folder, import_achievement_images |
 | Project settings | set_project_settings, save_project |
-| Edit/organize | update_node, move_nodes, select_node |
+| Edit/organize | update_node, move_nodes, select_node, create_achievement_set |
 | Stat configuration | configure_stat, link_achievement_stat |
 | Artwork/styles | add_general_image, list_icon_styles, apply_icon_style, list_effect_presets, apply_effect_preset, close_effect_explorer |
 | Translation | get/export/import_achievement_translations |
 | Icon output | export_achievement_icons |
 | History | undo, redo |
 | Style collections | list_style_collections, get_icon_style, create_style_collection, create_icon_style, export_style_preview, export_style_collection, import_icon_style |
-| Steam review | get_synchronization, get_remote_icon_metadata, validate_steam, prepare_synchronization, apply_synchronization, cancel_synchronization, forget_steam_validation, delete_browser_profile, review_steam_deletion, apply_steam_deletion |
+| Steam review | get_synchronization, get_remote_icon_metadata, validate_steam, validate_and_synchronize, prepare_synchronization, apply_synchronization, cancel_synchronization, forget_steam_validation, delete_browser_profile, review_steam_deletion, apply_steam_deletion |
 | Title menus | open_menu, close_menu |
 | Notices | acknowledge_modal |
 | Editor lifecycle and supervised pages | open_recent_project, open_project, reload_project, save_project, close_editor, open_steam_page, cancel_steam_read |
@@ -43,6 +43,8 @@ MCP advertises an achievement-authoring guide at `achimeld://guides/achievement-
 set_project_settings changes the project name, Steam App ID or both in one undoable edit. A changed App ID clears the old validation and synchronization baseline. Save afterward. For a batch of images, review_achievement_image_folder lists supported files directly in one local-drive folder and returns a token. Import with that token and one fileName, name and description for every listed image. The folder and editor revision must still match. Achimeld copies the artwork into the Art Data Bank and creates all achievements in one undoable edit. Poll status and get_scene for completion. A batch is limited to 128 images and 128 MiB; subfolders are not traversed.
 
 create_stats accepts 1-1000 names/objects or supported delimited text, validates the whole batch and adds it in one undo step. move_nodes accepts up to 1000 unique node placements.
+
+create_achievement_set creates one named canvas box around the requested achievement IDs and links it to a Steam set from the project's saved Steam read. Use set ID 0 to link to Base game. It rejects a box that would include any unselected cards. Save before preparing a synchronization review. After validation, show_steam opens the Steam view and optionally sets its search field.
 
 update_node preserves omitted fields. configure_stat instead replaces configuration: omitted numbers become null, flags false, and Set by defaults to GameClient. For linking, provide both statId/unlockValue or omit both to unlink.
 
@@ -64,11 +66,11 @@ Undo/redo include manual history, not an isolated automation stack.
 
 ## Validate and synchronize
 
-Save the project in the desktop or with save_project, then call validate_steam. Poll get_synchronization until verified or an error appears. Call prepare_synchronization and poll until the review appears. Inspect its Steam App ID, rows and available actions. The review captures artwork and project fields before it appears; later edits remain for the next sync. Apply by supplying the exact review token and one `{key,action}` choice for every row, including rows left unchanged. Poll again for completion or an error. cancel_synchronization cancels an active check or review. These calls use the same supervised Steam workflow as the Sync screen; uploads save to the Steamworks draft and publication is still manual.
+Save the project in the desktop or with save_project. Call validate_and_synchronize to prepare local artwork, validate Steam, and reach the review in one browser session. The separate sequence remains available: call validate_steam, poll get_synchronization until verified or an error appears, then call prepare_synchronization. Poll until the review appears. Inspect its Steam App ID, rows and available actions. The review captures artwork and project fields before it appears; later edits remain for the next sync. Apply by supplying the exact review token and one `{key,action}` choice for every row, including rows left unchanged. Poll again for completion or an error. cancel_synchronization cancels an active check or review. These calls use the same supervised Steam workflow as the Sync screen; uploads save to the Steamworks draft and publication is still manual.
 
 Remote-only achievement and stat rows may offer Delete. It is never the default. If any row is selected for Delete, apply_synchronization requires `confirmDeletion=true`; selected achievement deletions run before selected stat deletions, and both run before uploads and imports. The review also reports `remoteAchievementCount`. If the selected plan would leave more than 100 remote achievements, apply_synchronization requires `allowAbove100=true` for an eligible vetted app. Neither flag selects a deletion or upload by itself. Inspect the complete plan before setting either flag.
 
-The desktop shows a square review modal with a five-second countdown and Stop control. Status reports this as a review modal that cannot be acknowledged with acknowledge_modal. MCP apply_synchronization remains an explicit call with all row choices; the desktop countdown does not submit on behalf of an MCP client.
+The desktop shows the resizable review with the countdown stopped when MCP prepares it. Status reports this as a review modal that cannot be acknowledged with acknowledge_modal. Submit through apply_synchronization with the review token and a choice for every row.
 
 During a prepared review, get_remote_icon_metadata returns one named achievement's validated public Steam image links and content hashes. Use it to compare the current draft art with the frozen project art after an uncertain upload. The links are public image references, not access to Steamworks pages.
 

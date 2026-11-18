@@ -55,6 +55,7 @@ pub enum UiRequest {
     DeleteSteam(Vec<(EntityKind, String)>),
     CancelRead,
     PrepareSynchronization,
+    ValidateAndSynchronize,
     ApplySynchronization {
         choices: Vec<(String, String)>,
         confirm_deletion: bool,
@@ -183,6 +184,10 @@ pub trait EditorPort {
         None
     }
     fn editor(&self) -> &Editor;
+    /// Changes when a document is opened, even when reopening the same file.
+    fn editor_session_id(&self) -> Option<&str> {
+        None
+    }
     fn execute(&mut self, label: &str, command: Command, group: Option<&str>)
     -> Result<(), String>;
     fn finish_group(&mut self);

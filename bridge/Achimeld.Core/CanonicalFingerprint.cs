@@ -127,6 +127,10 @@ public static class CanonicalFingerprint
             .OrderBy(static value => value.ApiName.Value, StringComparer.Ordinal)
             .Select((value, index) => new CanonicalField(
                 $"achievement:{index}:{value.ApiName.Value}", value.ContentFingerprint)));
+        fields.AddRange(snapshot.Achievements
+            .Where(static value => value.SetId is not null)
+            .OrderBy(static value => value.ApiName.Value, StringComparer.Ordinal)
+            .Select(value => new CanonicalField($"achievement-set:{value.ApiName.Value}", value.SetId)));
         fields.AddRange(snapshot.Localizations
             .OrderBy(static value => value.EntityType)
             .ThenBy(static value => value.ApiName.Value, StringComparer.Ordinal)

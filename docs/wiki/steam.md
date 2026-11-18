@@ -8,7 +8,9 @@ Read Steam starts the supervised browser workflow. Sign in manually when prompte
 
 A read displays its imported configuration and timestamp; Stop cancels the active read. Starting a new read clears deletion marks. Reading, profile operations and synchronization have guards to prevent overlapping work.
 
-The Achievements and Stats groups display names and API identifiers. Filter by name or API name to inspect a subset. Distinguish this saved/read view from your editable local canvas.
+The Achievements and Stats groups display names and API identifiers. Use the hourglass filter beside Read Steam to search by display name, API name, or the description shown on an achievement card.
+
+When Steam reports achievement set IDs, Achimeld groups the cards by set ID and shows unassigned cards under Base game. The filter searches across those groups.
 
 ## Marks and remote deletion
 

@@ -124,7 +124,7 @@ fn steam_snapshot() -> Value {
         "stats": [{"apiName": {"value": "STEAM_DISTANCE"}, "attributes": {"data-type": "Int", "data-set-by": "GameClient", "data-minimum": "0", "data-maximum": "10000", "data-default": "0", "data-increment-only": "true"}}],
         "localizations": [
             {"apiName": {"value": "STEAM_FIRST"}, "field": "AchievementDisplayName", "values": {"English": "First steps on Steam"}},
-            {"apiName": "STEAM_FIRST", "field": "AchievementDescription", "values": {"English": "Complete the first chapter."}},
+            {"apiName": "STEAM_FIRST", "field": "AchievementDescription", "values": {"English": "Reach experience level 145."}},
             {"apiName": "STEAM_EXPLORER", "field": "AchievementDisplayName", "values": {"English": "Steam explorer"}},
             {"apiName": "STEAM_DISTANCE", "field": "StatDisplayName", "values": {"English": "Distance on Steam"}}
         ]
@@ -136,6 +136,7 @@ fn steam_sections_share_scroll_and_only_show_remote_values_without_editing() {
     let mut fixture = Fixture::new();
     let mut project = fixture.editor.document().project().clone();
     project["lastRemoteSnapshot"] = steam_snapshot();
+    project["lastRemoteSnapshot"]["achievements"][1]["setId"] = json!("5");
     fixture.editor = Editor::new(
         achimeld_application::Document::from_parts(
             project,
@@ -190,6 +191,9 @@ fn steam_sections_share_scroll_and_only_show_remote_values_without_editing() {
             .y
     };
     assert!(y(&labels, "Stats (1)") > y(&labels, "Achievements (2)"));
+    assert!(y(&labels, "Base game") < y(&labels, "First steps on Steam"));
+    assert!(y(&labels, "First steps on Steam") < y(&labels, "Set 5"));
+    assert!(y(&labels, "Set 5") < y(&labels, "Steam explorer"));
     assert!(
         labels
             .iter()
@@ -225,7 +229,53 @@ fn steam_sections_share_scroll_and_only_show_remote_values_without_editing() {
     let delta = y(&scrolled, "Achievements (2)") - achievements_y;
     assert!(delta < 0.0);
     assert!((y(&scrolled, "Stats (1)") - stats_y - delta).abs() < 0.1);
-    desktop.filter = "STEAM_DISTANCE".into();
+
+    let filter_id = egui::Id::new("steam-filter");
+    assert!(ctx.read_response(filter_id).is_some());
+    ctx.memory_mut(|memory| memory.request_focus(filter_id));
+    let matching_name = frame(
+        &mut desktop,
+        &mut fixture,
+        700.0,
+        vec![egui::Event::Text("  fIrSt StEpS  ".into())],
+    );
+    assert_eq!(y(&matching_name, "Achievements (2)"), achievements_y);
+    assert!(matching_name.iter().any(|(text, _)| text == "STEAM_FIRST"));
+    assert!(
+        !matching_name
+            .iter()
+            .any(|(text, _)| text == "STEAM_EXPLORER")
+    );
+    assert!(
+        !matching_name
+            .iter()
+            .any(|(text, _)| text == "STEAM_DISTANCE")
+    );
+
+    desktop.steam_filter.clear();
+    let matching_description = frame(
+        &mut desktop,
+        &mut fixture,
+        700.0,
+        vec![egui::Event::Text("145".into())],
+    );
+    assert!(
+        matching_description
+            .iter()
+            .any(|(text, _)| text == "STEAM_FIRST")
+    );
+    assert!(
+        matching_description
+            .iter()
+            .any(|(text, _)| text == "Reach experience level 145.")
+    );
+    assert!(
+        !matching_description
+            .iter()
+            .any(|(text, _)| text == "STEAM_EXPLORER" || text == "STEAM_DISTANCE")
+    );
+
+    desktop.steam_filter = "steam_distance".into();
     let filtered = frame(&mut desktop, &mut fixture, 700.0, vec![]);
     assert!(filtered.iter().any(|(text, _)| text == "Distance on Steam"));
     assert!(filtered.iter().any(|(text, _)| text == "Type: Int"));
@@ -239,6 +289,34 @@ fn steam_sections_share_scroll_and_only_show_remote_values_without_editing() {
     assert_eq!(fixture.editor.document(), &before);
     assert_eq!(fixture.editor.revision(), revision);
     assert_eq!(fixture.requests, 0);
+    assert!(desktop.filter.is_empty());
+}
+
+#[test]
+fn reopening_the_same_project_clears_filters_and_returns_to_achievements() {
+    let mut fixture = Fixture::new();
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    let frame = |desktop: &mut Desktop, fixture: &mut Fixture| {
+        ctx.run_ui(egui::RawInput::default(), |ui| desktop.show(ui, fixture))
+            .textures_delta
+            .clear();
+    };
+    fixture.editor_session_id = Some("first open");
+    frame(&mut desktop, &mut fixture);
+    desktop.view = desktop::View::Stats;
+    desktop.filter = "old canvas filter".into();
+    desktop.steam_filter = "old Steam filter".into();
+    frame(&mut desktop, &mut fixture);
+    assert_eq!(desktop.filter, "old canvas filter");
+    assert_eq!(desktop.steam_filter, "old Steam filter");
+
+    fixture.editor_session_id = Some("reopened");
+    frame(&mut desktop, &mut fixture);
+    assert!(desktop.view == desktop::View::Achievements);
+    assert!(desktop.filter.is_empty());
+    assert!(desktop.steam_filter.is_empty());
 }
 
 #[test]
@@ -976,6 +1054,7 @@ impl AssetSource for NoAssets {
 }
 struct Fixture {
     editor: Editor,
+    editor_session_id: Option<&'static str>,
     requests: usize,
     last_request: Option<UiRequest>,
     previews: BTreeMap<String, Preview>,
@@ -1013,6 +1092,7 @@ impl Fixture {
             .unwrap();
         Self {
             editor,
+            editor_session_id: None,
             requests: 0,
             last_request: None,
             previews: BTreeMap::new(),
@@ -1040,6 +1120,9 @@ impl EditorPort for Fixture {
     }
     fn editor(&self) -> &Editor {
         &self.editor
+    }
+    fn editor_session_id(&self) -> Option<&str> {
+        self.editor_session_id
     }
     fn execute(
         &mut self,

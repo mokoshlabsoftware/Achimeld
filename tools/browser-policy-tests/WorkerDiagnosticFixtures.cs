@@ -13,6 +13,19 @@ internal static class WorkerDiagnosticFixtures
             requestDetail.GetProperty("method").GetString() != "POST" || detail.GetProperty("elapsedMs").GetInt64() != 12 ||
             detail.GetRawText().Contains("hidden", StringComparison.Ordinal))
             throw new Exception("Production failure details lost wire casing or exposed request data.");
+        foreach ((string route, string category) in new[] {
+            ("/um/Player/GetGameAchievements/", "player-game-achievements"),
+            ("/um/Player/GetGlobalAchievementPercentages/", "player-global-percentages"),
+            ("/um/Player/Other/", "player-other"),
+            ("/um/Partner/GetAppData/", "um-action-Partner-GetAppData"),
+            ("/um/Other/", "um-other"),
+            ("/achievements/other/480", "achievements-other"),
+        })
+        {
+            var request = BrowserRequestDiagnostic.Describe("GET", "https://partner.steamgames.com" + route + "?token=hidden", false, "fetch");
+            if (request.Path != category || !request.Query || request.ToString()!.Contains("hidden", StringComparison.Ordinal))
+                throw new Exception("Safe Steamworks request category changed or exposed a query.");
+        }
         var sync = WorkerFailure.Details("operation", new TimeoutException(secret), 35000, null,
             new SyncOperationDiagnostic("write-precheck", 30000, "fetchachievements", "none", "none"));
         if (sync.GetProperty("sync").GetProperty("endpoint").GetString() != "fetchachievements" ||

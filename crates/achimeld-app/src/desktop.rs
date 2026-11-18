@@ -732,7 +732,10 @@ impl Host {
                     }
                 }
                 Err(error) => {
-                    if matches!(then, Some(UiRequest::PrepareSynchronization)) {
+                    if matches!(
+                        then,
+                        Some(UiRequest::PrepareSynchronization | UiRequest::ValidateAndSynchronize)
+                    ) {
                         self.set_sync_error(error);
                     } else {
                         self.status = crate::desktop::logged_status(error);
@@ -859,8 +862,12 @@ impl Host {
                     self.set_sync_error(error);
                 }
             }
-            UiRequest::PrepareSynchronization => {
-                if let Err(error) = self.start_synchronization() {
+            sync_request @ (UiRequest::PrepareSynchronization
+            | UiRequest::ValidateAndSynchronize) => {
+                if let Err(error) = self.start_synchronization(matches!(
+                    sync_request,
+                    UiRequest::ValidateAndSynchronize
+                )) {
                     self.set_sync_error(error);
                 }
             }
@@ -1103,7 +1110,7 @@ impl Host {
         ));
         Ok(())
     }
-    fn start_synchronization(&mut self) -> Result<(), String> {
+    fn start_synchronization(&mut self, validate_and_sync: bool) -> Result<(), String> {
         if self.synchronization.is_some()
             || self.browser_profile.is_some()
             || self.image_drop.is_some()
@@ -1115,7 +1122,7 @@ impl Host {
             return Err("Finish or cancel the current background operation first".into());
         }
         let (path, document) = self.synchronization_input()?;
-        let handshake_only = !self.synchronization_verified();
+        let handshake_only = !validate_and_sync && !self.synchronization_verified();
         self.verified_sync = None;
         self.sync_error = None;
         let mut assets = Files::new();
@@ -1127,9 +1134,10 @@ impl Host {
             assets,
             self.ctx.clone(),
             handshake_only,
+            validate_and_sync,
         ));
         self.status = crate::desktop::logged_status(
-            if handshake_only {
+            if handshake_only || validate_and_sync {
                 "Checking the Steam connection…"
             } else {
                 "Preparing synchronization…"
@@ -1194,7 +1202,12 @@ impl Host {
                         self.render_generation += 1;
                         self.art_stats_epoch += 1;
                     }
-                    Ok(crate::synchronization::Event::Review(review)) => {
+                    Ok(crate::synchronization::Event::Review(mut review, frozen)) => {
+                        pending.previews.frozen = frozen;
+                        pending.previews.receive_remote(&mut review);
+                        if pending.explicit_review {
+                            review["explicitApproval"] = json!(true);
+                        }
                         pending.review = Some(review);
                         self.status = crate::desktop::logged_status(
                             "Review the proposed Steam changes before synchronizing".into(),
@@ -1914,6 +1927,9 @@ impl EditorPort for Host {
     fn editor(&self) -> &Editor {
         &self.editor
     }
+    fn editor_session_id(&self) -> Option<&str> {
+        Some(&self.editor_session_id)
+    }
     fn execute(
         &mut self,
         label: &str,
@@ -2041,7 +2057,10 @@ impl EditorPort for Host {
                 "Synchronization cancelled; closing the editor".into(),
             );
         }
-        if matches!(request, UiRequest::PrepareSynchronization) {
+        if matches!(
+            request,
+            UiRequest::PrepareSynchronization | UiRequest::ValidateAndSynchronize
+        ) {
             achimeld_application::diagnostics::record(
                 "INFO",
                 "validation",
@@ -2053,7 +2072,10 @@ impl EditorPort for Host {
             );
         }
         if self.dialog.is_some() {
-            if matches!(request, UiRequest::PrepareSynchronization) {
+            if matches!(
+                request,
+                UiRequest::PrepareSynchronization | UiRequest::ValidateAndSynchronize
+            ) {
                 achimeld_application::diagnostics::record(
                     "WARN",
                     "validation",
@@ -2070,6 +2092,7 @@ impl EditorPort for Host {
                     | UiRequest::OpenRecentProject(_)
                     | UiRequest::SaveProjectAs
                     | UiRequest::PrepareSynchronization
+                    | UiRequest::ValidateAndSynchronize
                     | UiRequest::ReadSteam
                     | UiRequest::OpenSteamPage(_)
                     | UiRequest::DeleteSteam(_)
@@ -2090,7 +2113,8 @@ impl EditorPort for Host {
             return;
         }
         match request {
-            UiRequest::PrepareSynchronization => {
+            sync_request @ (UiRequest::PrepareSynchronization
+            | UiRequest::ValidateAndSynchronize) => {
                 self.sync_error = None;
                 if SteamAppId::new(self.editor.document().app_id()).is_err() {
                     self.set_sync_error(
@@ -2110,7 +2134,7 @@ impl EditorPort for Host {
                     );
                     self.start_dialog(Dialog::SavedProjectRequired);
                 } else {
-                    self.save(false, Some(UiRequest::PrepareSynchronization));
+                    self.save(false, Some(sync_request));
                 }
             }
             UiRequest::ApplySynchronization {
@@ -2776,6 +2800,11 @@ impl EditorPort for Host {
             .and_then(|pending| pending.previews.get(api, locked))
     }
     fn steam_icon_preview(&self, api: &str, unachieved: bool) -> Option<Preview> {
+        if let Some(pending) = self.synchronization.as_ref()
+            && pending.review.is_some()
+        {
+            return pending.previews.remote(api, unachieved);
+        }
         (self.editor.document().project()["projectId"].as_str()
             == Some(self.steam_preview_project_id.as_str())
             && self.editor.document().project()["lastRemoteSnapshot"]["contentFingerprint"]
@@ -3245,6 +3274,7 @@ mod dialog_tests {
                         waiting_for_sign_in: true,
                         cancel: Cancellation::default(),
                         events, approval, review: None,
+                        explicit_review: false,
                         revision: host.editor.revision(),
                         path: boundary.join("preview-only.achv"),
                         thread: None,
@@ -3426,6 +3456,7 @@ mod dialog_tests {
             events,
             approval,
             review: Some(json!({"token":"review","remoteAchievementCount":0})),
+            explicit_review: false,
             revision: host.editor.revision(),
             path: crate::test_output::root().join("unused-sync.achv"),
             thread: None,
@@ -3506,6 +3537,7 @@ mod dialog_tests {
             events,
             approval,
             review: None,
+            explicit_review: false,
             revision: host.editor.revision(),
             path: path.clone(),
             thread: None,
@@ -3560,6 +3592,7 @@ mod dialog_tests {
             events,
             approval,
             review: None,
+            explicit_review: false,
             revision: host.editor.revision(),
             path: path.clone(),
             thread: None,
@@ -3617,6 +3650,7 @@ mod dialog_tests {
                 events,
                 approval,
                 review: None,
+                explicit_review: false,
                 revision,
                 path: path.clone(),
                 thread: None,
@@ -3699,6 +3733,7 @@ mod dialog_tests {
                 events,
                 approval,
                 review: None,
+                explicit_review: false,
                 revision,
                 // Handshake completion must never load/save a synchronization result.
                 path: crate::test_output::root().join("nonexistent-handshake.achv"),
@@ -3726,13 +3761,18 @@ mod dialog_tests {
 
     #[test]
     fn missing_app_id_rejects_sync_before_any_save_or_worker_is_started() {
-        let mut host = dirty_host();
-        let before = host.editor.document().clone();
-        host.request(UiRequest::PrepareSynchronization);
-        assert!(host.dialog.is_none());
-        assert!(host.synchronization.is_none());
-        assert!(host.status.contains("valid Steam App ID"));
-        assert_eq!(host.editor.document(), &before);
+        for request in [
+            UiRequest::PrepareSynchronization,
+            UiRequest::ValidateAndSynchronize,
+        ] {
+            let mut host = dirty_host();
+            let before = host.editor.document().clone();
+            host.request(request);
+            assert!(host.dialog.is_none());
+            assert!(host.synchronization.is_none());
+            assert!(host.status.contains("valid Steam App ID"));
+            assert_eq!(host.editor.document(), &before);
+        }
     }
 
     #[test]
@@ -3752,6 +3792,7 @@ mod dialog_tests {
                 events,
                 approval,
                 review: None,
+                explicit_review: false,
                 revision: host.editor.revision(),
                 path: crate::test_output::root().join("unused-deletion-focus.achv"),
                 thread: None,

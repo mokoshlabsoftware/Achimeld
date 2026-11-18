@@ -10,6 +10,8 @@ Labels may be abbreviated in a narrow inspector. Hover a label to read its compl
 
 **English display name** is the player-facing name. **English description** explains the achievement. **Steam API name** is the identifier used by the game and Steam configuration. Changing one does not mean the others should have the same wording.
 
+The English display name label sits above its editable field beside the icon. The English description label also sits above its editable field. When either field contains `{0}`, the resolved text appears directly below it using the achievement's unlock value.
+
 After editing the display name, save the project and prepare a fresh Sync review. Expand the achievement's field differences to check the project and Steam names before choosing Use project.
 
 For a Steam-linked achievement, review any rename guidance shown alongside the API name before changing its identity.

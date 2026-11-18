@@ -2,22 +2,31 @@
 
 ## Steam sign-in and validation handshake
 
-Validation opens the pinned Steamworks destination, waits for sign-in, reopens
-that destination and checks authentication again. It then requests only the pinned
+Validation opens the pinned Steamworks Achievements destination, waits for sign-in, reopens
+that destination and checks authentication again. Configuration reads use the fixed
+legacy stats and achievements endpoints for the same App ID. A live November 2026
+read returned HTML from the legacy achievements endpoint, so synchronization stopped
+before review. That response is not accepted as configuration data. It then requests only the pinned
 app's public game banner through the supervised, cookie-free download policy and
 retains valid artwork in the host-owned Art Data Bank. An unavailable banner does
 not fail connection validation. The same pinned public metadata may supply a
-bounded, control-free app name. After successful validation and browser close,
+bounded, control-free app name. After successful validation,
 the host replaces only the default Untitled project name. A local rename made
 during validation takes precedence. Missing or invalid name metadata does not
 fail validation or change the project. Validation does not render upload icons,
 prepare a synchronization plan, import remote entries or write a synchronization
-result. Successful validation is bound to the editor session and revision. A later
+result. Standalone validation is bound to the editor session and revision. A later
 Synchronize action prepares a fresh receiver-owned plan and automatically selects
 its default actions when there are no conflicts or uncertain prior outcomes.
 Conflicts and recovery still require review. The App ID is checked against the
 current project without a separate confirmation checkbox. Progress remains open
 while connecting, uploading individual entries, verifying and closing the browser.
+The desktop's Validate and synchronize action performs this validation and then
+prepares the reviewed plan in the same supervised browser/worker session. It
+retains the banner through the same host-owned Art Data Bank path, renders local
+icon candidates after successful validation, and keeps the reviewed write gate.
+Validation failure or cancellation ends the operation before plan preparation.
+The standalone Validate action still closes its session without preparing a plan.
 
 Icon candidates may use `deferred: true` with empty achieved/unachieved hashes.
 The host renders from its frozen document only at that icon's upload step, after
@@ -63,7 +72,7 @@ are retained. Diagnostic categories include `api` and `authentication-api`; all
 values remain independently checked by the Rust host. Failure details use the same
 camel-case serializer as the response envelope, including nested request categories;
 the production serializer has a regression fixture. The policy watchdog allows
-three seconds for a failed reply, with all subsequent browser requests denied.
+twelve seconds for a failed reply, with all subsequent browser requests denied.
 After writing a failure the dispatcher waits at most one second without accepting
 another operation, allowing the host to consume the frame before child exit.
 Live sign-in and installed-package qualification must still be recorded separately.
@@ -78,6 +87,40 @@ The Sync view can open only the exact Achievements or Stats page for its current
 Steam App ID in the supervised Chromium session. Both routes are checked again at the
 receiving policy and browser request policy; no URL is supplied by the UI. The session
 ends when the owned browser window closes. This navigation does not grant draft writes.
+
+The current Achievements page also loads five same-origin GET/XHR reads:
+`/achievements/ajaxgetappinfo/{pinnedAppId}`,
+`/achievements/ajaxgetdlc/{pinnedAppId}`,
+`/achievements/ajaxgetstatsschema/{pinnedAppId}`,
+`/achievements/ajaxgetlanguagelist/{pinnedAppId}` and
+`/achievements/ajaxgetlanguageoptionslist/{pinnedAppId}`. It makes two GET/fetch
+reads under `/um/Player/`: `GetGlobalAchievementPercentages` and
+`GetGameAchievements`. Their single `input_protobuf_encoded` query must match
+the complete fixed protobuf payload for the pinned App ID; the latter also
+requires the fixed English language field. During an authenticated read, the
+worker may also fetch only `/achievements/ajaxgetstatsschema/{pinnedAppId}`
+without a query to classify the replacement achievement schema. It records a
+bounded mask and counts of predefined JSON structure, never values or unknown names.
+The modern Achievements page also requests `GET /um/StoreBrowse/GetItems/`
+with a protobuf query. This optional store display request is aborted locally
+without contacting the broker, at most 16 times per pinned session; it does not
+grant network authority. Other methods, resource types,
+queries, App IDs, paths and player-service calls remain denied. These routes
+were observed in a signed-in Steamworks page on 2026-11-11 after two logged
+validation failures on the prior policy. Source fixtures cover the exact
+allowlist and rejections; live acceptance of a rebuilt Achimeld package remains
+separate.
+
+For a reviewed existing achievement, the worker correlates the fresh schema's
+stat/bit identity and set with the normalized read. Only the approved identity,
+definition fields, and selected localization may reach the pinned achievement
+save. A selected set move uses the same app and a single reviewed API name.
+The host derives set targets from the saved canvas. The worker accepts Base
+game or a numbered set observed in its fresh read, and the review requires
+an explicit selection for membership changes. Each multipart request is authorized once and compared with the exact
+prepared fields. The icon route additionally validates the filename, metadata,
+and byte-for-byte equality with the frozen PNG before forwarding. Each operation
+requires fresh read-back and rejects changes outside the selected target.
 
 Sync and Steam expose the same profile-folder and profile-deletion controls. Opening
 the folder uses the supervisor-authenticated fixed profile path, validates reparse
@@ -160,6 +203,8 @@ Local icon style nodes (`styleAchievement`) and art images (`artImage`) remain h
 | Snapshot | 16 MiB normalized XML, 200,000 nodes, DTD disabled except inert initial HTML doctype; exact origin/App ID; fixed revisions/sections; uniqueness and owner/link checks. | Result rejected; reader closed. This does not validate every request made inside the driver. |
 
 Steam's achieved and unachieved icon bytes are downloaded by the existing approved, supervised icon reader while it computes content hashes. Up to 256 icons totaling 8 MiB, each no larger than 256 KiB, may accompany the normalized read as base64 preview data. If the XML would exceed 14 MiB, the receiver omits all preview data while retaining icon identities and the configuration read. The desktop decodes each preview with 1024-pixel dimension and 8 MiB allocation limits, reduces it to at most 128 pixels, and removes the encoded data before saving the remote snapshot. Preview bytes remain session-only in the host. The UI receives decoded pixels, never a network or filesystem capability.
+
+The frozen synchronization review may also carry cached icon previews for changed achievement/icon rows. These are bytes already fetched and hash-pinned by the existing approved icon reader, not a new download or worker operation. The review carries at most 4 MiB of previews, each no larger than 256 KiB. The desktop bounds decoding to 1024 pixels and 8 MiB allocation, reduces previews to at most 128 pixels, retains at most 8 MiB of decoded review previews and strips encoded bytes before review persistence or MCP exposure. Missing previews do not alter review rows, choices, or upload authority.
 | Project inventory | 32 MiB bounded file read; JSON depth 64; known format/schema 0/1; original bytes retained. | Inventory error; no migration/save capability. Full project/CSV/asset validation is pending. |
 | Broker | Loopback only; process-table attribution and Job/role checks; CONNECT only, approved DNS names, :443, 8 KiB header, 64 active clients; checked address connected directly. | Invalid client/request rejected; listener failure stops session. Tunnel lifecycle and total deadlines are reviewed separately from hostname parsing. |
 

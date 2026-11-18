@@ -1,6 +1,6 @@
 //! Supervised host orchestration. One job, one reviewed session, one image pair in
 //! memory at a time. The worker receives bytes and identities, never local paths.
-use crate::sync_previews::IconPreviews;
+use crate::sync_previews::{FrozenIcons, IconPreviews};
 use achimeld_application::{Catalog, Document, EntityKind, new_id};
 use achimeld_browser::worker::SteamReader;
 use achimeld_core::SteamAppId;
@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
+use std::sync::{Arc, mpsc};
 use std::time::Duration;
 
 const STEAM_ICON_SIZE: u32 = 256;
@@ -111,7 +111,7 @@ fn reconcile_deleted_history(
 pub(crate) enum Event {
     Summary(String),
     Banner(Box<Document>),
-    Review(Value),
+    Review(Value, Arc<FrozenIcons>),
     Progress(String),
     WaitingForSignIn(bool),
     Complete(Result<Document, String>),
@@ -230,6 +230,7 @@ pub(crate) struct Pending {
     pub events: mpsc::Receiver<Event>,
     pub approval: mpsc::SyncSender<Vec<(String, String)>>,
     pub review: Option<Value>,
+    pub explicit_review: bool,
     pub revision: u64,
     pub path: PathBuf,
     pub thread: Option<std::thread::JoinHandle<()>>,
@@ -446,6 +447,7 @@ impl Pending {
             events,
             approval,
             review: None,
+            explicit_review: false,
             revision,
             path,
             thread: Some(thread),
@@ -460,6 +462,7 @@ impl Pending {
         mut assets: impl AssetSource + Send + 'static,
         ctx: eframe::egui::Context,
         handshake_only: bool,
+        validate_and_sync: bool,
     ) -> Self {
         let baseline = document.clone();
         let cancel = Cancellation::default();
@@ -493,6 +496,7 @@ impl Pending {
                 let mut execution = SyncExecution {
                     approved: &approved,
                     draft_step_started: &mut draft_step_started,
+                    validate_and_sync,
                 };
                 run(
                     &destination,
@@ -539,6 +543,7 @@ impl Pending {
             events,
             approval,
             review: None,
+            explicit_review: false,
             revision,
             path,
             thread: Some(thread),
@@ -605,6 +610,21 @@ fn handshake(
     progress: &dyn Fn(Event) -> Result<(), String>,
     stage: &mut &'static str,
 ) -> Result<Document, String> {
+    let (mut reader, result) = validate_connection(path, document, stop, progress, stage)?;
+    close_steam(&mut reader, progress, stage, true)?;
+    progress(Event::Progress(
+        "Steam connection validated. Choose Synchronize to prepare a review.".into(),
+    ))?;
+    Ok(result)
+}
+
+fn validate_connection(
+    path: &Path,
+    document: &Document,
+    stop: &Cancellation,
+    progress: &dyn Fn(Event) -> Result<(), String>,
+    stage: &mut &'static str,
+) -> Result<(SteamReader, Document), String> {
     let app_id = SteamAppId::new(document.app_id()).map_err(|e| e.to_string())?;
     let mut reader = connect_steam(app_id, stop, progress, stage)?;
     stop.check().map_err(|e| e.to_string())?;
@@ -632,7 +652,6 @@ fn handshake(
             "Steam game banner unavailable; connection validation continues".into(),
         ))?;
     }
-    close_steam(&mut reader, progress, stage, true)?;
     if let Some(name) = name
         && result.project()["displayName"]
             .as_str()
@@ -642,10 +661,7 @@ fn handshake(
         project["displayName"] = json!(name);
         result = Document::from_parts(project, result.catalog().clone())?;
     }
-    progress(Event::Progress(
-        "Steam connection validated. Choose Synchronize to prepare a review.".into(),
-    ))?;
-    Ok(result)
+    Ok((reader, result))
 }
 
 fn close_steam(
@@ -692,6 +708,7 @@ fn cancelled_before_draft_step<T>(
 struct SyncExecution<'a> {
     approved: &'a mpsc::Receiver<Vec<(String, String)>>,
     draft_step_started: &'a mut bool,
+    validate_and_sync: bool,
 }
 
 fn run(
@@ -747,7 +764,7 @@ fn run_once(
     // and unchanged icons are not offered as uploads.
     *stage = "comparing achievement artwork";
     let mut hashes = serde_json::Map::new();
-    let mut artwork = BTreeMap::<String, (Vec<u8>, Vec<u8>)>::new();
+    let mut artwork = FrozenIcons::new();
     let mut artwork_bytes = 0usize;
     for entity in document.synchronized_entities(EntityKind::Achievement) {
         stop.check().map_err(|e| e.to_string())?;
@@ -787,14 +804,34 @@ fn run_once(
             artwork.insert(name.to_owned(), (achieved, unachieved));
         }
     }
-    let mut reader = connect_steam(app_id, stop, progress, stage)?;
+    let artwork = Arc::new(artwork);
+    // Freeze local artwork before opening the live browser. Steam's editor can
+    // issue later page requests, so keep the gap between validation and the
+    // first configuration read as short as possible.
+    let (mut reader, document) = if execution.validate_and_sync {
+        let (reader, validated) = validate_connection(path, &document, stop, progress, stage)?;
+        progress(Event::Progress(
+            "Steam connection validated. Preparing synchronization review…".into(),
+        ))?;
+        (Some(reader), validated)
+    } else {
+        (None, document)
+    };
+    let mut reader = match reader.take() {
+        Some(reader) => reader,
+        None => connect_steam(app_id, stop, progress, stage)?,
+    };
     *stage = "reading Steamworks configuration";
     progress(Event::Progress(
         "Reading Steam and comparing project fields…".into(),
     ))?;
+    let mut projected =
+        achimeld_application::style_achievements::synchronization_project(&document);
+    projected["syncAchievementSetTargets"] =
+        json!(achimeld_application::canvas::steam_set_targets(&document));
     let mut review = reader
         .prepare_sync(
-            achimeld_application::style_achievements::synchronization_project(&document),
+            projected,
             serde_json::to_value(&document.catalog().rows).map_err(|e| e.to_string())?,
             Value::Object(hashes),
         )
@@ -844,7 +881,7 @@ fn run_once(
             );
         }
 
-        progress(Event::Review(review))?;
+        progress(Event::Review(review, Arc::clone(&artwork)))?;
         *stage = "waiting for review approval";
         progress(Event::Progress(
             "Review the proposed Steam changes before synchronizing".into(),

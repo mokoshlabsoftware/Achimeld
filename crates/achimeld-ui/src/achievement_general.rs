@@ -25,6 +25,22 @@ pub(crate) fn full_text(
             .desired_width(f32::INFINITY),
     )
 }
+
+fn show_resolved_text(ui: &mut egui::Ui, entity: &Value, template: &str, tooltip: &str) {
+    if !template.contains("{0}") {
+        return;
+    }
+    ui.add_space(4.0);
+    let text = achimeld_application::document::resolve_achievement_text(entity, template);
+    ui.add(
+        egui::Label::new(egui::RichText::new(text).family(egui::FontFamily::Name(
+            crate::typography::BOLD_FAMILY.into(),
+        )))
+        .wrap(),
+    )
+    .on_hover_text(localization::text(ui.ctx(), tooltip));
+}
+
 /// Original 56 x 56 staggered-arrow wallpaper, clipped to the name header.
 pub(crate) fn stat_wallpaper(ui: &egui::Ui, rect: Rect) {
     let painter = ui.painter().with_clip_rect(rect.intersect(ui.clip_rect()));
@@ -311,28 +327,17 @@ impl Desktop {
                 self.open_layers();
             }
             ui.vertical(|ui| {
-                let template = crate::fields::row(ui, "InDisp", |ui| {
-                    self.english_field(
-                        ui,
-                        port,
-                        entity,
-                        "displayNameLocalizationId",
-                        NAME_FIELD_HEIGHT,
-                        false,
-                    )
-                });
-                if template.contains("{0}") {
-                    ui.add_space(4.0);
-                    let name =
-                        achimeld_application::document::resolve_achievement_text(entity, &template);
-                    ui.add(
-                        egui::Label::new(egui::RichText::new(name).family(egui::FontFamily::Name(
-                            crate::typography::BOLD_FAMILY.into(),
-                        )))
-                        .wrap(),
-                    )
-                    .on_hover_text(localization::text(ui.ctx(), "Name exported to Steam"));
-                }
+                ui.label(localization::text(ui.ctx(), "InDisp"));
+                ui.add_space(2.0);
+                let template = self.english_field(
+                    ui,
+                    port,
+                    entity,
+                    "displayNameLocalizationId",
+                    NAME_FIELD_HEIGHT,
+                    false,
+                );
+                show_resolved_text(ui, entity, &template, "Name exported to Steam");
             });
         });
         ui.add_space(10.0);
@@ -357,9 +362,11 @@ impl Desktop {
                     entity["steamSyncStatus"] = json!(status);
                 }
                 ui.add_space(8.0);
-                crate::fields::row(ui, "InDesc", |ui| {
-                    self.english_field(ui, port, entity, "descriptionLocalizationId", 54.0, true)
-                });
+                ui.label(localization::text(ui.ctx(), "InDesc"));
+                ui.add_space(2.0);
+                let template =
+                    self.english_field(ui, port, entity, "descriptionLocalizationId", 54.0, true);
+                show_resolved_text(ui, entity, &template, "Preview");
                 ui.add_space(8.0);
                 let mut api = entity["apiName"].as_str().unwrap_or("").to_owned();
                 if crate::fields::row(ui, "InApiN", |ui| {

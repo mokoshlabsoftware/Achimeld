@@ -251,6 +251,22 @@ internal static class BrowserFixtures
                 await allowed.Page.EvaluateAsync("() => fetch('/apps/getachievementcounts/480').then(r => r.text())");
                 allowed.Policy.RequireHealthy();
             }
+            var achievementPage = await Session();
+            await using (IBrowserContext context = achievementPage.Context)
+            {
+                int before = reached;
+                foreach (string endpoint in new[] { "ajaxgetstatsschema", "ajaxgetlanguagelist", "ajaxgetlanguageoptionslist" })
+                    await achievementPage.Page.EvaluateAsync("url => new Promise((resolve, reject) => { const request = new XMLHttpRequest(); request.open('GET', url); request.onload = resolve; request.onerror = reject; request.send(); })",
+                        $"/achievements/{endpoint}/480");
+                foreach (string route in new[] {
+                    "/um/Player/GetGlobalAchievementPercentages/?input_protobuf_encoded=COAD",
+                    "/um/Player/GetGameAchievements/?input_protobuf_encoded=COADEgdlbmdsaXNo" })
+                    await achievementPage.Page.EvaluateAsync("url => fetch(url).then(r => r.text())", route);
+                achievementPage.Policy.RequireHealthy();
+                if (reached != before + 5) throw new Exception("Pinned achievements page reads did not reach synthetic upstream.");
+            }
+            await Denied(page => page.EvaluateAsync("() => fetch('/um/Player/GetGlobalAchievementPercentages/?input_protobuf_encoded=COED').catch(() => {})"));
+            Console.WriteLine("PASS: pinned achievements page reads route; another App ID remains terminal.");
             var bounded = await Session("{\"ok\":true}");
             var media = await Session();
             await using (IBrowserContext context = media.Context)

@@ -11,7 +11,25 @@ namespace Achimeld.Browser;
 
 // Closed, content-free facts about a reviewed synchronization operation.
 public sealed record SyncOperationDiagnostic(string Phase, long PhaseElapsedMs, string Endpoint,
-    string WriteState, string ResponseClass);
+    string WriteState, string ResponseClass, uint SchemaMask = 0, string SchemaKind = "missing",
+    int SchemaItems = 0, int SchemaNamed = 0, int SchemaObjects = 0, int SchemaLargestArray = 0,
+    uint SchemaTypes = 0, uint SchemaContainerMask = 0, int SchemaContainerObjects = 0,
+    int SchemaContainerArrays = 0, uint DomFlags = 0, int DomTables = 0,
+    int DomTableRows = 0, int DomGridRows = 0, int DomFrames = 0,
+    int DomApiTokens = 0, int DomApiLeaves = 0, int DomAchievementClasses = 0,
+    int DomImages = 0, int DomButtons = 0, int DomListItems = 0,
+    int DomSingleTokenCards = 0, int DomCardsWithTwoImages = 0,
+    int DomCardsWithButtons = 0, int DomCardsWithIdText = 0,
+    int DomCardsWithInputs = 0, int DomLargestCardDepth = 0,
+    string DomCardLinePattern = "", int DomCardPatternMatches = 0,
+    int HtmlApiTokens = 0, int HtmlScripts = 0, uint HtmlFieldMask = 0,
+    int AppInfoApiTokens = 0, uint AppInfoFieldMask = 0,
+    uint DomExportMask = 0,
+    int ExportDefinitionsRows = 0, int ExportLocalizationRows = 0,
+    uint ExportDefinitionsHeaderMask = 0, uint ExportLocalizationHeaderMask = 0,
+    uint ExportTransportMask = 0,
+    int DomIconOrderEvidence = 0,
+    string DomLinkAction = "none");
 
 public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 {
@@ -38,9 +56,59 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
     private string _syncEndpoint = "none";
     private string _syncWriteState = "none";
     private string _syncResponseClass = "none";
+    private uint _syncSchemaMask;
+    private SteamworksSchemaOutline? _syncSchemaOutline;
+    private SteamworksAchievementPageShape? _syncDomShape;
+    private int _syncHtmlApiTokens;
+    private int _syncHtmlScripts;
+    private uint _syncHtmlFieldMask;
+    private int _syncAppInfoApiTokens;
+    private uint _syncAppInfoFieldMask;
+    private SteamworksCsvExportShape? _syncExportShape;
+    private SteamworksCsvExportData? _modernExport;
+    private Dictionary<string, ModernAchievementRecord> _modernAchievementRecords = new(StringComparer.Ordinal);
+    private bool _modernImportNeedsFreshPage;
+    private int _syncIconOrderEvidence;
+    private IReadOnlyDictionary<string, ModernAchievementIconPair> _priorIconPairs =
+        new Dictionary<string, ModernAchievementIconPair>(StringComparer.Ordinal);
+    private int _armedExportDownload;
     public SyncOperationDiagnostic SyncDiagnostic => new(_syncPhase,
         Math.Clamp((long)Stopwatch.GetElapsedTime(_syncPhaseStarted).TotalMilliseconds, 0, 300000),
-        _syncEndpoint, _syncWriteState, _syncResponseClass);
+        _syncEndpoint, _requestPolicy.ModernWritePartSequence is ulong sequence && sequence != 0
+            ? $"modern-part-sequence-{sequence}" :
+            _requestPolicy.ModernWriteIdentityLocations is uint locations && locations != 0
+            ? $"modern-id-parts-{locations}" :
+            _requestPolicy.ModernWriteIdentityShape is uint identityShape && identityShape != 0
+            ? $"modern-identity-shape-{identityShape}" :
+            _requestPolicy.ModernWriteRejectionMask is uint rejectedShape && rejectedShape != 0
+                ? $"modern-route-shape-{rejectedShape}" : _syncWriteState,
+        _syncResponseClass, _syncSchemaMask,
+        _syncSchemaOutline?.Kind ?? "missing", _syncSchemaOutline?.ItemCount ?? 0,
+        _syncSchemaOutline?.NamedCount ?? 0, _syncSchemaOutline?.ObjectCount ?? 0,
+        _syncSchemaOutline?.LargestArray ?? 0, _syncSchemaOutline?.TypeMask ?? 0,
+        _syncSchemaOutline?.ContainerMask ?? 0, _syncSchemaOutline?.ContainerObjects ?? 0,
+        _syncSchemaOutline?.ContainerArrays ?? 0, _syncDomShape?.Flags ?? 0,
+        _syncDomShape?.Tables ?? 0, _syncDomShape?.TableRows ?? 0,
+        _syncDomShape?.GridRows ?? 0, _syncDomShape?.Frames ?? 0,
+        _syncDomShape?.ApiTokens ?? 0, _syncDomShape?.ApiLeaves ?? 0,
+        _syncDomShape?.AchievementClasses ?? 0, _syncDomShape?.Images ?? 0,
+        _syncDomShape?.Buttons ?? 0, _syncDomShape?.ListItems ?? 0,
+        _syncDomShape?.SingleTokenCards ?? 0,
+        _syncDomShape?.CardsWithTwoImages ?? 0,
+        _syncDomShape?.CardsWithButtons ?? 0,
+        _syncDomShape?.CardsWithIdText ?? 0,
+        _syncDomShape?.CardsWithInputs ?? 0,
+        _syncDomShape?.LargestCardDepth ?? 0,
+        _syncDomShape?.CardLinePattern ?? "", _syncDomShape?.CardPatternMatches ?? 0,
+        _syncHtmlApiTokens, _syncHtmlScripts, _syncHtmlFieldMask,
+        _syncAppInfoApiTokens, _syncAppInfoFieldMask,
+        _syncDomShape?.ExportMask ?? 0,
+        _syncExportShape?.DefinitionsRows ?? 0, _syncExportShape?.LocalizationRows ?? 0,
+        _syncExportShape?.DefinitionsHeaderMask ?? 0,
+        _syncExportShape?.LocalizationHeaderMask ?? 0,
+        _syncExportShape?.TransportMask ?? 0,
+        _syncIconOrderEvidence,
+        _syncDomShape?.LinkAction ?? "none");
     public void BeginDiagnosticOperation()
     {
         Volatile.Write(ref _lastRequestFailure, null);
@@ -49,6 +117,16 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
         _syncEndpoint = "none";
         _syncWriteState = "none";
         _syncResponseClass = "none";
+        _syncSchemaMask = 0;
+        _syncSchemaOutline = null;
+        _syncDomShape = null;
+        _syncHtmlApiTokens = 0;
+        _syncHtmlScripts = 0;
+        _syncHtmlFieldMask = 0;
+        _syncAppInfoApiTokens = 0;
+        _syncAppInfoFieldMask = 0;
+        _syncExportShape = null;
+        _syncIconOrderEvidence = 0;
     }
     public void SetSyncDiagnosticPhase(string phase)
     {
@@ -56,8 +134,20 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
         _syncPhaseStarted = Stopwatch.GetTimestamp();
         _syncEndpoint = "none";
         _syncResponseClass = "none";
+        _syncSchemaMask = 0;
+        _syncSchemaOutline = null;
+        _syncDomShape = null;
+        _syncHtmlApiTokens = 0;
+        _syncHtmlScripts = 0;
+        _syncHtmlFieldMask = 0;
+        _syncAppInfoApiTokens = 0;
+        _syncAppInfoFieldMask = 0;
+        _syncExportShape = null;
+        _syncIconOrderEvidence = 0;
     }
     public void SetSyncDiagnosticWriteState(string state) => _syncWriteState = state;
+    public void SetPriorIconPairs(IReadOnlyDictionary<string, ModernAchievementIconPair> pairs) =>
+        _priorIconPairs = pairs;
     public void SetSyncDiagnosticEndpoint(string endpoint)
     {
         _syncEndpoint = endpoint;
@@ -103,7 +193,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
                     Proxy = new Proxy { Server = $"http://127.0.0.1:{settings.ProxyPort}" },
                     Headless = false,
                     ChromiumSandbox = true,
-                    AcceptDownloads = false,
+                    AcceptDownloads = true,
                     IgnoreHTTPSErrors = false,
                     BypassCSP = false,
                     Offline = true,
@@ -124,6 +214,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 
             // Never enable networking for restored pages from the persistent profile.
             _page = await BrowserStartup.CreateOwnedPageAsync(_context, _requestPolicy, () => _page).ConfigureAwait(false);
+            _page.Download += OnOwnedDownload;
             _context.Page += OnContextPage;
             await _context.SetOfflineAsync(false).ConfigureAwait(false);
             _started = true;
@@ -210,10 +301,100 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
 
     public async Task<ManagedPageDocument> ReadCompleteConfigurationAsync(SteamAppId appId)
     {
+        _modernExport = null;
+        _modernAchievementRecords.Clear();
         await EnterReadForAppAsync(appId).ConfigureAwait(false);
+        if (_modernImportNeedsFreshPage)
+        {
+            // Import Save leaves the editor on its upload preview. Reload the
+            // pinned app document before collecting cards and CSV exports for
+            // read-back; a stale preview can keep the export tab unclickable.
+            IPage readbackPage = await EnsurePageAsync().ConfigureAwait(false);
+            Uri canonical = new($"{SteamworksUrlGuard.AllowedOrigin}/apps/achievements/{appId.Value}");
+            SteamworksUrlGuard.EnsureAllowed(canonical, appId);
+            await readbackPage.GotoAsync(canonical.AbsoluteUri,
+                new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded })
+                .ConfigureAwait(false);
+            _requestPolicy.RequireHealthy();
+            _modernImportNeedsFreshPage = false;
+        }
         string stats = await ReadConfigurationJsonAsync(appId, "fetchstats").ConfigureAwait(false);
+        SetSyncDiagnosticWriteState("read-stats");
         string achievements = await ReadConfigurationJsonAsync(appId, "fetchachievements").ConfigureAwait(false);
+        char first = achievements.TrimStart().FirstOrDefault();
+        if (first == '<')
+        {
+            SetSyncDiagnosticWriteState("read-achievements-html");
+            _syncHtmlApiTokens = Math.Min(System.Text.RegularExpressions.Regex.Matches(
+                achievements, @"\bACHIEVEMENT_[A-Za-z0-9_]{1,80}\b")
+                .Select(match => match.Value).Distinct(StringComparer.Ordinal).Count(), 10000);
+            _syncHtmlScripts = Math.Min(System.Text.RegularExpressions.Regex.Matches(
+                achievements, @"<script\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Count, 10000);
+            foreach ((string field, int bit) in new[] { ("api_name", 0), ("display_name", 1),
+                ("description", 2), ("icon_gray", 3), ("bit_id", 4), ("permission", 5) })
+                if (achievements.Contains(field, StringComparison.Ordinal)) _syncHtmlFieldMask |= 1u << bit;
+            await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+            _syncDomShape = await SteamworksAchievementPageShape.ReadAsync(
+                await EnsurePageAsync().ConfigureAwait(false), appId).ConfigureAwait(false);
+            var cardRead = await SteamworksModernAchievementCards.ReadAsync(
+                await EnsurePageAsync().ConfigureAwait(false), _priorIconPairs).ConfigureAwait(false);
+            _syncIconOrderEvidence = cardRead.EvidenceCount;
+            Dictionary<string, ModernAchievementIconPair> iconPairs = cardRead.Pairs;
+            string schema = await ReadConfigurationJsonAsync(appId, "ajaxgetstatsschema").ConfigureAwait(false);
+            _modernAchievementRecords = ModernAchievementDraft.ReadRecords(schema);
+            _syncSchemaOutline = SteamworksSchemaShape.Describe(schema);
+            _syncSchemaMask = _syncSchemaOutline.Mask;
+            string appInfo = await ReadConfigurationJsonAsync(appId, "ajaxgetappinfo").ConfigureAwait(false);
+            _syncSchemaOutline = SteamworksSchemaShape.Describe(appInfo);
+            _syncSchemaMask = _syncSchemaOutline.Mask;
+            _syncAppInfoApiTokens = Math.Min(System.Text.RegularExpressions.Regex.Matches(
+                appInfo, @"\bACHIEVEMENT_[A-Za-z0-9_]{1,80}\b")
+                .Select(match => match.Value).Distinct(StringComparer.Ordinal).Count(), 10000);
+            foreach ((string field, int bit) in new[] { ("api_name", 0), ("display_name", 1),
+                ("description", 2), ("icon_gray", 3), ("bit_id", 4), ("permission", 5),
+                ("achievements", 6), ("localization", 7), ("stats", 8), ("setid", 9) })
+                if (appInfo.Contains(field, StringComparison.Ordinal)) _syncAppInfoFieldMask |= 1u << bit;
+            await _syncDomShape.ProbeExportControlsAsync(await EnsurePageAsync().ConfigureAwait(false)).ConfigureAwait(false);
+            SetSyncDiagnosticWriteState("modern-export-reading");
+            SteamworksCsvExportData export = await SteamworksCsvExportProbe.ReadAsync(
+                await EnsurePageAsync().ConfigureAwait(false), appId,
+                armed => Volatile.Write(ref _armedExportDownload, armed ? 1 : 0)).ConfigureAwait(false);
+            _modernExport = export;
+            _syncExportShape = export.Shape;
+            SetSyncDiagnosticWriteState("modern-export-probed");
+            string modernJson = ModernSteamworksConfiguration.AchievementJson(export, iconPairs,
+                SetSyncDiagnosticWriteState);
+            SetSyncDiagnosticWriteState("modern-export-adapted");
+            // The export tab hides every achievement card. Leave the supervised
+            // browser on the verified management view for the review precheck.
+            IPage modernPage = await EnsurePageAsync().ConfigureAwait(false);
+            ILocator manageTab = modernPage.GetByText("Manage Achievements", new() { Exact = true });
+            if (await manageTab.CountAsync().ConfigureAwait(false) != 1)
+                throw new UnsupportedPortalStructureException("The achievement management tab is unavailable.");
+            await manageTab.ClickAsync().ConfigureAwait(false);
+            await modernPage.WaitForFunctionAsync(
+                "expected => [...document.querySelectorAll('*')].filter(element => element.children.length === 0 && /^ACHIEVEMENT_[A-Za-z0-9_]{1,80}$/.test((element.textContent || '').trim())).length === expected",
+                iconPairs.Count, new() { Timeout = 15000 }).ConfigureAwait(false);
+            var restoredCards = await SteamworksModernAchievementCards.ReadAsync(modernPage, _priorIconPairs)
+                .ConfigureAwait(false);
+            if (restoredCards.Pairs.Count != iconPairs.Count)
+                throw new UnsupportedPortalStructureException("The achievement management view is incomplete.");
+            SetSyncDiagnosticWriteState("modern-management-restored");
+            await ReadIconContentHashesAsync(modernJson).ConfigureAwait(false);
+            SetSyncDiagnosticWriteState("read-icons");
+            return ModernSteamworksConfiguration.RemoveSyntheticAchievementIds(
+                LiveSteamworksConfiguration.Normalize(appId, stats, modernJson,
+                    _iconContentHashes, _iconPreviewBytes));
+        }
+        else if (first is not ('{' or '[')) SetSyncDiagnosticWriteState("read-achievements-non-json");
+        using (JsonDocument shape = JsonDocument.Parse(achievements))
+        {
+            SetSyncDiagnosticWriteState(shape.RootElement.ValueKind == JsonValueKind.Object &&
+                shape.RootElement.TryGetProperty("achievements", out JsonElement rows) && rows.ValueKind == JsonValueKind.Array
+                ? "read-achievements-array" : "read-achievements-other");
+        }
         await ReadIconContentHashesAsync(achievements).ConfigureAwait(false);
+        SetSyncDiagnosticWriteState("read-icons");
         return LiveSteamworksConfiguration.Normalize(appId, stats, achievements, _iconContentHashes, _iconPreviewBytes);
     }
 
@@ -256,6 +437,17 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
             }).ConfigureAwait(false);
         foreach ((string url, string hash) in hashes) _iconContentHashes[url] = hash;
     }
+    public byte[]? CachedIconPreview(RemoteIconMetadata icon, bool unachieved)
+    {
+        Uri? uri = unachieved ? icon.UnachievedPreviewUri : icon.AchievedPreviewUri;
+        string? identity = unachieved ? icon.UnachievedIdentity : icon.AchievedIdentity;
+        if (uri is null || identity is null ||
+            !_iconContentHashes.TryGetValue(uri.AbsoluteUri, out string? hash) ||
+            hash != identity ||
+            !_iconPreviewBytes.TryGetValue(uri.AbsoluteUri, out byte[]? bytes) ||
+            bytes.Length is < 1 or > 256 * 1024) return null;
+        return bytes.ToArray();
+    }
     private async Task<byte[]> DownloadIconAsync(string url)
     {
         Uri uri = new(url);
@@ -276,8 +468,34 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
         Volatile.Write(ref _lastRequestFailure, null);
         Uri uri = _requestPolicy.ConfigurationUri(appId.Value, endpoint);
         IPage page = await EnsurePageAsync().ConfigureAwait(false);
-        return await page.EvaluateAsync<string>(FixedReadScripts.Configuration, new { url = uri.AbsoluteUri, maximumBytes = 16 * 1024 * 1024,
-            timeoutMs = (int)ChromeLaunchSettings.DefaultTimeout.TotalMilliseconds }).ConfigureAwait(false);
+        // The response class is safe to retain even when the fixed browser read
+        // rejects the body. Never record its URL, headers or contents.
+        void ObserveResponse(object? _, IResponse response)
+        {
+            if (response.Url == uri.AbsoluteUri) SetSyncDiagnosticResponseStatus(response.Status);
+        }
+        page.Response += ObserveResponse;
+        try
+        {
+            return await page.EvaluateAsync<string>(FixedReadScripts.Configuration, new { url = uri.AbsoluteUri, maximumBytes = 16 * 1024 * 1024,
+                timeoutMs = (int)ChromeLaunchSettings.DefaultTimeout.TotalMilliseconds }).ConfigureAwait(false);
+        }
+        catch (PlaywrightException exception)
+        {
+            // Match only fixed literals from the bundled read script. The raw
+            // exception may contain browser data and must never leave the worker.
+            string reason = exception.Message switch
+            {
+                var message when message.Contains("AchimeldRead:status", StringComparison.Ordinal) => "read-status",
+                var message when message.Contains("AchimeldRead:url", StringComparison.Ordinal) => "read-url",
+                var message when message.Contains("AchimeldRead:body", StringComparison.Ordinal) => "read-body",
+                var message when message.Contains("AchimeldRead:size", StringComparison.Ordinal) => "read-size",
+                _ => "read-other",
+            };
+            SetSyncDiagnosticWriteState(reason);
+            throw;
+        }
+        finally { page.Response -= ObserveResponse; }
     }
 
     public async Task CloseForUrgentReadCancellationAsync()
@@ -329,6 +547,19 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
         }
     }
 
+    private async void OnOwnedDownload(object? sender, IDownload download)
+    {
+        if (Volatile.Read(ref _armedExportDownload) != 0) return;
+        _requestPolicy.Reject(BrowserRequestRejection.Other);
+        try
+        {
+            await download.CancelAsync().ConfigureAwait(false);
+            await download.DeleteAsync().ConfigureAwait(false);
+        }
+        catch (PlaywrightException) { }
+        catch (IOException) { }
+    }
+
     private async Task RejectUnexpectedPopupsAsync()
     {
         bool rejected = false;
@@ -359,6 +590,7 @@ public sealed partial class PlaywrightChromeDriver : IAsyncDisposable
             if (_context is not null)
             {
                 _context.Page -= OnContextPage;
+                if (_page is not null) _page.Download -= OnOwnedDownload;
                 await BrowserShutdown.CloseAsync(_context).ConfigureAwait(false);
             }
         }

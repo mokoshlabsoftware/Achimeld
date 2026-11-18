@@ -1,7 +1,7 @@
 use crate::{Desktop, buttons, localization, steam, style_picker::Glyph};
 use achimeld_application::{Command, EditorPort, UiRequest};
 use achimeld_core::SteamAppId;
-use egui::{Align, Color32, Rect, Sense, Vec2};
+use egui::{Align, Color32, Pos2, Rect, Sense, Vec2};
 use std::collections::BTreeSet;
 use std::time::{Duration, Instant};
 
@@ -20,12 +20,6 @@ pub(crate) struct SyncWarning {
     delete_stats: usize,
     projected_achievements: u64,
     above_default_limit: bool,
-}
-
-pub(crate) struct ValidationFollowup {
-    pub project_id: String,
-    pub app_id: u32,
-    pub saw_validation: bool,
 }
 
 pub(crate) fn parse_app_id(text: &str) -> Option<u32> {
@@ -52,6 +46,141 @@ pub(crate) fn sync_review_group(row: &serde_json::Value) -> u8 {
     } else {
         1
     }
+}
+
+fn comparison_items(rows: &[serde_json::Value]) -> Vec<(String, String)> {
+    let mut sorted = rows
+        .iter()
+        .filter(|row| row["state"] != "InSync")
+        .collect::<Vec<_>>();
+    sorted.sort_by_key(|row| sync_review_group(row));
+    let mut seen = BTreeSet::new();
+    sorted
+        .into_iter()
+        .filter_map(|row| {
+            let kind = if row["kind"] == "Stat" {
+                "Stat"
+            } else {
+                "Achievement"
+            };
+            let api = row["apiName"].as_str()?;
+            let identity = (kind.to_owned(), api.to_owned());
+            seen.insert(identity.clone()).then_some(identity)
+        })
+        .collect()
+}
+
+fn fallback_art(ctx: &egui::Context, kind: &str) -> egui::TextureId {
+    let (name, bytes): (&str, &[u8]) = if kind == "Stat" {
+        ("stat", include_bytes!("../assets/toolbar/tab-stats.rgba"))
+    } else {
+        (
+            "achievement",
+            include_bytes!("../assets/toolbar/tab-achievements.rgba"),
+        )
+    };
+    let id = egui::Id::new(("sync-card-art", name));
+    let texture = ctx
+        .data(|data| data.get_temp::<egui::TextureHandle>(id))
+        .unwrap_or_else(|| {
+            let texture = ctx.load_texture(
+                format!("sync-card-art-{name}"),
+                egui::ColorImage::from_rgba_unmultiplied([64, 64], bytes),
+                egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)),
+            );
+            ctx.data_mut(|data| data.insert_temp(id, texture.clone()));
+            texture
+        });
+    texture.id()
+}
+
+// Keep the right edge anchored while transitioning to the panel's height.
+// Crop the texture coordinates to keep all artwork inside the card.
+pub(crate) fn review_card_art(
+    texture: egui::TextureId,
+    card: Rect,
+    aspect: f32,
+    openness: f32,
+) -> egui::Shape {
+    let aspect = aspect.clamp(0.1, 10.0);
+    let height = card.height() * egui::lerp(3.0..=1.0, openness);
+    let width = height * aspect;
+    let image = Rect::from_min_size(
+        Pos2::new(card.right() - width, card.top()),
+        Vec2::new(width, height),
+    );
+    let shown = card.intersect(image);
+    if shown.width() <= 0.0 || shown.height() <= 0.0 {
+        return egui::Shape::Noop;
+    }
+    let uv = |point: Pos2| {
+        Pos2::new(
+            (point.x - image.left()) / image.width(),
+            (point.y - image.top()) / image.height(),
+        )
+    };
+    let mut mesh = egui::Mesh::with_texture(texture);
+    for point in [
+        shown.left_top(),
+        shown.right_top(),
+        shown.right_bottom(),
+        shown.left_bottom(),
+    ] {
+        mesh.vertices.push(egui::epaint::Vertex {
+            pos: point,
+            uv: uv(point),
+            color: Color32::from_white_alpha(egui::lerp(128.0..=255.0, openness).round() as u8),
+        });
+    }
+    mesh.indices.extend_from_slice(&[0, 1, 2, 0, 2, 3]);
+    egui::Shape::mesh(mesh)
+}
+
+fn comparison_texture(
+    desktop: &mut Desktop,
+    ctx: &egui::Context,
+    key: &str,
+    preview: Option<achimeld_application::Preview>,
+) -> Option<(egui::TextureId, Vec2)> {
+    let preview = preview?;
+    let edge = preview.width.max(preview.height).max(1) as f32;
+    let size = Vec2::new(preview.width as f32, preview.height as f32) * (148.0 / edge);
+    desktop
+        .preview_texture(ctx, key, preview)
+        .map(|texture| (texture, size))
+}
+
+fn comparison_image_row(
+    ui: &mut egui::Ui,
+    title: &str,
+    local: Option<(egui::TextureId, Vec2)>,
+    steam: Option<(egui::TextureId, Vec2)>,
+) {
+    ui.strong(title);
+    ui.columns(2, |columns| {
+        for (index, label, image) in [(0, "Achimeld", local), (1, "Steam", steam)] {
+            let column = &mut columns[index];
+            column.strong(label);
+            if let Some((texture, size)) = image {
+                column.add(egui::Image::new((texture, size)));
+            } else {
+                column.weak("No preview available");
+            }
+        }
+    });
+    ui.add_space(8.0);
+}
+
+fn comparison_field_label(field: &str) -> String {
+    for prefix in ["AchievementDisplayName", "StatDisplayName"] {
+        if let Some(language) = field.strip_prefix(prefix) {
+            return format!("Display name{language}");
+        }
+    }
+    if let Some(language) = field.strip_prefix("AchievementDescription") {
+        return format!("Description{language}");
+    }
+    field.into()
 }
 
 /// How far the open project has confirmed access to its Steam partner destination.
@@ -234,37 +363,8 @@ impl Desktop {
         {
             return;
         }
-        self.validation_followup = Some(ValidationFollowup {
-            project_id: port.editor().document().project()["projectId"]
-                .as_str()
-                .unwrap_or("")
-                .to_owned(),
-            app_id: port.editor().document().app_id(),
-            saw_validation: false,
-        });
-        self.run_sync_action(port);
-    }
-
-    pub(crate) fn continue_validation_followup(&mut self, port: &dyn EditorPort) {
-        let Some(mut followup) = self.validation_followup.take() else {
-            return;
-        };
-        if port.editor().document().project()["projectId"].as_str()
-            != Some(followup.project_id.as_str())
-            || port.editor().document().app_id() != followup.app_id
-            || port.synchronization_error().is_some()
-        {
-            return;
-        }
-        if port.synchronizing() {
-            followup.saw_validation = true;
-            self.validation_followup = Some(followup);
-        } else if followup.saw_validation && port.synchronization_verified() {
-            self.sync_confirmation = None;
-            self.request(UiRequest::PrepareSynchronization);
-        } else if !followup.saw_validation {
-            self.validation_followup = Some(followup);
-        }
+        self.sync_confirmation = None;
+        self.request(UiRequest::ValidateAndSynchronize);
     }
 
     pub(crate) fn confirm_sync_plan(&mut self, port: &dyn EditorPort) {
@@ -411,11 +511,13 @@ impl Desktop {
     pub(crate) fn sync_plan_window(&mut self, ctx: &egui::Context, port: &mut dyn EditorPort) {
         let Some(review) = port.synchronization_review() else {
             self.sync_plan_token = None;
+            self.sync_comparison = None;
             self.sync_review_started = None;
             return;
         };
         let Some((token, app_id)) = self.sync_review_identity(port) else {
             self.sync_plan_token = review["token"].as_str().map(str::to_owned);
+            self.sync_comparison = None;
             self.sync_review_started = None;
             let choice = steam::review_prompt(
                 ctx,
@@ -471,6 +573,7 @@ impl Desktop {
             .count();
         if self.sync_token != token {
             self.sync_token = token.clone();
+            self.sync_comparison = None;
             self.sync_warning = None;
             self.sync_plan_token = Some(token.clone());
             self.sync_confirmation = Some((token.clone(), app_id));
@@ -507,6 +610,7 @@ impl Desktop {
             if review["reconciliation"] == true {
                 for row in rows {
                     if row["state"] != "InSync"
+                        && row["requiresExplicitUpload"] != true
                         && row["actions"]
                             .as_array()
                             .is_some_and(|actions| actions.iter().any(|action| action == "Upload"))
@@ -517,9 +621,14 @@ impl Desktop {
                 }
             }
             self.sync_review_elapsed = Duration::ZERO;
-            self.sync_review_paused = review["reconciliation"] == true;
+            self.sync_review_paused =
+                review["reconciliation"] == true || review["explicitApproval"] == true;
             self.sync_review_started =
                 (!self.sync_review_paused && self.sync_selected_count(port) > 0).then(Instant::now);
+        }
+        if self.sync_comparison.is_some() {
+            self.sync_comparison_window(ctx, port, rows);
+            return;
         }
         if let Some(warning) = self.sync_warning.take() {
             let same_choices = warning.token == token
@@ -587,8 +696,17 @@ impl Desktop {
         let selected = self.sync_selected_count(port);
         let (delete_achievements, delete_stats, projected_achievements) =
             self.sync_warning_counts(review);
-        let requires_explicit =
+        let requires_warning =
             delete_achievements + delete_stats > 0 || projected_achievements > 100;
+        let changes_set = rows.iter().any(|row| {
+            row["requiresExplicitUpload"] == true
+                && row["key"].as_str().is_some_and(|key| {
+                    self.sync_choices
+                        .get(key)
+                        .is_some_and(|action| action == "Upload")
+                })
+        });
+        let requires_explicit = requires_warning || changes_set;
         if requires_explicit {
             self.sync_review_started = None;
             self.sync_review_paused = true;
@@ -605,6 +723,7 @@ impl Desktop {
             selected > 0 && !self.sync_review_paused && self.sync_review_started.is_some();
         let progress = (selected > 0).then(|| remaining.as_secs_f32() / 5.0);
         let mut changed = false;
+        let mut open_comparison = None;
         let choice = steam::review_prompt_wide(
             ctx,
             "sync-plan-review",
@@ -619,8 +738,10 @@ impl Desktop {
                 steam::ReviewAction {
                     colors: None,
                     enabled: !requires_explicit && (running || selected > 0),
-                    label: if requires_explicit {
+                    label: if requires_warning {
                         "Confirmation required"
+                    } else if changes_set {
+                        "Countdown stopped"
                     } else if running {
                         "Stop"
                     } else {
@@ -665,9 +786,11 @@ impl Desktop {
                             "Synchronization starts in {:.1} s. Press Stop to edit the plan.",
                             remaining.as_secs_f32()
                         )
-                    } else if requires_explicit {
+                    } else if requires_warning {
                         "Select Synchronize now to review the deletion or achievement limit warning."
                             .into()
+                    } else if changes_set {
+                        "Select Synchronize now to apply the reviewed achievement set change.".into()
                     } else if self.sync_review_paused {
                         "Countdown stopped. Edit the plan, then start it again or synchronize now."
                             .into()
@@ -719,22 +842,52 @@ impl Desktop {
                         group = Some(next_group);
                     }
                     let key = row["key"].as_str().unwrap_or("");
+                    let kind = row["kind"].as_str().unwrap_or("");
+                    let api = row["apiName"].as_str().unwrap_or("");
+                    let project_art = (kind != "Stat")
+                        .then(|| port.synchronization_icon_preview(api, false))
+                        .flatten();
+                    let needs_project_art =
+                        kind != "Stat" && project_art.is_none() && row["hasArtwork"] == true;
+                    let preview = project_art.or_else(|| {
+                        (kind != "Stat")
+                            .then(|| port.steam_icon_preview(api, false))
+                            .flatten()
+                    });
+                    let artwork = preview.and_then(|preview| {
+                        let aspect = preview.width as f32 / preview.height.max(1) as f32;
+                        self.preview_texture(ui.ctx(), &format!("sync-card:{api}"), preview)
+                            .map(|texture| (texture, aspect))
+                    });
+                    let art = artwork.unwrap_or_else(|| (fallback_art(ui.ctx(), kind), 1.0));
+                    let panel_color = crate::theme::color(port.preferences(), "Panel");
+                    let label = |text: String| {
+                        let text = egui::RichText::new(text);
+                        if artwork.is_some() {
+                            text.background_color(panel_color)
+                        } else {
+                            text
+                        }
+                    };
                     ui.push_id(key, |ui| {
-                        egui::Frame::new()
-                            .fill(crate::theme::color(port.preferences(), "Panel"))
+                        let mut art_slot = None;
+                        let panel = egui::Frame::new()
+                            .fill(panel_color)
                             .corner_radius(0)
                             .inner_margin(10)
                             .show(ui, |ui| {
+                                art_slot = Some(ui.painter().add(egui::Shape::Noop));
                                 ui.set_width(ui.available_width());
                                 let mut imported = false;
                                 ui.horizontal_wrapped(|ui| {
-                                    ui.strong(format!(
+                                    ui.strong(label(format!(
                                         "{} · {}",
                                         row["kind"].as_str().unwrap_or(""),
                                         row["apiName"].as_str().unwrap_or("")
-                                    ));
+                                    )));
                                     ui.add_space(8.0);
-                                    ui.weak(match row["state"].as_str().unwrap_or("") {
+                                    let state = row["state"].as_str().unwrap_or("");
+                                    let status = match state {
                                         "LocalOnly" => "Only in project",
                                         "SteamOnly" => "Only on Steam",
                                         "LocalChanged" => "Project changed",
@@ -744,7 +897,18 @@ impl Desktop {
                                         "ArtworkUnavailable" => "Artwork unavailable",
                                         "RenamedOnSteam" => "Renamed on Steam · import keeps the old entry as Retired",
                                         value => value,
-                                    });
+                                    };
+                                    if state == "Conflict" {
+                                        if ui.add(buttons::Button::new(status).bar()
+                                            .resting_colors(crate::theme::color(port.preferences(), "Panel"),
+                                                crate::theme::color(port.preferences(), "Error")))
+                                            .clicked()
+                                        {
+                                            open_comparison = Some((if kind == "Stat" { "Stat" } else { "Achievement" }.into(), api.into()));
+                                        }
+                                    } else {
+                                        ui.weak(label(status.into()));
+                                    }
                                     ui.add_space(8.0);
                                     let entry = self.sync_choices.entry(key.into()).or_insert_with(|| "Skip".into());
                                     if let Some(default) = row["defaultAction"]
@@ -752,7 +916,7 @@ impl Desktop {
                                         .filter(|action| *action != "Skip")
                                     {
                                         let mut included = entry != "Skip";
-                                        if ui.checkbox(&mut included, "Include").changed() {
+                                        if ui.checkbox(&mut included, label("Include".into())).changed() {
                                             *entry = if included { default } else { "Skip" }.into();
                                             imported = included && default == "Import";
                                             changed = true;
@@ -786,34 +950,58 @@ impl Desktop {
                                     );
                                 }
                                 if row["state"] == "ArtworkUnavailable" {
-                                    ui.weak("Artwork could not be generated. Repair its source in the Art Data Bank before uploading icons.");
+                                    ui.weak(label("Artwork could not be generated. Repair its source in the Art Data Bank before uploading icons.".into()));
                                 }
                                 if let Some(error) = row["uploadError"].as_str() {
-                                    ui.colored_label(crate::theme::color(port.preferences(), "Warning"), error);
+                                    ui.colored_label(crate::theme::color(port.preferences(), "Warning"), label(error.into()));
                                 }
                                 let fields = row["fields"].as_array().map(Vec::as_slice).unwrap_or_default();
-                                if !fields.is_empty() {
-                                    egui::CollapsingHeader::new(format!(
+                                if fields.is_empty() {
+                                    return 0.0;
+                                }
+                                let details = egui::CollapsingHeader::new(label(format!(
                                         "{} field {}",
                                         fields.len(),
                                         if fields.len() == 1 { "difference" } else { "differences" }
-                                    ))
-                                    .show(ui, |ui| {
-                                        for field in fields {
-                                            ui.label(field["field"].as_str().unwrap_or(""));
-                                            ui.horizontal_wrapped(|ui| {
-                                                ui.label(format!("Project: {}", field["local"].as_str().unwrap_or("")));
-                                                ui.label(format!("Steam: {}", field["steam"].as_str().unwrap_or("")));
-                                            });
-                                        }
-                                    });
-                                }
+                                )))
+                                .id_salt("sync-fields")
+                                .show(ui, |ui| {
+                                    ui.spacing_mut().item_spacing.x = 12.0;
+                                    for field in fields {
+                                        ui.label(label(field["field"].as_str().unwrap_or("").into()));
+                                        ui.horizontal_wrapped(|ui| {
+                                            ui.label(label(format!("Project: {}", field["local"].as_str().unwrap_or(""))));
+                                            ui.label(label(format!("Steam: {}", field["steam"].as_str().unwrap_or(""))));
+                                        });
+                                    }
+                                });
+                                let fields_id = details.header_response.id;
+                                let open = egui::collapsing_header::CollapsingState::load(ui.ctx(), fields_id)
+                                    .is_some_and(|state| state.is_open());
+                                ui.ctx().animate_bool_with_time_and_easing(
+                                    fields_id.with("artwork"), open, 0.3, egui::emath::easing::cubic_in_out,
+                                )
                             });
+                        if let Some(slot) = art_slot {
+                            let openness = if artwork.is_some() { panel.inner } else { 0.0 };
+                            ui.painter().set(slot, review_card_art(art.0, panel.response.rect, art.1, openness));
+                        }
+                        if needs_project_art && ui.is_rect_visible(panel.response.rect) {
+                            self.request(UiRequest::PreviewSynchronizationIcons(api.into()));
+                        }
                     });
                     ui.add_space(4.0);
                 }
             },
         );
+        if let Some(comparison) = open_comparison {
+            self.sync_review_elapsed = elapsed;
+            self.sync_review_started = None;
+            self.sync_review_paused = true;
+            self.sync_comparison = Some(comparison);
+            self.sync_comparison_reset_scroll = true;
+            return;
+        }
         if changed && !self.sync_review_paused {
             self.sync_review_elapsed = Duration::ZERO;
             self.sync_review_started = (self.sync_selected_count(port) > 0).then(Instant::now);
@@ -849,6 +1037,194 @@ impl Desktop {
         }
         if running {
             ctx.request_repaint_after(Duration::from_millis(16));
+        }
+    }
+
+    fn sync_comparison_window(
+        &mut self,
+        ctx: &egui::Context,
+        port: &dyn EditorPort,
+        rows: &[serde_json::Value],
+    ) {
+        let items = comparison_items(rows);
+        let Some(current) = self.sync_comparison.as_ref() else {
+            return;
+        };
+        let Some(index) = items.iter().position(|item| item == current) else {
+            self.sync_comparison = None;
+            return;
+        };
+        let (kind, api) = &items[index];
+        let fields = rows
+            .iter()
+            .filter(|row| {
+                row["apiName"].as_str() == Some(api.as_str())
+                    && row["kind"].as_str() == Some(kind.as_str())
+            })
+            .flat_map(|row| row["fields"].as_array().into_iter().flatten())
+            .collect::<Vec<_>>();
+        let icon_differs = kind == "Achievement"
+            && rows.iter().any(|row| {
+                row["kind"] == "Icon"
+                    && row["apiName"].as_str() == Some(api.as_str())
+                    && row["state"] != "InSync"
+            });
+        let has_local_art = rows.iter().any(|row| {
+            row["apiName"].as_str() == Some(api.as_str())
+                && row["kind"] == "Icon"
+                && row["hasArtwork"] == true
+        });
+        if has_local_art && port.synchronization_icon_preview(api, false).is_none() {
+            self.request(UiRequest::PreviewSynchronizationIcons(api.clone()));
+        }
+        let local_achieved = comparison_texture(
+            self,
+            ctx,
+            &format!("sync-compare-local:{api}"),
+            port.synchronization_icon_preview(api, false),
+        );
+        let local_unachieved = comparison_texture(
+            self,
+            ctx,
+            &format!("sync-compare-local-locked:{api}"),
+            port.synchronization_icon_preview(api, true),
+        );
+        let steam_achieved = comparison_texture(
+            self,
+            ctx,
+            &format!("sync-compare-steam:{api}"),
+            port.steam_icon_preview(api, false),
+        );
+        let steam_unachieved = comparison_texture(
+            self,
+            ctx,
+            &format!("sync-compare-steam-locked:{api}"),
+            port.steam_icon_preview(api, true),
+        );
+        let reset_scroll = std::mem::take(&mut self.sync_comparison_reset_scroll);
+        let mut navigate = None;
+        let decision = steam::review_prompt_wide(
+            ctx,
+            "sync-compare-versions",
+            "Compare versions",
+            steam::glyph_image(
+                ctx,
+                "tab-sync",
+                include_bytes!("../assets/toolbar/tab-sync.rgba"),
+                24.0,
+            ),
+            &[steam::ReviewAction {
+                colors: None,
+                enabled: true,
+                label: "Back to review",
+                icon: Glyph::Cancel.image(ctx, 20.0),
+            }],
+            None,
+            |ui| {
+                if reset_scroll {
+                    ui.scroll_to_cursor(Some(Align::TOP));
+                }
+                let width = ui.available_width();
+                ui.horizontal_centered(|ui| {
+                    let nav_width = 88.0;
+                    let nav_height = buttons::bar_height(ui, 20.0);
+                    if ui
+                        .add_enabled(
+                            index > 0,
+                            buttons::Button::new("Previous")
+                                .bar()
+                                .min_size(Vec2::new(nav_width, nav_height)),
+                        )
+                        .clicked()
+                    {
+                        navigate = Some(index - 1);
+                    }
+                    ui.vertical(|ui| {
+                        ui.set_width((width - 2.0 * nav_width - 24.0).max(120.0));
+                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                        ui.strong(format!("{kind} · {api}"));
+                        ui.weak(format!("{} of {} differences", index + 1, items.len()));
+                        ui.add_space(12.0);
+                        if kind == "Achievement" {
+                            ui.strong(if icon_differs {
+                                "Icon artwork differs"
+                            } else {
+                                "Icon artwork"
+                            });
+                            comparison_image_row(ui, "Achieved", local_achieved, steam_achieved);
+                            comparison_image_row(
+                                ui,
+                                "Unachieved",
+                                local_unachieved,
+                                steam_unachieved,
+                            );
+                        } else {
+                            ui.weak("Stats do not have achievement icons.");
+                            ui.add_space(8.0);
+                        }
+                        if fields.is_empty() {
+                            ui.weak("No name, description or definition field differences.");
+                        } else {
+                            ui.strong(format!(
+                                "{} field {}",
+                                fields.len(),
+                                if fields.len() == 1 {
+                                    "difference"
+                                } else {
+                                    "differences"
+                                }
+                            ));
+                            for field in &fields {
+                                ui.add_space(8.0);
+                                ui.strong(comparison_field_label(
+                                    field["field"].as_str().unwrap_or(""),
+                                ));
+                                ui.columns(2, |columns| {
+                                    for (side, label, value) in [
+                                        (0, "Achimeld", field["local"].as_str().unwrap_or("")),
+                                        (1, "Steam", field["steam"].as_str().unwrap_or("")),
+                                    ] {
+                                        let column = &mut columns[side];
+                                        column.weak(label);
+                                        egui::Frame::new()
+                                            .fill(crate::theme::color(port.preferences(), "Panel"))
+                                            .inner_margin(8)
+                                            .show(column, |ui| {
+                                                ui.set_width(ui.available_width());
+                                                ui.label(if value.is_empty() {
+                                                    "(empty)"
+                                                } else {
+                                                    value
+                                                });
+                                            });
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    if ui
+                        .add_enabled(
+                            index + 1 < items.len(),
+                            buttons::Button::new("Next")
+                                .bar()
+                                .min_size(Vec2::new(nav_width, nav_height)),
+                        )
+                        .clicked()
+                    {
+                        navigate = Some(index + 1);
+                    }
+                });
+            },
+        );
+        if let Some(next) = navigate {
+            self.sync_comparison = Some(items[next].clone());
+            self.sync_comparison_reset_scroll = true;
+            ctx.request_repaint();
+        } else if matches!(
+            decision,
+            steam::ReviewChoice::Action(_) | steam::ReviewChoice::Dismissed
+        ) {
+            self.sync_comparison = None;
         }
     }
 

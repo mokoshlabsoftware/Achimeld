@@ -19,6 +19,8 @@ Start with the visible status/error and the operation that produced it. Preserve
 | Steam tab is disabled | Check App ID and Sync validation state |
 | Counts match but Sync has differences | Counts do not compare field values or icon artwork |
 | Previous-session validation is shown | Re-validate; the saved snapshot is not fresh connectivity evidence |
+| Validation stops during Steam sign-in with a blocked dynamic page request | Check the running Achimeld version and update to a build with current Steamworks page support. If it still stops, keep the runtime log and report the request categories. Retrying the same build or deleting the browser profile will not change its request policy |
+| Achievement name Save times out during draft readback | Start a fresh validation and synchronization review. Check whether the selected name now shows Up to date before considering another upload. A timeout after Save does not establish that the Steam draft rejected the change |
 | Interrupted synchronization | Read again and review the reconciliation plan |
 | Steam synchronization exceeds 100 achievements | Review selected deletions and new uploads. Unvetted apps are limited to 100; an eligible vetted app can explicitly continue above 100. Deletion requires separate confirmation |
 | Save was interrupted/files changed externally | Preserve project, companion catalog and artwork; follow recovery guidance rather than overwriting |

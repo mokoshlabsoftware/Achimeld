@@ -592,6 +592,7 @@ internal static class V1ProjectMapper
     private static V1RemoteAchievementDto ToDto(RemoteAchievement value) => new()
     {
         SteamId = value.SteamId,
+        SetId = value.SetId,
         ApiName = value.ApiName.Value,
         InternalName = value.ApiName.Value,
         Hidden = value.Hidden,
@@ -610,7 +611,7 @@ internal static class V1ProjectMapper
         value.ProgressStatApiName is null ? null : new SteamApiName(value.ProgressStatApiName),
         value.UnlockValue,
         value.DisplayOrder,
-        value.ContentFingerprint);
+        value.ContentFingerprint) { SetId = value.SetId };
 
     private static V1RemoteLocalizationDto ToDto(RemoteLocalization value) => new()
     {

@@ -15,6 +15,18 @@ public sealed record BrowserRequestDiagnostic(string Method, string Host, string
             host is "api.steampowered.com" ? "api" :
             host is "store.steampowered.com" ? "store" :
             host is "steamcommunity.com" ? "community" : BrowserReadPolicy.IsContentHost(host) ? "content" : "other",
+            path.StartsWith("/achievements/", StringComparison.Ordinal) &&
+                System.Text.RegularExpressions.Regex.Match(path, "^/achievements/(ajax[a-z]{1,48})/[0-9]{1,10}$") is var action && action.Success
+                ? "achievements-" + action.Groups[1].Value :
+            path.StartsWith("/um/Authentication/", StringComparison.Ordinal) ? "authentication-api" :
+            path == "/um/Player/GetGameAchievements/" ? "player-game-achievements" :
+            path == "/um/Player/GetGlobalAchievementPercentages/" ? "player-global-percentages" :
+            path.StartsWith("/um/Player/", StringComparison.Ordinal) ? "player-other" :
+            path.StartsWith("/um/", StringComparison.Ordinal) &&
+                System.Text.RegularExpressions.Regex.Match(path, "^/um/([A-Za-z]{1,32})/([A-Za-z]{1,48})/$") is var umAction && umAction.Success
+                ? "um-action-" + umAction.Groups[1].Value + "-" + umAction.Groups[2].Value :
+            path.StartsWith("/um/", StringComparison.Ordinal) ? "um-other" :
+            path.StartsWith("/achievements/", StringComparison.Ordinal) ? "achievements-other" :
             path.StartsWith("/public/", StringComparison.Ordinal) ? "public" :
             path.StartsWith("/apps/", StringComparison.Ordinal) ? "apps" :
             path.StartsWith("/login", StringComparison.Ordinal) ? "login" :

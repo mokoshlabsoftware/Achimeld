@@ -31,10 +31,21 @@ public sealed partial class PlaywrightChromeDriver
         return Convert.ToHexStringLower(SHA256.HashData(saved));
     }
 
-    public Task<bool> VerifyIconPairAsync(PortalWriteOperation operation, Achimeld.Core.RemoteIconMetadata? actual) =>
-        Task.FromResult(_uploadedIconHashes.TryGetValue((operation.AppId.Value, operation.Target.ApiName.Value), out var expected) &&
+    public Task<bool> VerifyIconPairAsync(PortalWriteOperation operation, Achimeld.Core.RemoteIconMetadata? actual)
+    {
+        if (operation.ExpectedSteamId is not null)
+        {
+            bool Matches(string key, string? before, string? after) =>
+                IconUploadVerification.IsFresh(before, after) ||
+                after == Convert.ToHexStringLower(SHA256.HashData(operation.GeneratedUploads[key]));
+            return Task.FromResult(actual?.AchievedPreviewUri is not null && actual.UnachievedPreviewUri is not null &&
+                Matches("achievedIcon", operation.ReviewedIconBaseline?.AchievedIdentity, actual.AchievedIdentity) &&
+                Matches("unachievedIcon", operation.ReviewedIconBaseline?.UnachievedIdentity, actual.UnachievedIdentity));
+        }
+        return Task.FromResult(_uploadedIconHashes.TryGetValue((operation.AppId.Value, operation.Target.ApiName.Value), out var expected) &&
             actual?.AchievedPreviewUri is not null && actual.UnachievedPreviewUri is not null &&
             actual.AchievedIdentity == expected.Achieved && actual.UnachievedIdentity == expected.Unachieved);
+    }
 
     public Task<byte[]> ReadApprovedArtworkAsync(Uri uri) => DownloadIconAsync(uri.AbsoluteUri);
 

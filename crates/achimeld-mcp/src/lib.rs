@@ -175,6 +175,12 @@ pub fn tools() -> Vec<Value> {
             "",
         ),
         (
+            "validate_and_synchronize",
+            "Validate the saved project and prepare a Steam review in one supervised browser session. Returns when work starts; poll get_synchronization.",
+            "",
+            "",
+        ),
+        (
             "apply_synchronization",
             "Apply explicit choices from the current review to the Steamworks draft. Supply the exact review token and one action for every row. Delete choices require confirmDeletion=true; a projected count above 100 requires allowAbove100=true for a vetted app. Steamworks publication remains manual.",
             "token choices",
@@ -319,6 +325,18 @@ pub fn tools() -> Vec<Value> {
             "nodes:a",
         ),
         (
+            "create_achievement_set",
+            "Create a named canvas set around exactly the given achievement IDs. Link it to Base game with steamSetId 0, or to a set from the saved Steam read. Reject a box that would enclose an unselected card. Save the project before synchronization.",
+            "name achievementIds steamSetId",
+            "name:s achievementIds:a steamSetId:i",
+        ),
+        (
+            "show_steam",
+            "Open the validated Steam view. Optionally filter by name, API name, or achievement description.",
+            "",
+            "query:s",
+        ),
+        (
             "select_node",
             "Open the node's canvas, clear its filter and select it.",
             "nodeId",
@@ -439,6 +457,15 @@ pub fn tools() -> Vec<Value> {
             }
             if matches!(key, "state" | "query") && name == "get_synchronization" {
                 schema["maxLength"] = json!(128);
+            }
+            if key == "query" && name == "show_steam" {
+                schema["maxLength"] = json!(128);
+            }
+            if key == "name" && name == "create_achievement_set" {
+                schema["maxLength"] = json!(128);
+            }
+            if key == "steamSetId" {
+                schema["minimum"] = json!(0);
             }
             if matches!(key, "path" | "folderPath") {
                 schema["maxLength"] = json!(4096);
@@ -1472,10 +1499,15 @@ mod tests {
         assert_eq!(responses.len(), 5);
         assert_eq!(responses[0]["error"]["code"], -32700);
         assert_eq!(responses[1]["result"]["protocolVersion"], "2025-11-25");
-        assert_eq!(
-            responses[2]["result"]["tools"].as_array().unwrap().len(),
-            56
-        );
+        let listed_tools = responses[2]["result"]["tools"].as_array().unwrap();
+        assert_eq!(listed_tools.len(), 59);
+        for name in [
+            "validate_and_synchronize",
+            "create_achievement_set",
+            "show_steam",
+        ] {
+            assert!(listed_tools.iter().any(|tool| tool["name"] == name));
+        }
         assert_eq!(responses[3]["result"]["isError"], false);
     }
     #[test]

@@ -54,6 +54,14 @@ if ($LASTEXITCODE -ne 0) { throw 'Current development package verification faile
 if (!$RunCurrent) {
     Write-Host 'Cleaning temporary artifacts from the verified build...'
     & (Join-Path $PSScriptRoot 'Clear-CodeArtifacts.ps1')
+    $snapshotRoot = [IO.Path]::GetFullPath((Join-Path $env:ACHIMELD_ARTIFACT_ROOT 'development-sources')).TrimEnd('\', '/')
+    $snapshotPath = [IO.Path]::GetFullPath($snapshot).TrimEnd('\', '/')
+    if (!(Split-Path -Parent $snapshotPath).Equals($snapshotRoot, [StringComparison]::OrdinalIgnoreCase) -or
+        (Split-Path -Leaf $snapshotPath) -cnotmatch '^development-source-[a-f0-9]{32}$') {
+        throw 'Verified build snapshot is outside its expected directory.'
+    }
+    & git -C $repositoryRoot worktree remove --force $snapshotPath
+    if ($LASTEXITCODE -ne 0) { Write-Warning "Verified build snapshot remains: $snapshotPath" }
 }
 & (Join-Path $PSScriptRoot 'Update-DesktopShortcut.ps1') -CurrentBuildPath $env:ACHIMELD_ARTIFACT_ROOT
 if ($BuildOnly) { Write-Host ('Build complete: ' + $built.PackagePath); return }

@@ -18,6 +18,7 @@ if ($PublicationReceipt) {
         throw 'Publication receipt must be in the active release staging directory.'
     }
 }
+& (Join-Path $PSScriptRoot 'Clear-PreviousPackages.ps1') | Out-Host
 $package = Join-Path $env:ACHIMELD_ARTIFACT_ROOT ('bridge-package-' + [Guid]::NewGuid().ToString('N'))
 & (Join-Path $PSScriptRoot 'Build-ReadWorker.ps1') -OutputDirectory $package -Offline:$Offline
 & (Join-Path $PSScriptRoot 'Setup-Browser.ps1') -PackageDirectory $package -Offline:$Offline
@@ -42,22 +43,32 @@ $env:DOTNET_GENERATE_ASPNET_CERTIFICATE='false'
 # Each invocation owns its signer binaries: another build may still be running
 # its signer while waiting for Rust. Never overwrite that process's executable.
 $signerArtifacts = Join-Path $env:ACHIMELD_ARTIFACT_ROOT ('bridge-signer-' + [Guid]::NewGuid().ToString('N'))
-& dotnet build (Join-Path $repositoryRoot 'tools/bridge-package/BridgePackage.csproj') "-p:ArtifactsPath=$signerArtifacts"
-if ($LASTEXITCODE -ne 0) { throw 'Development signing tool build failed.' }
-& dotnet (Join-Path $signerArtifacts 'bin/BridgePackage/debug/BridgePackage.dll') --development $repositoryRoot $package
-if ($LASTEXITCODE -ne 0) { throw 'Development signing/build failed.' }
-$published = & (Join-Path $PSScriptRoot 'Publish-CurrentBuild.ps1') -PackagePath $package -PassThru
-$package = $published.PackagePath
-$archive = $published.ArchivePath
-
+try {
+    & dotnet build (Join-Path $repositoryRoot 'tools/bridge-package/BridgePackage.csproj') "-p:ArtifactsPath=$signerArtifacts"
+    if ($LASTEXITCODE -ne 0) { throw 'Development signing tool build failed.' }
+    & dotnet (Join-Path $signerArtifacts 'bin/BridgePackage/debug/BridgePackage.dll') --development $repositoryRoot $package
+    if ($LASTEXITCODE -ne 0) { throw 'Development signing/build failed.' }
+} finally {
+    & (Join-Path $PSScriptRoot 'Clear-PreviousPackages.ps1') -TransientPath $signerArtifacts | Out-Host
+    if ($PublicationReceipt) {
+        & (Join-Path $PSScriptRoot 'Clear-PreviousPackages.ps1') -TransientPath $env:ACHIMELD_RELEASE_TARGET | Out-Host
+    }
+}
 if ($PublicationReceipt) {
-    $archiveManifest = Get-Content -LiteralPath (Join-Path $archive 'manifest.json') -Raw | ConvertFrom-Json
-    @{ schemaVersion = 1; archivePath = $archive; sourceCommit = $archiveManifest.sourceCommit } |
+    $releasePackage = Join-Path $receiptDirectory 'verified-package'
+    if (Test-Path -LiteralPath $releasePackage) { throw 'Publication package staging is already occupied.' }
+    Move-Item -LiteralPath $package -Destination $releasePackage
+    $package = $releasePackage
+    $releaseManifest = Get-Content -LiteralPath (Join-Path $package 'manifest.json') -Raw | ConvertFrom-Json
+    @{ schemaVersion = 2; packagePath = $package; sourceCommit = $releaseManifest.sourceCommit } |
         ConvertTo-Json | Set-Content -LiteralPath $receiptPath -Encoding utf8
+} else {
+    $published = & (Join-Path $PSScriptRoot 'Publish-CurrentBuild.ps1') -PackagePath $package -PassThru
+    $package = $published.PackagePath
+    [IO.File]::WriteAllText((Join-Path $env:ACHIMELD_ARTIFACT_ROOT 'last-bridge-package.txt'),$package,[Text.UTF8Encoding]::new($false))
 }
 Write-Output ('Verified development package: '+$package)
 Write-Output ('Expected verifier SHA-256 (retain from this trusted build): '+(Get-FileHash -LiteralPath (Join-Path $package 'Achimeld.exe') -Algorithm SHA256).Hash.ToLowerInvariant())
-[IO.File]::WriteAllText((Join-Path $env:ACHIMELD_ARTIFACT_ROOT 'last-bridge-package.txt'),$package,[Text.UTF8Encoding]::new($false))
 if ($PassThru) {
-    [pscustomobject]@{ PackagePath=$package; ArchivePath=$archive; VerifierSha256=(Get-FileHash -LiteralPath (Join-Path $package 'Achimeld.exe') -Algorithm SHA256).Hash.ToLowerInvariant() }
+    [pscustomobject]@{ PackagePath=$package; VerifierSha256=(Get-FileHash -LiteralPath (Join-Path $package 'Achimeld.exe') -Algorithm SHA256).Hash.ToLowerInvariant() }
 }

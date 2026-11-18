@@ -145,6 +145,90 @@ impl WorkerResponse {
             endpoint: String,
             write_state: String,
             response_class: String,
+            #[serde(default)]
+            schema_mask: u32,
+            #[serde(default)]
+            schema_kind: String,
+            #[serde(default)]
+            schema_items: u32,
+            #[serde(default)]
+            schema_named: u32,
+            #[serde(default)]
+            schema_objects: u32,
+            #[serde(default)]
+            schema_largest_array: u32,
+            #[serde(default)]
+            schema_types: u32,
+            #[serde(default)]
+            schema_container_mask: u32,
+            #[serde(default)]
+            schema_container_objects: u32,
+            #[serde(default)]
+            schema_container_arrays: u32,
+            #[serde(default)]
+            dom_flags: u32,
+            #[serde(default)]
+            dom_tables: u32,
+            #[serde(default)]
+            dom_table_rows: u32,
+            #[serde(default)]
+            dom_grid_rows: u32,
+            #[serde(default)]
+            dom_frames: u32,
+            #[serde(default)]
+            dom_api_tokens: u32,
+            #[serde(default)]
+            dom_api_leaves: u32,
+            #[serde(default)]
+            dom_achievement_classes: u32,
+            #[serde(default)]
+            dom_images: u32,
+            #[serde(default)]
+            dom_buttons: u32,
+            #[serde(default)]
+            dom_list_items: u32,
+            #[serde(default)]
+            dom_single_token_cards: u32,
+            #[serde(default)]
+            dom_cards_with_two_images: u32,
+            #[serde(default)]
+            dom_cards_with_buttons: u32,
+            #[serde(default)]
+            dom_cards_with_id_text: u32,
+            #[serde(default)]
+            dom_cards_with_inputs: u32,
+            #[serde(default)]
+            dom_largest_card_depth: u32,
+            #[serde(default)]
+            dom_card_line_pattern: String,
+            #[serde(default)]
+            dom_card_pattern_matches: u32,
+            #[serde(default)]
+            html_api_tokens: u32,
+            #[serde(default)]
+            html_scripts: u32,
+            #[serde(default)]
+            html_field_mask: u32,
+            #[serde(default)]
+            app_info_api_tokens: u32,
+            #[serde(default)]
+            app_info_field_mask: u32,
+            #[serde(default)]
+            dom_export_mask: u32,
+            #[serde(default)]
+            export_definitions_rows: u32,
+            #[serde(default)]
+            export_localization_rows: u32,
+            #[serde(default)]
+            export_definitions_header_mask: u32,
+            #[serde(default)]
+            export_localization_header_mask: u32,
+            #[serde(default)]
+            export_transport_mask: u32,
+            #[serde(default)]
+            dom_icon_order_evidence: u32,
+            #[serde(default)]
+            dom_link_action: String,
         }
         #[derive(Deserialize)]
         #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -209,93 +293,342 @@ impl WorkerResponse {
                     "none"
                         | "fetchstats"
                         | "fetchachievements"
+                        | "ajaxgetstatsschema"
+                        | "ajaxgetappinfo"
+                        | "ajaxcreateorupdateachievement"
                         | "savestat"
                         | "saveachievement"
                         | "deletestat"
                         | "deleteachievement"
                         | "uploadachievement"
                 )
-                || !matches!(
+                || !(matches!(
                     sync.write_state.as_str(),
                     "none"
+                        | "read-stats"
+                        | "read-achievements-array"
+                        | "read-achievements-other"
+                        | "read-achievements-html"
+                        | "read-achievements-non-json"
+                        | "read-icons"
+                        | "read-status"
+                        | "read-url"
+                        | "read-body"
+                        | "read-size"
+                        | "read-other"
+                        | "modern-schema-probed"
+                        | "modern-app-info-probed"
+                        | "modern-export-probed"
+                        | "modern-export-reading"
+                        | "modern-export-adapted"
+                        | "modern-management-restored"
+                        | "modern-editor-select"
+                        | "modern-editor-field"
+                        | "modern-editor-caption-missing"
+                        | "modern-editor-caption-unbound"
+                        | "modern-editor-save-control"
+                        | "modern-editor-save-probe"
+                        | "modern-parse-csv"
+                        | "modern-check-counts"
+                        | "modern-check-definitions"
+                        | "modern-check-localizations"
+                        | "modern-check-english"
+                        | "modern-check-archived"
+                        | "modern-check-set-id"
+                        | "modern-check-permission"
+                        | "modern-check-spoiler"
+                        | "modern-check-progress"
+                        | "modern-progress-name"
+                        | "modern-progress-min-parse"
+                        | "modern-progress-min-value"
+                        | "modern-progress-max-parse"
+                        | "modern-progress-max-value"
+                        | "modern-progress-orphan-range"
+                        | "modern-serialize"
                         | "save-armed"
                         | "save-confirmed"
                         | "delete-armed"
                         | "delete-confirmed"
                         | "readback-verified"
-                )
+                ) || sync
+                    .write_state
+                    .strip_prefix("modern-editor-shape-")
+                    .and_then(|value| value.parse::<u32>().ok())
+                    .is_some_and(|mask| mask <= 134_217_727)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-editor-structure-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 32_767)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-editor-actions-")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some_and(|mask| mask <= 262_143)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-card-shape-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 32_767)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-write-shape-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 16_383)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-write-structure-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-route-shape-")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-identity-shape-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 511)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-id-parts-")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-part-sequence-")
+                        .and_then(|value| value.parse::<u64>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-import-shape-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 255)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-import-actions-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 255)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-preview-shape-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 255)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-save-scope-")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-preview-scope-")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-target-scope-")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .is_some()
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-probe-gate-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 255)
+                    || sync
+                        .write_state
+                        .strip_prefix("modern-after-save-")
+                        .and_then(|value| value.parse::<u16>().ok())
+                        .is_some_and(|mask| mask <= 255))
                 || !matches!(
                     sync.response_class.as_str(),
                     "none" | "2xx" | "3xx" | "4xx" | "5xx" | "other"
                 )
+                || !matches!(
+                    sync.schema_kind.as_str(),
+                    "" | "missing" | "object" | "array" | "string" | "null" | "other"
+                )
+                || sync.schema_items > 10_001
+                || sync.schema_named > 10_001
+                || sync.schema_objects > 10_001
+                || sync.schema_largest_array > 10_001
+                || sync.schema_types > 63
+                || sync.schema_container_mask > 65_535
+                || sync.schema_container_objects > 128
+                || sync.schema_container_arrays > 128
+                || sync.dom_flags > 16_383
+                || sync.dom_tables > 10_000
+                || sync.dom_table_rows > 10_000
+                || sync.dom_grid_rows > 10_000
+                || sync.dom_frames > 10_000
+                || sync.dom_api_tokens > 10_000
+                || sync.dom_api_leaves > 10_000
+                || sync.dom_achievement_classes > 10_000
+                || sync.dom_images > 10_000
+                || sync.dom_buttons > 10_000
+                || sync.dom_list_items > 10_000
+                || sync.dom_single_token_cards > 10_000
+                || sync.dom_cards_with_two_images > 10_000
+                || sync.dom_cards_with_buttons > 10_000
+                || sync.dom_cards_with_id_text > 10_000
+                || sync.dom_cards_with_inputs > 10_000
+                || sync.dom_largest_card_depth > 8
+                || sync.dom_card_line_pattern.len() > 32
+                || !sync
+                    .dom_card_line_pattern
+                    .bytes()
+                    .all(|byte| b"AIPCVSNT".contains(&byte))
+                || sync.dom_card_pattern_matches > 10_000
+                || sync.html_api_tokens > 10_000
+                || sync.html_scripts > 10_000
+                || sync.html_field_mask > 63
+                || sync.app_info_api_tokens > 10_000
+                || sync.app_info_field_mask > 1023
+                || sync.dom_export_mask > 2047
+                || sync.export_definitions_rows > 5000
+                || sync.export_localization_rows > 5000
+                || sync.export_definitions_header_mask > 255
+                || sync.export_localization_header_mask > 255
+                || sync.export_transport_mask > 255
+                || sync.dom_icon_order_evidence > 10_000
+                || !(sync.dom_link_action.is_empty()
+                    || sync.dom_link_action == "none"
+                    || (sync.dom_link_action.len() <= 32
+                        && sync
+                            .dom_link_action
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphabetic())))
             {
                 return None;
             }
             message.push_str(&format!(
-                " · sync-phase={} · phase elapsed={} ms · endpoint={} · write-state={} · response-class={}",
-                sync.phase, sync.phase_elapsed_ms, sync.endpoint, sync.write_state, sync.response_class
+                " · sync-phase={} · phase elapsed={} ms · endpoint={} · write-state={} · response-class={} · schema-mask={} · schema-kind={} · schema-items={} · schema-named={} · schema-objects={} · schema-largest-array={} · schema-types={} · schema-container-mask={} · schema-container-objects={} · schema-container-arrays={} · dom-flags={} · dom-tables={} · dom-table-rows={} · dom-grid-rows={} · dom-frames={} · dom-api-tokens={} · dom-api-leaves={} · dom-achievement-classes={} · dom-images={} · dom-buttons={} · dom-list-items={} · dom-single-token-cards={} · dom-cards-with-two-images={} · dom-cards-with-buttons={} · dom-cards-with-id-text={} · dom-cards-with-inputs={} · dom-largest-card-depth={} · dom-card-line-pattern={} · dom-card-pattern-matches={} · html-api-tokens={} · html-scripts={} · html-field-mask={} · app-info-api-tokens={} · app-info-field-mask={} · dom-export-mask={} · export-definitions-rows={} · export-localization-rows={} · export-definitions-header-mask={} · export-localization-header-mask={} · export-transport-mask={} · dom-icon-order-evidence={} · dom-link-action={}",
+                sync.phase, sync.phase_elapsed_ms, sync.endpoint, sync.write_state, sync.response_class,
+                sync.schema_mask, sync.schema_kind, sync.schema_items, sync.schema_named,
+                sync.schema_objects, sync.schema_largest_array, sync.schema_types,
+                sync.schema_container_mask, sync.schema_container_objects, sync.schema_container_arrays,
+                sync.dom_flags, sync.dom_tables, sync.dom_table_rows, sync.dom_grid_rows,
+                sync.dom_frames, sync.dom_api_tokens, sync.dom_api_leaves,
+                sync.dom_achievement_classes, sync.dom_images, sync.dom_buttons,
+                sync.dom_list_items, sync.dom_single_token_cards,
+                sync.dom_cards_with_two_images, sync.dom_cards_with_buttons,
+                sync.dom_cards_with_id_text, sync.dom_cards_with_inputs,
+                sync.dom_largest_card_depth, sync.dom_card_line_pattern,
+                sync.dom_card_pattern_matches, sync.html_api_tokens,
+                sync.html_scripts, sync.html_field_mask, sync.app_info_api_tokens,
+                sync.app_info_field_mask, sync.dom_export_mask,
+                sync.export_definitions_rows, sync.export_localization_rows,
+                sync.export_definitions_header_mask, sync.export_localization_header_mask,
+                sync.export_transport_mask, sync.dom_icon_order_evidence,
+                sync.dom_link_action
             ));
         }
         if let Some(request) = details.request {
+            // The worker reduces /achievements/ajax<action>/<app-id> to a
+            // bounded action category. Keep the same shape here so a new
+            // Steamworks Ajax read can be diagnosed without a URL or query.
+            let achievement_ajax_action = request.host == "partner"
+                && matches!(request.resource.as_str(), "xhr" | "fetch")
+                && !request.navigation
+                && request
+                    .path
+                    .strip_prefix("achievements-ajax")
+                    .is_some_and(|action| {
+                        (1..=48).contains(&action.len())
+                            && action.bytes().all(|byte| byte.is_ascii_lowercase())
+                    });
+            let um_action = request.host == "partner"
+                && matches!(request.resource.as_str(), "xhr" | "fetch")
+                && !request.navigation
+                && request
+                    .path
+                    .strip_prefix("um-action-")
+                    .is_some_and(|parts| {
+                        parts.split_once('-').is_some_and(|(service, action)| {
+                            (1..=32).contains(&service.len())
+                                && (1..=48).contains(&action.len())
+                                && service.bytes().all(|byte| byte.is_ascii_alphabetic())
+                                && action.bytes().all(|byte| byte.is_ascii_alphabetic())
+                        })
+                    });
             if !matches!(
                 request.method.as_str(),
                 "GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "other"
             ) || !matches!(
                 request.host.as_str(),
                 "partner" | "login" | "api" | "store" | "community" | "content" | "other"
-            ) || !matches!(
-                request.path.as_str(),
-                "public" | "apps" | "login" | "authentication-api" | "csp-report" | "other"
-            ) || !matches!(
-                request.resource.as_str(),
-                "document"
-                    | "media"
-                    | "script"
-                    | "stylesheet"
-                    | "image"
-                    | "font"
-                    | "xhr"
-                    | "fetch"
-                    | "ping"
-                    | "manifest"
-                    | "eventsource"
-                    | "cspreport"
-                    | "other"
-            ) || !matches!(
-                request.failure.as_str(),
-                "policy"
-                    | "tunnel"
-                    | "proxy"
-                    | "dns"
-                    | "timeout"
-                    | "reset"
-                    | "refused"
-                    | "closed"
-                    | "disconnected"
-                    | "changed"
-                    | "aborted"
-                    | "blocked"
-                    | "failed"
-                    | "certificate"
-                    | "other"
-            ) || !matches!(
-                request.extension.as_str(),
-                ".mp3"
-                    | ".ogg"
-                    | ".wav"
-                    | ".m4a"
-                    | ".aac"
-                    | ".mp4"
-                    | ".webm"
-                    | ".ogv"
-                    | ".js"
-                    | ".css"
-                    | ".png"
-                    | ".jpg"
-                    | ".woff"
-                    | ".woff2"
-                    | "other"
-            ) {
+            ) || !(achievement_ajax_action
+                || um_action
+                || matches!(
+                    request.path.as_str(),
+                    "public"
+                        | "apps"
+                        | "login"
+                        | "authentication-api"
+                        | "csp-report"
+                        | "achievements-ajaxgetstatsschema"
+                        | "achievements-ajaxgetlanguagelist"
+                        | "achievements-ajaxgetlanguageoptionslist"
+                        | "achievements-other"
+                        | "player-game-achievements"
+                        | "player-global-percentages"
+                        | "player-other"
+                        | "um-other"
+                        | "other"
+                ))
+                || !matches!(
+                    request.resource.as_str(),
+                    "document"
+                        | "media"
+                        | "script"
+                        | "stylesheet"
+                        | "image"
+                        | "font"
+                        | "xhr"
+                        | "fetch"
+                        | "ping"
+                        | "manifest"
+                        | "eventsource"
+                        | "cspreport"
+                        | "other"
+                )
+                || !matches!(
+                    request.failure.as_str(),
+                    "policy"
+                        | "tunnel"
+                        | "proxy"
+                        | "dns"
+                        | "timeout"
+                        | "reset"
+                        | "refused"
+                        | "closed"
+                        | "disconnected"
+                        | "changed"
+                        | "aborted"
+                        | "blocked"
+                        | "failed"
+                        | "certificate"
+                        | "other"
+                )
+                || !matches!(
+                    request.extension.as_str(),
+                    ".mp3"
+                        | ".ogg"
+                        | ".wav"
+                        | ".m4a"
+                        | ".aac"
+                        | ".mp4"
+                        | ".webm"
+                        | ".ogv"
+                        | ".js"
+                        | ".css"
+                        | ".png"
+                        | ".jpg"
+                        | ".woff"
+                        | ".woff2"
+                        | "other"
+                )
+            {
                 return None;
             }
             message.push_str(&format!(
@@ -656,6 +989,35 @@ mod tests {
                 .unwrap()
                 .contains("extension=.mp3")
         );
+        for path in [
+            "achievements-ajaxgetstatsschema",
+            "achievements-ajaxgetlanguagelist",
+            "achievements-ajaxgetlanguageoptionslist",
+            "achievements-ajaxgetnewread",
+        ] {
+            response.data = details.clone();
+            response.data["request"]["host"] = serde_json::json!("partner");
+            response.data["request"]["resource"] = serde_json::json!("xhr");
+            response.data["request"]["path"] = serde_json::json!(path);
+            assert!(response.failure_details("request").unwrap().contains(path));
+        }
+        response.data["request"]["host"] = serde_json::json!("other");
+        assert!(response.failure_details("request").is_none());
+        response.data["request"]["host"] = serde_json::json!("partner");
+        response.data["request"]["path"] =
+            serde_json::json!(format!("achievements-ajax{}", "a".repeat(49)));
+        assert!(response.failure_details("request").is_none());
+        for path in [
+            "achievements-other",
+            "player-game-achievements",
+            "player-global-percentages",
+            "player-other",
+            "um-other",
+        ] {
+            response.data = details.clone();
+            response.data["request"]["path"] = serde_json::json!(path);
+            assert!(response.failure_details("request").unwrap().contains(path));
+        }
         for field in ["method", "host", "path", "extension", "resource", "failure"] {
             response.data = details.clone();
             response.data["request"][field] = serde_json::json!("secret-marker");
@@ -682,6 +1044,83 @@ mod tests {
         assert!(logged.contains("sync-phase=write-precheck"));
         assert!(logged.contains("endpoint=fetchachievements"));
         assert!(logged.contains("write-state=none"));
+        response.data = details.clone();
+        response.data["sync"]["writeState"] = serde_json::json!("modern-editor-shape-511");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-editor-shape-134217728");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-editor-structure-32767");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-editor-structure-32768");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-editor-actions-262143");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-editor-actions-262144");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-card-shape-32767");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-card-shape-32768");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-write-shape-16383");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-write-shape-16384");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-write-structure-65535");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-write-structure-65536");
+        assert!(response.failure_details("request").is_none());
+        response.data = details.clone();
+        response.data["sync"]["endpoint"] = serde_json::json!("ajaxcreateorupdateachievement");
+        response.data["sync"]["writeState"] = serde_json::json!("modern-route-shape-4294967295");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-route-shape-4294967296");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-identity-shape-511");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-identity-shape-512");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-id-parts-4294967295");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-id-parts-4294967296");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] =
+            serde_json::json!("modern-part-sequence-18446744073709551615");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] =
+            serde_json::json!("modern-part-sequence-18446744073709551616");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-import-shape-255");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-import-shape-256");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-import-actions-255");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-import-actions-256");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-preview-shape-255");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-preview-shape-256");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-save-scope-4294967295");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-save-scope-4294967296");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-preview-scope-4294967295");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-preview-scope-4294967296");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-target-scope-4294967295");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-target-scope-4294967296");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-probe-gate-255");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-probe-gate-256");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-after-save-255");
+        assert!(response.failure_details("request").is_some());
+        response.data["sync"]["writeState"] = serde_json::json!("modern-after-save-256");
+        assert!(response.failure_details("request").is_none());
         for field in ["phase", "endpoint", "writeState", "responseClass"] {
             response.data = details.clone();
             response.data["sync"][field] = serde_json::json!("secret-marker");
@@ -689,6 +1128,9 @@ mod tests {
         }
         response.data = details;
         response.data["sync"]["url"] = serde_json::json!("private");
+        assert!(response.failure_details("request").is_none());
+        response.data["sync"].as_object_mut().unwrap().remove("url");
+        response.data["sync"]["domLinkAction"] = serde_json::json!("private/path?token=secret");
         assert!(response.failure_details("request").is_none());
     }
 

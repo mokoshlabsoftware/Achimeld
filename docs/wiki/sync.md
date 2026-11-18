@@ -1,16 +1,18 @@
 # Synchronization review and recovery
 
-Sync connects a saved local project with a Steamworks destination. Validate checks sign-in and access. Synchronize prepares fresh information, artwork and a review. Validate and synchronize sits beside Validate or Re-validate in Sync; it runs the check, then opens the same review if the check succeeds. It stops if validation fails or is cancelled.
+Sync connects a saved local project with a Steamworks destination. Validate checks sign-in and access. Synchronize prepares fresh information, artwork and a review. Validate and synchronize sits beside Validate or Re-validate in Sync; it prepares local artwork first, then checks the connection and prepares the same review in one browser session. The browser remains open between validation and the Steam read, and closes when the operation finishes or is cancelled. Validation failure stops before review preparation.
 
 Uploads save to a Steamworks draft. Publishing remains a manual Steamworks step.
 
-The Steam view shows entries from the latest read. Cards in each row have the same height. When Steam supplies small icon previews, achieved art fills the right half of that achievement card at 50% opacity and fades out toward the left. Hold Alt to preview the separate unachieved art above the card text; it fades in and out over 0.25 seconds. Secondary details such as Set by, values and display order use half-opacity text. Read Steam again to refresh the previews; they are kept only for the current editor session.
+The Steam view shows entries from the latest read. Use the hourglass field next to Read Steam to find an achievement or stat by display name or API name, or search the description shown on an achievement card. Check the achievement card for the description and unlock value that Steam returned. Cards in each row have the same height. When Steam supplies small icon previews, achieved art fills the right half of that achievement card at 50% opacity and fades out toward the left. Hold Alt to preview the separate unachieved art above the card text; it fades in and out over 0.25 seconds. Secondary details such as Set by, values and display order use half-opacity text. Read Steam again to refresh the previews; they are kept only for the current editor session.
 
 ![Previously validated saved snapshot](screenshots/0.2.29.0/05-sync-saved-state.jpg)
 
 ## Destination and connection
 
 Check the project name and Steam App ID. Edit Steam App ID lets you change both fields. Changing the App ID changes the intended association. Save the project before validating; an unsaved project receives guidance to save first. After successful validation, an available name for the pinned Steam app replaces only the default Untitled project name.
+
+Validation and comparison open the selected app's Steamworks Achievements page in the dedicated browser. Achimeld reads the current achievement cards and Steamworks CSV exports to compare names, descriptions and icons. If Steam changes the page or export format again, Achimeld stops before proposing an unsupported edit.
 
 Open achievements and Open stats beside the validation or synchronization action open the selected project's pages in the dedicated Steam browser. Close that browser window when finished. These shortcuts do not validate the connection or change the project.
 
@@ -30,7 +32,9 @@ Imported achievement artwork uses General image slot 0 with a matching General I
 
 ## Review differences
 
-The square review modal identifies the validated App ID and lists every proposed definition or icon change before Steamworks is updated. Artwork-only edits appear as Icon changes. Filter by API name and scroll through the full list without page breaks.
+The square review modal identifies the validated App ID and lists every proposed definition or icon change before Steamworks is updated. Artwork-only edits appear as Icon changes. Filter by API name and scroll through the full list without page breaks. Drag an edge or corner to resize the review. Maximize and Restore sit next to Close in the title bar.
+
+Each collapsed review entry shows a dimmed icon or type image at its upper right. Expand an achievement's field differences to bring its artwork to full opacity over 0.3 seconds. The icon keeps its proportions, matches the expanded entry height, and aligns to the right edge. For a conflict, Review both versions opens a comparison window. It shows Achimeld and Steam values side by side, including achieved and unachieved icons when available, display names, descriptions and other differing fields. The Achimeld images come from the same frozen artwork prepared for upload. Previous and Next move through the detected differences without changing your selected actions. Back to review returns to the plan so you can choose which version to use or leave the entry unchanged. If an icon preview is unavailable, the comparison says so; the text and review choices remain available.
 
 The review reports the total detected differences separately from the number of selected actions, with achievement, stat and icon counts. After an interrupted synchronization, a fresh read proposes Use project for differences that allow upload. Steam-only entries and rows with upload errors remain unselected. The countdown stays stopped until you choose Start 5 s or Synchronize now, so inspect the proposed directions and field values first. Rows with field differences appear first, followed by other detected differences such as artwork, with up-to-date rows at the bottom. The selected-plan summary stays compact so it does not bury the difference list. An identical local and Steam icon pair can be recognized as up to date without a previous icon baseline.
 
@@ -47,7 +51,9 @@ The review reports the total detected differences separately from the number of 
 
 Use project, Use Steam and Leave unchanged appear according to the entry and review state. Choose Leave unchanged to unselect a proposed upload or import; you can select it again before synchronizing. A row that exists only on Steam can also offer Delete on Steam. Delete is never the default. Do not assume every row offers all choices.
 
-An edited achievement display name appears as a field difference. In an older project without a saved text baseline, Achimeld can propose Use project when its previous complete Steam read still matches the fresh Steam name. If Steam has changed since that read, review both versions and choose the intended direction.
+An edited achievement display name appears as a field difference. In an older project without a saved text baseline, Achimeld can propose Use project when its previous complete Steam read still matches the fresh Steam name. If Steam has changed since that read, review both versions and choose the intended direction. For a reviewed achievement name or description upload, Achimeld imports only the selected changed field into Steamworks and then reads the draft again. Other fields and conflicts stay available for their own review.
+
+Use project applies the Achimeld definition and changed text to the same Steamworks achievement. A linked achievement canvas set supplies the project assignment. Achievements outside a linked set follow the existing Steam assignment. Choose Base game as the canvas set link to explicitly move achievements out of a numbered Steam set. Review the source and destination, select the row, and choose Synchronize now to apply a move to the draft. Use Steam imports the reviewed Steam definition into the project.
 
 Expand field differences and inspect the actual values. An import choice can change the associated icon choice so incompatible import/upload combinations are not retained.
 

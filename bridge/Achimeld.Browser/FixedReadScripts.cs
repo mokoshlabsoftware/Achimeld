@@ -13,16 +13,18 @@ public static class FixedReadScripts
             try {
                 const response = await fetch(url, {method:'GET', credentials:'same-origin',
                     redirect:'error', cache:'no-store', signal:controller.signal});
-                if (!response.ok || response.url !== url || !response.body) throw new Error('Configuration read rejected.');
+                if (!response.ok) throw new Error('AchimeldRead:status');
+                if (response.url !== url) throw new Error('AchimeldRead:url');
+                if (!response.body) throw new Error('AchimeldRead:body');
                 const declared = response.headers.get('content-length');
-                if (declared && Number(declared) > maximumBytes) throw new Error('Configuration exceeds its budget.');
+                if (declared && Number(declared) > maximumBytes) throw new Error('AchimeldRead:size');
                 reader = response.body.getReader();
                 const chunks = []; let size = 0;
                 while (true) {
                     const {value, done} = await reader.read();
                     if (done) break;
                     size += value.byteLength;
-                    if (size > maximumBytes) throw new Error('Configuration exceeds its budget.');
+                    if (size > maximumBytes) throw new Error('AchimeldRead:size');
                     chunks.push(value);
                 }
                 const bytes = new Uint8Array(size); let offset = 0;

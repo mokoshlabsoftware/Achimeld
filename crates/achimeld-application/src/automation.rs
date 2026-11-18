@@ -403,6 +403,86 @@ pub fn prepare(original: &Document, operation: &str, args: &Value) -> Result<Pre
             replace(&mut document, kind, entity)?;
             json!({"nodeId":id})
         }
+        "create_achievement_set" => {
+            let chosen = args["achievementIds"]
+                .as_array()
+                .ok_or("Missing achievementIds")?;
+            if chosen.is_empty() || chosen.len() > 100 {
+                return Err("Choose 1 to 100 achievements".into());
+            }
+            let mut ids = BTreeSet::new();
+            for entry in chosen {
+                if !ids.insert(entry.as_str().ok_or("Invalid achievement ID")?) {
+                    return Err("Duplicate achievement ID".into());
+                }
+            }
+            let set_id = args["steamSetId"].as_u64().ok_or("Invalid Steam set ID")?;
+            let snapshot = &document.project()["lastRemoteSnapshot"];
+            if document.app_id() == 0
+                || set_id != 0
+                    && (snapshot["steamAppId"]
+                        .as_u64()
+                        .or(snapshot["appId"].as_u64())
+                        .or(snapshot["appId"]["value"].as_u64())
+                        != Some(u64::from(document.app_id()))
+                        || !snapshot["achievements"]
+                            .as_array()
+                            .into_iter()
+                            .flatten()
+                            .any(|item| {
+                                item["setId"]
+                                    .as_u64()
+                                    .or_else(|| item["setId"].as_str()?.parse().ok())
+                                    == Some(set_id)
+                            }))
+            {
+                return Err("Choose a set from this project's saved Steam configuration".into());
+            }
+            let cards: Vec<_> = document
+                .entities(EntityKind::Achievement)
+                .iter()
+                .enumerate()
+                .map(|(index, item)| (item, crate::canvas::achievement_position(item, index)))
+                .collect();
+            let mut minimum = [i32::MAX; 2];
+            let mut maximum = [i32::MIN; 2];
+            let mut count = 0;
+            for (card, point) in &cards {
+                if card["id"].as_str().is_some_and(|id| ids.contains(id))
+                    && !crate::style_achievements::is_local_icon(card)
+                {
+                    count += 1;
+                    for axis in 0..2 {
+                        minimum[axis] = minimum[axis].min(point[axis]);
+                        maximum[axis] = maximum[axis].max(point[axis]);
+                    }
+                }
+            }
+            if count != ids.len() {
+                return Err("Choose existing achievement cards".into());
+            }
+            let span = crate::canvas::cell_span(EntityKind::Achievement);
+            let position = minimum.map(|point| point.saturating_sub(1));
+            let set = crate::canvas::AchievementSet {
+                id: new_id(),
+                name: string(args, "name")?.trim().into(),
+                position,
+                size: std::array::from_fn(|axis| {
+                    maximum[axis]
+                        .saturating_sub(position[axis])
+                        .saturating_add(span[axis])
+                }),
+                steam_set_id: Some(set_id),
+            };
+            set.validate()?;
+            if cards.iter().any(|(card, point)| {
+                set.contains(*point) && !card["id"].as_str().is_some_and(|id| ids.contains(id))
+            }) {
+                return Err("The set box would enclose an unselected card".into());
+            }
+            document.apply(&Command::SaveAchievementSet(set.clone()), 0)?;
+            json!({"set":set,"achievementIds":ids})
+        }
         "move_nodes" => {
             let nodes = args["nodes"].as_array().ok_or("Missing nodes")?;
             if nodes.is_empty() || nodes.len() > 1000 {
@@ -616,6 +696,54 @@ fn validate_links(document: &Document) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::Editor;
+
+    #[test]
+    fn mcp_set_creation_links_only_requested_achievement() {
+        let mut editor = Editor::default();
+        editor
+            .execute(
+                "App ID",
+                Command::ProjectSettings {
+                    name: "Fixture".into(),
+                    app_id: 480,
+                    atlas: None,
+                    assets: None,
+                },
+                None,
+            )
+            .unwrap();
+        let first = achievement(&mut editor, "FIRST");
+        let second = achievement(&mut editor, "SECOND");
+        editor
+            .execute(
+                "Read",
+                Command::SetRemoteSnapshot(json!({
+                    "appId":{"value":480}, "achievements":[{"apiName":"ANOTHER","setId":"5"}]
+                })),
+                None,
+            )
+            .unwrap();
+        let original = editor.document();
+        let edit = prepare(
+            original,
+            "create_achievement_set",
+            &json!({
+                "name":"Experience", "achievementIds":[second], "steamSetId":5
+            }),
+        )
+        .unwrap();
+        assert_eq!(
+            crate::canvas::steam_set_targets(&edit.document),
+            BTreeMap::from([("SECOND".into(), "5".into())])
+        );
+        assert!(original.achievement_sets().is_empty());
+        for args in [
+            json!({"name":"Experience","achievementIds":[first,first],"steamSetId":5}),
+            json!({"name":"Experience","achievementIds":[second],"steamSetId":8}),
+        ] {
+            assert!(prepare(original, "create_achievement_set", &args).is_err());
+        }
+    }
     #[test]
     fn style_checks_the_actual_general_image_index_before_committing() {
         let mut editor = Editor::default();

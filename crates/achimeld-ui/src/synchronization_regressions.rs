@@ -120,43 +120,33 @@ impl EditorPort for ReviewPort {
             fingerprint: format!("fixture-icon-{locked}"),
         })
     }
+    fn steam_icon_preview(&self, _api: &str, locked: bool) -> Option<Preview> {
+        Some(Preview {
+            width: 64,
+            height: 64,
+            source_size: [64, 64],
+            rgba: if locked {
+                [60, 100, 140, 255]
+            } else {
+                [180, 80, 110, 255]
+            }
+            .repeat(64 * 64)
+            .into(),
+            fingerprint: format!("fixture-steam-icon-{locked}"),
+        })
+    }
 }
 
 #[test]
-fn validate_and_synchronize_prepares_review_only_after_successful_validation() {
+fn validate_and_synchronize_requests_one_continuous_operation() {
     let mut port = ReviewPort::new();
     port.show_review = false;
     let mut desktop = Desktop::default();
     desktop.validate_and_synchronize(&port);
     assert!(matches!(
         desktop.requests.as_slice(),
-        [UiRequest::PrepareSynchronization]
+        [UiRequest::ValidateAndSynchronize]
     ));
-    desktop.requests.clear();
-
-    port.validating = true;
-    desktop.continue_validation_followup(&port);
-    assert!(desktop.requests.is_empty());
-    port.validating = false;
-    port.verified = true;
-    desktop.continue_validation_followup(&port);
-    assert!(matches!(
-        desktop.requests.as_slice(),
-        [UiRequest::PrepareSynchronization]
-    ));
-    assert!(desktop.validation_followup.is_none());
-
-    desktop.requests.clear();
-    port.verified = false;
-    desktop.validate_and_synchronize(&port);
-    desktop.requests.clear();
-    port.validating = true;
-    desktop.continue_validation_followup(&port);
-    port.validating = false;
-    port.error = Some("Validation failed".into());
-    desktop.continue_validation_followup(&port);
-    assert!(desktop.requests.is_empty());
-    assert!(desktop.validation_followup.is_none());
 }
 
 #[test]
@@ -270,6 +260,261 @@ fn interrupted_review_proposes_uploads_and_sorts_differences_without_auto_submis
     desktop.sync_review_elapsed = std::time::Duration::from_secs(6);
     frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
     assert!(desktop.requests.is_empty());
+}
+
+#[test]
+fn conflict_button_opens_side_by_side_comparison_and_navigates_without_approving() {
+    let mut port = ReviewPort::new();
+    port.review["rows"] = json!([
+        {"key":"Stat:SCORE","kind":"Stat","apiName":"SCORE","state":"Conflict",
+            "defaultAction":"Skip","actions":["Skip","Upload","Import"],"fields":[
+                {"field":"StatDisplayName · English","local":"Project score","steam":"Steam score"}]},
+        {"key":"Achievement:COIN","kind":"Achievement","apiName":"COIN","state":"LocalChanged",
+            "defaultAction":"Skip","actions":["Skip","Upload"],"fields":[
+                {"field":"AchievementDisplayName · English","local":"Project coin","steam":"Steam coin"},
+                {"field":"AchievementDescription · English","local":"Find a coin","steam":"Collect a coin"}]},
+        {"key":"Icon:COIN","kind":"Icon","apiName":"COIN","state":"Conflict",
+            "defaultAction":"Skip","actions":["Skip","Upload"],"hasArtwork":true,"fields":[]}
+    ]);
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    click(
+        &ctx,
+        &mut desktop,
+        &mut port,
+        label_center(&labels, "Review both versions"),
+    );
+    assert_eq!(
+        desktop
+            .sync_comparison
+            .as_ref()
+            .map(|(kind, api)| (kind.as_str(), api.as_str())),
+        Some(("Stat", "SCORE"))
+    );
+    assert!(desktop.sync_review_paused);
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!(
+        desktop.sync_comparison.is_some(),
+        "Comparison closed on its first frame"
+    );
+    // The old modal layer retires after one frame when the comparison replaces it.
+    let labels = if labels.iter().any(|(label, _)| label == "Compare versions") {
+        labels
+    } else {
+        frame(&ctx, &mut desktop, &mut port, 1000.0, vec![])
+    };
+    assert!(labels.iter().any(|(label, _)| label == "Compare versions"));
+    assert!(labels.iter().any(|(label, _)| label == "Project score"));
+    assert!(labels.iter().any(|(label, _)| label == "Steam score"));
+    click(&ctx, &mut desktop, &mut port, label_center(&labels, "Next"));
+    assert_eq!(
+        desktop
+            .sync_comparison
+            .as_ref()
+            .map(|(kind, api)| (kind.as_str(), api.as_str())),
+        Some(("Achievement", "COIN"))
+    );
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!(labels.iter().any(|(label, _)| label == "Achieved"));
+    assert!(labels.iter().any(|(label, _)| label == "Unachieved"));
+    let at = label_center(&labels, "Unachieved");
+    let mut seen = std::collections::BTreeSet::new();
+    for _ in 0..6 {
+        frame(
+            &ctx,
+            &mut desktop,
+            &mut port,
+            1000.0,
+            vec![
+                egui::Event::PointerMoved(at),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Point,
+                    delta: egui::vec2(0.0, -500.0),
+                    phase: egui::TouchPhase::Move,
+                    modifiers: Default::default(),
+                },
+            ],
+        );
+        for (label, _) in frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]) {
+            seen.insert(label);
+        }
+    }
+    for expected in [
+        "Project coin",
+        "Steam coin",
+        "Find a coin",
+        "Collect a coin",
+    ] {
+        assert!(
+            seen.contains(expected),
+            "{expected} was not reachable by scrolling"
+        );
+    }
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    click(
+        &ctx,
+        &mut desktop,
+        &mut port,
+        label_center(&labels, "Back to review"),
+    );
+    assert!(desktop.sync_comparison.is_none());
+    assert_eq!(desktop.sync_choices["Stat:SCORE"], "Skip");
+    assert_eq!(desktop.sync_choices["Icon:COIN"], "Skip");
+    assert!(
+        !desktop
+            .requests
+            .iter()
+            .any(|request| matches!(request, UiRequest::ApplySynchronization { .. }))
+    );
+}
+
+#[test]
+fn review_card_art_is_half_opacity_and_cropped_to_its_upper_third() {
+    let card = egui::Rect::from_min_size(egui::Pos2::new(10.0, 20.0), egui::vec2(600.0, 100.0));
+    let egui::Shape::Mesh(mesh) =
+        crate::synchronization_target::review_card_art(egui::TextureId::Managed(1), card, 1.0, 0.0)
+    else {
+        panic!("Expected textured card art");
+    };
+    assert_eq!(mesh.vertices.len(), 4);
+    assert_eq!(mesh.vertices[0].pos, egui::Pos2::new(310.0, 20.0));
+    assert_eq!(mesh.vertices[2].pos, card.right_bottom());
+    assert!((mesh.vertices[2].uv.y - 1.0 / 3.0).abs() < 0.001);
+    assert!(mesh.vertices.iter().all(|vertex| vertex.color.a() == 128));
+}
+
+#[test]
+fn expanded_review_art_matches_card_height_and_keeps_its_right_edge_at_full_opacity() {
+    let card = egui::Rect::from_min_size(egui::pos2(10.0, 20.0), egui::vec2(600.0, 100.0));
+    for (openness, alpha) in [(0.5, 192), (1.0, 255)] {
+        let egui::Shape::Mesh(mesh) = crate::synchronization_target::review_card_art(
+            egui::TextureId::Managed(1),
+            card,
+            1.0,
+            openness,
+        ) else {
+            panic!("Expected textured card art");
+        };
+        assert!(mesh.vertices.iter().all(|vertex| vertex.color.a() == alpha));
+        assert_eq!(mesh.vertices[2].pos, card.right_bottom());
+        if openness == 1.0 {
+            assert_eq!(
+                mesh.vertices[0].pos,
+                card.right_top() - egui::vec2(card.height(), 0.0)
+            );
+            assert_eq!(mesh.vertices[0].uv, egui::Pos2::ZERO);
+            assert_eq!(mesh.vertices[2].uv, egui::pos2(1.0, 1.0));
+        }
+    }
+}
+
+#[test]
+fn opening_review_details_animates_the_actual_project_texture() {
+    let mut port = ReviewPort::new();
+    port.review["rows"] = json!([{
+        "key":"Achievement:COIN", "kind":"Achievement", "apiName":"COIN",
+        "state":"LocalChanged", "defaultAction":"Skip", "actions":["Skip", "Upload"],
+        "fields":[{"field":"Unlock value", "local":"145", "steam":"200"}]
+    }]);
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    for _ in 0..24 {
+        frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    }
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let texture = desktop
+        .preview_texture(
+            &ctx,
+            "sync-card:COIN",
+            port.synchronization_icon_preview("COIN", false).unwrap(),
+        )
+        .unwrap();
+    let alpha = |desktop: &mut Desktop, port: &mut ReviewPort| {
+        frame_output(&ctx, desktop, port, 1000.0, vec![])
+            .shapes
+            .into_iter()
+            .find_map(|shape| match shape.shape {
+                egui::Shape::Mesh(mesh) if mesh.texture_id == texture => {
+                    Some(mesh.vertices[0].color.a())
+                }
+                _ => None,
+            })
+            .expect("review artwork mesh")
+    };
+    assert_eq!(alpha(&mut desktop, &mut port), 128);
+    click(
+        &ctx,
+        &mut desktop,
+        &mut port,
+        label_center(&labels, "1 field difference"),
+    );
+    let fade: Vec<_> = (0..24).map(|_| alpha(&mut desktop, &mut port)).collect();
+    assert!(fade.iter().any(|alpha| (129..255).contains(alpha)));
+    assert_eq!(fade.last(), Some(&255));
+}
+
+#[test]
+fn review_window_resizes_maximizes_restores_and_closes() {
+    let mut port = ReviewPort::new();
+    port.review["explicitApproval"] = json!(true);
+    let ctx = egui::Context::default();
+    configure_test_fonts(&ctx);
+    let mut desktop = Desktop::default();
+    for _ in 0..4 {
+        frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    }
+    let area = || {
+        ctx.memory(|memory| memory.area_rect(egui::Id::new("sync-plan-review")))
+            .unwrap()
+    };
+    let initial = area();
+    assert!((550.0..700.0).contains(&initial.height()), "{initial:?}");
+    let start = initial.right_bottom() - egui::vec2(6.0, 6.0);
+    let end = start + egui::vec2(28.0, 75.0);
+    for events in [
+        vec![
+            egui::Event::PointerMoved(start),
+            egui::Event::PointerButton {
+                pos: start,
+                button: egui::PointerButton::Primary,
+                pressed: true,
+                modifiers: Default::default(),
+            },
+        ],
+        vec![egui::Event::PointerMoved(end)],
+        vec![egui::Event::PointerButton {
+            pos: end,
+            button: egui::PointerButton::Primary,
+            pressed: false,
+            modifiers: Default::default(),
+        }],
+    ] {
+        frame(&ctx, &mut desktop, &mut port, 1000.0, events);
+    }
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    let resized = area();
+    assert!(
+        resized.width() > initial.width() + 14.0 && resized.height() > initial.height() + 40.0,
+        "{initial:?} {resized:?}"
+    );
+    click(&ctx, &mut desktop, &mut port, label_center(&labels, "□"));
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!(area().height() > resized.height() + 200.0);
+    click(&ctx, &mut desktop, &mut port, label_center(&labels, "▣"));
+    let labels = frame(&ctx, &mut desktop, &mut port, 1000.0, vec![]);
+    assert!((area().size() - resized.size()).length() < 3.0);
+    click(&ctx, &mut desktop, &mut port, label_center(&labels, "×"));
+    assert!(
+        desktop
+            .requests
+            .iter()
+            .any(|request| matches!(request, UiRequest::CancelSynchronization))
+    );
 }
 
 #[test]
@@ -643,7 +888,23 @@ fn frame(
     width: f32,
     events: Vec<egui::Event>,
 ) -> Vec<(String, egui::Rect)> {
-    let mut output = ctx.run_ui(
+    let mut output = frame_output(ctx, desktop, port, width, events);
+    let mut labels = Vec::new();
+    for shape in &output.shapes {
+        texts(&shape.shape, &mut labels);
+    }
+    output.textures_delta.clear();
+    labels
+}
+
+fn frame_output(
+    ctx: &egui::Context,
+    desktop: &mut Desktop,
+    port: &mut dyn EditorPort,
+    width: f32,
+    events: Vec<egui::Event>,
+) -> egui::FullOutput {
+    ctx.run_ui(
         egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,
@@ -657,13 +918,7 @@ fn frame(
             desktop.sync_app_id_window(ui.ctx(), port);
             desktop.sync_plan_window(ui.ctx(), port);
         },
-    );
-    let mut labels = Vec::new();
-    for shape in &output.shapes {
-        texts(&shape.shape, &mut labels);
-    }
-    output.textures_delta.clear();
-    labels
+    )
 }
 fn click(
     ctx: &egui::Context,

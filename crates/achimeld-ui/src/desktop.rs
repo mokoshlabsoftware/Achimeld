@@ -274,13 +274,14 @@ pub struct Desktop {
     pub(crate) sync_token: String,
     pub(crate) sync_choices: BTreeMap<String, String>,
     pub(crate) sync_filter: String,
+    pub(crate) sync_comparison: Option<(String, String)>,
+    pub(crate) sync_comparison_reset_scroll: bool,
     pub(crate) sync_review_started: Option<std::time::Instant>,
     pub(crate) sync_review_paused: bool,
     pub(crate) sync_review_elapsed: std::time::Duration,
     pub(crate) sync_confirmation: Option<(String, u32)>,
     pub(crate) sync_plan_token: Option<String>,
     pub(crate) sync_warning: Option<crate::synchronization_target::SyncWarning>,
-    pub(crate) validation_followup: Option<crate::synchronization_target::ValidationFollowup>,
     pub(crate) steam_marks: BTreeSet<(EntityKind, String)>,
     pub(crate) steam_delete_review: bool,
     pub(crate) steam_delete_fresh: bool,
@@ -298,6 +299,7 @@ pub struct Desktop {
     pub(crate) kind: EntityKind,
     pub(crate) selection: Vec<String>,
     pub(crate) filter: String,
+    pub(crate) steam_filter: String,
     pub(crate) inspector_tab: InspectorTab,
     pub(crate) inspector_panel: crate::inspector_panel::InspectorPanel,
     pub(crate) layout_reset_requested: bool,
@@ -309,6 +311,7 @@ pub struct Desktop {
     pub(crate) camera_press_frame: Option<u64>,
     pub(crate) camera_motion: Option<crate::canvas::CameraMotion>,
     pub(crate) canvas_menu: Option<crate::canvas::CanvasMenu>,
+    pub(crate) achievement_set_drag: Option<crate::canvas::AchievementSetDrag>,
     automation_menu: Option<String>,
     automation_close_menu: bool,
     pub(crate) icon_pan: Option<crate::canvas::IconPan>,
@@ -350,6 +353,7 @@ pub struct Desktop {
     pub(crate) style_edit_prompt: Option<crate::style_picker::StyleEditPrompt>,
     pub(crate) icon_style_choices: BTreeMap<String, String>,
     project_id: Option<String>,
+    editor_session_id: Option<String>,
     pub(crate) focused_control: Option<egui::Id>,
     pub(crate) art_bank: crate::art_bank::ArtBank,
     pub(crate) general_images: crate::general_images::GeneralImages,
@@ -365,13 +369,14 @@ impl Default for Desktop {
             sync_token: String::new(),
             sync_choices: BTreeMap::new(),
             sync_filter: String::new(),
+            sync_comparison: None,
+            sync_comparison_reset_scroll: false,
             sync_review_started: None,
             sync_review_paused: false,
             sync_review_elapsed: std::time::Duration::ZERO,
             sync_confirmation: None,
             sync_plan_token: None,
             sync_warning: None,
-            validation_followup: None,
             steam_marks: BTreeSet::new(),
             steam_delete_review: false,
             steam_delete_fresh: false,
@@ -391,6 +396,7 @@ impl Default for Desktop {
             kind: EntityKind::Achievement,
             selection: Vec::new(),
             filter: String::new(),
+            steam_filter: String::new(),
             inspector_tab: InspectorTab::General,
             inspector_panel: Default::default(),
             layout_reset_requested: false,
@@ -402,6 +408,7 @@ impl Default for Desktop {
             camera_press_frame: None,
             camera_motion: None,
             canvas_menu: None,
+            achievement_set_drag: None,
             icon_pan: None,
             node_drag: None,
             selection_drag: None,
@@ -441,6 +448,7 @@ impl Default for Desktop {
             style_edit_prompt: None,
             icon_style_choices: BTreeMap::new(),
             project_id: None,
+            editor_session_id: None,
             focused_control: None,
             art_bank: Default::default(),
             general_images: Default::default(),
@@ -673,6 +681,18 @@ impl Desktop {
     pub fn automation_show_sync(&mut self) {
         self.view = View::Sync;
     }
+    pub fn automation_show_steam(
+        &mut self,
+        port: &dyn EditorPort,
+        query: &str,
+    ) -> Result<(), String> {
+        if !self.steam_panel_available(port) {
+            return Err("Validate the Steam connection in this editor session first".into());
+        }
+        self.view = View::Steam;
+        self.steam_filter = query.to_owned();
+        Ok(())
+    }
     pub fn automation_open_menu(&mut self, menu: &str) {
         self.automation_menu = Some(menu.to_owned());
         self.automation_close_menu = false;
@@ -714,6 +734,13 @@ impl Desktop {
             return Some((id, "notice", message));
         }
         if self.sync_plan_token.is_some() {
+            if self.sync_comparison.is_some() {
+                return Some((
+                    "sync-compare-versions",
+                    "review",
+                    "Comparing Achimeld and Steam versions",
+                ));
+            }
             return Some((
                 "sync-plan-review",
                 "review",
@@ -801,10 +828,10 @@ impl Desktop {
             .as_str()
             .unwrap_or("")
             .to_owned();
-        if self
-            .project_id
-            .as_ref()
-            .is_some_and(|old| old != &project_id)
+        let session_id = port.editor_session_id();
+        let session_changed = self.editor_session_id.as_deref() != session_id;
+        if self.project_id.is_some()
+            && (session_changed || self.project_id.as_deref() != Some(project_id.as_str()))
         {
             let clipboard = self.recipe_clipboard.take();
             let mut palette = std::mem::take(&mut self.layer_palette);
@@ -833,15 +860,8 @@ impl Desktop {
             }
         }
         self.project_id = Some(project_id);
-        if root.is_enabled()
-            && !self.about
-            && self.error.is_none()
-            && self.sync_app_id_edit.is_none()
-            && root
-                .ctx()
-                .memory(|memory| memory.top_modal_layer().is_none())
-        {
-            self.continue_validation_followup(port);
+        if self.editor_session_id.as_deref() != session_id {
+            self.editor_session_id = session_id.map(str::to_owned);
         }
         if std::mem::take(&mut self.layout_reset_requested) {
             self.reset_window_layout(root.ctx(), port);
@@ -1284,7 +1304,7 @@ impl Desktop {
                     ui,
                     width,
                     ToolbarContents {
-                        show_filter: self.view.is_editor() || self.view == View::Steam,
+                        show_filter: self.view.is_editor(),
                         show_sort: self.view.is_editor(),
                         sync_label,
                         sync_icon: if validate_icon { 24.0 } else { 20.0 },
@@ -1396,7 +1416,7 @@ impl Desktop {
                             ui.separator();
                             self.sort_button(ui, port);
                         }
-                        if self.view.is_editor() || self.view == View::Steam {
+                        if self.view.is_editor() {
                             let separator = ui.separator();
                             let margin = egui::Margin::symmetric(4, 2);
                             // The separator already reserves half its width on this side.

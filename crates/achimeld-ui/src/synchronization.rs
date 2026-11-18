@@ -69,7 +69,7 @@ impl Desktop {
                 self.sync_game_banner(ui, port);
                 let project = port.editor().document().project();
                 ui.label(format!("{} · Steam App ID {}", project["displayName"].as_str().unwrap_or("Project"), project["steamAppId"].as_u64().unwrap_or(0)));
-                ui.label("Validate checks Steam sign-in and downloads the game banner. Validate and synchronize continues into the existing review after that check. Synchronize prepares achievement artwork and imports existing Steam entries for review.");
+                ui.label("Validate checks Steam sign-in and downloads the game banner. Validate and synchronize keeps the same browser session open through review preparation. Synchronize prepares achievement artwork and imports existing Steam entries for review.");
                 ui.weak("Uploads save to the Steamworks draft. Publish manually in Steamworks.");
                 ui.checkbox(&mut self.terminal.show_during_sync, "Show Terminal during validation and synchronization");
                 ui.add_space(8.0);

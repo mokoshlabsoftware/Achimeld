@@ -752,6 +752,7 @@ impl Engine {
                         | "delete_browser_profile"
                         | "apply_steam_deletion"
                         | "validate_steam"
+                        | "validate_and_synchronize"
                         | "prepare_synchronization"
                         | "open_steam_page"
                 ))
@@ -860,7 +861,7 @@ impl Engine {
             "get_scene" => {
                 let document = host.editor.document();
                 Ok(
-                    json!({"project":{"id":document.project()["projectId"],"displayName":document.project()["displayName"],"steamAppId":document.app_id()},"canvas":ui.automation_scene(),"achievements":edits::summaries(document,EntityKind::Achievement),"stats":edits::summaries(document,EntityKind::Stat),"assets":document.project()["assets"],"isDirty":host.editor.is_dirty(),"canUndo":host.editor.undo_label().is_some(),"canRedo":host.editor.redo_label().is_some(),"undoLabel":host.editor.undo_label(),"redoLabel":host.editor.redo_label(),"modal":modal_value(host,ui)}),
+                    json!({"project":{"id":document.project()["projectId"],"displayName":document.project()["displayName"],"steamAppId":document.app_id()},"canvas":ui.automation_scene(),"achievements":edits::summaries(document,EntityKind::Achievement),"achievementSets":document.achievement_sets(),"stats":edits::summaries(document,EntityKind::Stat),"assets":document.project()["assets"],"isDirty":host.editor.is_dirty(),"canUndo":host.editor.undo_label().is_some(),"canRedo":host.editor.redo_label().is_some(),"undoLabel":host.editor.undo_label(),"redoLabel":host.editor.redo_label(),"modal":modal_value(host,ui)}),
                 )
             }
             "list_effect_presets" => Ok(json!(host.editor_state.state.effect_presets)),
@@ -1210,7 +1211,7 @@ impl Engine {
                     "remoteFingerprint": review["remoteFingerprint"],
                 }))
             }
-            "validate_steam" | "prepare_synchronization" => {
+            "validate_steam" | "prepare_synchronization" | "validate_and_synchronize" => {
                 if host.store.path().is_none() {
                     return Err("Save the project in the editor before validation".into());
                 }
@@ -1219,12 +1220,19 @@ impl Engine {
                 {
                     return Err("Validate the Steam connection in this editor session first".into());
                 }
-                if request.operation == "validate_steam" {
+                if request.operation != "prepare_synchronization" {
                     host.verified_sync = None;
                 }
-                host.request(UiRequest::PrepareSynchronization);
+                host.request(if request.operation == "validate_and_synchronize" {
+                    UiRequest::ValidateAndSynchronize
+                } else {
+                    UiRequest::PrepareSynchronization
+                });
                 if let Some(error) = host.synchronization_error() {
                     return Err(error.into());
+                }
+                if let Some(pending) = host.synchronization.as_mut() {
+                    pending.explicit_review = true;
                 }
                 ui.automation_show_sync();
                 Ok(json!({"started":true,"status":host.status}))
@@ -1373,6 +1381,14 @@ impl Engine {
                     }
                 }
                 Ok(json!(styles))
+            }
+            "show_steam" => {
+                let query = args["query"].as_str().unwrap_or("");
+                if query.len() > 512 || host.synchronization.is_some() {
+                    return Err("Finish synchronization and use a shorter Steam search".into());
+                }
+                ui.automation_show_steam(host, query)?;
+                Ok(json!({"view":"Steam","query":query}))
             }
             "select_node" => {
                 let id = args["nodeId"].as_str().ok_or("Missing nodeId")?;
@@ -1909,6 +1925,11 @@ mod tests {
         let validate = request(&host, &engine, "validate_steam", json!({}));
         assert_eq!(
             dispatch(&mut engine, &mut host, &mut ui, validate)["success"],
+            false
+        );
+        let combined = request(&host, &engine, "validate_and_synchronize", json!({}));
+        assert_eq!(
+            dispatch(&mut engine, &mut host, &mut ui, combined)["success"],
             false
         );
         let apply = request(

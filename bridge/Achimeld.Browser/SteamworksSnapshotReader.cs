@@ -205,7 +205,7 @@ public sealed class SteamworksSnapshotReader :
             progressStat,
             unlockValue,
             displayOrder,
-            fingerprint);
+            fingerprint) { SetId = Optional(element, "data-set-id") };
     }
 
     private static RemoteLocalization ParseLocalization(XElement element)

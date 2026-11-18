@@ -28,7 +28,22 @@ public static class BrowserRequestGuard
                     await route.FulfillAsync(new RouteFulfillOptions { Status = 204, Body = "" }).ConfigureAwait(false);
                     return;
                 }
-                allowed = owned && validUri && policy.Allows(request.Method, uri!, request.ResourceType, request.IsNavigationRequest);
+                if (owned && validUri && policy.DiscardsOptionalStoreBrowse(request.Method, uri!, request.ResourceType, request.IsNavigationRequest))
+                {
+                    // The store lookup is optional UI metadata, not part of
+                    // the pinned app configuration. Keep it off the network.
+                    await route.AbortAsync("blockedbyclient").ConfigureAwait(false);
+                    return;
+                }
+                string? modernBody = owned && validUri && request.Method == "POST" &&
+                    uri!.IdnHost == "partner.steamgames.com" &&
+                    (uri.AbsolutePath.StartsWith("/achievements/ajaxcreateorupdateachievement/", StringComparison.Ordinal) ||
+                     uri.AbsolutePath.StartsWith("/achievements/ajaxmoveachievements/", StringComparison.Ordinal))
+                    ? request.PostData : null;
+                allowed = owned && validUri && policy.Allows(request.Method, uri!, request.ResourceType,
+                    request.IsNavigationRequest, modernBody, contentType,
+                    request.Method == "POST" && uri!.IdnHost == "partner.steamgames.com" &&
+                    uri.AbsolutePath == "/images/uploadachievement" ? request.PostDataBuffer : null);
                 if (!allowed) rejection = ReferenceEquals(request.Frame.Page, ownedPage())
                     ? DescribeRejection(request) : BrowserRequestRejection.OtherPage;
             }

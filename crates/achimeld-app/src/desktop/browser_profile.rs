@@ -222,7 +222,7 @@ mod tests {
         let (_sender, receiver) = mpsc::sync_channel(1);
         host.browser_profile = Some(receiver);
         assert!(host.start_read().is_err());
-        assert!(host.start_synchronization().is_err());
+        assert!(host.start_synchronization(false).is_err());
         host.request(UiRequest::DeleteBrowserProfile);
         assert!(host.dialog.is_none());
         host.request(UiRequest::ForgetSteamValidation);

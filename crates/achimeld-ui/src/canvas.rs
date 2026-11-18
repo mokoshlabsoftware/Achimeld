@@ -1,10 +1,239 @@
 use crate::buttons::UiButtonExt as _;
 use crate::desktop::NodeDrag;
 use crate::{Desktop, theme};
-use achimeld_application::canvas::{GRID_SIZE, MAX_ZOOM, MIN_ZOOM, auto_position, card_size};
+use achimeld_application::canvas::{
+    AchievementSet, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, achievement_position, auto_position, card_size,
+};
 use achimeld_application::{Command, EditorPort, EntityKind, Preferences};
 use egui::{Align2, Color32, FontId, Id, Pos2, Rect, Sense, Stroke, Vec2};
 use serde_json::Value;
+
+pub(crate) struct AchievementSetDrag {
+    id: String,
+    start: Pos2,
+    resize: bool,
+}
+
+fn set_rect(set: &AchievementSet, origin: Pos2, step: f32) -> Rect {
+    Rect::from_min_size(
+        origin + Vec2::new(set.position[0] as f32, set.position[1] as f32) * step,
+        Vec2::new(set.size[0] as f32, set.size[1] as f32) * step,
+    )
+}
+
+impl Desktop {
+    fn paint_achievement_sets(
+        &mut self,
+        ui: &mut egui::Ui,
+        port: &mut dyn EditorPort,
+        painter: &egui::Painter,
+        origin: Pos2,
+        preferences: &Preferences,
+        cancel: bool,
+    ) {
+        if cancel || self.kind != EntityKind::Achievement {
+            self.achievement_set_drag = None;
+        }
+        if self.kind != EntityKind::Achievement {
+            return;
+        }
+        let sets = port.editor().document().achievement_sets();
+        let step = GRID_SIZE * self.zoom;
+        let accent = theme::color(preferences, "Accent");
+        let pointer = ui.input(|input| input.pointer.interact_pos());
+        let primary = egui::PointerButton::Primary;
+        for set in &sets {
+            let rect = set_rect(set, origin, step);
+            let mut displayed = set.clone();
+            let border = 14.0_f32.min(rect.height() / 2.0);
+            let header =
+                Rect::from_min_max(rect.min, egui::pos2(rect.right(), rect.top() + border));
+            let corner = Rect::from_min_size(rect.max - Vec2::splat(border), Vec2::splat(border));
+            let id = ui.id().with(("achievement-set", &set.id));
+            let moving = ui
+                .interact(header, id.with("move"), Sense::drag())
+                .on_hover_cursor(egui::CursorIcon::Grab);
+            let resizing = ui
+                .interact(corner, id.with("resize"), Sense::drag())
+                .on_hover_cursor(egui::CursorIcon::ResizeNwSe);
+            if !cancel
+                && (moving.drag_started_by(primary) || resizing.drag_started_by(primary))
+                && let Some(start) = ui.input(|input| input.pointer.press_origin()).or(pointer)
+            {
+                self.achievement_set_drag = Some(AchievementSetDrag {
+                    id: set.id.clone(),
+                    start,
+                    resize: resizing.drag_started_by(primary),
+                });
+            }
+            if let Some(drag) = &self.achievement_set_drag
+                && drag.id == set.id
+                && let Some(pointer) = pointer
+            {
+                let offset = (pointer - drag.start) / step;
+                let offset = [offset.x.round() as i32, offset.y.round() as i32];
+                if drag.resize {
+                    displayed.size =
+                        std::array::from_fn(|axis| (set.size[axis] + offset[axis]).clamp(4, 4096));
+                } else {
+                    displayed.position = std::array::from_fn(|axis| {
+                        (set.position[axis] + offset[axis]).clamp(-100_000, 100_000)
+                    });
+                }
+                if moving.drag_stopped_by(primary) || resizing.drag_stopped_by(primary) {
+                    self.achievement_set_drag = None;
+                    if &displayed != set {
+                        let [x, y] = std::array::from_fn(|axis| {
+                            displayed.position[axis] - set.position[axis]
+                        });
+                        let mut edits = vec![Command::SaveAchievementSet(displayed.clone())];
+                        if x != 0 || y != 0 {
+                            edits.extend(
+                                port.editor()
+                                    .document()
+                                    .entities(EntityKind::Achievement)
+                                    .iter()
+                                    .enumerate()
+                                    .filter_map(|(index, entity)| {
+                                        let [column, row] = achievement_position(entity, index);
+                                        let member = sets
+                                            .iter()
+                                            .rev()
+                                            .find(|candidate| candidate.contains([column, row]))?;
+                                        (member.id == set.id).then(|| Command::Move {
+                                            kind: EntityKind::Achievement,
+                                            id: entity["id"].as_str().unwrap_or("").to_owned(),
+                                            column: column.saturating_add(x),
+                                            row: row.saturating_add(y),
+                                        })
+                                    }),
+                            );
+                        }
+                        self.apply(
+                            port,
+                            "Change achievement set bounds",
+                            Command::Batch(edits),
+                            None,
+                        );
+                    }
+                }
+            }
+            let display = set_rect(&displayed, origin, step);
+            painter.rect_filled(display, 0.0, accent.gamma_multiply(0.10));
+            painter.rect_stroke(
+                display,
+                0.0,
+                Stroke::new(1.0, accent),
+                egui::StrokeKind::Inside,
+            );
+            painter.rect_filled(
+                Rect::from_min_size(
+                    display.right_bottom() - Vec2::splat(border.min(8.0)),
+                    Vec2::splat(border.min(8.0)),
+                ),
+                0.0,
+                accent,
+            );
+            painter
+                .with_clip_rect(display.intersect(painter.clip_rect()))
+                .text(
+                    display.left_top() + Vec2::new(4.0, 0.0),
+                    Align2::LEFT_TOP,
+                    &displayed.name,
+                    FontId::proportional((14.0 * self.zoom).clamp(8.0, 14.0)),
+                    theme::color(preferences, "Primary text"),
+                );
+        }
+        if !ui.input(|input| input.pointer.button_down(primary)) {
+            self.achievement_set_drag = None;
+        }
+    }
+
+    fn achievement_set_menu(
+        &mut self,
+        ui: &mut egui::Ui,
+        port: &mut dyn EditorPort,
+        mut set: AchievementSet,
+    ) {
+        let draft_id = ui
+            .id()
+            .with(("achievement-set-name", port.editor_session_id(), &set.id));
+        let mut draft = ui
+            .data_mut(|data| data.get_temp::<String>(draft_id))
+            .unwrap_or_else(|| set.name.clone());
+        let input = ui.add(egui::TextEdit::singleline(&mut draft).desired_width(190.0));
+        ui.data_mut(|data| data.insert_temp(draft_id, draft.clone()));
+        let valid = !draft.trim().is_empty() && draft.len() <= 128;
+        if ui
+            .add_enabled(valid, crate::buttons::Button::new("Rename set"))
+            .clicked()
+            || valid && input.lost_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter))
+        {
+            set.name = draft.trim().into();
+            self.apply(
+                port,
+                "Rename achievement set",
+                Command::SaveAchievementSet(set),
+                None,
+            );
+            ui.close();
+            return;
+        }
+
+        let document = port.editor().document();
+        let snapshot = &document.project()["lastRemoteSnapshot"];
+        let mut known_sets = std::collections::BTreeSet::from([0]);
+        if snapshot["steamAppId"]
+            .as_u64()
+            .or_else(|| snapshot["appId"].as_u64())
+            .or_else(|| snapshot["appId"]["value"].as_u64())
+            == Some(u64::from(document.app_id()))
+        {
+            known_sets.extend(
+                snapshot["achievements"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .map(crate::steam::achievement_set_id),
+            );
+        }
+        if let Some(id) = set.steam_set_id {
+            known_sets.insert(id);
+        }
+        let mut link = set.steam_set_id;
+        let caption = |value| match value {
+            None => String::from("Follow Steam"),
+            Some(0) => String::from("Base game"),
+            Some(id) => format!("Steam set {id}"),
+        };
+        crate::dropdowns::Dropdown::from_id_salt((&set.id, "steam-set"))
+            .width(ui.available_width().max(190.0))
+            .selected_text(caption(link))
+            .show_ui(ui, |ui| {
+                for value in std::iter::once(None).chain(known_sets.into_iter().map(Some)) {
+                    ui.app_selectable_value(&mut link, value, caption(value));
+                }
+            });
+        if link != set.steam_set_id {
+            set.steam_set_id = link;
+            self.apply(
+                port,
+                "Link achievement set",
+                Command::SaveAchievementSet(set.clone()),
+                None,
+            );
+        }
+        if ui.app_button("Remove set box").clicked() {
+            self.apply(
+                port,
+                "Remove achievement set",
+                Command::RemoveAchievementSet(set.id),
+                None,
+            );
+            ui.close();
+        }
+    }
+}
 
 // Painting and hit-testing need these small fields, never the artwork recipe.
 // Own the strings so commands may mutate the document while cards are drawn.
@@ -784,6 +1013,19 @@ impl Desktop {
             y += step;
         }
         painter.circle_filled(origin, 3.0, theme::color(p, "Accent"));
+        self.paint_achievement_sets(
+            ui,
+            port,
+            &painter,
+            origin,
+            p,
+            escape
+                || action.is_some()
+                || scroll != 0.0
+                || panning
+                || !ui.is_enabled()
+                || !ui.input(|input| input.focused),
+        );
         let focus_id = ui.id().with("icon-focus-mask");
         let initialized = ui.ctx().data_mut(|data| {
             std::mem::replace(data.get_temp_mut_or_default::<bool>(focus_id), true)
@@ -816,7 +1058,21 @@ impl Desktop {
                         .as_str()
                         .or(entity.pointer("/apiName/value").and_then(Value::as_str))
                         .unwrap_or("");
-                    let automatic = auto_position(self.kind, index);
+                    let [column, row] = if self.kind == EntityKind::Achievement {
+                        achievement_position(entity, index)
+                    } else {
+                        let automatic = auto_position(self.kind, index);
+                        [
+                            entity["canvasColumn"]
+                                .as_i64()
+                                .unwrap_or(i64::from(automatic[0]))
+                                as i32,
+                            entity["canvasRow"]
+                                .as_i64()
+                                .unwrap_or(i64::from(automatic[1]))
+                                as i32,
+                        ]
+                    };
                     CanvasCard {
                         id: entity["id"].as_str().unwrap_or(api).to_owned(),
                         api: if achimeld_application::art_images::is_art_image(entity) {
@@ -841,13 +1097,8 @@ impl Desktop {
                             document.description(entity, &p.language)
                         },
                         stat_type: entity["type"].as_str().unwrap_or("STAT").to_owned(),
-                        column: entity["canvasColumn"]
-                            .as_i64()
-                            .unwrap_or(i64::from(automatic[0]))
-                            as i32,
-                        row: entity["canvasRow"]
-                            .as_i64()
-                            .unwrap_or(i64::from(automatic[1])) as i32,
+                        column,
+                        row,
                         focus_art: if self.selection.first().is_some_and(|selected| {
                             selected == entity["id"].as_str().unwrap_or(api)
                         }) {
@@ -1243,6 +1494,36 @@ impl Desktop {
                 && ui.input(|input| input.focused);
             crate::buttons::context_menu_at(&response, menu.pointer, &mut open, |ui| {
                 let editable = self.entity_drafts.is_empty() && self.localization_drafts.is_empty();
+                if self.kind == EntityKind::Achievement && editable {
+                    if menu.entity.is_none()
+                        && let Some(set) = port
+                            .editor()
+                            .document()
+                            .achievement_sets()
+                            .into_iter()
+                            .rev()
+                            .find(|set| set.contains(menu.position))
+                    {
+                        self.achievement_set_menu(ui, port, set);
+                        ui.separator();
+                    }
+                    if ui.app_button("Create set").clicked() {
+                        port.finish_group();
+                        self.apply(
+                            port,
+                            "Create achievement set",
+                            Command::SaveAchievementSet(AchievementSet {
+                                id: achimeld_application::new_id(),
+                                name: "New set".into(),
+                                position: menu.position,
+                                size: [36, 16],
+                                steam_set_id: None,
+                            }),
+                            None,
+                        );
+                        ui.close();
+                    }
+                }
                 let label = if self.kind == EntityKind::Achievement {
                     "Create achievement"
                 } else {

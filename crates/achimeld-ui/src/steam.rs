@@ -1,7 +1,7 @@
 use crate::Desktop;
 use crate::style_picker::Glyph;
 use achimeld_application::{EditorPort, EntityKind, Preferences, UiRequest};
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Vec2};
+use egui::{Align, Color32, Pos2, Rect, Sense, Stroke, Vec2};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
@@ -97,6 +97,13 @@ fn localizations<'a>(snapshot: &'a Value, language: &str) -> BTreeMap<(&'a str, 
         .collect()
 }
 
+pub(crate) fn achievement_set_id(achievement: &Value) -> u64 {
+    let set = &achievement["setId"];
+    set.as_u64()
+        .or_else(|| set.as_str()?.parse().ok())
+        .unwrap_or(0)
+}
+
 pub(crate) fn glyph_image(
     ctx: &egui::Context,
     name: &str,
@@ -186,6 +193,64 @@ struct PromptLayout {
     width: f32,
     body_height: f32,
     progress: Option<f32>,
+    adjustable: bool,
+}
+
+#[derive(Clone, Copy, Default)]
+struct ReviewWindow {
+    size: Option<Vec2>,
+    maximized: bool,
+}
+
+fn resize_review(
+    ui: &mut egui::Ui,
+    id: egui::Id,
+    rect: Rect,
+    minimum: Vec2,
+    window: &mut ReviewWindow,
+) {
+    use egui::ResizeDirection::*;
+    let bounds = ui.ctx().content_rect().shrink(3.0);
+    for (index, (region, side, cursor)) in
+        crate::chrome::resize_regions(rect).into_iter().enumerate()
+    {
+        let response = ui
+            .interact(region, id.with(("review-resize", index)), Sense::drag())
+            .on_hover_cursor(cursor);
+        if !response.dragged() {
+            continue;
+        }
+        let delta = response.drag_delta();
+        let mut next = rect;
+        if matches!(side, West | NorthWest | SouthWest) {
+            next.min.x = (rect.left() + delta.x).clamp(
+                bounds.left().min(rect.right() - minimum.x),
+                rect.right() - minimum.x,
+            );
+        }
+        if matches!(side, East | NorthEast | SouthEast) {
+            next.max.x = (rect.right() + delta.x).clamp(
+                rect.left() + minimum.x,
+                bounds.right().max(rect.left() + minimum.x),
+            );
+        }
+        if matches!(side, North | NorthWest | NorthEast) {
+            next.min.y = (rect.top() + delta.y).clamp(
+                bounds.top().min(rect.bottom() - minimum.y),
+                rect.bottom() - minimum.y,
+            );
+        }
+        if matches!(side, South | SouthWest | SouthEast) {
+            next.max.y = (rect.bottom() + delta.y).clamp(
+                rect.top() + minimum.y,
+                bounds.bottom().max(rect.top() + minimum.y),
+            );
+        }
+        window.size = Some(next.size());
+        ui.ctx()
+            .data_mut(|data| data.insert_temp(id.with("drag-position"), next.min));
+        ui.request_repaint();
+    }
 }
 
 fn prompt_divider(ui: &mut egui::Ui) {
@@ -215,6 +280,7 @@ pub(crate) fn review_prompt(
             width: 468.0,
             body_height: 420.0,
             progress: None,
+            adjustable: false,
         },
         body,
     )
@@ -239,6 +305,7 @@ pub(crate) fn review_prompt_wide(
             width: 880.0,
             body_height: 680.0,
             progress,
+            adjustable: true,
         },
         body,
     )
@@ -254,6 +321,17 @@ fn prompt(
     body: impl FnOnce(&mut egui::Ui),
 ) -> ReviewChoice {
     let mut choice = None;
+    let modal_id = egui::Id::new(id);
+    let geometry_id = modal_id.with("review-window");
+    let mut window = ctx
+        .data(|data| data.get_temp::<ReviewWindow>(geometry_id))
+        .unwrap_or_default();
+    let modal = crate::modal::dialog(ctx, modal_id);
+    let modal = if layout.adjustable && window.maximized {
+        egui::Modal::new(modal_id)
+    } else {
+        modal
+    };
     let frame = egui::Frame::new()
         .fill(Color32::BLACK)
         .corner_radius(0)
@@ -284,22 +362,43 @@ fn prompt(
             })
             .collect();
         let total = natural.iter().sum::<f32>().max(1.0);
-        let width = layout
-            .width
-            .max(total)
-            .min((ctx.content_rect().width() - 32.0).max(1.0));
-        ui.set_width(width);
-        ui.spacing_mut().item_spacing = Vec2::ZERO;
         let title_galley = ui.painter().layout_no_wrap(
             title.into(),
             egui::TextStyle::Heading.resolve(ui.style()),
             ui.visuals().text_color(),
         );
-        let (header, _) = ui.allocate_exact_size(
-            Vec2::new(width, title_galley.size().y.max(24.0) + 24.0),
-            Sense::hover(),
+        let header_height = title_galley.size().y.max(24.0) + 24.0;
+        let bar = crate::buttons::bar_height(ui, 20.0);
+        let chrome_height =
+            header_height + bar + 42.0 + if layout.progress.is_some() { 2.0 } else { 0.0 };
+        let viewport = ctx.content_rect().size();
+        let maximum = (viewport - Vec2::splat(8.0)).max(Vec2::splat(1.0));
+        let minimum = Vec2::new(
+            total.max(title_galley.size().x + 144.0).max(350.0),
+            chrome_height + 100.0,
+        )
+        .min(maximum);
+        let initial = Vec2::new(
+            layout.width.max(total).min((viewport.x - 32.0).max(1.0)),
+            0.8 * (chrome_height
+                + (viewport.y - header_height - bar - 76.0).clamp(120.0, layout.body_height)),
         );
-        crate::modal::drag_header(ui, header);
+        let size = if layout.adjustable && window.maximized {
+            maximum
+        } else {
+            window.size.unwrap_or(initial).max(minimum).min(maximum)
+        };
+        let width = if layout.adjustable { size.x } else { initial.x };
+        ui.set_width(width);
+        ui.spacing_mut().item_spacing = Vec2::ZERO;
+        let (header, _) = ui.allocate_exact_size(Vec2::new(width, header_height), Sense::hover());
+        if !layout.adjustable || !window.maximized {
+            let mut drag = header;
+            if layout.adjustable {
+                drag.max.x -= 72.0;
+            }
+            crate::modal::drag_header(ui, drag);
+        }
         header_icon
             .clone()
             .tint(ui.visuals().text_color())
@@ -315,6 +414,48 @@ fn prompt(
             title_galley,
             ui.visuals().text_color(),
         );
+        if layout.adjustable {
+            let controls = Rect::from_min_max(
+                header.right_top() - Vec2::new(72.0, 0.0),
+                header.right_bottom(),
+            );
+            ui.scope_builder(
+                egui::UiBuilder::new()
+                    .max_rect(controls)
+                    .layout(egui::Layout::left_to_right(Align::Center)),
+                |ui| {
+                    let maximize =
+                        crate::buttons::Button::new(if window.maximized { "▣" } else { "□" })
+                            .bar()
+                            .resting_colors(Color32::BLACK, ui.visuals().text_color())
+                            .min_size(Vec2::new(36.0, header_height));
+                    if ui
+                        .add(maximize)
+                        .on_hover_text(if window.maximized {
+                            "Restore"
+                        } else {
+                            "Maximize"
+                        })
+                        .clicked()
+                    {
+                        window.maximized = !window.maximized;
+                        ctx.request_repaint();
+                    }
+                    if ui
+                        .add(
+                            crate::buttons::Button::new("×")
+                                .bar()
+                                .resting_colors(Color32::BLACK, ui.visuals().text_color())
+                                .min_size(Vec2::new(36.0, header_height)),
+                        )
+                        .on_hover_text("Close")
+                        .clicked()
+                    {
+                        choice = actions.len().checked_sub(1);
+                    }
+                },
+            );
+        }
         prompt_divider(ui);
         if let Some(remaining) = layout.progress {
             let (track, _) = ui.allocate_exact_size(
@@ -333,16 +474,22 @@ fn prompt(
                 ui.visuals().selection.bg_fill,
             );
         }
-        let bar = crate::buttons::bar_height(ui, 20.0);
-        let body_height = (ctx.content_rect().height() - header.height() - bar - 76.0)
-            .clamp(120.0, layout.body_height);
+        let body_height = if layout.adjustable {
+            (size.y - chrome_height).max(1.0)
+        } else {
+            (viewport.y - header.height() - bar - 76.0).clamp(120.0, layout.body_height)
+        };
         egui::Frame::new()
             .inner_margin(egui::Margin::symmetric(24, 20))
             .show(ui, |ui| {
                 ui.set_width((width - 48.0).max(1.0));
+                if layout.adjustable {
+                    ui.set_min_height(body_height);
+                }
                 egui::ScrollArea::vertical()
                     .id_salt((id, "body"))
                     .max_height(body_height)
+                    .auto_shrink([true, !layout.adjustable])
                     .show(ui, |ui| {
                         ui.set_width(ui.available_width());
                         body(ui);
@@ -387,10 +534,18 @@ fn prompt(
                 }
             },
         );
+        if layout.adjustable && !window.maximized {
+            let rect = Rect::from_min_max(
+                header.min,
+                egui::pos2(header.right(), ui.min_rect().bottom()),
+            );
+            resize_review(ui, modal_id, rect, minimum, &mut window);
+        }
     };
-    let response = crate::modal::dialog(ctx, egui::Id::new(id))
-        .frame(frame)
-        .show(ctx, content);
+    let response = modal.frame(frame).show(ctx, content);
+    if layout.adjustable {
+        ctx.data_mut(|data| data.insert_temp(geometry_id, window));
+    }
     let dismissed = response.should_close();
     if let Some(index) = choice {
         ReviewChoice::Action(index)
@@ -484,6 +639,7 @@ impl Desktop {
         if Self::steam_operation_active(port) {
             ui.disable();
         }
+        let mut filter_changed = false;
         crate::buttons::bar_panel(ui, "steam-toolbar", 24.0).show(ui, |ui| {
             let height = ui.available_height();
             let reading = port.reading();
@@ -522,6 +678,35 @@ impl Desktop {
                             self.steam_delete_review = false;
                             self.request(UiRequest::ReadSteam);
                         }
+                        ui.add_space(8.0);
+                        let filter = ui.add(
+                            egui::TextEdit::singleline(&mut self.steam_filter)
+                                .id(egui::Id::new("steam-filter"))
+                                .hint_text("Name, API name, or description")
+                                .margin(egui::Margin {
+                                    left: 22,
+                                    right: 4,
+                                    top: 2,
+                                    bottom: 2,
+                                })
+                                .desired_width(210.0),
+                        );
+                        filter_changed = filter.changed();
+                        let center = egui::pos2(filter.rect.left() + 11.0, filter.rect.center().y);
+                        let top = center - egui::vec2(4.0, 5.0);
+                        let bottom = center + egui::vec2(4.0, 5.0);
+                        let upper_right = egui::pos2(bottom.x, top.y);
+                        let lower_left = egui::pos2(top.x, bottom.y);
+                        let stroke = egui::Stroke::new(1.2, ui.visuals().weak_text_color());
+                        for segment in [
+                            [top, upper_right],
+                            [upper_right, lower_left],
+                            [lower_left, bottom],
+                            [bottom, top],
+                        ] {
+                            ui.painter().line_segment(segment, stroke);
+                        }
+                        ui.add_space(8.0);
                         if !reading
                             && !self.steam_marks.is_empty()
                             && ui
@@ -557,10 +742,15 @@ impl Desktop {
                 });
         });
         egui::Frame::new().inner_margin(24).show(ui, |ui| {
-            egui::ScrollArea::vertical()
+            let scroll = egui::ScrollArea::vertical()
                 .id_salt("steam-configuration")
-                .auto_shrink([false, false])
-                .show(ui, |ui| {
+                .auto_shrink([false, false]);
+            let scroll = if filter_changed {
+                scroll.vertical_scroll_offset(0.0)
+            } else {
+                scroll
+            };
+            scroll.show(ui, |ui| {
                     let snapshot = &port.editor().document().project()["lastRemoteSnapshot"];
                     self.retain_steam_marks(snapshot);
                     let snapshot = &port.editor().document().project()["lastRemoteSnapshot"];
@@ -581,17 +771,18 @@ impl Desktop {
                     } else {
                         ui.weak("Select an entry to mark it for deletion.");
                     }
-                    let filter = self.filter.to_lowercase();
+                    let filter = self.steam_filter.trim().to_lowercase();
                     let localized = localizations(snapshot, &port.preferences().language);
                     let mark_ink = crate::theme::color(port.preferences(), "Primary text");
                     let ring = crate::theme::color(port.preferences(), "Muted text");
-                    for (kind, title, name_field) in [
+                    for (kind, title, name_field, description_field) in [
                         (
                             EntityKind::Achievement,
                             "Achievements",
                             "AchievementDisplayName",
+                            Some("AchievementDescription"),
                         ),
-                        (EntityKind::Stat, "Stats", "StatDisplayName"),
+                        (EntityKind::Stat, "Stats", "StatDisplayName", None),
                     ] {
                         ui.add_space(12.0);
                         ui.separator();
@@ -622,32 +813,49 @@ impl Desktop {
                                 }
                             });
                         });
-                        let visible: Vec<_> = entities
+                        let show_sets = kind == EntityKind::Achievement
+                            && entities.iter().any(|entity| achievement_set_id(entity) != 0);
+                        let mut groups: BTreeMap<u64, Vec<_>> = BTreeMap::new();
+                        for item in entities
                             .iter()
                             .enumerate()
-                            .filter(|(_, entity)| {
+                            .filter_map(|(index, entity)| {
                                 let api = api_name(entity);
                                 let name = localized.get(&(api, name_field)).copied().unwrap_or("");
-                                filter.is_empty()
+                                let description = description_field
+                                    .and_then(|field| localized.get(&(api, field)).copied())
+                                    .unwrap_or("");
+                                let matches = filter.is_empty()
                                     || format!("{name} {api}").to_lowercase().contains(&filter)
+                                    || description.to_lowercase().contains(&filter);
+                                matches.then_some((index, entity, api, name, description))
                             })
-                            .collect();
+                        {
+                            let set = if show_sets { achievement_set_id(item.1) } else { 0 };
+                            groups.entry(set).or_default().push(item);
+                        }
                         let width = (ui.available_width() - 16.0).max(1.0);
                         let column_count =
                             ((width + 12.0) / 372.0).floor().clamp(1.0, 3.0) as usize;
                         ui.scope(|ui| {
                             ui.set_width(width);
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                            for (set, visible) in &groups {
+                                if show_sets {
+                                    ui.add_space(6.0);
+                                    if *set == 0 {
+                                        ui.strong("Base game");
+                                    } else {
+                                        ui.strong(format!("Set {set}"));
+                                    }
+                                }
                             for row in visible.chunks(column_count) {
                                 let mut row_tiles = Vec::new();
                                 ui.columns(column_count, |columns| {
-                                    for (column, &(index, entity)) in row.iter().enumerate() {
+                                    for (column, &(index, entity, api, name, description)) in
+                                        row.iter().enumerate()
+                                    {
                                         let ui = &mut columns[column];
-                                        let api = api_name(entity);
-                                        let name = localized
-                                            .get(&(api, name_field))
-                                            .copied()
-                                            .unwrap_or("");
                                         let marked = !api.is_empty()
                                             && self.steam_marks.contains(&(kind, api.to_owned()));
                                         ui.push_id((kind.key(), index), |ui| {
@@ -691,14 +899,8 @@ impl Desktop {
                                                                 if !name.is_empty() {
                                                                     ui.weak(api);
                                                                 }
-                                                                if kind == EntityKind::Achievement {
-                                                                    let description = localized
-                                                        .get(&(api, "AchievementDescription"))
-                                                        .copied()
-                                                        .unwrap_or("");
-                                                                    if !description.is_empty() {
-                                                                        ui.label(description);
-                                                                    }
+                                                                if !description.is_empty() {
+                                                                    ui.label(description);
                                                                 }
                                                             ui.horizontal_wrapped(|ui| {
                                                                 let detail_ink = crate::theme::color(port.preferences(), "Primary text").gamma_multiply(0.5);
@@ -828,8 +1030,9 @@ impl Desktop {
                                 }
                                 ui.add_space(8.0);
                             }
+                            }
                         });
-                        if visible.is_empty() {
+                        if groups.is_empty() {
                             ui.weak(if snapshot.is_null() {
                                 "Not loaded"
                             } else if entities.is_empty() {

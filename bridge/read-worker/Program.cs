@@ -129,12 +129,12 @@ static async Task MonitorAsync(SupervisionSession session, PlaywrightChromeDrive
     catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { }
     catch (Exception exception) when (exception is not OutOfMemoryException)
     {
-        // Requests are already denied by the latched policy. Give the host's
-        // next authentication poll a bounded opportunity to receive the safe
-        // failure details before the watchdog exits the process.
+        // Requests are already denied by the latched policy. Give an active
+        // bounded read time to return its closed failure details before the
+        // watchdog exits; optional banner reads can take five seconds.
         if (driver.RequestRejection != BrowserRequestRejection.None)
         {
-            try { await Task.Delay(TimeSpan.FromSeconds(3), shutdown.Token); }
+            try { await Task.Delay(TimeSpan.FromSeconds(12), shutdown.Token); }
             catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { return; }
         }
         await shutdown.CancelAsync();

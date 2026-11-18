@@ -32,7 +32,7 @@ fn image_fixture() -> (Fixture, Value, String) {
     let entity = fixture.editor.document().entities(EntityKind::Achievement)[0].clone();
     for (key, text) in [
         ("displayNameLocalizationId", "Earthquake - {0} Uses"),
-        ("descriptionLocalizationId", "Use Earthquake 100 times."),
+        ("descriptionLocalizationId", "Use Earthquake {0} times."),
     ] {
         fixture
             .execute(
@@ -199,6 +199,17 @@ fn texts(shape: &egui::Shape, out: &mut Vec<String>) {
         _ => {}
     }
 }
+fn text_positions(shape: &egui::Shape, out: &mut Vec<(String, egui::Pos2, egui::Vec2)>) {
+    match shape {
+        egui::Shape::Text(t) => out.push((t.galley.text().into(), t.pos, t.galley.size())),
+        egui::Shape::Vec(shapes) => {
+            for shape in shapes {
+                text_positions(shape, out);
+            }
+        }
+        _ => {}
+    }
+}
 #[test]
 fn general_panel_draws_the_original_fields_and_shared_banner_without_editing() {
     for width in [280.0, 360.0, 500.0] {
@@ -212,6 +223,7 @@ fn general_panel_draws_the_original_fields_and_shared_banner_without_editing() {
             let mut desktop = Desktop::default();
             desktop.selection = vec![id];
             let mut labels = Vec::new();
+            let mut positioned = Vec::new();
             for _ in 0..2 {
                 let mut output = ctx.run_ui(
                     egui::RawInput {
@@ -228,14 +240,16 @@ fn general_panel_draws_the_original_fields_and_shared_banner_without_editing() {
                     },
                 );
                 labels.clear();
-                for s in &output.shapes {
-                    texts(&s.shape, &mut labels)
+                positioned.clear();
+                for shape in &output.shapes {
+                    texts(&shape.shape, &mut labels);
+                    text_positions(&shape.shape, &mut positioned);
                 }
                 output.textures_delta.clear();
             }
             for expected in [
                 "E. D. Name",
-                "E. Description",
+                "English description",
                 "S. API Name",
                 "General images",
                 "Follows the progress stat type.",
@@ -250,6 +264,43 @@ fn general_panel_draws_the_original_fields_and_shared_banner_without_editing() {
                     "missing {expected} at {width}/{scale}: {labels:?}"
                 );
             }
+            let name_label = positioned
+                .iter()
+                .find(|(text, _, _)| text == "English display name")
+                .expect("name label");
+            let name_field = positioned
+                .iter()
+                .find(|(text, _, _)| text == "Earthquake - {0} Uses")
+                .expect("editable name text");
+            assert!(
+                name_label.1.y + name_label.2.y <= name_field.1.y,
+                "name field must sit below its label at {width}/{scale}"
+            );
+            assert!(
+                name_field.1.x < name_label.1.x + 32.0,
+                "name field must use the width below its label at {width}/{scale}"
+            );
+            let description_label = positioned
+                .iter()
+                .find(|(text, _, _)| text == "English description")
+                .expect("description label");
+            let description_field = positioned
+                .iter()
+                .find(|(text, _, _)| text == "Use Earthquake {0} times.")
+                .expect("editable description template");
+            let description_output = positioned
+                .iter()
+                .find(|(text, _, _)| text == "Use Earthquake 100 times.")
+                .expect("resolved description");
+            assert!(
+                description_label.1.y + description_label.2.y <= description_field.1.y
+                    && description_field.1.y + description_field.2.y <= description_output.1.y,
+                "description label, template, and output must be stacked at {width}/{scale}"
+            );
+            assert!(
+                description_field.1.x < description_label.1.x + 32.0,
+                "description field must use the width below its label at {width}/{scale}"
+            );
             assert_eq!(entity, before);
             assert_eq!(fixture.editor.document(), &document);
         }

@@ -16,6 +16,9 @@ internal static class SynchronizationFixtures
     internal static async Task RunAsync()
     {
         await LegacyLocalizationBaselineAsync();
+        await AssignedAchievementImportAsync();
+        await AssignedAchievementUploadAsync();
+        await NumberedAchievementSetMoveAsync();
         await ModernEmptyProjectAsync();
         await PendingRenameAsync();
         await DeletedHistoryAsync();
@@ -262,7 +265,15 @@ internal static class SynchronizationFixtures
         var iconRequest = Request(achievement: true) with { Icons = new() { ["ACH_WIN"] = new(hash, hash) } };
         var matchingPortal = new FakePortal(); matchingPortal.AddAchievement(withIcons: true);
         var matchingReview = await new SynchronizationSession(matchingPortal).PrepareAsync(iconRequest, 480);
-        Check(matchingReview.Rows.Single(r => r.Kind == "Icon").State == "InSync" && matchingPortal.Writes == 0);
+        Check(matchingReview.Rows.Single(r => r.Kind == "Icon").State == "InSync" && matchingPortal.Writes == 0 && matchingReview.RemoteIconPreviews.Length == 0);
+        var previewPortal = new FakePortal { ProvideIconPreviews = true };
+        previewPortal.AddAchievement(withIcons: true);
+        var previewRequest = Request(achievement: true) with { Icons = new() { ["ACH_WIN"] = new(new string('a', 64), new string('b', 64)) } };
+        var previewReview = await new SynchronizationSession(previewPortal).PrepareAsync(previewRequest, 480);
+        Check(previewReview.Rows.Single(r => r.Kind == "Icon").State == "Conflict" &&
+            previewReview.RemoteIconPreviews is [{ ApiName: "ACH_WIN", Achieved: not null, Unachieved: not null }] &&
+            previewReview.RemoteIconPreviews[0].Achieved!.SequenceEqual(Png) &&
+            previewReview.RemoteIconPreviews[0].Unachieved!.SequenceEqual(Png) && previewPortal.Writes == 0);
         review = await session.PrepareAsync(iconRequest, 480);
         await session.BeginAsync(new(review.Token, [new("Icon:ACH_WIN", "Upload")]));
         await Reject(() => session.StepAsync(new(review.Token, "Icon:ACH_WIN", Png, new byte[24])));
@@ -673,6 +684,82 @@ internal static class SynchronizationFixtures
         }
     }
 
+    private static async Task AssignedAchievementImportAsync()
+    {
+        var portal = new FakePortal();
+        portal.AddAchievement(setId: "17");
+        var request = Request(achievement: true);
+        var project = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+        project["achievements"]![0]!["unlockValue"] = 5;
+        var session = new SynchronizationSession(portal);
+        var review = await session.PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(project) }, 480);
+        var row = review.Rows.Single(r => r.Key == "Achievement:ACH_WIN");
+        if (!row.Actions.SequenceEqual(new[] { "Skip", "Import" }) || row.DefaultAction != "Skip" || row.UploadError is null)
+            throw new Exception("An assigned achievement must offer an explicit local import and explain blocked definition uploads.");
+        await session.BeginAsync(new(review.Token, [new(row.Key, "Import")]));
+        await session.StepAsync(new(review.Token, row.Key, null, null));
+        var result = JsonSerializer.SerializeToElement(await session.FinishAsync(new(review.Token)), SecurityWire.Json).GetProperty("project");
+        var achievement = result.GetProperty("achievements")[0];
+        if (portal.Writes != 0 || achievement.GetProperty("unlockValue").GetDecimal() != 10 || achievement.TryGetProperty("setId", out _) ||
+            result.GetProperty("lastRemoteSnapshot").GetProperty("achievements")[0].GetProperty("setId").GetString() != "17")
+            throw new Exception("Import must update the project while preserving the Steam-only assignment in the remote snapshot.");
+    }
+
+    private static async Task AssignedAchievementUploadAsync()
+    {
+        var portal = new FakePortal { ModernIdentity = "20_1" };
+        portal.AddAchievement(setId: "17");
+        portal.AddAchievementText("ACH_WIN", "Winner");
+        portal.AddAchievementText("ACH_WIN", "Get 10 points", LocalizationField.AchievementDescription);
+        var request = Request(achievement: true);
+        var preserved = await new SynchronizationSession(portal).PrepareAsync(request, 480);
+        if (preserved.Rows.Single(r => r.Key == "Achievement:ACH_WIN").RequiresExplicitUpload)
+            throw new Exception("An unlinked project achievement must follow the current Steam assignment.");
+        var project = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+        project["syncAchievementSetTargets"] = new JsonObject { ["ACH_WIN"] = "0" };
+        var setOnlyReview = await new SynchronizationSession(portal).PrepareAsync(
+            request with { Project = JsonSerializer.SerializeToElement(project) }, 480);
+        if (setOnlyReview.Rows.Single(r => r.Key == "Achievement:ACH_WIN") is not { State: "Conflict", RequiresExplicitUpload: true })
+            throw new Exception("A remaining set difference must stay available after the definition and text match.");
+        project["achievements"]![0]!["unlockValue"] = 5;
+        request.Catalog["Cc3333"]["English"] = "Get 5 points";
+        var session = new SynchronizationSession(portal);
+        var review = await session.PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(project) }, 480);
+        var row = review.Rows.Single(r => r.Key == "Achievement:ACH_WIN");
+        if (!row.Actions.Contains("Upload") || row.DefaultAction != "Skip" || !row.RequiresExplicitUpload || row.UploadError is not null)
+            throw new Exception("Updating a set achievement must offer a separately selected project upload.");
+        await session.BeginAsync(new(review.Token, [new(row.Key, "Upload")]));
+        await session.StepAsync(new(review.Token, row.Key, null, null));
+        await session.FinishAsync(new(review.Token));
+        if (!portal.WriteKinds.SequenceEqual(new[] { PortalEntityKind.Achievement, PortalEntityKind.Localization, PortalEntityKind.AchievementSet }) ||
+            portal.Snapshot.Achievements.Single().UnlockValue != 5 || portal.Snapshot.Achievements.Single().SetId is not null ||
+            portal.Snapshot.Localizations.Single(row => row.Field == LocalizationField.AchievementDescription).Values["English"] != "Get 5 points")
+            throw new Exception("The reviewed project definition, description, and base-game assignment were not applied.");
+    }
+
+    private static async Task NumberedAchievementSetMoveAsync()
+    {
+        var portal = new FakePortal { ModernIdentity = "20_1" };
+        portal.AddAchievement();
+        portal.AddNumberedSetMember("5");
+        portal.AddAchievementText("ACH_WIN", "Winner");
+        portal.AddAchievementText("ACH_WIN", "Get 10 points", LocalizationField.AchievementDescription);
+        var request = Request(achievement: true);
+        var project = JsonNode.Parse(request.Project.GetRawText())!.AsObject();
+        project["syncAchievementSetTargets"] = new JsonObject { ["ACH_WIN"] = "5" };
+        var session = new SynchronizationSession(portal);
+        var review = await session.PrepareAsync(request with { Project = JsonSerializer.SerializeToElement(project) }, 480);
+        var row = review.Rows.Single(r => r.Key == "Achievement:ACH_WIN");
+        if (!row.RequiresExplicitUpload || row.DefaultAction != "Skip")
+            throw new Exception("A numbered set move must require an explicit review selection.");
+        await session.BeginAsync(new(review.Token, [new(row.Key, "Upload")]));
+        await session.StepAsync(new(review.Token, row.Key, null, null));
+        var result = JsonSerializer.SerializeToElement(await session.FinishAsync(new(review.Token)), SecurityWire.Json).GetProperty("project");
+        if (!portal.WriteKinds.SequenceEqual(new[] { PortalEntityKind.AchievementSet }) ||
+            portal.Snapshot.Achievements.Any(a => a.SetId != "5") || result.TryGetProperty("syncAchievementSetTargets", out _))
+            throw new Exception("A set-only move must change the reviewed membership and leave the transient map out of the saved project.");
+    }
+
     private static async Task LegacyLocalizationBaselineAsync()
     {
         foreach (bool managedSnapshot in new[] { false, true })
@@ -793,6 +880,9 @@ internal static class SynchronizationFixtures
         public Task<byte[]?> ReadGameBannerAsync(uint appId) { BannerAppId = appId; return Task.FromResult(Banner); }
         public RemoteSnapshot Snapshot { get; private set; } = new(new(480), DateTimeOffset.UtcNow, "fixture-v1", true, [], [], [], []) { SupportsDisplayOrder = false };
         public int Writes { get; private set; }
+        public string? ModernIdentity { get; init; }
+        public List<PortalEntityKind> WriteKinds { get; } = [];
+        public string? ModernAchievementIdentity(string name, string? setId) => Snapshot.Achievements.Any(a => a.ApiName.Value == name && a.SetId == setId) ? ModernIdentity : null;
         public int Reads { get; private set; }
         public int Verifications { get; private set; }
         public bool SuppressSave { get; init; }
@@ -800,6 +890,9 @@ internal static class SynchronizationFixtures
         public bool ChangeDownloadedArtwork { get; init; }
         public bool InjectUnrelatedChange { get; init; }
         public bool ChangeSameNameAchievementText { get; init; }
+        public bool ProvideIconPreviews { get; init; }
+        public byte[]? CachedIconPreview(RemoteIconMetadata icon, bool unachieved) =>
+            ProvideIconPreviews && icon.AchievementApiName.Value == "ACH_WIN" ? Png.ToArray() : null;
         public void AddAchievementText(string name, string text, LocalizationField field = LocalizationField.AchievementDisplayName)
         {
             Dictionary<string, string> values = new() { ["English"] = text };
@@ -813,10 +906,10 @@ internal static class SynchronizationFixtures
             value = value with { ContentFingerprint = CanonicalFingerprint.For(value, false).EntityFingerprint };
             Snapshot = Snapshot with { Stats = Snapshot.Stats.Append(value).ToArray() };
         }
-        public void AddAchievement(bool withIcons = false)
+        public void AddAchievement(bool withIcons = false, string? setId = null)
         {
             AddStat("SCORE");
-            RemoteAchievement value = new("2", new("ACH_WIN"), false, SetBy.GameClient, new SteamApiName("SCORE"), 10, 0, "");
+            RemoteAchievement value = new("2", new("ACH_WIN"), false, SetBy.GameClient, new SteamApiName("SCORE"), 10, 0, "") { SetId = setId };
             value = value with { ContentFingerprint = CanonicalFingerprint.For(value, false).EntityFingerprint };
             Snapshot = Snapshot with { Achievements = [value] };
             if (withIcons)
@@ -825,6 +918,12 @@ internal static class SynchronizationFixtures
                 Snapshot = Snapshot with { Icons = [new(new("ACH_WIN"), hash, hash, new Uri("https://cdn.steamstatic.com/a.png"), new Uri("https://cdn.steamstatic.com/b.png"),
                     CanonicalFingerprint.Compute([new("achievedIdentity", hash), new("unachievedIdentity", hash)]).EntityFingerprint)] };
             }
+        }
+        public void AddNumberedSetMember(string setId)
+        {
+            RemoteAchievement other = Snapshot.Achievements.Single() with { ApiName = new("ACH_OTHER"), SteamId = "3", SetId = setId };
+            other = other with { ContentFingerprint = CanonicalFingerprint.For(other, false).EntityFingerprint };
+            Snapshot = Snapshot with { Achievements = Snapshot.Achievements.Append(other).ToArray() };
         }
         public void ClearAchievementProgress()
         {
@@ -848,6 +947,7 @@ internal static class SynchronizationFixtures
         public Task ApplyAsync(PortalWriteOperation operation)
         {
             Writes++;
+            WriteKinds.Add(operation.Target.Kind);
             if (SuppressSave) return Task.CompletedTask;
             string name = operation.Target.ApiName.Value;
             if (operation.RenameFrom is string old)
@@ -872,7 +972,13 @@ internal static class SynchronizationFixtures
             else if (operation.Target.Kind == PortalEntityKind.Achievement)
             {
                 var a = Snapshot.Achievements.Single(v => v.ApiName.Value == name);
-                Snapshot = Snapshot with { Achievements = [a with { ContentFingerprint = operation.DesiredFingerprint }] };
+                Snapshot = Snapshot with { Achievements = [a with { ContentFingerprint = operation.DesiredFingerprint,
+                    UnlockValue = operation.Fields["unlockValue"].Length == 0 ? null : decimal.Parse(operation.Fields["unlockValue"], CultureInfo.InvariantCulture) }] };
+            }
+            else if (operation.Target.Kind == PortalEntityKind.AchievementSet)
+            {
+                Snapshot = Snapshot with { Achievements = Snapshot.Achievements.Select(a => a.ApiName.Value == name
+                    ? a with { SetId = operation.DesiredFingerprint == SyncFingerprint.Absent ? null : operation.DesiredFingerprint } : a).ToArray() };
             }
             else if (operation.Target.Kind == PortalEntityKind.Localization)
             {

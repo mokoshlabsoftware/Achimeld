@@ -223,9 +223,21 @@ pub(crate) fn resize_window(ui: &mut egui::Ui, rect: Rect) {
     }) {
         return;
     }
+    for (index, (rect, direction, cursor)) in resize_regions(rect).into_iter().enumerate() {
+        let response = ui
+            .interact(rect, ui.id().with(("window-resize", index)), Sense::drag())
+            .on_hover_cursor(cursor);
+        if response.drag_started_by(PointerButton::Primary) {
+            ui.ctx()
+                .send_viewport_cmd(ViewportCommand::BeginResize(direction));
+        }
+    }
+}
+
+pub(crate) fn resize_regions(rect: Rect) -> [(Rect, ResizeDirection, CursorIcon); 8] {
     let edge = 5.0;
     let corner = 12.0;
-    let regions = [
+    [
         (
             Rect::from_min_max(rect.min, rect.min + egui::vec2(corner, corner)),
             ResizeDirection::NorthWest,
@@ -284,16 +296,7 @@ pub(crate) fn resize_window(ui: &mut egui::Ui, rect: Rect) {
             ResizeDirection::East,
             CursorIcon::ResizeHorizontal,
         ),
-    ];
-    for (index, (rect, direction, cursor)) in regions.into_iter().enumerate() {
-        let response = ui
-            .interact(rect, ui.id().with(("window-resize", index)), Sense::drag())
-            .on_hover_cursor(cursor);
-        if response.drag_started_by(PointerButton::Primary) {
-            ui.ctx()
-                .send_viewport_cmd(ViewportCommand::BeginResize(direction));
-        }
-    }
+    ]
 }
 
 #[cfg(test)]
